@@ -1,0 +1,719 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementLibrary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.library</a> &gt; <span class="el_source">ElementLibrary.java</span></div><h1>ElementLibrary.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.library;
+
+import de.neemann.digital.core.arithmetic.*;
+import de.neemann.digital.core.arithmetic.Comparator;
+import de.neemann.digital.core.basic.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.extern.External;
+import de.neemann.digital.core.extern.ExternalFile;
+import de.neemann.digital.core.flipflops.*;
+import de.neemann.digital.core.io.*;
+import de.neemann.digital.core.io.telnet.Telnet;
+import de.neemann.digital.core.memory.*;
+import de.neemann.digital.core.pld.DiodeBackward;
+import de.neemann.digital.core.pld.DiodeForward;
+import de.neemann.digital.core.pld.PullDown;
+import de.neemann.digital.core.pld.PullUp;
+import de.neemann.digital.core.switching.*;
+import de.neemann.digital.core.wiring.*;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.Tunnel;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.gui.components.data.DummyElement;
+import de.neemann.digital.gui.components.data.ScopeTrigger;
+import de.neemann.digital.gui.components.graphics.GraphicCard;
+import de.neemann.digital.gui.components.graphics.LedMatrix;
+import de.neemann.digital.gui.components.graphics.VGA;
+import de.neemann.digital.gui.components.terminal.Keyboard;
+import de.neemann.digital.gui.components.terminal.Terminal;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.*;
+
+/**
+ * The ElementLibrary is responsible for storing all the components which can be used in a circuit.
+ * Also the import of nested circuits is handled in this class.
+ * This import works in two steps: At first all the files in the same directory as the root circuit are loaded.
+ * The file names are shown in the components menu. From there you can pick a file to insert it to the circuit.
+ * When a file is selected it is loaded to the library. After that also an icon is available.
+ * This is done because the loading of a circuit and the creation of an icon is very time consuming and should
+ * be avoided if not necessary. It's a kind of lazy loading.
+ */
+public class ElementLibrary implements Iterable&lt;ElementLibrary.ElementContainer&gt;, LibraryInterface {
+<span class="fc" id="L59">    private static final Logger LOGGER = LoggerFactory.getLogger(ElementLibrary.class);</span>
+    private static final long MIN_RESCAN_INTERVAL = 5000;
+
+    /**
+     * @return the additional library path
+     */
+    public static File getLibPath() {
+        String path;
+        try {
+<span class="fc" id="L68">            path = ElementLibrary.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath().replace('\\', '/');</span>
+<span class="nc" id="L69">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L70">            return new File(&quot;noLibFound&quot;);</span>
+<span class="fc" id="L71">        }</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (path.endsWith(&quot;/target/classes/&quot;))</span>
+<span class="fc" id="L73">            return toCanonical(new File(path.substring(0, path.length() - 16) + &quot;/src/main/dig/lib&quot;));</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (path.endsWith(&quot;/target/Digital.jar&quot;))</span>
+<span class="nc" id="L75">            return new File(path.substring(0, path.length() - 19) + &quot;/src/main/dig/lib&quot;);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (path.endsWith(&quot;Digital.jar&quot;))</span>
+<span class="nc" id="L77">            return new File(path.substring(0, path.length() - 12) + &quot;/lib&quot;);</span>
+
+<span class="nc" id="L79">        return new File(&quot;noLibFound&quot;);</span>
+    }
+
+    private static File toCanonical(File file) {
+        try {
+<span class="fc" id="L84">            return file.getCanonicalFile();</span>
+<span class="nc" id="L85">        } catch (IOException e) {</span>
+<span class="nc" id="L86">            return file;</span>
+        }
+    }
+
+<span class="fc" id="L90">    private final HashMap&lt;String, LibraryNode&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L91">    private final HashSet&lt;String&gt; isProgrammable = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L92">    private final ArrayList&lt;LibraryListener&gt; listeners = new ArrayList&lt;&gt;();</span>
+    private final LibraryNode root;
+    private final ElementLibraryFolder custom;
+    private JarComponentManager jarComponentManager;
+    private ShapeFactory shapeFactory;
+    private File rootLibraryPath;
+    private Exception exception;
+    private long lastRescanTime;
+    private StringBuilder warningMessage;
+
+    /**
+     * Creates a new instance.
+     */
+    public ElementLibrary() {
+<span class="fc" id="L106">        this(null);</span>
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param jarFile the jar file to load
+     */
+<span class="fc" id="L114">    public ElementLibrary(File jarFile) {</span>
+<span class="fc" id="L115">        root = new LibraryNode(Lang.get(&quot;menu_elements&quot;))</span>
+<span class="fc" id="L116">                .setLibrary(this)</span>
+<span class="fc" id="L117">                .add(new LibraryNode(Lang.get(&quot;lib_Logic&quot;))</span>
+<span class="fc" id="L118">                        .add(And.DESCRIPTION)</span>
+<span class="fc" id="L119">                        .add(NAnd.DESCRIPTION)</span>
+<span class="fc" id="L120">                        .add(Or.DESCRIPTION)</span>
+<span class="fc" id="L121">                        .add(NOr.DESCRIPTION)</span>
+<span class="fc" id="L122">                        .add(XOr.DESCRIPTION)</span>
+<span class="fc" id="L123">                        .add(XNOr.DESCRIPTION)</span>
+<span class="fc" id="L124">                        .add(Not.DESCRIPTION)</span>
+<span class="fc" id="L125">                        .add(LookUpTable.DESCRIPTION))</span>
+<span class="fc" id="L126">                .add(new LibraryNode(Lang.get(&quot;lib_io&quot;))</span>
+<span class="fc" id="L127">                        .add(Out.DESCRIPTION)</span>
+<span class="fc" id="L128">                        .add(Out.LEDDESCRIPTION)</span>
+<span class="fc" id="L129">                        .add(In.DESCRIPTION)</span>
+<span class="fc" id="L130">                        .add(Clock.DESCRIPTION)</span>
+<span class="fc" id="L131">                        .add(Button.DESCRIPTION)</span>
+<span class="fc" id="L132">                        .add(DipSwitch.DESCRIPTION)</span>
+<span class="fc" id="L133">                        .add(Probe.DESCRIPTION)</span>
+<span class="fc" id="L134">                        .add(DummyElement.DATADESCRIPTION)</span>
+<span class="fc" id="L135">                        .add(ScopeTrigger.DESCRIPTION)</span>
+<span class="fc" id="L136">                        .add(new LibraryNode(Lang.get(&quot;lib_displays&quot;))</span>
+<span class="fc" id="L137">                                .add(RGBLED.DESCRIPTION)</span>
+<span class="fc" id="L138">                                .add(Out.POLARITYAWARELEDDESCRIPTION)</span>
+<span class="fc" id="L139">                                .add(ButtonLED.DESCRIPTION)</span>
+<span class="fc" id="L140">                                .add(Out.SEVENDESCRIPTION)</span>
+<span class="fc" id="L141">                                .add(Out.SEVENHEXDESCRIPTION)</span>
+<span class="fc" id="L142">                                .add(Out.SIXTEENDESCRIPTION)</span>
+<span class="fc" id="L143">                                .add(LightBulb.DESCRIPTION)</span>
+<span class="fc" id="L144">                                .add(LedMatrix.DESCRIPTION)</span>
+                        )
+<span class="fc" id="L146">                        .add(new LibraryNode(Lang.get(&quot;lib_mechanic&quot;))</span>
+<span class="fc" id="L147">                                .add(RotEncoder.DESCRIPTION)</span>
+<span class="fc" id="L148">                                .add(StepperMotorUnipolar.DESCRIPTION)</span>
+<span class="fc" id="L149">                                .add(StepperMotorBipolar.DESCRIPTION)</span>
+                        )
+<span class="fc" id="L151">                        .add(new LibraryNode(Lang.get(&quot;lib_peripherals&quot;))</span>
+<span class="fc" id="L152">                                .add(Keyboard.DESCRIPTION)</span>
+<span class="fc" id="L153">                                .add(Terminal.DESCRIPTION)</span>
+<span class="fc" id="L154">                                .add(Telnet.DESCRIPTION)</span>
+<span class="fc" id="L155">                                .add(VGA.DESCRIPTION)</span>
+<span class="fc" id="L156">                                .add(MIDI.DESCRIPTION)</span>
+                        )
+                )
+<span class="fc" id="L159">                .add(new LibraryNode(Lang.get(&quot;lib_wires&quot;))</span>
+<span class="fc" id="L160">                        .add(Ground.DESCRIPTION)</span>
+<span class="fc" id="L161">                        .add(VDD.DESCRIPTION)</span>
+<span class="fc" id="L162">                        .add(Const.DESCRIPTION)</span>
+<span class="fc" id="L163">                        .add(Tunnel.DESCRIPTION)</span>
+<span class="fc" id="L164">                        .add(Splitter.DESCRIPTION)</span>
+<span class="fc" id="L165">                        .add(Driver.DESCRIPTION)</span>
+<span class="fc" id="L166">                        .add(DriverInvSel.DESCRIPTION)</span>
+<span class="fc" id="L167">                        .add(Delay.DESCRIPTION)</span>
+<span class="fc" id="L168">                        .add(PullUp.DESCRIPTION)</span>
+<span class="fc" id="L169">                        .add(PullDown.DESCRIPTION)</span>
+<span class="fc" id="L170">                        .add(NotConnected.DESCRIPTION))</span>
+<span class="fc" id="L171">                .add(new LibraryNode(Lang.get(&quot;lib_mux&quot;))</span>
+<span class="fc" id="L172">                        .add(Multiplexer.DESCRIPTION)</span>
+<span class="fc" id="L173">                        .add(Demultiplexer.DESCRIPTION)</span>
+<span class="fc" id="L174">                        .add(Decoder.DESCRIPTION)</span>
+<span class="fc" id="L175">                        .add(BitSelector.DESCRIPTION)</span>
+<span class="fc" id="L176">                        .add(PriorityEncoder.DESCRIPTION))</span>
+<span class="fc" id="L177">                .add(new LibraryNode(Lang.get(&quot;lib_flipFlops&quot;))</span>
+<span class="fc" id="L178">                        .add(FlipflopRSAsync.DESCRIPTION)</span>
+<span class="fc" id="L179">                        .add(FlipflopRS.DESCRIPTION)</span>
+<span class="fc" id="L180">                        .add(FlipflopJK.DESCRIPTION)</span>
+<span class="fc" id="L181">                        .add(FlipflopD.DESCRIPTION)</span>
+<span class="fc" id="L182">                        .add(FlipflopT.DESCRIPTION)</span>
+<span class="fc" id="L183">                        .add(FlipflopJKAsync.DESCRIPTION)</span>
+<span class="fc" id="L184">                        .add(FlipflopDAsync.DESCRIPTION)</span>
+<span class="fc" id="L185">                        .add(Monoflop.DESCRIPTION))</span>
+<span class="fc" id="L186">                .add(new LibraryNode(Lang.get(&quot;lib_memory&quot;))</span>
+<span class="fc" id="L187">                        .add(new LibraryNode(Lang.get(&quot;lib_ram&quot;))</span>
+<span class="fc" id="L188">                                .add(RAMDualPort.DESCRIPTION)</span>
+<span class="fc" id="L189">                                .add(BlockRAMDualPort.DESCRIPTION)</span>
+<span class="fc" id="L190">                                .add(RAMSinglePort.DESCRIPTION)</span>
+<span class="fc" id="L191">                                .add(RAMSinglePortSel.DESCRIPTION)</span>
+<span class="fc" id="L192">                                .add(RegisterFile.DESCRIPTION)</span>
+<span class="fc" id="L193">                                .add(RAMDualAccess.DESCRIPTION)</span>
+<span class="fc" id="L194">                                .add(RAMAsync.DESCRIPTION)</span>
+<span class="fc" id="L195">                                .add(GraphicCard.DESCRIPTION))</span>
+<span class="fc" id="L196">                        .add(new LibraryNode(Lang.get(&quot;lib_eeprom&quot;))</span>
+<span class="fc" id="L197">                                .add(EEPROM.DESCRIPTION)</span>
+<span class="fc" id="L198">                                .add(EEPROMDualPort.DESCRIPTION))</span>
+<span class="fc" id="L199">                        .add(Register.DESCRIPTION)</span>
+<span class="fc" id="L200">                        .add(ROM.DESCRIPTION)</span>
+<span class="fc" id="L201">                        .add(ROMDualPort.DESCRIPTION)</span>
+<span class="fc" id="L202">                        .add(Counter.DESCRIPTION)</span>
+<span class="fc" id="L203">                        .add(CounterPreset.DESCRIPTION)</span>
+<span class="fc" id="L204">                        .add(PRNG.DESCRIPTION))</span>
+<span class="fc" id="L205">                .add(new LibraryNode(Lang.get(&quot;lib_arithmetic&quot;))</span>
+<span class="fc" id="L206">                        .add(Add.DESCRIPTION)</span>
+<span class="fc" id="L207">                        .add(Sub.DESCRIPTION)</span>
+<span class="fc" id="L208">                        .add(Mul.DESCRIPTION)</span>
+<span class="fc" id="L209">                        .add(Div.DESCRIPTION)</span>
+<span class="fc" id="L210">                        .add(BarrelShifter.DESCRIPTION)</span>
+<span class="fc" id="L211">                        .add(Comparator.DESCRIPTION)</span>
+<span class="fc" id="L212">                        .add(Neg.DESCRIPTION)</span>
+<span class="fc" id="L213">                        .add(BitExtender.DESCRIPTION)</span>
+<span class="fc" id="L214">                        .add(BitCount.DESCRIPTION))</span>
+<span class="fc" id="L215">                .add(new LibraryNode(Lang.get(&quot;lib_switching&quot;))</span>
+<span class="fc" id="L216">                        .add(Switch.DESCRIPTION)</span>
+<span class="fc" id="L217">                        .add(SwitchDT.DESCRIPTION)</span>
+<span class="fc" id="L218">                        .add(Relay.DESCRIPTION)</span>
+<span class="fc" id="L219">                        .add(RelayDT.DESCRIPTION)</span>
+<span class="fc" id="L220">                        .add(PFET.DESCRIPTION)</span>
+<span class="fc" id="L221">                        .add(NFET.DESCRIPTION)</span>
+<span class="fc" id="L222">                        .add(Fuse.DESCRIPTION)</span>
+                        //.add(Diode.DESCRIPTION) // see class DiodeTest for further information
+<span class="fc" id="L224">                        .add(DiodeForward.DESCRIPTION)</span>
+<span class="fc" id="L225">                        .add(DiodeBackward.DESCRIPTION)</span>
+<span class="fc" id="L226">                        .add(FGPFET.DESCRIPTION)</span>
+<span class="fc" id="L227">                        .add(FGNFET.DESCRIPTION)</span>
+<span class="fc" id="L228">                        .add(TransGate.DESCRIPTION))</span>
+<span class="fc" id="L229">                .add(new LibraryNode(Lang.get(&quot;lib_misc&quot;))</span>
+<span class="fc" id="L230">                        .add(TestCaseElement.DESCRIPTION)</span>
+<span class="fc" id="L231">                        .add(new LibraryNode(Lang.get(&quot;lib_decoration&quot;))</span>
+<span class="fc" id="L232">                                .add(DummyElement.TEXTDESCRIPTION)</span>
+<span class="fc" id="L233">                                .add(DummyElement.RECTDESCRIPTION))</span>
+<span class="fc" id="L234">                        .add(new LibraryNode(Lang.get(&quot;lib_generic&quot;))</span>
+<span class="fc" id="L235">                                .add(GenericInitCode.DESCRIPTION)</span>
+<span class="fc" id="L236">                                .add(GenericCode.DESCRIPTION))</span>
+<span class="fc" id="L237">                        .add(new LibraryNode(Lang.get(&quot;lib_hdl&quot;))</span>
+<span class="fc" id="L238">                                .add(External.DESCRIPTION)</span>
+<span class="fc" id="L239">                                .add(ExternalFile.DESCRIPTION)</span>
+<span class="fc" id="L240">                                .add(PinControl.DESCRIPTION))</span>
+<span class="fc" id="L241">                        .add(PowerSupply.DESCRIPTION)</span>
+<span class="fc" id="L242">                        .add(BusSplitter.DESCRIPTION)</span>
+<span class="fc" id="L243">                        .add(Reset.DESCRIPTION)</span>
+<span class="fc" id="L244">                        .add(Break.DESCRIPTION)</span>
+<span class="fc" id="L245">                        .add(Stop.DESCRIPTION)</span>
+<span class="fc" id="L246">                        .add(AsyncSeq.DESCRIPTION));</span>
+
+<span class="fc" id="L248">        addExternalJarComponents(jarFile);</span>
+
+<span class="fc" id="L250">        custom = new ElementLibraryFolder(root, Lang.get(&quot;menu_custom&quot;));</span>
+
+<span class="fc" id="L252">        File libPath = Settings.getInstance().get(Keys.SETTINGS_LIBRARY_PATH);</span>
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">        if (libPath != null &amp;&amp; libPath.exists())</span>
+<span class="fc" id="L254">            new ElementLibraryFolder(root, Lang.get(&quot;menu_library&quot;)).scanFolder(libPath, true);</span>
+
+<span class="fc" id="L256">        populateNodeMap();</span>
+
+<span class="fc" id="L258">        isProgrammable.clear();</span>
+<span class="fc" id="L259">        root.traverse(libraryNode -&gt; {</span>
+<span class="fc" id="L260">            ElementTypeDescription d = libraryNode.getDescriptionOrNull();</span>
+<span class="fc bfc" id="L261" title="All 4 branches covered.">            if (d != null &amp;&amp; d.hasAttribute(Keys.BLOWN))</span>
+<span class="fc" id="L262">                isProgrammable.add(d.getName());</span>
+<span class="fc" id="L263">        });</span>
+<span class="fc" id="L264">    }</span>
+
+    void addExternalJarComponents(File file) {
+<span class="pc bpc" id="L267" title="2 of 6 branches missed.">        if (file != null &amp;&amp; file.getPath().length() &gt; 0 &amp;&amp; file.exists()) {</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">            if (jarComponentManager == null)</span>
+<span class="fc" id="L269">                jarComponentManager = new JarComponentManager(this);</span>
+            try {
+<span class="fc" id="L271">                jarComponentManager.loadJar(file);</span>
+<span class="nc" id="L272">            } catch (IOException | InvalidNodeException e) {</span>
+<span class="nc" id="L273">                exception = e;</span>
+<span class="fc" id="L274">            }</span>
+        }
+<span class="fc" id="L276">    }</span>
+
+    /**
+     * registers a component source to Digital
+     *
+     * @param source the source
+     * @return this for chained calls
+     */
+    public ElementLibrary registerComponentSource(ComponentSource source) {
+        try {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (jarComponentManager == null)</span>
+<span class="nc" id="L287">                jarComponentManager = new JarComponentManager(this);</span>
+<span class="nc" id="L288">            source.registerComponents(jarComponentManager);</span>
+<span class="nc" id="L289">        } catch (InvalidNodeException e) {</span>
+<span class="nc" id="L290">            exception = e;</span>
+<span class="nc" id="L291">        }</span>
+<span class="nc" id="L292">        return this;</span>
+    }
+
+    /**
+     * @return returns a exception during initialization or null if there was none
+     */
+    public Exception checkForException() {
+<span class="fc" id="L299">        Exception e = exception;</span>
+<span class="fc" id="L300">        exception = null;</span>
+<span class="fc" id="L301">        return e;</span>
+    }
+
+    LibraryNode findNode(String path) throws InvalidNodeException {
+<span class="fc" id="L305">        StringTokenizer st = new StringTokenizer(path, &quot;\\/;&quot;);</span>
+<span class="fc" id="L306">        LibraryNode node = root;</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        while (st.hasMoreTokens()) {</span>
+<span class="fc" id="L308">            String name = st.nextToken();</span>
+<span class="fc" id="L309">            LibraryNode found = null;</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            for (LibraryNode n : node) {</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                if (n.getName().equals(name)) {</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">                    if (n.isLeaf())</span>
+<span class="nc" id="L313">                        throw new InvalidNodeException(Lang.get(&quot;err_Node_N_isAComponent&quot;, n));</span>
+<span class="fc" id="L314">                    found = n;</span>
+                }
+<span class="fc" id="L316">            }</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            if (found == null) {</span>
+<span class="fc" id="L318">                found = new LibraryNode(name);</span>
+<span class="fc" id="L319">                node.add(found);</span>
+            }
+<span class="fc" id="L321">            node = found;</span>
+<span class="fc" id="L322">        }</span>
+<span class="fc" id="L323">        return node;</span>
+    }
+
+    /**
+     * @return the component manager
+     */
+    public JarComponentManager getJarComponentManager() {
+<span class="fc" id="L330">        return jarComponentManager;</span>
+    }
+
+    /**
+     * Returns true if element is programmable
+     *
+     * @param name the name
+     * @return true if it is programmable
+     */
+    public boolean isProgrammable(String name) {
+<span class="nc" id="L340">        return isProgrammable.contains(name);</span>
+    }
+
+    /**
+     * Sets the shape factory used to import sub circuits
+     *
+     * @param shapeFactory the shape factory
+     */
+    public void setShapeFactory(ShapeFactory shapeFactory) {
+<span class="fc" id="L349">        this.shapeFactory = shapeFactory;</span>
+<span class="fc" id="L350">    }</span>
+
+    @Override
+    public ShapeFactory getShapeFactory() {
+<span class="fc" id="L354">        return shapeFactory;</span>
+    }
+
+    /**
+     * @return the node with the custom elements
+     */
+    public LibraryNode getCustomNode() {
+<span class="nc" id="L361">        return custom.getNode();</span>
+    }
+
+    private void populateNodeMap() {
+<span class="fc" id="L365">        map.clear();</span>
+<span class="fc" id="L366">        final PopulateMapVisitor populateMapVisitor = new PopulateMapVisitor(map);</span>
+<span class="fc" id="L367">        root.traverse(populateMapVisitor);</span>
+<span class="fc" id="L368">        warningMessage = populateMapVisitor.getWarningMessage();</span>
+<span class="fc" id="L369">    }</span>
+
+    /**
+     * @return the warning message or null if there is none
+     */
+    public StringBuilder getWarningMessage() {
+<span class="nc" id="L375">        return warningMessage;</span>
+    }
+
+    /**
+     * sets the root library path
+     *
+     * @param rootLibraryPath the path
+     * @throws IOException IOException
+     */
+    public void setRootFilePath(File rootLibraryPath) throws IOException {
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (rootLibraryPath == null) {</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">            if (this.rootLibraryPath != null) {</span>
+<span class="nc" id="L387">                this.rootLibraryPath = null;</span>
+<span class="nc" id="L388">                rescanFolder();</span>
+            }
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        } else if (!rootLibraryPath.equals(this.rootLibraryPath)) {</span>
+<span class="fc" id="L391">            this.rootLibraryPath = rootLibraryPath;</span>
+<span class="fc" id="L392">            rescanFolder();</span>
+        }
+<span class="fc" id="L394">    }</span>
+
+    /**
+     * @return the actual root file path
+     */
+    public File getRootFilePath() {
+<span class="fc" id="L400">        return rootLibraryPath;</span>
+    }
+
+    /**
+     * Checks if the given file is accessible from the actual library.
+     *
+     * @param file the file to check
+     * @return true if given file is importable
+     */
+    public boolean isFileAccessible(File file) {
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (rootLibraryPath == null) return true;</span>
+
+        try {
+<span class="nc" id="L413">            String root = rootLibraryPath.getCanonicalPath();</span>
+<span class="nc" id="L414">            String path = file.getParentFile().getCanonicalPath();</span>
+<span class="nc" id="L415">            return path.startsWith(root);</span>
+<span class="nc" id="L416">        } catch (IOException e) {</span>
+<span class="nc" id="L417">            return false;</span>
+        }
+    }
+
+    /**
+     * Returns the node or null if node not present.
+     *
+     * @param elementName the name
+     * @return the node or null
+     */
+    public LibraryNode getElementNodeOrNull(String elementName) {
+<span class="nc" id="L428">        return map.get(elementName);</span>
+    }
+
+    @Override
+    public ElementTypeDescription getElementType(String elementName, ElementAttributes attr) throws ElementNotFoundException {
+<span class="fc" id="L433">        return getElementType(elementName);</span>
+    }
+
+    /**
+     * Returns a {@link ElementTypeDescription} by a given name.
+     * If not found its tried to load it.
+     *
+     * @param elementName the elements name
+     * @return the {@link ElementTypeDescription}
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public ElementTypeDescription getElementType(String elementName) throws ElementNotFoundException {
+        try {
+<span class="fc" id="L446">            LibraryNode node = map.get(elementName);</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">            if (node != null)</span>
+<span class="fc" id="L448">                return node.getDescription();</span>
+
+            // effects only some old files!
+<span class="fc" id="L451">            elementName = elementName.replace(&quot;\\&quot;, &quot;/&quot;);</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">            if (elementName.contains(&quot;/&quot;)) {</span>
+<span class="nc" id="L453">                elementName = new File(elementName).getName();</span>
+            }
+
+<span class="fc" id="L456">            node = map.get(elementName);</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">            if (node != null)</span>
+<span class="nc" id="L458">                return node.getDescription();</span>
+
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">            if (rootLibraryPath == null)</span>
+<span class="nc" id="L461">                throw new ElementNotFoundException(Lang.get(&quot;err_fileNeedsToBeSaved&quot;));</span>
+
+<span class="fc" id="L463">            LOGGER.debug(&quot;could not find &quot; + elementName);</span>
+
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">            if (System.currentTimeMillis() - lastRescanTime &gt; MIN_RESCAN_INTERVAL) {</span>
+<span class="nc" id="L466">                rescanFolder();</span>
+
+<span class="nc" id="L468">                node = map.get(elementName);</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">                if (node != null)</span>
+<span class="nc" id="L470">                    return node.getDescription();</span>
+            }
+<span class="nc" id="L472">        } catch (IOException e) {</span>
+<span class="nc" id="L473">            throw new ElementNotFoundException(Lang.get(&quot;msg_errorImportingModel_N0&quot;, elementName), e);</span>
+<span class="fc" id="L474">        }</span>
+
+<span class="fc" id="L476">        throw new ElementNotFoundException(Lang.get(&quot;err_element_N_notFound&quot;, elementName));</span>
+    }
+
+    private void rescanFolder() {
+<span class="fc" id="L480">        LOGGER.debug(&quot;rescan folder&quot;);</span>
+<span class="fc" id="L481">        LibraryNode cn = custom.scanFolder(rootLibraryPath, false);</span>
+
+<span class="fc" id="L483">        populateNodeMap();</span>
+
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (cn != null)</span>
+<span class="fc" id="L486">            fireLibraryChanged(cn);</span>
+<span class="fc" id="L487">        lastRescanTime = System.currentTimeMillis();</span>
+<span class="fc" id="L488">    }</span>
+
+    /**
+     * Fires a library event
+     *
+     * @param node the node changed
+     */
+    void fireLibraryChanged(LibraryNode node) {
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">        for (LibraryListener l : listeners)</span>
+<span class="nc" id="L497">            l.libraryChanged(node);</span>
+<span class="fc" id="L498">    }</span>
+
+    /**
+     * Adds a listener to this library
+     *
+     * @param listener the listener to add
+     */
+    public void addListener(LibraryListener listener) {
+<span class="nc" id="L506">        listeners.add(listener);</span>
+<span class="nc" id="L507">        LOGGER.debug(&quot;added library listener &quot; + listener.getClass().getSimpleName() + &quot;, listeners: &quot; + listeners.size());</span>
+<span class="nc" id="L508">    }</span>
+
+    /**
+     * Removes a listener from this library
+     *
+     * @param listener the listener to remove
+     */
+    public void removeListener(LibraryListener listener) {
+<span class="nc" id="L516">        listeners.remove(listener);</span>
+<span class="nc" id="L517">        LOGGER.debug(&quot;removed library listener &quot; + listener.getClass().getSimpleName() + &quot;, listeners: &quot; + listeners.size());</span>
+<span class="nc" id="L518">    }</span>
+
+
+    @Override
+    public Iterator&lt;ElementContainer&gt; iterator() {
+<span class="fc" id="L523">        ArrayList&lt;ElementContainer&gt; nodes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        for (LibraryNode n : getRoot())</span>
+<span class="fc" id="L525">            addToList(nodes, n, &quot;&quot;);</span>
+<span class="fc" id="L526">        return nodes.iterator();</span>
+    }
+
+    private void addToList(ArrayList&lt;ElementContainer&gt; nodes, LibraryNode node, String path) {
+<span class="fc bfc" id="L530" title="All 2 branches covered.">        if (node.isLeaf()) {</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">            if (node.isDescriptionLoaded()) {</span>
+                try {
+<span class="fc" id="L533">                    nodes.add(new ElementContainer(node.getDescription(), path));</span>
+<span class="nc" id="L534">                } catch (IOException e) {</span>
+                    // can not happen because description is present!
+<span class="pc" id="L536">                }</span>
+            }
+        } else
+<span class="fc bfc" id="L539" title="All 2 branches covered.">            for (LibraryNode n : node)</span>
+<span class="fc" id="L540">                addToList(nodes, n, concat(path, node.getName()));</span>
+<span class="fc" id="L541">    }</span>
+
+    private String concat(String path, String name) {
+<span class="fc bfc" id="L544" title="All 2 branches covered.">        if (path.length() == 0)</span>
+<span class="fc" id="L545">            return name;</span>
+<span class="fc" id="L546">        return path + &quot; - &quot; + name;</span>
+
+    }
+
+    /**
+     * Removes an element from the library to enforce a reload
+     *
+     * @param name the elements name
+     * @throws IOException IOException
+     */
+    public void invalidateElement(File name) throws IOException {
+<span class="nc" id="L557">        LibraryNode n = map.get(name.getName());</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (n != null)</span>
+<span class="nc" id="L559">            n.invalidate();</span>
+        else {
+<span class="nc bnc" id="L561" title="All 4 branches missed.">            if (rootLibraryPath != null &amp;&amp; isFileAccessible(name))</span>
+<span class="nc" id="L562">                rescanFolder();</span>
+        }
+<span class="nc" id="L564">    }</span>
+
+    /**
+     * Updates all entries
+     *
+     * @throws IOException IOException
+     */
+    public void updateEntries() throws IOException {
+<span class="nc" id="L572">        rescanFolder();</span>
+<span class="nc" id="L573">    }</span>
+
+    /**
+     * @return the root element
+     */
+    public LibraryNode getRoot() {
+<span class="fc" id="L579">        return root;</span>
+    }
+
+    /**
+     * Imports the given file
+     *
+     * @param file the file to load
+     * @return the description
+     * @throws IOException IOException
+     */
+    ElementTypeDescription importElement(File file) throws IOException {
+        try {
+<span class="fc" id="L591">            LOGGER.debug(&quot;load element &quot; + file);</span>
+            Circuit circuit;
+            try {
+<span class="fc" id="L594">                circuit = Circuit.loadCircuit(file, shapeFactory);</span>
+<span class="nc" id="L595">            } catch (FileNotFoundException e) {</span>
+<span class="nc" id="L596">                throw new IOException(Lang.get(&quot;err_couldNotFindIncludedFile_N0&quot;, file));</span>
+<span class="fc" id="L597">            }</span>
+
+<span class="fc" id="L599">            ElementTypeDescriptionCustom description = createCustomDescription(file, circuit, this);</span>
+<span class="fc" id="L600">            description.setShortName(createShortName(file.getName(), circuit.getAttributes().getLabel()));</span>
+
+<span class="fc" id="L602">            String descriptionText = Lang.evalMultilingualContent(circuit.getAttributes().get(Keys.DESCRIPTION));</span>
+<span class="pc bpc" id="L603" title="1 of 4 branches missed.">            if (descriptionText != null &amp;&amp; descriptionText.length() &gt; 0) {</span>
+<span class="fc" id="L604">                description.setDescription(descriptionText);</span>
+            }
+<span class="fc" id="L606">            return description;</span>
+<span class="nc" id="L607">        } catch (PinException e) {</span>
+<span class="nc" id="L608">            throw new IOException(Lang.get(&quot;msg_errorImportingModel_N0&quot;, file), e);</span>
+        }
+    }
+
+    private String createShortName(String name, String userDefined) {
+<span class="fc bfc" id="L613" title="All 2 branches covered.">        if (userDefined.isEmpty()) {</span>
+<span class="pc bpc" id="L614" title="1 of 2 branches missed.">            if (name.endsWith(&quot;.dig&quot;)) return name.substring(0, name.length() - 4).replace(&quot;_&quot;, &quot;\\_&quot;);</span>
+
+<span class="nc" id="L616">            String transName = Lang.getNull(&quot;elem_&quot; + name);</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">            if (transName == null)</span>
+<span class="nc" id="L618">                return name;</span>
+            else
+<span class="nc" id="L620">                return transName;</span>
+        } else {
+<span class="fc" id="L622">            return userDefined;</span>
+        }
+    }
+
+    /**
+     * Creates a custom element description.
+     *
+     * @param file    the file
+     * @param circuit the circuit
+     * @param library the library
+     * @return the type description
+     * @throws PinException PinException
+     */
+    public static ElementTypeDescriptionCustom createCustomDescription(File file, Circuit circuit, ElementLibrary library) throws PinException {
+<span class="fc" id="L636">        ElementTypeDescriptionCustom d = new ElementTypeDescriptionCustom(file, circuit, library);</span>
+<span class="fc" id="L637">        d.setElementFactory(attributes -&gt; new CustomElement(d));</span>
+<span class="fc" id="L638">        return d;</span>
+    }
+
+
+    /**
+     * Used to store a elements name and its position in the elements menu.
+     */
+    public static class ElementContainer {
+        private final ElementTypeDescription name;
+        private final String treePath;
+
+        /**
+         * Creates anew instance
+         *
+         * @param typeDescription the elements typeDescription
+         * @param treePath        the elements menu path
+         */
+<span class="fc" id="L655">        ElementContainer(ElementTypeDescription typeDescription, String treePath) {</span>
+<span class="fc" id="L656">            this.name = typeDescription;</span>
+<span class="fc" id="L657">            this.treePath = treePath;</span>
+<span class="fc" id="L658">        }</span>
+
+        /**
+         * @return the elements name
+         */
+        public ElementTypeDescription getDescription() {
+<span class="fc" id="L664">            return name;</span>
+        }
+
+        /**
+         * @return Returns the path in the menu
+         */
+        public String getTreePath() {
+<span class="fc" id="L671">            return treePath;</span>
+        }
+    }
+
+    private static final class PopulateMapVisitor implements Visitor {
+        private static final int MAX_WARNING_ENTRIES = 15;
+        private final HashMap&lt;String, LibraryNode&gt; map;
+        private StringBuilder warningMessage;
+<span class="fc" id="L679">        private int warningEntries = 0;</span>
+
+<span class="fc" id="L681">        private PopulateMapVisitor(HashMap&lt;String, LibraryNode&gt; map) {</span>
+<span class="fc" id="L682">            this.map = map;</span>
+<span class="fc" id="L683">        }</span>
+
+        @Override
+        public void visit(LibraryNode libraryNode) {
+<span class="fc bfc" id="L687" title="All 2 branches covered.">            if (libraryNode.isLeaf()) {</span>
+<span class="fc" id="L688">                final String name = libraryNode.getName();</span>
+
+<span class="fc" id="L690">                LibraryNode presentNode = map.get(name);</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">                if (presentNode == null) {</span>
+<span class="fc" id="L692">                    map.put(name, libraryNode);</span>
+<span class="fc" id="L693">                    libraryNode.setUnique(true);</span>
+                } else {
+<span class="fc bfc" id="L695" title="All 2 branches covered.">                    if (presentNode.equalsFile(libraryNode))</span>
+<span class="fc" id="L696">                        libraryNode.setUnique(true);</span>
+                    else {
+<span class="fc" id="L698">                        presentNode.setUnique(false); // ToDo does not work if there are more than two duplicates and</span>
+<span class="fc" id="L699">                        libraryNode.setUnique(false); // some of the duplicates point to the same file</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">                        if (warningMessage == null)</span>
+<span class="fc" id="L701">                            warningMessage = new StringBuilder(Lang.get(&quot;msg_duplicateLibraryFiles&quot;));</span>
+<span class="fc bfc" id="L702" title="All 2 branches covered.">                        if (warningEntries &lt;= MAX_WARNING_ENTRIES)</span>
+<span class="fc" id="L703">                            warningMessage.append(&quot;\n\n&quot;).append(presentNode.getFile()).append(&quot;\n&quot;).append(libraryNode.getFile());</span>
+<span class="fc" id="L704">                        warningEntries++;</span>
+                    }
+                }
+            }
+<span class="fc" id="L708">        }</span>
+
+        private StringBuilder getWarningMessage() {
+<span class="fc bfc" id="L711" title="All 2 branches covered.">            if (warningEntries &gt;= MAX_WARNING_ENTRIES) {</span>
+<span class="fc" id="L712">                warningMessage.append(&quot;\n\n&quot;).append(Lang.get(&quot;msg_and_N_More&quot;, warningEntries - MAX_WARNING_ENTRIES));</span>
+<span class="fc" id="L713">                warningEntries = 0;</span>
+            }
+<span class="fc" id="L715">            return warningMessage;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

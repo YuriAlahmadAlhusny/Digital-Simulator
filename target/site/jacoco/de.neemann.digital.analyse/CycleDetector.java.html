@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CycleDetector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">CycleDetector.java</span></div><h1>CycleDetector.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.switching.Switch;
+import de.neemann.digital.core.wiring.bus.CommonBusValue;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+
+/**
+ * Helper to check a circuit for cycles.
+ * A cycle is a situation where a gate input depends somehow on one of its outputs.
+ * If a cycle is detected an exception is thrown.
+ * A cycle is no problem during simulation due to the gate delay.
+ * However, when analyzing a circuit with an unbuffered cycle, erroneous truth tables
+ * may result. Therefore, an exception is thrown when such a circuit is analyzed.
+ */
+public final class CycleDetector {
+
+    private CycleDetector() {
+    }
+
+    /**
+     * Checks a circuit for cycles
+     * If a cycle is detected, en exception is thrown.
+     *
+     * @param values the input signals of the circuit
+     * @throws BacktrackException BacktrackException
+     * @throws PinException       PinException
+     * @throws CycleException     is thrown if a cycle is detected
+     */
+    public static void checkForCycles(ArrayList&lt;Signal&gt; values) throws BacktrackException, PinException, CycleException {
+<span class="fc" id="L42">        HashMap&lt;NodeInterface, Node&gt; nodes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L43">        HashSet&lt;ObservableValue&gt; visited = new HashSet&lt;&gt;();</span>
+
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (Signal s : values) {</span>
+<span class="fc" id="L46">            Node root = new Node(null);</span>
+<span class="fc" id="L47">            root.layer = 1;</span>
+<span class="fc" id="L48">            traverse(root, s.getValue(), nodes, visited);</span>
+<span class="fc" id="L49">        }</span>
+
+        // Turned of for now because if it is used you can build circuits with a state
+        // which are not detected as such.
+        //removeSwitchCycles(nodes.values());
+
+<span class="fc" id="L55">        checkGraphForCycles(nodes.values());</span>
+<span class="fc" id="L56">    }</span>
+
+    private static void traverse(Node parent, ObservableValue val, HashMap&lt;NodeInterface, Node&gt; nodes, HashSet&lt;ObservableValue&gt; visited) throws PinException, BacktrackException {
+<span class="fc" id="L59">        visited.add(val);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (Observer o : val.getObservers()) {</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            if ((o instanceof NodeInterface)) {</span>
+
+<span class="fc" id="L63">                NodeInterface no = (NodeInterface) o;</span>
+<span class="fc" id="L64">                Node child = nodes.computeIfAbsent(no, Node::new);</span>
+<span class="fc" id="L65">                child.addParent(parent);</span>
+
+<span class="fc" id="L67">                ObservableValues outputs = ((NodeInterface) o).getOutputs();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                for (ObservableValue co : outputs)</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                    if (!visited.contains(co))</span>
+<span class="fc" id="L70">                        traverse(child, co, nodes, visited);</span>
+
+<span class="fc" id="L72">            } else</span>
+<span class="nc" id="L73">                throw new BacktrackException(Lang.get(&quot;err_backtrackOf_N_isImpossible&quot;, o.getClass().getSimpleName()));</span>
+<span class="fc" id="L74">        }</span>
+<span class="fc" id="L75">    }</span>
+
+
+    private static final class Node {
+        private final NodeInterface ni;
+        private final ArrayList&lt;Node&gt; parents;
+        private int layer;
+
+<span class="fc" id="L83">        private Node(NodeInterface ni) {</span>
+<span class="fc" id="L84">            this.parents = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L85">            this.ni = ni;</span>
+<span class="fc" id="L86">        }</span>
+
+        private void addParent(Node parent) {
+<span class="fc" id="L89">            parents.add(parent);</span>
+<span class="fc" id="L90">        }</span>
+
+        @Override
+        public String toString() {
+<span class="nc" id="L94">            return ni.toString();</span>
+        }
+    }
+
+    /**
+     * Calling this method allows analysis of nmos/cmos circuits because switch cycles are removed.
+     * But if this method is called, a cycle which contains a switch in the fed back is not
+     * detected anymore.
+     *
+     * @param nodes the node to analyse
+     */
+    private static void removeSwitchCycles(Collection&lt;Node&gt; nodes) {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (Node n : nodes)</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (n.ni instanceof CommonBusValue)</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">                for (Node p : n.parents)</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">                    if (p.ni instanceof Switch)</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                        p.parents.removeIf(node -&gt; node == n);</span>
+<span class="nc" id="L111">    }</span>
+
+    private static void checkGraphForCycles(Collection&lt;Node&gt; nodes) throws CycleException {
+<span class="fc" id="L114">        ArrayList&lt;Node&gt; remaining = new ArrayList&lt;&gt;(nodes);</span>
+
+<span class="fc" id="L116">        int layer = 1;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        while (!remaining.isEmpty()) {</span>
+<span class="fc" id="L118">            layer++;</span>
+<span class="fc" id="L119">            ArrayList&lt;Node&gt; ableToPlace = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            for (Node node : remaining) {</span>
+<span class="fc" id="L121">                boolean nodeOk = true;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                for (Node p : node.parents)</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                    if (p.layer == 0) {</span>
+<span class="fc" id="L124">                        nodeOk = false;</span>
+<span class="fc" id="L125">                        break;</span>
+                    }
+<span class="fc bfc" id="L127" title="All 2 branches covered.">                if (nodeOk) {</span>
+<span class="fc" id="L128">                    ableToPlace.add(node);</span>
+<span class="fc" id="L129">                    node.layer = layer;</span>
+                }
+<span class="fc" id="L131">            }</span>
+
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (ableToPlace.isEmpty())</span>
+<span class="fc" id="L134">                throw new CycleException();</span>
+
+<span class="fc" id="L136">            remaining.removeAll(ableToPlace);</span>
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">    }</span>
+
+    final static class CycleException extends AnalyseException {
+        private CycleException() {
+<span class="fc" id="L142">            super(Lang.get(&quot;err_circuitHasCycles&quot;));</span>
+<span class="fc" id="L143">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

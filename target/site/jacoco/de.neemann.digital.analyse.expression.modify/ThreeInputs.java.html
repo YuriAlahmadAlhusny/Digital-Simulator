@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThreeInputs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression.modify</a> &gt; <span class="el_source">ThreeInputs.java</span></div><h1>ThreeInputs.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression.modify;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.Operation;
+
+import java.util.ArrayList;
+
+/**
+ * uses only gates with three inputs
+ */
+<span class="nc" id="L16">public class ThreeInputs implements ExpressionModifier {</span>
+    @Override
+    public Expression modify(Expression expression) {
+<span class="nc bnc" id="L19" title="All 2 branches missed.">        if (expression instanceof Operation) {</span>
+<span class="nc" id="L20">            Operation op = (Operation) expression;</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">            if (op.getExpressions().size() &gt; 3) {</span>
+<span class="nc bnc" id="L22" title="All 2 branches missed.">                if (expression instanceof Operation.And)</span>
+<span class="nc" id="L23">                    return new Three(op.getExpressions(), Operation::andNoMerge).generate();</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">                else if (expression instanceof Operation.Or)</span>
+<span class="nc" id="L25">                    return new Three(op.getExpressions(), Operation::orNoMerge).generate();</span>
+                else
+<span class="nc" id="L27">                    throw new RuntimeException(&quot;operation not supported: &quot; + expression.getClass().getSimpleName());</span>
+            } else
+<span class="nc" id="L29">                return expression;</span>
+        } else
+<span class="nc" id="L31">            return expression;</span>
+    }
+
+    private interface OpGen {
+        Expression op(Expression... ex);
+    }
+
+    private static final class Three {
+        private final ArrayList&lt;Expression&gt; expressions;
+        private final OpGen opGen;
+
+<span class="nc" id="L42">        Three(ArrayList&lt;Expression&gt; expressions, OpGen opGen) {</span>
+<span class="nc" id="L43">            this.expressions = expressions;</span>
+<span class="nc" id="L44">            this.opGen = opGen;</span>
+<span class="nc" id="L45">        }</span>
+
+        Expression generate() {
+<span class="nc" id="L48">            return gen(0, expressions.size() - 1);</span>
+        }
+
+        private Expression gen(int a, int b) {
+<span class="nc" id="L52">            int num = b - a + 1;</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (num == 1)</span>
+<span class="nc" id="L54">                return expressions.get(a);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            else if (num == 2)</span>
+<span class="nc" id="L56">                return opGen.op(expressions.get(a), expressions.get(b));</span>
+            else {
+<span class="nc" id="L58">                int d = num / 3;</span>
+<span class="nc" id="L59">                return opGen.op(</span>
+<span class="nc" id="L60">                        gen(a, a + d - 1),</span>
+<span class="nc" id="L61">                        gen(a + d, a + d * 2 - 1),</span>
+<span class="nc" id="L62">                        gen(a + d * 2, b));</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLModel.java</span></div><h1>HDLModel.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.basic.*;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.io.*;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.ElementTypeDescriptionCustom;
+import de.neemann.digital.draw.library.ResolveGenerics;
+import de.neemann.digital.draw.model.InverterConfig;
+import de.neemann.digital.hdl.model2.clock.HDLClockIntegrator;
+import de.neemann.digital.hdl.model2.expression.*;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import static de.neemann.digital.draw.model.ModelCreator.fixGenerics;
+
+/**
+ * The context of creating nodes and circuits.
+ * Ensures that every circuit is only processed one time.
+ */
+public class HDLModel implements Iterable&lt;HDLCircuit&gt; {
+    private final ElementLibrary elementLibrary;
+    private final HashMap&lt;Circuit, HDLCircuit&gt; circuitMap;
+    private final HashMap&lt;String, GenericsCache&gt; genericInstanceNumbers;
+    private HDLCircuit main;
+    private Renaming renaming;
+
+    /**
+     * Creates a new instance
+     *
+     * @param elementLibrary the element library
+     */
+<span class="fc" id="L49">    public HDLModel(ElementLibrary elementLibrary) {</span>
+<span class="fc" id="L50">        this.elementLibrary = elementLibrary;</span>
+<span class="fc" id="L51">        circuitMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L52">        genericInstanceNumbers = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Creates a isolated node
+     *
+     * @param v      the VisualElement of the node
+     * @param parent the parrents circuit
+     * @return the node
+     * @throws HDLException HDLException
+     */
+    public HDLNode createNode(VisualElement v, HDLCircuit parent) throws HDLException {
+        try {
+<span class="fc" id="L65">            ElementTypeDescription td = elementLibrary.getElementType(v.getElementName());</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            if (td instanceof ElementTypeDescriptionCustom) {</span>
+<span class="fc" id="L67">                ElementTypeDescriptionCustom tdc = (ElementTypeDescriptionCustom) td;</span>
+
+<span class="fc" id="L69">                final Circuit circuit = tdc.getCircuit();</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                if (circuit.getAttributes().get(Keys.IS_GENERIC)) {</span>
+<span class="nc" id="L71">                    ResolveGenerics.CircuitHolder holder = new ResolveGenerics(circuit, elementLibrary).resolveCircuit(v.getElementAttributes());</span>
+
+<span class="nc" id="L73">                    GenericsCache cache = genericInstanceNumbers.computeIfAbsent(v.getElementName(), t -&gt; new GenericsCache());</span>
+
+<span class="nc" id="L75">                    HDLCircuit c = cache.getHDLCircuit(holder.getArgs());</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                    if (c == null) {</span>
+<span class="nc" id="L77">                        String elementName = v.getElementName();</span>
+<span class="nc" id="L78">                        elementName = cleanName(elementName.substring(0, elementName.length() - 4) + &quot;_gen&quot; + cache.getNum() + &quot;.dig&quot;);</span>
+<span class="nc" id="L79">                        c = new HDLCircuit(holder.getCircuit(), elementName, this, parent.getDepth() + 1);</span>
+<span class="nc" id="L80">                        cache.addHDLCircuit(c, holder.getArgs());</span>
+<span class="nc" id="L81">                        circuitMap.put(holder.getCircuit(), c);</span>
+                    }
+
+<span class="nc" id="L84">                    return addInputsOutputs(</span>
+<span class="nc" id="L85">                            new HDLNodeCustom(v.getElementAttributes(), c),</span>
+<span class="nc" id="L86">                            v, parent).createExpressions();</span>
+
+                } else {
+<span class="fc" id="L89">                    HDLCircuit c = circuitMap.get(circuit);</span>
+<span class="fc" id="L90">                    final String elementName = cleanName(v.getElementName());</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                    if (c == null) {</span>
+<span class="fc" id="L92">                        c = new HDLCircuit(circuit, elementName, this, parent.getDepth() + 1);</span>
+<span class="fc" id="L93">                        circuitMap.put(circuit, c);</span>
+                    }
+
+<span class="fc" id="L96">                    return addInputsOutputs(</span>
+<span class="fc" id="L97">                            new HDLNodeCustom(v.getElementAttributes(), c),</span>
+<span class="fc" id="L98">                            v, parent).createExpressions();</span>
+                }
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            } else if (v.equalsDescription(Const.DESCRIPTION)) {</span>
+<span class="fc" id="L102">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L103">                node.setExpression(new ExprConstant(node.getElementAttributes().get(Keys.VALUE), node.getOutput().getBits()));</span>
+<span class="fc" id="L104">                return node;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            } else if (v.equalsDescription(DipSwitch.DESCRIPTION)) {</span>
+<span class="nc" id="L106">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                node.setExpression(new ExprConstant(node.getElementAttributes().get(Keys.DIP_DEFAULT) ? 1 : 0, node.getOutput().getBits()));</span>
+<span class="nc" id="L108">                return node;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            } else if (v.equalsDescription(Ground.DESCRIPTION)) {</span>
+<span class="fc" id="L110">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L111">                node.setExpression(new ExprConstant(0, node.getOutput().getBits()));</span>
+<span class="fc" id="L112">                return node;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            } else if (v.equalsDescription(VDD.DESCRIPTION)) {</span>
+<span class="fc" id="L114">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L115">                node.setExpression(new ExprConstant(-1, node.getOutput().getBits()));</span>
+<span class="fc" id="L116">                return node;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            } else if (v.equalsDescription(Not.DESCRIPTION)) {</span>
+<span class="fc" id="L118">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L119">                node.setExpression(new ExprNot(new ExprVar(node.getInputs().get(0).getNet())));</span>
+<span class="fc" id="L120">                return node;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            } else if (v.equalsDescription(Or.DESCRIPTION)) {</span>
+<span class="fc" id="L122">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L123">                node.setExpression(createOperation(node.getInputs(), ExprOperate.Operation.OR));</span>
+<span class="fc" id="L124">                return node;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            } else if (v.equalsDescription(And.DESCRIPTION)) {</span>
+<span class="fc" id="L126">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L127">                node.setExpression(createOperation(node.getInputs(), ExprOperate.Operation.AND));</span>
+<span class="fc" id="L128">                return node;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            } else if (v.equalsDescription(XOr.DESCRIPTION)) {</span>
+<span class="fc" id="L130">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L131">                node.setExpression(createOperation(node.getInputs(), ExprOperate.Operation.XOR));</span>
+<span class="fc" id="L132">                return node;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            } else if (v.equalsDescription(NOr.DESCRIPTION)) {</span>
+<span class="fc" id="L134">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="fc" id="L135">                node.setExpression(new ExprNot(createOperation(node.getInputs(), ExprOperate.Operation.OR)));</span>
+<span class="fc" id="L136">                return node;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">            } else if (v.equalsDescription(NAnd.DESCRIPTION)) {</span>
+<span class="nc" id="L138">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="nc" id="L139">                node.setExpression(new ExprNot(createOperation(node.getInputs(), ExprOperate.Operation.AND)));</span>
+<span class="nc" id="L140">                return node;</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            } else if (v.equalsDescription(XNOr.DESCRIPTION)) {</span>
+<span class="nc" id="L142">                final HDLNodeAssignment node = createExpression(v, parent, td);</span>
+<span class="nc" id="L143">                node.setExpression(new ExprNot(createOperation(node.getInputs(), ExprOperate.Operation.XOR)));</span>
+<span class="nc" id="L144">                return node;</span>
+            } else
+<span class="fc" id="L146">                return addInputsOutputs(</span>
+<span class="fc" id="L147">                        new HDLNodeBuildIn(v.getElementName(),</span>
+<span class="fc" id="L148">                                v.getElementAttributes(),</span>
+                                new ObservableValuesBitsProvider(
+<span class="fc" id="L150">                                        td.createElement(v.getElementAttributes()).getOutputs())),</span>
+<span class="fc" id="L151">                        v, parent).createExpressions();</span>
+
+<span class="nc" id="L153">        } catch (ElementNotFoundException | PinException | NodeException e) {</span>
+<span class="nc" id="L154">            throw new HDLException(&quot;error creating node&quot;, e);</span>
+        }
+    }
+
+    private String cleanName(String s) {
+<span class="fc" id="L159">        return s.replace(&quot;-&quot;, &quot;_&quot;);</span>
+    }
+
+    private Expression createOperation(ArrayList&lt;HDLPort&gt; inputs, ExprOperate.Operation op) {
+<span class="fc" id="L163">        ArrayList&lt;Expression&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (HDLPort p : inputs) {</span>
+<span class="fc" id="L165">            list.add(new ExprVar(p.getNet()));</span>
+<span class="fc" id="L166">        }</span>
+<span class="fc" id="L167">        return new ExprOperate(op, list);</span>
+    }
+
+    private HDLNodeAssignment createExpression(VisualElement v, HDLCircuit parent, ElementTypeDescription td) throws HDLException, PinException, NodeException {
+<span class="fc" id="L171">        return addInputsOutputs(new HDLNodeAssignment(v.getElementName(),</span>
+<span class="fc" id="L172">                        v.getElementAttributes(),</span>
+                        new ObservableValuesBitsProvider(
+<span class="fc" id="L174">                                td.createElement(v.getElementAttributes()).getOutputs())),</span>
+                v, parent);
+    }
+
+    private &lt;N extends HDLNode&gt; N addInputsOutputs(N node, VisualElement v, HDLCircuit c) throws HDLException, NodeException, PinException {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (Pin p : v.getPins()) {</span>
+<span class="fc" id="L180">            HDLNet net = c.getNetOfPin(p);</span>
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">            switch (p.getDirection()) {</span>
+                case input:
+<span class="fc" id="L183">                    InverterConfig ic = v.getElementAttributes().get(Keys.INVERTER_CONFIG);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">                    if (ic.contains(p.getName()))</span>
+<span class="fc" id="L185">                        net = c.createNot(net);</span>
+
+<span class="fc" id="L187">                    node.addPort(new HDLPort(p.getName(), net, HDLPort.Direction.IN, 0));</span>
+<span class="fc" id="L188">                    break;</span>
+                case output:
+<span class="fc" id="L190">                    node.addPort(new HDLPort(p.getName(), net, HDLPort.Direction.OUT, node.getBits(p.getName())));</span>
+<span class="fc" id="L191">                    break;</span>
+                case both:
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">                    if (v.equalsDescription(PinControl.DESCRIPTION)) {</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">                        if (c.getDepth() != 0)</span>
+<span class="nc" id="L195">                            throw new HDLException(&quot;PinControl component is allowed only in the top level circuit&quot;);</span>
+<span class="fc" id="L196">                        node.addPort(new HDLPort(p.getName(), net, HDLPort.Direction.INOUT, node.getBits(p.getName())));</span>
+                    } else
+<span class="nc" id="L198">                        node.addPort(new HDLPort(p.getName(), net, HDLPort.Direction.OUT, node.getBits(p.getName())));</span>
+                    break;
+            }
+<span class="fc" id="L201">        }</span>
+<span class="fc" id="L202">        return node;</span>
+    }
+
+
+    @Override
+    public Iterator&lt;HDLCircuit&gt; iterator() {
+<span class="fc" id="L208">        return circuitMap.values().iterator();</span>
+    }
+
+    /**
+     * Analyses the given circuit
+     *
+     * @param circuit         the circuit
+     * @param clockIntegrator the clock integrator. Meybe null
+     * @return this for chained calls
+     * @throws PinException             PinException
+     * @throws HDLException             HDLException
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public HDLModel create(Circuit circuit, HDLClockIntegrator clockIntegrator) throws PinException, HDLException, NodeException, ElementNotFoundException {
+<span class="fc" id="L223">        circuit = fixGenerics(circuit, elementLibrary);</span>
+<span class="fc" id="L224">        main = new HDLCircuit(circuit, &quot;main&quot;, this, 0, clockIntegrator);</span>
+<span class="fc" id="L225">        circuitMap.put(circuit, main);</span>
+<span class="fc" id="L226">        return this;</span>
+    }
+
+    /**
+     * Renames the signals in this model
+     *
+     * @param renaming the renaming algorithm
+     * @throws HDLException HDLException
+     */
+    public void renameLabels(Renaming renaming) throws HDLException {
+<span class="fc" id="L236">        this.renaming = new RenameSingleCheck(renaming);</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (HDLCircuit c : circuitMap.values())</span>
+<span class="fc" id="L238">            c.rename(this.renaming);</span>
+<span class="fc" id="L239">    }</span>
+
+    /**
+     * @return the used renaming
+     */
+    public Renaming getRenaming() {
+<span class="fc" id="L245">        return renaming;</span>
+    }
+
+    /**
+     * @return the model root path
+     */
+    public File getRoot() {
+<span class="fc" id="L252">        return elementLibrary.getRootFilePath();</span>
+    }
+
+    /**
+     * The renaming algorithm
+     */
+    public interface Renaming {
+        /**
+         * If the given name is a valid you can return the name unchanged.
+         * If not, return an appropriate name.
+         *
+         * @param name the original name
+         * @return the modified name
+         */
+        String checkName(String name);
+    }
+
+    static final class RenameSingleCheck implements Renaming {
+        private final Renaming parent;
+        private final HashMap&lt;String, String&gt; map;
+
+<span class="fc" id="L273">        private RenameSingleCheck(Renaming parent) {</span>
+<span class="fc" id="L274">            this.parent = parent;</span>
+<span class="fc" id="L275">            map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L276">        }</span>
+
+        @Override
+        public String checkName(String name) {
+<span class="fc" id="L280">            String n = map.get(name);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            if (n == null) {</span>
+<span class="fc" id="L282">                n = parent.checkName(name);</span>
+<span class="fc" id="L283">                map.put(name, n);</span>
+            }
+<span class="fc" id="L285">            return n;</span>
+        }
+    }
+
+    /**
+     * @return the main node
+     */
+    public HDLCircuit getMain() {
+<span class="fc" id="L293">        return main;</span>
+    }
+
+    /**
+     * The bit provider interface
+     */
+    public interface BitProvider {
+        /**
+         * Returns the number of bits of the signal with the given name
+         *
+         * @param name the signal name
+         * @return the number of bits
+         */
+        int getBits(String name);
+    }
+
+    private static final class ObservableValuesBitsProvider implements BitProvider {
+        private final ObservableValues values;
+
+<span class="fc" id="L312">        private ObservableValuesBitsProvider(ObservableValues values) {</span>
+<span class="fc" id="L313">            this.values = values;</span>
+<span class="fc" id="L314">        }</span>
+
+        @Override
+        public int getBits(String name) {
+<span class="fc" id="L318">            return values.get(name).getBits();</span>
+        }
+    }
+
+    private static final class GenericsCache {
+        private int num;
+        private HashMap&lt;ResolveGenerics.Args, HDLCircuit&gt; map;
+
+<span class="nc" id="L326">        private GenericsCache() {</span>
+<span class="nc" id="L327">            map = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L328">        }</span>
+
+        private int getNum() {
+<span class="nc" id="L331">            return num++;</span>
+        }
+
+        private HDLCircuit getHDLCircuit(ResolveGenerics.Args args) {
+<span class="nc" id="L335">            return map.get(args);</span>
+        }
+
+        private void addHDLCircuit(HDLCircuit c, ResolveGenerics.Args args) {
+<span class="nc" id="L339">            map.put(args, c);</span>
+<span class="nc" id="L340">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

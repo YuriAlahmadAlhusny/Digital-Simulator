@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JedecWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.jedec</a> &gt; <span class="el_source">JedecWriter.java</span></div><h1>JedecWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.jedec;
+
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+/**
+ */
+public class JedecWriter extends FilterOutputStream {
+
+    private static final int LINELEN = 32;
+    private static final String LINEEND = &quot;\r\n&quot;;
+    private static final int STX = 2;
+    private static final int ETX = 3;
+
+    private int checksum;
+
+    /**
+     * Creates a new jedec writer
+     *
+     * @param out the stream to write the data to
+     * @throws IOException IOException
+     */
+    public JedecWriter(OutputStream out) throws IOException {
+<span class="fc" id="L31">        super(out);</span>
+<span class="fc" id="L32">        write(STX);</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * Writes the string to the file
+     *
+     * @param s the string to write
+     * @return this for chained calls
+     * @throws IOException IOException
+     */
+    public JedecWriter print(String s) throws IOException {
+<span class="fc" id="L43">        write(s.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L44">        return this;</span>
+    }
+
+    /**
+     * Writes the string to the file
+     * Adds a carriage return and a line feed
+     *
+     * @param s the string to write
+     * @return this for chained calls
+     * @throws IOException IOException
+     */
+    public JedecWriter println(String s) throws IOException {
+<span class="fc" id="L56">        print(s);</span>
+<span class="fc" id="L57">        print(LINEEND);</span>
+<span class="fc" id="L58">        return this;</span>
+    }
+
+    /**
+     * Writes a fuse map to the JEDEC file
+     *
+     * @param fuseMap the fuse map
+     * @return this for chained calls
+     * @throws IOException IOException
+     */
+    public JedecWriter write(FuseMap fuseMap) throws IOException {
+<span class="fc" id="L69">        println(&quot;QF&quot; + fuseMap.getFuses() + &quot;*&quot;);</span>
+<span class="fc" id="L70">        println(&quot;G0*&quot;);</span>
+<span class="fc" id="L71">        println(&quot;F0*&quot;);</span>
+<span class="fc" id="L72">        int lines = (fuseMap.getFuses() - 1) / LINELEN + 1;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int li = 0; li &lt; lines; li++) {</span>
+<span class="fc" id="L74">            int pos = li * LINELEN;</span>
+<span class="fc" id="L75">            int len = LINELEN;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (pos + len &gt; fuseMap.getFuses())</span>
+<span class="fc" id="L77">                len = fuseMap.getFuses() - pos;</span>
+
+<span class="fc" id="L79">            boolean containsOne = false;</span>
+<span class="fc" id="L80">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L81">            sb.append(&quot;L&quot;).append(pos).append(&quot; &quot;);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (int i = 0; i &lt; len; i++)</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                if (fuseMap.getFuse(pos + i)) {</span>
+<span class="fc" id="L84">                    sb.append(&quot;1&quot;);</span>
+<span class="fc" id="L85">                    containsOne = true;</span>
+                } else
+<span class="fc" id="L87">                    sb.append(&quot;0&quot;);</span>
+
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (containsOne) {</span>
+<span class="fc" id="L90">                print(sb.toString());</span>
+<span class="fc" id="L91">                print(&quot;*&quot;);</span>
+<span class="fc" id="L92">                print(LINEEND);</span>
+            }
+        }
+<span class="fc" id="L95">        println(&quot;C&quot; + toHex(fuseMap.getJedecChecksum(), 4) + &quot;*&quot;);</span>
+<span class="fc" id="L96">        return this;</span>
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+<span class="fc" id="L101">        super.write(b);</span>
+<span class="fc" id="L102">        checksum += (b &amp; 0x7f);</span>
+<span class="fc" id="L103">    }</span>
+
+    @Override
+    public void close() throws IOException {
+<span class="fc" id="L107">        write(ETX);</span>
+<span class="fc" id="L108">        out.write(toHex(checksum &amp; 0xffff, 4).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L109">        super.close();</span>
+<span class="fc" id="L110">    }</span>
+
+    private String toHex(int checksum, int s) {
+<span class="fc" id="L113">        String h = Integer.toHexString(checksum).toUpperCase();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        while (h.length() &lt; 4)</span>
+<span class="fc" id="L115">            h = &quot;0&quot; + h;</span>
+<span class="fc" id="L116">        return h;</span>
+    }
+
+    int getChecksum() {
+<span class="fc" id="L120">        return checksum;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

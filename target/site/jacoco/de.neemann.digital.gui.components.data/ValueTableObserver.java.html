@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValueTableObserver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.data</a> &gt; <span class="el_source">ValueTableObserver.java</span></div><h1>ValueTableObserver.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.data;
+
+import de.neemann.digital.core.ModelEvent;
+import de.neemann.digital.core.ModelEventType;
+import de.neemann.digital.core.ModelStateObserverTyped;
+import de.neemann.digital.core.Signal;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.data.ValueTable;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.util.ArrayList;
+
+/**
+ * Observer to create measurement data
+ */
+public class ValueTableObserver implements ModelStateObserverTyped {
+
+    private final ValueTable logData;
+    private final Condition condition;
+    private final ModelEventType[] events;
+    private final ArrayList&lt;Signal&gt; signals;
+
+    /**
+     * Creates a new instance
+     *
+     * @param microStep true if gate base logging required
+     * @param signals   the signals to log
+     * @param maxSize   the maximum number of data points to store
+     */
+<span class="fc" id="L35">    public ValueTableObserver(boolean microStep, ArrayList&lt;Signal&gt; signals, int maxSize) {</span>
+<span class="fc" id="L36">        this.signals = signals;</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (microStep) {</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">            condition = type -&gt; type == ModelEventType.MICROSTEP;</span>
+<span class="fc" id="L39">            events = new ModelEventType[]{ModelEventType.MICROSTEP};</span>
+        } else {
+<span class="pc bpc" id="L41" title="1 of 4 branches missed.">            condition = type -&gt; type == ModelEventType.STEP || type == ModelEventType.CHECKBURN;</span>
+<span class="fc" id="L42">            events = new ModelEventType[]{ModelEventType.STEP, ModelEventType.CHECKBURN};</span>
+        }
+
+<span class="fc" id="L45">        String[] names = new String[signals.size()];</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (int i = 0; i &lt; signals.size(); i++)</span>
+<span class="fc" id="L47">            names[i] = signals.get(i).getName();</span>
+<span class="fc" id="L48">        this.logData = new ValueTable(names).setMaxSize(maxSize);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public void handleEvent(ModelEvent event) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (event == ModelEvent.STARTED)</span>
+<span class="nc" id="L54">            logData.clear();</span>
+
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (condition.accept(event.getType())) {</span>
+<span class="fc" id="L57">            Value[] row = new Value[logData.getColumns()];</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (int i = 0; i &lt; logData.getColumns(); i++)</span>
+<span class="fc" id="L59">                row[i] = new Value(signals.get(i).getValue());</span>
+<span class="fc" id="L60">            logData.add(new TestRow(row));</span>
+        }
+<span class="fc" id="L62">    }</span>
+
+    @Override
+    public ModelEventType[] getEvents() {
+<span class="fc" id="L66">        return events;</span>
+    }
+
+    /**
+     * @return the value table
+     */
+    public ValueTable getLogData() {
+<span class="fc" id="L73">        return logData;</span>
+    }
+
+    private interface Condition {
+        boolean accept(ModelEventType type);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

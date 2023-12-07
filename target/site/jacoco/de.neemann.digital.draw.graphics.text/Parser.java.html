@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Parser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics.text</a> &gt; <span class="el_source">Parser.java</span></div><h1>Parser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics.text;
+
+import de.neemann.digital.draw.graphics.text.text.*;
+import de.neemann.digital.draw.graphics.text.text.Character;
+
+import java.util.HashMap;
+
+/**
+ * The text parser
+ */
+public class Parser {
+<span class="fc" id="L17">    private static final HashMap&lt;String, java.lang.Character&gt; COMMANDS = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L20">        COMMANDS.put(&quot;sum&quot;, '∑');</span>
+<span class="fc" id="L21">        COMMANDS.put(&quot;prod&quot;, '∏');</span>
+<span class="fc" id="L22">        COMMANDS.put(&quot;wedge&quot;, '∧');</span>
+<span class="fc" id="L23">        COMMANDS.put(&quot;vee&quot;, '∨');</span>
+<span class="fc" id="L24">        COMMANDS.put(&quot;neg&quot;, '¬');</span>
+<span class="fc" id="L25">        COMMANDS.put(&quot;oplus&quot;, '⊕');</span>
+<span class="fc" id="L26">        COMMANDS.put(&quot;odot&quot;, '⊙');</span>
+<span class="fc" id="L27">        COMMANDS.put(&quot;pm&quot;, '±');</span>
+<span class="fc" id="L28">        COMMANDS.put(&quot;mp&quot;, '∓');</span>
+<span class="fc" id="L29">        COMMANDS.put(&quot;div&quot;, '÷');</span>
+<span class="fc" id="L30">        COMMANDS.put(&quot;cdot&quot;, '·');</span>
+<span class="fc" id="L31">        COMMANDS.put(&quot;times&quot;, '×');</span>
+<span class="fc" id="L32">        COMMANDS.put(&quot;otimes&quot;, '⊗');</span>
+<span class="fc" id="L33">    }</span>
+
+    private final String text;
+    private int pos;
+
+
+    /**
+     * Creates a new instance
+     *
+     * @param text the text to parse
+     */
+<span class="fc" id="L44">    public Parser(String text) {</span>
+<span class="fc" id="L45">        this.text = text.trim();</span>
+<span class="fc" id="L46">        pos = 0;</span>
+<span class="fc" id="L47">    }</span>
+
+    private char getChar() throws ParseException {
+<span class="fc" id="L50">        char c = peekChar();</span>
+<span class="fc" id="L51">        pos++;</span>
+<span class="fc" id="L52">        return c;</span>
+    }
+
+    private char peekChar() throws ParseException {
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (pos &gt;= text.length())</span>
+<span class="nc" id="L57">            throw new ParseException(&quot;unexpected EOF&quot;);</span>
+<span class="fc" id="L58">        return text.charAt(pos);</span>
+    }
+
+    private void expect(char c) throws ParseException {
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (getChar() != c)</span>
+<span class="nc" id="L63">            throw new ParseException(&quot;unexpected token &quot; + c);</span>
+<span class="fc" id="L64">    }</span>
+
+    private String readWord() throws ParseException {
+<span class="fc" id="L67">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L68" title="All 4 branches covered.">        while (hasMore() &amp;&amp; isNormal(peekChar()))</span>
+<span class="fc" id="L69">            sb.append(getChar());</span>
+<span class="fc" id="L70">        return sb.toString();</span>
+    }
+
+    private boolean isNormal(char c) {
+<span class="fc bfc" id="L74" title="All 12 branches covered.">        return (c &gt;= 'a' &amp;&amp; c &lt;= 'z')</span>
+                || (c &gt;= 'A' &amp;&amp; c &lt;= 'Z')
+                || (c &gt;= '0' &amp;&amp; c &lt;= '9');
+    }
+
+    private boolean hasMore() {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        return pos &lt; text.length();</span>
+    }
+
+    /**
+     * Parses the text
+     *
+     * @return the text classes
+     * @throws ParseException ParseException
+     */
+    public Text parse() throws ParseException {
+<span class="fc" id="L90">        return parse('\0');</span>
+    }
+
+    private Text parse(char endChar) throws ParseException {
+<span class="fc" id="L94">        Sentence sentence = new Sentence();</span>
+<span class="fc bfc" id="L95" title="All 4 branches covered.">        while (hasMore() &amp;&amp; peekChar() != endChar) {</span>
+<span class="fc bfc" id="L96" title="All 8 branches covered.">            switch (peekChar()) {</span>
+                case ' ':
+                case '\n':
+                case '\r':
+                case '\t':
+<span class="fc" id="L101">                    getChar();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                    if (!sentence.lastIsBlank())</span>
+<span class="fc" id="L103">                        sentence.add(Blank.BLANK);</span>
+                    break;
+                case '~':
+<span class="fc" id="L106">                    getChar();</span>
+<span class="fc" id="L107">                    sentence.add(new Decorate(parseBrace(), Decorate.Style.OVERLINE));</span>
+<span class="fc" id="L108">                    break;</span>
+                case '$':
+<span class="fc" id="L110">                    getChar();</span>
+<span class="fc" id="L111">                    sentence.add(new Decorate(parse('$'), Decorate.Style.MATH));</span>
+<span class="fc" id="L112">                    break;</span>
+                case '_':
+<span class="fc" id="L114">                    getChar();</span>
+<span class="fc" id="L115">                    sentence.getIndex().addSub(parseBrace());</span>
+<span class="fc" id="L116">                    break;</span>
+                case '{':
+<span class="fc" id="L118">                    getChar();</span>
+<span class="fc" id="L119">                    expect('}');</span>
+<span class="fc" id="L120">                    break;</span>
+                case '^':
+<span class="fc" id="L122">                    getChar();</span>
+<span class="fc" id="L123">                    sentence.getIndex().addSuper(parseBrace());</span>
+<span class="fc" id="L124">                    break;</span>
+                case '\\':
+<span class="fc" id="L126">                    getChar();</span>
+<span class="fc" id="L127">                    char p = peekChar();</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                    switch (p) {</span>
+                        case '\\':
+                        case '^':
+                        case '_':
+<span class="fc" id="L132">                            sentence.add(new Character(getChar()));</span>
+<span class="fc" id="L133">                            break;</span>
+                        default:
+<span class="fc" id="L135">                            String command = readWord();</span>
+<span class="fc" id="L136">                            java.lang.Character t = COMMANDS.get(command);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                            if (t == null)</span>
+<span class="nc" id="L138">                                sentence.add(new Simple('\\' + command));</span>
+                            else {
+<span class="fc" id="L140">                                sentence.add(new Character(t));</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                                if (peekChar() == ' ')</span>
+<span class="fc" id="L142">                                    getChar();</span>
+                            }
+                    }
+
+<span class="fc" id="L146">                    break;</span>
+                default:
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                    if (isNormal(peekChar()))</span>
+<span class="fc" id="L149">                        sentence.add(new Simple(readWord()).simplify());</span>
+                    else
+<span class="fc" id="L151">                        sentence.add(new Character(getChar()));</span>
+            }
+        }
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (endChar != 0)</span>
+<span class="fc" id="L155">            expect(endChar);</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        else if (pos != text.length())</span>
+<span class="nc" id="L157">            throw new ParseException(&quot;EOF expected&quot;);</span>
+<span class="fc" id="L158">        return sentence.simplify();</span>
+    }
+
+    private Text parseBrace() throws ParseException {
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (peekChar() == '{') {</span>
+<span class="fc" id="L163">            getChar();</span>
+<span class="fc" id="L164">            return parse('}');</span>
+        } else {
+<span class="fc" id="L166">            return new Simple(readWord());</span>
+        }
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Lang.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.lang</a> &gt; <span class="el_source">Lang.java</span></div><h1>Lang.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.lang;
+
+import de.neemann.gui.language.Bundle;
+import de.neemann.gui.language.Language;
+import de.neemann.gui.language.Resources;
+
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.prefs.Preferences;
+
+/**
+ *
+ */
+public final class Lang {
+<span class="fc" id="L21">    private static final Preferences PREFS = Preferences.userRoot().node(&quot;dig&quot;);</span>
+    private static final String LANGUAGE = &quot;lang&quot;;
+
+    private static class InstanceHolder {
+<span class="fc" id="L25">        static final Lang INSTANCE = new Lang();</span>
+    }
+
+    /**
+     * gets an internationalized string
+     *
+     * @param key    the key
+     * @param params optional parameters
+     * @return the internationalized string of key if no translation present
+     */
+    public static String get(String key, Object... params) {
+<span class="fc" id="L36">        return InstanceHolder.INSTANCE.getKey(key, params);</span>
+    }
+
+
+    /**
+     * Sets the GUI language
+     *
+     * @param language the language
+     */
+    public static void setLanguage(Language language) {
+<span class="nc" id="L46">        PREFS.put(LANGUAGE, language.getName());</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * gets an internationalized string
+     *
+     * @param key    the key
+     * @param params optional parameters
+     * @return the internationalized string or null if no translation present
+     */
+    public static String getNull(String key, Object... params) {
+<span class="fc" id="L57">        return InstanceHolder.INSTANCE.getKeyNull(key, params);</span>
+    }
+
+    /**
+     * @return the resource bundle
+     */
+    public static Bundle getBundle() {
+<span class="fc" id="L64">        return InstanceHolder.INSTANCE.bundle;</span>
+    }
+
+    /**
+     * @return the current language
+     */
+    public static Language currentLanguage() {
+<span class="fc" id="L71">        return InstanceHolder.INSTANCE.currentLanguage;</span>
+    }
+
+    /**
+     * Sets the GUI language
+     *
+     * @param language the language
+     */
+    public static void setActualRuntimeLanguage(Language language) {
+<span class="fc" id="L80">        InstanceHolder.INSTANCE.setRuntimeLanguage(language);</span>
+<span class="fc" id="L81">    }</span>
+
+    private final Bundle bundle;
+    private final Resources defaultBundle;
+    private Resources localeBundle;
+    private Language currentLanguage;
+
+<span class="fc" id="L88">    private Lang() {</span>
+<span class="fc" id="L89">        bundle = new Bundle(&quot;lang/lang&quot;);</span>
+<span class="fc" id="L90">        defaultBundle = bundle.getResources(&quot;en&quot;);</span>
+<span class="fc" id="L91">        String lang = PREFS.get(LANGUAGE, Locale.getDefault().getLanguage());</span>
+        try {
+<span class="fc" id="L93">            localeBundle = bundle.getResources(lang);</span>
+<span class="nc" id="L94">        } catch (Exception e) {</span>
+<span class="nc" id="L95">            localeBundle = null;</span>
+<span class="nc" id="L96">            System.err.println(&quot;error reading translation for &quot; + lang);</span>
+<span class="nc" id="L97">            e.printStackTrace();</span>
+<span class="fc" id="L98">        }</span>
+
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (localeBundle != null)</span>
+<span class="fc" id="L101">            currentLanguage = new Language(lang);</span>
+        else
+<span class="nc" id="L103">            currentLanguage = new Language(&quot;en&quot;);</span>
+<span class="fc" id="L104">    }</span>
+
+    /**
+     * Resolves a multilingual user defined string.
+     * Allows the user to define multilingual content by using a simple syntax:
+     * You can enter strings like &quot;Word! {{de Welt!}} {{fr Monde!}}&quot;. This method extracts
+     * the appropriate string for the current language.
+     *
+     * @param text the complete text description
+     * @return the evaluated text.
+     */
+    public static String evalMultilingualContent(String text) {
+<span class="fc" id="L116">        return evalMultilingualContent(text, currentLanguage());</span>
+    }
+
+    static String evalMultilingualContent(String text, Language currentLanguage) {
+<span class="fc" id="L120">        int pos = text.indexOf(&quot;{{&quot;);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (pos &lt; 0) return text;</span>
+
+<span class="fc" id="L123">        String def = text.substring(0, pos).trim();</span>
+
+        do {
+<span class="fc" id="L126">            int p2 = pos + 1;</span>
+<span class="fc" id="L127">            int count = 1;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            while (count &gt; 0) {</span>
+<span class="fc" id="L129">                char c = text.charAt(p2);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (c == '{') count++;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                else if (c == '}') count--;</span>
+<span class="fc" id="L132">                p2++;</span>
+<span class="fc bfc" id="L133" title="All 4 branches covered.">                if (p2 == text.length() &amp;&amp; count &gt; 0) {</span>
+<span class="fc" id="L134">                    p2 = 1;</span>
+<span class="fc" id="L135">                    break;</span>
+                }
+<span class="fc" id="L137">            }</span>
+<span class="fc" id="L138">            p2 -= 2;</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (p2 &gt; pos + 3) {</span>
+<span class="fc" id="L141">                String l = text.substring(pos + 2, pos + 4);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                if (l.equalsIgnoreCase(currentLanguage.getName()))</span>
+<span class="fc" id="L143">                    return text.substring(pos + 4, p2).trim();</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">                if (l.equalsIgnoreCase(&quot;en&quot;) &amp;&amp; def.isEmpty())</span>
+<span class="fc" id="L145">                    def = text.substring(pos + 4, p2).trim();</span>
+
+<span class="fc" id="L147">                pos = text.indexOf(&quot;{{&quot;, p2);</span>
+<span class="fc" id="L148">            } else</span>
+<span class="fc" id="L149">                return def;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        } while (pos &gt; 0);</span>
+
+<span class="fc" id="L152">        return def;</span>
+    }
+
+    /**
+     * Only used for generation of documentation
+     *
+     * @param lang the language to use
+     */
+    private void setRuntimeLanguage(Language lang) {
+<span class="fc" id="L161">        currentLanguage = lang;</span>
+<span class="fc" id="L162">        localeBundle = bundle.getResources(lang.getName());</span>
+<span class="fc" id="L163">    }</span>
+
+    private String getKey(String key, Object... params) {
+<span class="fc" id="L166">        String str = getKeyNull(key, params);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (str != null)</span>
+<span class="fc" id="L168">            return str;</span>
+        else {
+<span class="nc" id="L170">            System.out.println(&quot;&lt;string name=\&quot;&quot; + key + &quot;\&quot;&gt;&quot; + key.substring(key.indexOf(&quot;_&quot;) + 1) + &quot;&lt;/string&gt;&quot;);</span>
+
+            // If there is a missing language key and we are in testing mode which is the case
+            // if the 'testdata' system property is set, let the test fail!
+            // If we are in production usage, don't let the program  crash, simply return the key itself instead!
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (System.getProperty(&quot;testdata&quot;) != null)</span>
+<span class="nc" id="L176">                throw new Error(&quot;missing language key '&quot; + key + &quot;'&quot;);</span>
+
+<span class="nc" id="L178">            return key + &quot; &quot; + Arrays.asList(params).toString();</span>
+        }
+    }
+
+    private String getKeyNull(String key, Object... params) {
+<span class="fc" id="L183">        String str = null;</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (localeBundle != null)</span>
+<span class="fc" id="L185">            str = decodeString(localeBundle, key, params);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (str == null)</span>
+<span class="fc" id="L187">            str = decodeString(defaultBundle, key, params);</span>
+<span class="fc" id="L188">        return str;</span>
+    }
+
+    private String decodeString(Resources resources, String key, Object[] params) {
+<span class="fc" id="L192">        String str = resources.get(key);</span>
+<span class="pc bpc" id="L193" title="1 of 6 branches missed.">        if (str != null &amp;&amp; params != null &amp;&amp; params.length &gt; 0)</span>
+<span class="fc" id="L194">            str = MessageFormat.format(str, params);</span>
+<span class="fc" id="L195">        return str;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

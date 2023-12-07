@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExportZipAction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">ExportZipAction.java</span></div><h1>ExportZipAction.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.ElementTypeDescriptionCustom;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.event.ActionEvent;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+/**
+ * Used to export zip files
+ */
+public class ExportZipAction extends ToolTipAction {
+    private final Main main;
+    private final ArrayList&lt;Key&lt;File&gt;&gt; fileKeyList;
+    private ElementLibrary lib;
+    private HashSet&lt;String&gt; elementSet;
+    private HashSet&lt;File&gt; addedFiles;
+    private File origin;
+
+    /**
+     * creates a new instance
+     *
+     * @param main the main window
+     */
+    public ExportZipAction(Main main) {
+<span class="nc" id="L47">        super(Lang.get(&quot;menu_exportZIP&quot;));</span>
+<span class="nc" id="L48">        this.main = main;</span>
+<span class="nc" id="L49">        setToolTip(Lang.get(&quot;menu_exportZIP_tt&quot;));</span>
+
+<span class="nc" id="L51">        fileKeyList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (Key&lt;?&gt; k : Keys.getKeys())</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (k instanceof Key.KeyFile)</span>
+<span class="nc" id="L54">                fileKeyList.add((Key.KeyFile) k);</span>
+<span class="nc" id="L55">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L59">        JFileChooser fc = new JFileChooser(main.getBaseFileName());</span>
+<span class="nc" id="L60">        fc.setFileFilter(new FileNameExtensionFilter(&quot;ZIP&quot;, &quot;zip&quot;));</span>
+<span class="nc" id="L61">        new SaveAsHelper(main, fc, &quot;zip&quot;).checkOverwrite(file -&gt; {</span>
+<span class="nc" id="L62">            try (ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {</span>
+<span class="nc" id="L63">                Circuit circuit = main.getCircuitComponent().getCircuit();</span>
+<span class="nc" id="L64">                lib = main.getCircuitComponent().getLibrary();</span>
+<span class="nc" id="L65">                origin = circuit.getOrigin();</span>
+<span class="nc" id="L66">                elementSet = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L67">                addedFiles = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L68">                addCircuitFile(zip, origin, circuit);</span>
+
+<span class="nc" id="L70">                addFilesInAttributes(zip, circuit.getAttributes());</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                if (origin != null)</span>
+<span class="nc" id="L73">                    addToZip(zip, &quot;MANIFEST.TXT&quot;, &quot;Main-Circuit: &quot; + origin.getName() + &quot;\n&quot;);</span>
+<span class="nc" id="L74">            } catch (ElementNotFoundException e1) {</span>
+<span class="nc" id="L75">                throw new IOException(Lang.get(&quot;err_errorExportingZip&quot;), e1);</span>
+<span class="nc" id="L76">            }</span>
+<span class="nc" id="L77">        });</span>
+<span class="nc" id="L78">    }</span>
+
+    private void addCircuitFile(ZipOutputStream zip, File file, Circuit circuit) throws ElementNotFoundException, IOException {
+<span class="nc" id="L81">        addToZip(zip, file);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        for (VisualElement ve : circuit.getElements()) {</span>
+<span class="nc" id="L83">            String name = ve.getElementName();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (!elementSet.contains(name)) {</span>
+<span class="nc" id="L85">                elementSet.add(name);</span>
+<span class="nc" id="L86">                ElementTypeDescription desc = lib.getElementType(name);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                if (desc instanceof ElementTypeDescriptionCustom) {</span>
+<span class="nc" id="L88">                    ElementTypeDescriptionCustom custom = (ElementTypeDescriptionCustom) desc;</span>
+<span class="nc" id="L89">                    addCircuitFile(zip, custom.getFile(), custom.getCircuit());</span>
+                }
+
+<span class="nc" id="L92">                addFilesInAttributes(zip, ve.getElementAttributes());</span>
+            }
+<span class="nc" id="L94">        }</span>
+<span class="nc" id="L95">    }</span>
+
+    private void addFilesInAttributes(ZipOutputStream zip, ElementAttributes attr) throws IOException {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        for (Key&lt;File&gt; k : fileKeyList) {</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            if (attr.contains(k)) {</span>
+<span class="nc" id="L100">                File f = attr.getFile(k, origin);</span>
+<span class="nc" id="L101">                addToZip(zip, f);</span>
+            }
+<span class="nc" id="L103">        }</span>
+<span class="nc" id="L104">    }</span>
+
+    private void addToZip(ZipOutputStream zip, File file) throws IOException {
+<span class="nc bnc" id="L107" title="All 4 branches missed.">        if (file != null &amp;&amp; !addedFiles.contains(file)) {</span>
+<span class="nc" id="L108">            zip.putNextEntry(new ZipEntry(file.getName()));</span>
+<span class="nc" id="L109">            try (InputStream in = new FileInputStream(file)) {</span>
+<span class="nc" id="L110">                byte[] buffer = new byte[4096];</span>
+                int len;
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                while ((len = in.read(buffer)) &gt; 0) {</span>
+<span class="nc" id="L113">                    zip.write(buffer, 0, len);</span>
+                }
+            }
+<span class="nc" id="L116">            addedFiles.add(file);</span>
+        }
+<span class="nc" id="L118">    }</span>
+
+    private void addToZip(ZipOutputStream zip, String name, String content) throws IOException {
+<span class="nc" id="L121">        zip.putNextEntry(new ZipEntry(name));</span>
+<span class="nc" id="L122">        zip.write(content.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L123">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

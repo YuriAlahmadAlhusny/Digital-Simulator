@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WireMerger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.elements</a> &gt; <span class="el_source">WireMerger.java</span></div><h1>WireMerger.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.elements;
+
+import de.neemann.digital.draw.graphics.Vector;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+
+/**
+ * Merges colinear wires
+ */
+public class WireMerger {
+
+    private HashMap&lt;Integer, WireContainer&gt; wireContainers;
+    private OrientationHandler handler;
+
+    /**
+     * Creates a new instance
+     *
+     * @param orientation the orientation of wires to merge
+     */
+<span class="fc" id="L27">    public WireMerger(Wire.Orientation orientation) {</span>
+<span class="fc" id="L28">        wireContainers = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L29" title="1 of 3 branches missed.">        switch (orientation) {</span>
+            case horizontal:
+<span class="fc" id="L31">                handler = new OrientationHandlerHorizontal();</span>
+<span class="fc" id="L32">                break;</span>
+            case vertical:
+<span class="fc" id="L34">                handler = new OrientationHandlerVertical();</span>
+<span class="fc" id="L35">                break;</span>
+            default:
+<span class="nc" id="L37">                throw new RuntimeException(&quot;wrong line orientation&quot;);</span>
+        }
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Adds a wire to the merger.
+     *
+     * @param w the wire to add
+     */
+    public void add(Wire w) {
+<span class="fc" id="L47">        SimpleWire sw = new SimpleWire(handler.getWireClass(w.p1), handler.getS(w.p1), handler.getS(w.p2));</span>
+<span class="fc" id="L48">        WireContainer wc = wireContainers.get(sw.wireClass);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (wc == null) {</span>
+<span class="fc" id="L50">            wc = new WireContainer(sw.wireClass);</span>
+<span class="fc" id="L51">            wireContainers.put(sw.wireClass, wc);</span>
+        }
+<span class="fc" id="L53">        wc.add(sw);</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Adds a list of wires
+     *
+     * @param wires the wires
+     */
+    public void addTo(ArrayList&lt;Wire&gt; wires) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (WireContainer wc : wireContainers.values()) {</span>
+<span class="fc" id="L63">            wc.addTo(wires);</span>
+<span class="fc" id="L64">        }</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * Protects the given coordinates
+     * Ensures that wires are not merged if the connection is necessary for a wire to wire connection
+     *
+     * @param points the coordinated to protect
+     */
+    public void protectPoints(Collection&lt;Vector&gt; points) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (Vector v : points) {</span>
+<span class="fc" id="L75">            WireContainer wc = wireContainers.get(handler.getWireClass(v));</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (wc != null)    // is possible because diagonals are not included</span>
+<span class="fc" id="L77">                wc.protect(handler.getS(v));</span>
+<span class="fc" id="L78">        }</span>
+<span class="fc" id="L79">    }</span>
+
+
+    interface OrientationHandler {
+        Wire toWire(SimpleWire wire);
+
+        int getS(Vector v);
+
+        int getWireClass(Vector v);
+    }
+
+    static class SimpleWire {
+        private int wireClass;
+        private int s1;
+        private int s2;
+
+        /**
+         * Creates a new instance
+         *
+         * @param wireClass the wire class (x or y coordinate depending on orientation)
+         * @param s1        first coordinate (y or x coordinate depending on orientation)
+         * @param s2        second coordinate
+         */
+<span class="fc" id="L102">        SimpleWire(int wireClass, int s1, int s2) {</span>
+<span class="fc" id="L103">            this.wireClass = wireClass;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (s2 &lt; s1) {</span>
+<span class="fc" id="L105">                this.s1 = s2;</span>
+<span class="fc" id="L106">                this.s2 = s1;</span>
+            } else {
+<span class="fc" id="L108">                this.s1 = s1;</span>
+<span class="fc" id="L109">                this.s2 = s2;</span>
+            }
+<span class="fc" id="L111">        }</span>
+
+        private boolean tryMerge(SimpleWire other) {
+<span class="fc bfc" id="L114" title="All 4 branches covered.">            if (s2 &lt; other.s1 || other.s2 &lt; s1)</span>
+<span class="fc" id="L115">                return false;</span>
+            else {
+<span class="fc" id="L117">                s1 = Math.min(s1, other.s1);</span>
+<span class="fc" id="L118">                s2 = Math.max(s2, other.s2);</span>
+<span class="fc" id="L119">                return true;</span>
+            }
+        }
+
+        private boolean containsAsInner(int s) {
+<span class="fc bfc" id="L124" title="All 4 branches covered.">            return s1 &lt; s &amp;&amp; s2 &gt; s;</span>
+        }
+    }
+
+<span class="fc" id="L128">    static class OrientationHandlerHorizontal implements OrientationHandler {</span>
+
+        @Override
+        public Wire toWire(SimpleWire wire) {
+<span class="fc" id="L132">            return new Wire(new Vector(wire.s1, wire.wireClass), new Vector(wire.s2, wire.wireClass));</span>
+        }
+
+        @Override
+        public int getWireClass(Vector v) {
+<span class="fc" id="L137">            return v.y;</span>
+        }
+
+        @Override
+        public int getS(Vector v) {
+<span class="fc" id="L142">            return v.x;</span>
+        }
+    }
+
+<span class="fc" id="L146">    static class OrientationHandlerVertical implements OrientationHandler {</span>
+
+        @Override
+        public Wire toWire(SimpleWire wire) {
+<span class="fc" id="L150">            return new Wire(new Vector(wire.wireClass, wire.s1), new Vector(wire.wireClass, wire.s2));</span>
+        }
+
+        @Override
+        public int getS(Vector v) {
+<span class="fc" id="L155">            return v.y;</span>
+        }
+
+        @Override
+        public int getWireClass(Vector v) {
+<span class="fc" id="L160">            return v.x;</span>
+        }
+
+    }
+
+    private class WireContainer {
+        private int wireClass;
+        private ArrayList&lt;SimpleWire&gt; wires;
+
+<span class="fc" id="L169">        WireContainer(int wireClass) {</span>
+<span class="fc" id="L170">            this.wireClass = wireClass;</span>
+<span class="fc" id="L171">            wires = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L172">        }</span>
+
+        public void add(SimpleWire newSimpleWire) {
+<span class="fc" id="L175">            wires.add(newSimpleWire);</span>
+<span class="fc" id="L176">            simplify(newSimpleWire);</span>
+<span class="fc" id="L177">        }</span>
+
+        private void simplify(SimpleWire changedWire) {
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            for (SimpleWire wire : wires) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">                if (!wire.equals(changedWire)) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">                    if (wire.tryMerge(changedWire)) {</span>
+<span class="fc" id="L183">                        wires.remove(changedWire);</span>
+<span class="fc" id="L184">                        simplify(wire);</span>
+<span class="fc" id="L185">                        return;</span>
+                    }
+                }
+<span class="fc" id="L188">            }</span>
+<span class="fc" id="L189">        }</span>
+
+        public void addTo(ArrayList&lt;Wire&gt; list) {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            for (SimpleWire sw : wires)</span>
+<span class="fc" id="L193">                list.add(handler.toWire(sw));</span>
+<span class="fc" id="L194">        }</span>
+
+        public void protect(int s) {
+<span class="fc" id="L197">            int len = wires.size();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            for (int i = 0; i &lt; len; i++) {</span>
+<span class="fc" id="L199">                SimpleWire sw = wires.get(i);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                if (sw.containsAsInner(s)) {</span>
+<span class="fc" id="L201">                    int s2 = sw.s2;</span>
+<span class="fc" id="L202">                    sw.s2 = s;</span>
+<span class="fc" id="L203">                    wires.add(new SimpleWire(wireClass, s, s2));</span>
+                }
+            }
+<span class="fc" id="L206">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

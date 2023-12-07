@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UndoManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.undo</a> &gt; <span class="el_source">UndoManager.java</span></div><h1>UndoManager.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.undo;
+
+import java.util.ArrayList;
+
+/**
+ * Class which implements Undo/Redo logic.
+ * Uses an event sourcing approach.
+ * Make sure that no modifications are made beside the {@link UndoManager#apply(Modification)}
+ * or {@link UndoManager#applyWithoutHistory(Modification)} method!
+ *
+ * @param &lt;A&gt; the structure to modify
+ */
+public class UndoManager&lt;A extends Copyable&lt;A&gt;&gt; {
+    private ArrayList&lt;ChangedListener&gt; listeners;
+    private ArrayList&lt;Modification&lt;A&gt;&gt; modifications;
+    private int modificationCounter;
+    private int savedCounter;
+    private A initial;
+    private A actual;
+
+    /**
+     * Creates anew instance
+     *
+     * @param initial the initial structure
+     */
+<span class="fc" id="L31">    public UndoManager(A initial) {</span>
+<span class="fc" id="L32">        listeners = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L33">        setInitial(initial);</span>
+<span class="fc" id="L34">    }</span>
+
+    /**
+     * Sets the initial instance.
+     * The history is lost
+     *
+     * @param initial the initial state
+     */
+    public void setInitial(A initial) {
+<span class="fc" id="L43">        this.initial = initial;</span>
+<span class="fc" id="L44">        actual = null;</span>
+<span class="fc" id="L45">        modifications = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L46">        modificationCounter = 0;</span>
+<span class="fc" id="L47">        savedCounter = 0;</span>
+<span class="fc" id="L48">        fireChangedEvent();</span>
+<span class="fc" id="L49">    }</span>
+
+
+    /**
+     * Applies a modification
+     *
+     * @param modification the modification to apply
+     * @throws ModifyException ModifyException
+     */
+    public void apply(Modification&lt;A&gt; modification) throws ModifyException {
+        try {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (actual == null)</span>
+<span class="fc" id="L61">                actual = initial.createDeepCopy();</span>
+<span class="fc" id="L62">            modification.modify(actual);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            while (modificationCounter &lt; modifications.size())</span>
+<span class="fc" id="L64">                modifications.remove(modifications.size() - 1);</span>
+<span class="fc" id="L65">            modifications.add(modification);</span>
+<span class="fc" id="L66">            modificationCounter = modifications.size();</span>
+<span class="fc" id="L67">            fireChangedEvent();</span>
+<span class="nc" id="L68">        } catch (ModifyException e) {</span>
+<span class="nc" id="L69">            throw createTrace(e, null);</span>
+<span class="fc" id="L70">        }</span>
+<span class="fc" id="L71">    }</span>
+
+    private void fireChangedEvent() {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (ChangedListener l : listeners)</span>
+<span class="fc" id="L75">            l.hasChanged();</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * Does a redo if possible
+     *
+     * @throws ModifyException ModifyException
+     */
+    public void redo() throws ModifyException {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (redoAvailable()) {</span>
+            try {
+<span class="fc" id="L86">                modifications.get(modificationCounter).modify(actual);</span>
+<span class="fc" id="L87">                modificationCounter++;</span>
+<span class="fc" id="L88">                fireChangedEvent();</span>
+<span class="nc" id="L89">            } catch (ModifyException e) {</span>
+<span class="nc" id="L90">                throw createTrace(e, null);</span>
+<span class="fc" id="L91">            }</span>
+        }
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * @return true if redo is possible
+     */
+    public boolean redoAvailable() {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        return modificationCounter &lt; modifications.size();</span>
+    }
+
+    /**
+     * Does a undo if possible
+     *
+     * @throws ModifyException ModifyException
+     */
+    public void undo() throws ModifyException {
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (undoAvailable()) {</span>
+<span class="fc" id="L109">            Modification&lt;A&gt; lastWorkingModification = null;</span>
+            try {
+<span class="fc" id="L111">                A newActual = initial.createDeepCopy();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                for (int i = 0; i &lt; modificationCounter - 1; i++) {</span>
+<span class="fc" id="L113">                    Modification&lt;A&gt; m = modifications.get(i);</span>
+<span class="fc" id="L114">                    m.modify(newActual);</span>
+<span class="fc" id="L115">                    lastWorkingModification = m;</span>
+                }
+<span class="fc" id="L117">                modificationCounter--;</span>
+<span class="fc" id="L118">                actual = newActual;</span>
+<span class="fc" id="L119">                fireChangedEvent();</span>
+<span class="fc" id="L120">            } catch (ModifyException e) {</span>
+<span class="fc" id="L121">                throw createTrace(e, lastWorkingModification);</span>
+<span class="fc" id="L122">            }</span>
+        }
+<span class="fc" id="L124">    }</span>
+
+    private ModifyException createTrace(ModifyException cause, Modification&lt;A&gt; lastWorkingModification) {
+<span class="fc" id="L127">        StringBuilder sb = new StringBuilder(&quot;Exception during event processing&quot;);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (int i = 0; i &lt; modifications.size(); i++) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (i == modificationCounter)</span>
+<span class="nc" id="L130">                sb.append(&quot;\n&gt;&quot;);</span>
+            else
+<span class="fc" id="L132">                sb.append(&quot;\n &quot;);</span>
+<span class="fc" id="L133">            Modification&lt;A&gt; m = modifications.get(i);</span>
+<span class="fc" id="L134">            sb.append(m.toString());</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (m == lastWorkingModification)</span>
+<span class="fc" id="L136">                sb.append(&quot;\n -&gt; exception in the following modification!&quot;);</span>
+        }
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (modificationCounter == modifications.size())</span>
+<span class="fc" id="L139">            sb.append(&quot;\n&gt;&quot;);</span>
+<span class="fc" id="L140">        return new ModifyException(sb.toString(), cause);</span>
+    }
+
+    /**
+     * @return the modification which is reverted
+     */
+    public Modification&lt;A&gt; getUndoModification() {
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (undoAvailable())</span>
+<span class="fc" id="L148">            return modifications.get(modificationCounter - 1);</span>
+        else
+<span class="nc" id="L150">            return null;</span>
+    }
+
+    /**
+     * @return the modification which is applied again
+     */
+    public Modification&lt;A&gt; getRedoModification() {
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (redoAvailable())</span>
+<span class="fc" id="L158">            return modifications.get(modificationCounter);</span>
+        else
+<span class="nc" id="L160">            return null;</span>
+    }
+
+    /**
+     * @return true if undo is possible
+     */
+    public boolean undoAvailable() {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        return modificationCounter &gt; 0;</span>
+    }
+
+    /**
+     * Marks the actual state a s saved
+     */
+    public void saved() {
+<span class="fc" id="L174">        savedCounter = modificationCounter;</span>
+<span class="fc" id="L175">    }</span>
+
+    /**
+     * @return true if object is modified
+     */
+    public boolean isModified() {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        return savedCounter != modificationCounter;</span>
+    }
+
+    /**
+     * @return the actual state
+     */
+    public A getActual() {
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (actual == null)</span>
+<span class="fc" id="L189">            return initial;</span>
+        else
+<span class="fc" id="L191">            return actual;</span>
+    }
+
+    /**
+     * Adds a listener
+     *
+     * @param listener the listener to add
+     * @return the given listener for chained calls.
+     */
+    public ChangedListener addListener(ChangedListener listener) {
+<span class="fc" id="L201">        listeners.add(listener);</span>
+<span class="fc" id="L202">        return listener;</span>
+    }
+
+    /**
+     * Removed a listener.
+     *
+     * @param listener the listener to remove
+     */
+    public void removedListener(ChangedListener listener) {
+<span class="nc" id="L211">        listeners.remove(listener);</span>
+<span class="nc" id="L212">    }</span>
+
+
+    /**
+     * Applies a modification to the object without a history record.
+     * Needs to be used to ensure all existing copies are modified.
+     *
+     * @param modification the modification
+     * @throws ModifyException ModifyException
+     */
+    public void applyWithoutHistory(Modification&lt;A&gt; modification) throws ModifyException {
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (actual != null)</span>
+<span class="nc" id="L224">            modification.modify(actual);</span>
+<span class="nc" id="L225">        modification.modify(initial);</span>
+<span class="nc" id="L226">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

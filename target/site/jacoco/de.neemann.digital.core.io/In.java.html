@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>In.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">In.java</span></div><h1>In.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.lang.Lang;
+
+/**
+ * The Input
+ */
+public class In implements Element {
+
+    /**
+     * The inputs description
+     */
+<span class="fc" id="L24">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(In.class) {</span>
+        @Override
+        public String getDescription(ElementAttributes elementAttributes) {
+<span class="fc" id="L27">            String d = Lang.evalMultilingualContent(elementAttributes.get(Keys.DESCRIPTION));</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">            if (d.length() &gt; 0)</span>
+<span class="nc" id="L29">                return d;</span>
+            else
+<span class="fc" id="L31">                return super.getDescription(elementAttributes);</span>
+        }
+    }
+<span class="fc" id="L34">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.INPUT_DEFAULT)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.IS_HIGH_Z)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.AVOID_ACTIVE_LOW)</span>
+<span class="fc" id="L40">            .addAttribute(Keys.DESCRIPTION)</span>
+<span class="fc" id="L41">            .addAttribute(Keys.INT_FORMAT)</span>
+<span class="fc" id="L42">            .addAttribute(Keys.PINNUMBER)</span>
+<span class="fc" id="L43">            .addAttribute(Keys.ADD_VALUE_TO_GRAPH)</span>
+<span class="fc" id="L44">            .addAttribute(Keys.IN_OUT_SMALL)</span>
+<span class="fc" id="L45">            .supportsHDL();</span>
+
+    private final ObservableValue output;
+    private final String label;
+    private final String pinNumber;
+    private final ValueFormatter formatter;
+    private final boolean showInGraph;
+    private Model model;
+    private ObservableValue input;
+
+    /**
+     * Create a new instance
+     *
+     * @param attributes the inputs attributes
+     */
+<span class="fc" id="L60">    public In(ElementAttributes attributes) {</span>
+<span class="fc" id="L61">        InValue value = attributes.get(Keys.INPUT_DEFAULT);</span>
+<span class="fc" id="L62">        pinNumber = attributes.get(Keys.PINNUMBER);</span>
+<span class="fc" id="L63">        output = new ObservableValue(&quot;out&quot;, attributes.get(Keys.BITS))</span>
+<span class="fc" id="L64">                .setPinDescription(DESCRIPTION)</span>
+<span class="fc" id="L65">                .setPinNumber(pinNumber);</span>
+
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">        if (attributes.get(Keys.IS_HIGH_Z) || value.isHighZ())</span>
+<span class="fc" id="L68">            output.setBidirectional();</span>
+
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (value.isHighZ())</span>
+<span class="fc" id="L71">            output.setToHighZ();</span>
+        else
+<span class="fc" id="L73">            output.setValue(value.getValue());</span>
+
+<span class="fc" id="L75">        label = attributes.getLabel();</span>
+<span class="fc" id="L76">        formatter = attributes.getValueFormatter();</span>
+<span class="fc" id="L77">        showInGraph = attributes.get(Keys.ADD_VALUE_TO_GRAPH);</span>
+<span class="fc" id="L78">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+        // if input is bidirectional the value is given to read the pins state!
+<span class="fc" id="L83">        input = inputs.get(0);</span>
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L88">        return output.asList();</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L93">        model.addInput(new Signal(label, output, output::set)</span>
+<span class="fc" id="L94">                .setPinNumber(pinNumber)</span>
+<span class="fc" id="L95">                .setBidirectionalReader(input)</span>
+<span class="fc" id="L96">                .setShowInGraph(showInGraph)</span>
+<span class="fc" id="L97">                .setFormat(formatter));</span>
+<span class="fc" id="L98">        this.model = model;</span>
+<span class="fc" id="L99">    }</span>
+
+    /**
+     * @return the model this input is attached to
+     */
+    public Model getModel() {
+<span class="nc" id="L105">        return model;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

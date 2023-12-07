@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Out.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">Out.java</span></div><h1>Out.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.lang.Lang;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The different outputs
+ */
+public class Out implements Element {
+
+    /**
+     * The Input description
+     */
+<span class="fc" id="L23">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L24">            = new ElementTypeDescription(&quot;Out&quot;, attributes -&gt; new Out(attributes).enforceName(), input(&quot;in&quot;)) {</span>
+        @Override
+        public String getDescription(ElementAttributes elementAttributes) {
+<span class="fc" id="L27">            String d = Lang.evalMultilingualContent(elementAttributes.get(Keys.DESCRIPTION));</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">            if (d.length() &gt; 0)</span>
+<span class="nc" id="L29">                return d;</span>
+            else
+<span class="fc" id="L31">                return super.getDescription(elementAttributes);</span>
+        }
+    }
+<span class="fc" id="L34">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.DESCRIPTION)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.INT_FORMAT)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.PINNUMBER)</span>
+<span class="fc" id="L40">            .addAttribute(Keys.ADD_VALUE_TO_GRAPH)</span>
+<span class="fc" id="L41">            .addAttribute(Keys.IN_OUT_SMALL)</span>
+<span class="fc" id="L42">            .supportsHDL();</span>
+
+    /**
+     * The LED description
+     */
+<span class="fc" id="L47">    public static final ElementTypeDescription LEDDESCRIPTION</span>
+<span class="fc" id="L48">            = new ElementTypeDescription(&quot;LED&quot;, Out.class, input(&quot;in&quot;))</span>
+<span class="fc" id="L49">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L50">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L51">            .addAttribute(Keys.LED_SIZE)</span>
+<span class="fc" id="L52">            .addAttribute(Keys.COLOR);</span>
+
+    /**
+     * The polarity aware LED description
+     */
+<span class="fc" id="L57">    public static final ElementTypeDescription POLARITYAWARELEDDESCRIPTION</span>
+            = new ElementTypeDescription(&quot;PolarityAwareLED&quot;,
+<span class="fc" id="L59">            attributes -&gt; new Out(1, 1), input(&quot;A&quot;), input(&quot;C&quot;))</span>
+<span class="fc" id="L60">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L61">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L62">            .addAttribute(Keys.COLOR);</span>
+
+    /**
+     * The seven segment display description
+     */
+<span class="fc" id="L67">    public static final ElementTypeDescription SEVENDESCRIPTION = new SevenSegTypeDescription();</span>
+
+    /**
+     * The seven segment hex display description
+     */
+<span class="fc" id="L72">    public static final ElementTypeDescription SEVENHEXDESCRIPTION</span>
+            = new ElementTypeDescription(&quot;Seven-Seg-Hex&quot;,
+<span class="fc" id="L74">            attributes -&gt; new Out(4, 1), input(&quot;d&quot;), input(&quot;dp&quot;))</span>
+<span class="fc" id="L75">            .addAttribute(Keys.COLOR)</span>
+<span class="fc" id="L76">            .addAttribute(Keys.SEVEN_SEG_SIZE);</span>
+
+    /**
+     * Sixteen Segment Display
+     */
+<span class="fc" id="L81">    public static final ElementTypeDescription SIXTEENDESCRIPTION</span>
+            = new ElementTypeDescription(&quot;SixteenSeg&quot;,
+<span class="fc" id="L83">            attributes -&gt; new Out(16, 1), input(&quot;led&quot;), input(&quot;dp&quot;))</span>
+<span class="fc" id="L84">            .addAttribute(Keys.COLOR)</span>
+<span class="fc" id="L85">            .addAttribute(Keys.SEVEN_SEG_SIZE);</span>
+
+    private final int[] bits;
+    private final String label;
+    private final String pinNumber;
+    private final ValueFormatter formatter;
+    private final boolean showInGraph;
+<span class="fc" id="L92">    private boolean enforceSignal = false;</span>
+    private ObservableValue value;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+<span class="fc" id="L100">    public Out(ElementAttributes attributes) {</span>
+<span class="fc" id="L101">        bits = new int[]{attributes.getBits()};</span>
+<span class="fc" id="L102">        label = attributes.getLabel();</span>
+<span class="fc" id="L103">        pinNumber = attributes.get(Keys.PINNUMBER);</span>
+<span class="fc" id="L104">        formatter = attributes.getValueFormatter();</span>
+<span class="fc" id="L105">        showInGraph = attributes.get(Keys.ADD_VALUE_TO_GRAPH);</span>
+<span class="fc" id="L106">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param bits the bitcount of the different inputs
+     */
+<span class="fc" id="L113">    public Out(int... bits) {</span>
+<span class="fc" id="L114">        this.bits = bits;</span>
+<span class="fc" id="L115">        label = null;</span>
+<span class="fc" id="L116">        pinNumber = &quot;&quot;;</span>
+<span class="fc" id="L117">        formatter = null;</span>
+<span class="fc" id="L118">        showInGraph = true;</span>
+<span class="fc" id="L119">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (inputs.size() != bits.length)</span>
+<span class="nc" id="L124">            throw new NodeException(&quot;wrong input count&quot;);</span>
+<span class="fc" id="L125">        value = inputs.get(0).checkBits(bits[0], null);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int i = 1; i &lt; bits.length; i++)</span>
+<span class="fc" id="L127">            inputs.get(i).checkBits(bits[i], null);</span>
+<span class="fc" id="L128">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L132">        return ObservableValues.EMPTY_LIST;</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L137">        final Signal signal = new Signal(label, value)</span>
+<span class="fc" id="L138">                .setPinNumber(pinNumber)</span>
+<span class="fc" id="L139">                .setShowInGraph(showInGraph)</span>
+<span class="fc" id="L140">                .setFormat(formatter);</span>
+<span class="fc bfc" id="L141" title="All 4 branches covered.">        if (enforceSignal || signal.isValid())</span>
+<span class="fc" id="L142">            model.addOutput(signal);</span>
+<span class="fc" id="L143">    }</span>
+
+    private Element enforceName() {
+<span class="fc" id="L146">        enforceSignal = true;</span>
+<span class="fc" id="L147">        return this;</span>
+    }
+
+    private final static class SevenSegTypeDescription extends ElementTypeDescription {
+        private SevenSegTypeDescription() {
+<span class="fc" id="L152">            super(&quot;Seven-Seg&quot;, attributes -&gt; {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                if (attributes.get(Keys.COMMON_CONNECTION))</span>
+<span class="nc" id="L154">                    return new Out(1, 1, 1, 1, 1, 1, 1, 1, 1);</span>
+                else
+<span class="fc" id="L156">                    return new Out(1, 1, 1, 1, 1, 1, 1, 1);</span>
+            });
+<span class="fc" id="L158">            addAttribute(Keys.COLOR);</span>
+<span class="fc" id="L159">            addAttribute(Keys.COMMON_CONNECTION);</span>
+<span class="fc" id="L160">            addAttribute(Keys.COMMON_CONNECTION_TYPE);</span>
+<span class="fc" id="L161">            addAttribute(Keys.LED_PERSIST_TIME);</span>
+<span class="fc" id="L162">        }</span>
+
+        @Override
+        public PinDescriptions getInputDescription(ElementAttributes attributes) {
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">            if (attributes.get(Keys.COMMON_CONNECTION)) {</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                if (attributes.get(Keys.COMMON_CONNECTION_TYPE).equals(CommonConnectionType.anode))</span>
+<span class="nc" id="L168">                    return new PinDescriptions(</span>
+<span class="nc" id="L169">                            input(&quot;a&quot;), input(&quot;b&quot;), input(&quot;c&quot;),</span>
+<span class="nc" id="L170">                            input(&quot;d&quot;), input(&quot;e&quot;), input(&quot;f&quot;),</span>
+<span class="nc" id="L171">                            input(&quot;g&quot;), input(&quot;dp&quot;), input(&quot;ca&quot;)).setLangKey(getPinLangKey());</span>
+                else
+<span class="nc" id="L173">                    return new PinDescriptions(</span>
+<span class="nc" id="L174">                            input(&quot;a&quot;), input(&quot;b&quot;), input(&quot;c&quot;),</span>
+<span class="nc" id="L175">                            input(&quot;d&quot;), input(&quot;e&quot;), input(&quot;f&quot;),</span>
+<span class="nc" id="L176">                            input(&quot;g&quot;), input(&quot;dp&quot;), input(&quot;cc&quot;)).setLangKey(getPinLangKey());</span>
+            } else
+<span class="fc" id="L178">                return new PinDescriptions(</span>
+<span class="fc" id="L179">                        input(&quot;a&quot;), input(&quot;b&quot;), input(&quot;c&quot;),</span>
+<span class="fc" id="L180">                        input(&quot;d&quot;), input(&quot;e&quot;), input(&quot;f&quot;),</span>
+<span class="fc" id="L181">                        input(&quot;g&quot;), input(&quot;dp&quot;)).setLangKey(getPinLangKey());</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

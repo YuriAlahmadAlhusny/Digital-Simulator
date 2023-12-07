@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GenericShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">GenericShape.java</span></div><h1>GenericShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.model.InverterConfig;
+
+import java.awt.*;
+
+/**
+ * Universal Shape. Used for most components.
+ * Shows a simple Box with inputs at the left and outputs at the right.
+ */
+public class GenericShape implements Shape {
+    /**
+     * Half the size of the used raster
+     */
+    public static final int SIZE2 = 10;
+    /**
+     * The size of the used raster
+     */
+    public static final int SIZE = SIZE2 * 2;
+
+    private final String name;
+    private final PinDescriptions inputs;
+    private final PinDescriptions outputs;
+    private int width;
+    private final boolean symmetric;
+    private final String label;
+    private final boolean showPinLabels;
+
+<span class="fc" id="L40">    private boolean invert = false;</span>
+<span class="fc" id="L41">    private Color color = Color.WHITE;</span>
+
+    private Pins pins;
+    private InverterConfig inverterConfig;
+<span class="fc" id="L45">    private int topBottomBorder = SIZE2;</span>
+
+    /**
+     * Creates a new generic shape.
+     *
+     * @param name    the name shown in or below the shape
+     * @param inputs  the used inputs
+     * @param outputs the used outputs
+     */
+    public GenericShape(String name, PinDescriptions inputs, PinDescriptions outputs) {
+<span class="fc" id="L55">        this(name, inputs, outputs, null, false);</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Creates a new generic shape.
+     *
+     * @param name          the name shown in or below the shape
+     * @param inputs        the used inputs
+     * @param outputs       the used outputs
+     * @param label         the label shown above the shape
+     * @param showPinLabels true if pin names visible
+     */
+    public GenericShape(String name, PinDescriptions inputs, PinDescriptions outputs, String label, boolean showPinLabels) {
+<span class="pc bpc" id="L68" title="2 of 6 branches missed.">        this(name, inputs, outputs, label, showPinLabels, inputs.size() == 1 &amp;&amp; outputs.size() == 1 &amp;&amp; !showPinLabels ? 1 : 3);</span>
+<span class="fc" id="L69">    }</span>
+
+    /**
+     * Creates a new generic shape.
+     *
+     * @param name          the name shown in or below the shape
+     * @param inputs        the used inputs
+     * @param outputs       the used outputs
+     * @param label         the label shown above the shape
+     * @param showPinLabels true if pin names visible
+     * @param width         the width of the box
+     */
+<span class="fc" id="L81">    public GenericShape(String name, PinDescriptions inputs, PinDescriptions outputs, String label, boolean showPinLabels, int width) {</span>
+<span class="fc" id="L82">        this.name = name;</span>
+<span class="fc" id="L83">        this.inputs = inputs;</span>
+<span class="fc" id="L84">        this.outputs = outputs;</span>
+<span class="fc bfc" id="L85" title="All 4 branches covered.">        if (label != null &amp;&amp; label.length() == 0)</span>
+<span class="fc" id="L86">            label = null;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        this.label = label == null ? null : format(label);</span>
+<span class="fc" id="L88">        this.showPinLabels = showPinLabels;</span>
+<span class="fc" id="L89">        this.width = width;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        symmetric = outputs.size() == 1;</span>
+<span class="fc" id="L91">    }</span>
+
+    /**
+     * Sets the invert flag.
+     * If set to true a little circle at the output is shown.
+     *
+     * @param invert true is output is inverted
+     * @return this for chaind calls
+     */
+    public GenericShape invert(boolean invert) {
+<span class="fc" id="L101">        this.invert = invert;</span>
+<span class="fc" id="L102">        return this;</span>
+    }
+
+    /**
+     * Sets the top bottom border
+     *
+     * @param topBottomBorder the border
+     * @return this for chaind calls
+     */
+    public GenericShape setTopBottomBorder(int topBottomBorder) {
+<span class="fc" id="L112">        this.topBottomBorder = topBottomBorder;</span>
+<span class="fc" id="L113">        return this;</span>
+    }
+
+    /**
+     * Sets the background color
+     *
+     * @param color the color
+     * @return this for chained calls
+     */
+    public GenericShape setColor(Color color) {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (color != null)</span>
+<span class="fc" id="L124">            this.color = color;</span>
+<span class="fc" id="L125">        return this;</span>
+    }
+
+    @Override
+    public Pins getPins() {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (pins == null) {</span>
+<span class="fc" id="L131">            pins = createPins(inputs, outputs, invert, width, symmetric, inverterConfig);</span>
+        }
+<span class="fc" id="L133">        return pins;</span>
+    }
+
+    /**
+     * Creates pins
+     *
+     * @param inputs    the inputs
+     * @param outputs   the outputs
+     * @param invert    true if invert output
+     * @param ic        input inverter configuration
+     * @param wideShape true if a wide shape is selected
+     * @return the pins
+     */
+    public static Pins createPins(PinDescriptions inputs, PinDescriptions outputs, boolean invert, InverterConfig ic, boolean wideShape) {
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        return createPins(inputs, outputs, invert, wideShape ? 4 : 3, true, ic);</span>
+    }
+
+    /**
+     * Creates pins
+     *
+     * @param inputs    the inputs
+     * @param outputs   the outputs
+     * @param invert    true if invert output
+     * @param width     with of symbol
+     * @param symmetric true if outputs in the center
+     * @param ic        iput inverter configuration
+     * @return the pins
+     */
+    private static Pins createPins(PinDescriptions inputs, PinDescriptions outputs, boolean invert, int width, boolean symmetric, InverterConfig ic) {
+<span class="fc" id="L162">        Pins pins = new Pins();</span>
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        int offs = symmetric ? inputs.size() / 2 * SIZE : 0;</span>
+
+
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; inputs.size(); i++) {</span>
+<span class="fc" id="L168">            int correct = 0;</span>
+<span class="fc bfc" id="L169" title="All 6 branches covered.">            if (symmetric &amp;&amp; ((inputs.size() &amp; 1) == 0) &amp;&amp; i &gt;= inputs.size() / 2)</span>
+<span class="fc" id="L170">                correct = SIZE;</span>
+
+<span class="fc" id="L172">            int dx = 0;</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            if (isInverted(inputs.get(i).getName(), ic))</span>
+<span class="fc" id="L174">                dx = -SIZE;</span>
+
+<span class="fc" id="L176">            pins.add(new Pin(new Vector(dx, i * SIZE + correct), inputs.get(i)));</span>
+        }
+
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (invert) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (int i = 0; i &lt; outputs.size(); i++)</span>
+<span class="fc" id="L182">                pins.add(new Pin(new Vector(SIZE * (width + 1), i * SIZE + offs), outputs.get(i)));</span>
+
+        } else {
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            for (int i = 0; i &lt; outputs.size(); i++)</span>
+<span class="fc" id="L186">                pins.add(new Pin(new Vector(SIZE * width, i * SIZE + offs), outputs.get(i)));</span>
+        }
+
+<span class="fc" id="L189">        return pins;</span>
+    }
+
+    private static boolean isInverted(String name, InverterConfig ic) {
+<span class="fc bfc" id="L193" title="All 4 branches covered.">        return ic != null &amp;&amp; ic.contains(name);</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="nc" id="L198">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L203">        int max = Math.max(inputs.size(), outputs.size());</span>
+<span class="fc" id="L204">        int yBottom = (max - 1) * SIZE + topBottomBorder;</span>
+
+<span class="pc bpc" id="L206" title="1 of 6 branches missed.">        if (symmetric &amp;&amp; inputs.size() &gt; 0 &amp;&amp; ((inputs.size() &amp; 1) == 0)) yBottom += SIZE;</span>
+
+<span class="fc" id="L208">        Polygon polygon = new Polygon(true)</span>
+<span class="fc" id="L209">                .add(1, -topBottomBorder)</span>
+<span class="fc" id="L210">                .add(SIZE * width - 1, -topBottomBorder)</span>
+<span class="fc" id="L211">                .add(SIZE * width - 1, yBottom)</span>
+<span class="fc" id="L212">                .add(1, yBottom);</span>
+
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (color != Color.WHITE)</span>
+<span class="fc" id="L215">            graphic.drawPolygon(polygon, Style.NORMAL.deriveFillStyle(color));</span>
+<span class="fc" id="L216">        graphic.drawPolygon(polygon, Style.NORMAL);</span>
+
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (invert) {</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">            int offs = symmetric ? inputs.size() / 2 * SIZE : 0;</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            for (int i = 0; i &lt; outputs.size(); i++)</span>
+<span class="fc" id="L221">                graphic.drawCircle(new Vector(SIZE * width + 1, i * SIZE - SIZE2 + 1 + offs),</span>
+                        new Vector(SIZE * (width + 1) - 1, i * SIZE + SIZE2 - 1 + offs), Style.NORMAL);
+
+        }
+
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (label != null) {</span>
+<span class="fc" id="L227">            Vector pos = new Vector(SIZE2 * width, -topBottomBorder - 8);</span>
+<span class="fc" id="L228">            graphic.drawText(pos, label, Orientation.CENTERBOTTOM, Style.NORMAL);</span>
+        }
+
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        if (showPinLabels) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            for (Pin p : getPins()) {</span>
+<span class="fc" id="L233">                int dx = 4;</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">                if (isInverted(p.getName(), inverterConfig))</span>
+<span class="nc" id="L235">                    dx += SIZE;</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">                if (p.getDirection() == Pin.Direction.input) {</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">                    if (p.isClock()) {</span>
+<span class="fc" id="L238">                        final int triangle = SIZE2 / 2 + 2;</span>
+<span class="fc" id="L239">                        graphic.drawPolygon(new Polygon(false)</span>
+<span class="fc" id="L240">                                .add(p.getPos().add(dx - 3, triangle))</span>
+<span class="fc" id="L241">                                .add(p.getPos().add(dx + triangle - 3, 0))</span>
+<span class="fc" id="L242">                                .add(p.getPos().add(dx - 3, -triangle)), Style.THIN);</span>
+<span class="fc" id="L243">                        dx += triangle;</span>
+                    }
+<span class="fc" id="L245">                    graphic.drawText(p.getPos().add(dx, 0), format(p.getName()), Orientation.LEFTCENTER, Style.SHAPE_PIN);</span>
+                } else
+<span class="fc" id="L247">                    graphic.drawText(p.getPos().add(-4, 0), format(p.getName()), Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc" id="L248">            }</span>
+        }
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (name.length() &gt; 0) {</span>
+<span class="fc bfc" id="L251" title="All 4 branches covered.">            if (name.length() &lt;= 3 &amp;&amp; !showPinLabels) {</span>
+<span class="fc" id="L252">                Vector pos = new Vector(SIZE2 * width, -topBottomBorder + 4);</span>
+<span class="fc" id="L253">                graphic.drawText(pos, name, Orientation.CENTERTOP, Style.NORMAL);</span>
+<span class="fc" id="L254">            } else {</span>
+<span class="fc" id="L255">                Vector pos = new Vector(SIZE2 * width, yBottom + 4);</span>
+<span class="fc" id="L256">                graphic.drawText(pos, name, Orientation.CENTERTOP, Style.SHAPE_PIN);</span>
+            }
+        }
+
+<span class="fc" id="L260">        drawInputInvert(graphic, inverterConfig, getPins());</span>
+<span class="fc" id="L261">    }</span>
+
+    /**
+     * Draw the inverted inputs
+     *
+     * @param graphic        the graphic to paint on
+     * @param inverterConfig the inverter configuration
+     * @param pins           the pins containing the inputs
+     */
+    public static void drawInputInvert(Graphic graphic, InverterConfig inverterConfig, Pins pins) {
+<span class="pc bpc" id="L271" title="1 of 4 branches missed.">        if (inverterConfig != null &amp;&amp; !inverterConfig.isEmpty())</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">            for (Pin p : pins) {</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">                if (p.getDirection() == Pin.Direction.input) {</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">                    if (inverterConfig.contains(p.getName())) {</span>
+<span class="nc" id="L275">                        graphic.drawCircle(p.getPos().add(2, -SIZE2 + 2),</span>
+<span class="nc" id="L276">                                p.getPos().add(SIZE - 2, SIZE2 - 2), Style.NORMAL);</span>
+                    }
+                }
+<span class="nc" id="L279">            }</span>
+<span class="fc" id="L280">    }</span>
+
+    /**
+     * Sets the inverter config
+     *
+     * @param inverterConfig the inverter config
+     * @return this for chained calls
+     */
+    public GenericShape setInverterConfig(InverterConfig inverterConfig) {
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        if (inverterConfig.isEmpty())</span>
+<span class="fc" id="L290">            this.inverterConfig = null;</span>
+        else
+<span class="fc" id="L292">            this.inverterConfig = inverterConfig;</span>
+<span class="fc" id="L293">        return this;</span>
+    }
+
+    /**
+     * Selects a wide shape.
+     *
+     * @param wideShape true is a wide shape is selected
+     * @return this for chained calls
+     */
+    public GenericShape setWide(boolean wideShape) {
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        if (wideShape)</span>
+<span class="fc" id="L304">            width += 1;</span>
+<span class="fc" id="L305">        return this;</span>
+    }
+
+    /**
+     * Formats the component specific strings.
+     * This implementation returns the given string unmodified.
+     *
+     * @param s the string to format
+     * @return the formatted string
+     */
+    public String format(String s) {
+<span class="fc" id="L316">        return s;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

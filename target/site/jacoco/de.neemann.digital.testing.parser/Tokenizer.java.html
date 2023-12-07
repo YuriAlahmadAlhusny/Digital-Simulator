@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Tokenizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing.parser</a> &gt; <span class="el_source">Tokenizer.java</span></div><h1>Tokenizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing.parser;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.HashMap;
+
+/**
+ * Simple tokenizer to tokenize boolean expressions.
+ */
+public class Tokenizer {
+
+    interface Binary {
+        long op(long a, long b);
+    }
+
+<span class="fc" id="L21">    enum Token {</span>
+<span class="fc" id="L22">        UNKNOWN, IDENT, BIN_NOT, LOG_NOT, OPEN, CLOSE, NUMBER, EOL, EOF, COMMA,</span>
+<span class="fc" id="L23">        AND(OperatorPrecedence.AND, (a, b) -&gt; a &amp; b),</span>
+<span class="fc" id="L24">        OR(OperatorPrecedence.OR, (a, b) -&gt; a | b),</span>
+<span class="fc" id="L25">        XOR(OperatorPrecedence.XOR, (a, b) -&gt; a ^ b),</span>
+<span class="fc" id="L26">        SHIFT_LEFT(OperatorPrecedence.SHIFT, (a, b) -&gt; a &lt;&lt; b),</span>
+<span class="fc" id="L27">        SHIFT_RIGHT(OperatorPrecedence.SHIFT, (a, b) -&gt; a &gt;&gt; b),</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        EQUAL(OperatorPrecedence.EQUAL, (a, b) -&gt; (a == b) ? 1 : 0),</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        NOT_EQUAL(OperatorPrecedence.EQUAL, (a, b) -&gt; (a != b) ? 1 : 0),</span>
+<span class="fc" id="L30">        ADD(OperatorPrecedence.ADD, (a, b) -&gt; a + b),</span>
+<span class="fc" id="L31">        SUB(OperatorPrecedence.ADD, (a, b) -&gt; a - b),</span>
+<span class="fc" id="L32">        MUL(OperatorPrecedence.MUL, (a, b) -&gt; a * b),</span>
+<span class="fc" id="L33">        DIV(OperatorPrecedence.MUL, (a, b) -&gt; a / b),</span>
+<span class="fc" id="L34">        MOD(OperatorPrecedence.MUL, (a, b) -&gt; a % b),</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        GREATER(OperatorPrecedence.COMPARE, (a, b) -&gt; (a &gt; b) ? 1 : 0),</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        GREATER_EQUAL(OperatorPrecedence.COMPARE, (a, b) -&gt; (a &gt;= b) ? 1 : 0),</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        SMALLER(OperatorPrecedence.COMPARE, (a, b) -&gt; (a &lt; b) ? 1 : 0),</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        SMALLER_EQUAL(OperatorPrecedence.COMPARE, (a, b) -&gt; (a &lt;= b) ? 1 : 0),</span>
+<span class="fc" id="L39">        END, LOOP, REPEAT, BITS, SEMICOLON,</span>
+<span class="fc" id="L40">        LET, DECLARE, PROGRAM, INIT, MEMORY, WHILE;</span>
+
+        private final OperatorPrecedence precedence;
+        private final Binary function;
+
+        Token() {
+<span class="fc" id="L46">            this(null, null);</span>
+<span class="fc" id="L47">        }</span>
+
+<span class="fc" id="L49">        Token(OperatorPrecedence precedence, Binary function) {</span>
+<span class="fc" id="L50">            this.precedence = precedence;</span>
+<span class="fc" id="L51">            this.function = function;</span>
+<span class="fc" id="L52">        }</span>
+
+        public OperatorPrecedence getPrecedence() {
+<span class="fc" id="L55">            return precedence;</span>
+        }
+
+        public Binary getFunction() {
+<span class="fc" id="L59">            return function;</span>
+        }
+    }
+
+<span class="fc" id="L63">    private final static HashMap&lt;String, Token&gt; STATEMENT_MAP = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L66">        STATEMENT_MAP.put(&quot;end&quot;, Token.END);</span>
+<span class="fc" id="L67">        STATEMENT_MAP.put(&quot;loop&quot;, Token.LOOP);</span>
+<span class="fc" id="L68">        STATEMENT_MAP.put(&quot;repeat&quot;, Token.REPEAT);</span>
+<span class="fc" id="L69">        STATEMENT_MAP.put(&quot;bits&quot;, Token.BITS);</span>
+<span class="fc" id="L70">        STATEMENT_MAP.put(&quot;let&quot;, Token.LET);</span>
+<span class="fc" id="L71">        STATEMENT_MAP.put(&quot;while&quot;, Token.WHILE);</span>
+<span class="fc" id="L72">        STATEMENT_MAP.put(&quot;declare&quot;, Token.DECLARE);</span>
+<span class="fc" id="L73">        STATEMENT_MAP.put(&quot;program&quot;, Token.PROGRAM);</span>
+<span class="fc" id="L74">        STATEMENT_MAP.put(&quot;init&quot;, Token.INIT);</span>
+<span class="fc" id="L75">        STATEMENT_MAP.put(&quot;memory&quot;, Token.MEMORY);</span>
+<span class="fc" id="L76">    }</span>
+
+    private final Reader in;
+    private final StringBuilder builder;
+    private Token token;
+    private boolean isToken;
+<span class="fc" id="L82">    private boolean isUnreadChar = false;</span>
+    private int unreadChar;
+<span class="fc" id="L84">    private int line = 1;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param in the reader
+     */
+<span class="fc" id="L91">    public Tokenizer(Reader in) {</span>
+<span class="fc" id="L92">        this.in = in;</span>
+<span class="fc" id="L93">        token = Token.UNKNOWN;</span>
+<span class="fc" id="L94">        isToken = false;</span>
+<span class="fc" id="L95">        builder = new StringBuilder();</span>
+<span class="fc" id="L96">    }</span>
+
+    /**
+     * Reads the next token
+     *
+     * @return the token
+     * @throws IOException IOException
+     */
+    public Token next() throws IOException {
+<span class="fc" id="L105">        Token token = peek();</span>
+<span class="fc" id="L106">        consume();</span>
+<span class="fc" id="L107">        return token;</span>
+    }
+
+    /**
+     * Consumes the token after a peek call
+     */
+    public void consume() {
+<span class="fc" id="L114">        isToken = false;</span>
+<span class="fc" id="L115">    }</span>
+
+    /**
+     * Peeks the next token.
+     * The token is kept in the stream, so next() or peek() will return this token again!
+     *
+     * @return the token
+     * @throws IOException IOException
+     */
+    public Token peek() throws IOException {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (isToken)</span>
+<span class="fc" id="L126">            return token;</span>
+
+        int c;
+        do {
+<span class="fc" id="L130">            c = readChar();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        } while (isWhiteSpace(c));</span>
+
+<span class="fc bfc" id="L133" title="All 20 branches covered.">        switch (c) {</span>
+            case -1:
+<span class="fc" id="L135">                token = Token.EOF;</span>
+<span class="fc" id="L136">                break;</span>
+            case '\n':
+            case '\r':
+<span class="fc" id="L139">                return Token.EOL;</span>
+            case '(':
+<span class="fc" id="L141">                token = Token.OPEN;</span>
+<span class="fc" id="L142">                break;</span>
+            case ')':
+<span class="fc" id="L144">                token = Token.CLOSE;</span>
+<span class="fc" id="L145">                break;</span>
+            case ';':
+<span class="fc" id="L147">                token = Token.SEMICOLON;</span>
+<span class="fc" id="L148">                break;</span>
+            case '&amp;':
+<span class="fc" id="L150">                token = Token.AND;</span>
+<span class="fc" id="L151">                break;</span>
+            case '|':
+<span class="fc" id="L153">                token = Token.OR;</span>
+<span class="fc" id="L154">                break;</span>
+            case '^':
+<span class="fc" id="L156">                token = Token.XOR;</span>
+<span class="fc" id="L157">                break;</span>
+            case '+':
+<span class="fc" id="L159">                token = Token.ADD;</span>
+<span class="fc" id="L160">                break;</span>
+            case '-':
+<span class="fc" id="L162">                token = Token.SUB;</span>
+<span class="fc" id="L163">                break;</span>
+            case '*':
+<span class="fc" id="L165">                token = Token.MUL;</span>
+<span class="fc" id="L166">                break;</span>
+            case '%':
+<span class="fc" id="L168">                token = Token.MOD;</span>
+<span class="fc" id="L169">                break;</span>
+            case '/':
+<span class="fc" id="L171">                token = Token.DIV;</span>
+<span class="fc" id="L172">                break;</span>
+            case '&lt;':
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                if (isNextChar('&lt;')) {</span>
+<span class="fc" id="L175">                    token = Token.SHIFT_LEFT;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                } else if (isNextChar('=')) {</span>
+<span class="fc" id="L177">                    token = Token.SMALLER_EQUAL;</span>
+                } else {
+<span class="fc" id="L179">                    token = Token.SMALLER;</span>
+                }
+<span class="fc" id="L181">                break;</span>
+            case '&gt;':
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                if (isNextChar('&gt;')) {</span>
+<span class="fc" id="L184">                    token = Token.SHIFT_RIGHT;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">                } else if (isNextChar('=')) {</span>
+<span class="fc" id="L186">                    token = Token.GREATER_EQUAL;</span>
+                } else {
+<span class="fc" id="L188">                    token = Token.GREATER;</span>
+                }
+<span class="fc" id="L190">                break;</span>
+            case '~':
+<span class="fc" id="L192">                token = Token.BIN_NOT;</span>
+<span class="fc" id="L193">                break;</span>
+            case '!':
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                if (isNextChar('=')) {</span>
+<span class="fc" id="L196">                    token = Token.NOT_EQUAL;</span>
+                } else {
+<span class="fc" id="L198">                    token = Token.LOG_NOT;</span>
+                }
+<span class="fc" id="L200">                break;</span>
+            case ',':
+<span class="fc" id="L202">                token = Token.COMMA;</span>
+<span class="fc" id="L203">                break;</span>
+            case '=':
+<span class="fc" id="L205">                token = Token.EQUAL;</span>
+<span class="fc" id="L206">                break;</span>
+            default:
+<span class="fc bfc" id="L208" title="All 2 branches covered.">                if (isIdentChar(c)) {</span>
+<span class="fc" id="L209">                    token = Token.IDENT;</span>
+<span class="fc" id="L210">                    builder.setLength(0);</span>
+<span class="fc" id="L211">                    builder.append((char) c);</span>
+<span class="fc" id="L212">                    boolean wasChar = true;</span>
+                    do {
+<span class="fc" id="L214">                        c = readChar();</span>
+<span class="fc bfc" id="L215" title="All 4 branches covered.">                        if (isIdentChar(c) || isNumberChar(c)) {</span>
+<span class="fc" id="L216">                            builder.append((char) c);</span>
+                        } else {
+<span class="fc" id="L218">                            unreadChar(c);</span>
+<span class="fc" id="L219">                            wasChar = false;</span>
+                        }
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                    } while (wasChar);</span>
+<span class="fc" id="L222">                    token = STATEMENT_MAP.get(builder.toString());</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                    if (token == null) token = Token.IDENT;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                } else if (isNumberChar(c)) {</span>
+<span class="fc" id="L225">                    token = Token.NUMBER;</span>
+<span class="fc" id="L226">                    builder.setLength(0);</span>
+<span class="fc" id="L227">                    builder.append((char) c);</span>
+<span class="fc" id="L228">                    boolean wasChar = true;</span>
+                    do {
+<span class="fc" id="L230">                        c = readChar();</span>
+<span class="pc bpc" id="L231" title="1 of 12 branches missed.">                        if (isNumberChar(c) || isHexChar(c) || c == 'x' || c == 'X' || c == ':' || c == '.') {</span>
+<span class="fc" id="L232">                            builder.append((char) c);</span>
+                        } else {
+<span class="fc" id="L234">                            unreadChar(c);</span>
+<span class="fc" id="L235">                            wasChar = false;</span>
+                        }
+<span class="fc bfc" id="L237" title="All 2 branches covered.">                    } while (wasChar);</span>
+<span class="fc" id="L238">                } else {</span>
+<span class="nc" id="L239">                    token = Token.UNKNOWN;</span>
+<span class="nc" id="L240">                    builder.setLength(0);</span>
+<span class="nc" id="L241">                    builder.append((char) c);</span>
+                }
+        }
+
+<span class="fc" id="L245">        isToken = true;</span>
+<span class="fc" id="L246">        return token;</span>
+    }
+
+    private boolean isNextChar(char should) throws IOException {
+<span class="fc" id="L250">        int c = readChar();</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (c == should)</span>
+<span class="fc" id="L252">            return true;</span>
+<span class="fc" id="L253">        unreadChar(c);</span>
+<span class="fc" id="L254">        return false;</span>
+    }
+
+    /**
+     * @return the identifier
+     */
+    public String getIdent() {
+<span class="fc" id="L261">        return builder.toString();</span>
+    }
+
+    private int readIntChar() throws IOException {
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (isUnreadChar) {</span>
+<span class="fc" id="L266">            isUnreadChar = false;</span>
+<span class="fc" id="L267">            return unreadChar;</span>
+        } else {
+<span class="fc" id="L269">            final int c = in.read();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            if (c == '\n') line++;</span>
+<span class="fc" id="L271">            return c;</span>
+        }
+    }
+
+    private int readChar() throws IOException {
+<span class="fc" id="L276">        int c = readIntChar();</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (c == '#') {</span>
+            do {
+<span class="fc" id="L279">                c = readIntChar();</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">            } while (!((c == '\n') || (c &lt; 0)));</span>
+        }
+<span class="fc" id="L282">        return c;</span>
+    }
+
+    private void unreadChar(int c) {
+<span class="fc" id="L286">        unreadChar = c;</span>
+<span class="fc" id="L287">        isUnreadChar = true;</span>
+<span class="fc" id="L288">    }</span>
+
+    private boolean isIdentChar(int c) {
+<span class="fc bfc" id="L291" title="All 10 branches covered.">        return (c &gt;= 'a' &amp;&amp; c &lt;= 'z')</span>
+                || (c &gt;= 'A' &amp;&amp; c &lt;= 'Z')
+                || (c == '_');
+    }
+
+    private boolean isHexChar(int c) {
+<span class="fc bfc" id="L297" title="All 8 branches covered.">        return (c &gt;= 'a' &amp;&amp; c &lt;= 'f')</span>
+                || (c &gt;= 'A' &amp;&amp; c &lt;= 'F');
+    }
+
+    private boolean isNumberChar(int c) {
+<span class="fc bfc" id="L302" title="All 4 branches covered.">        return (c &gt;= '0' &amp;&amp; c &lt;= '9');</span>
+    }
+
+    private boolean isWhiteSpace(int c) {
+<span class="fc bfc" id="L306" title="All 4 branches covered.">        return c == ' ' || c == '\t';</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L311" title="All 4 branches missed.">        if (token == Token.IDENT || token == Token.UNKNOWN)</span>
+<span class="nc" id="L312">            return getIdent();</span>
+        else
+<span class="nc" id="L314">            return token.name();</span>
+    }
+
+    /**
+     * @return the parsed test vectors
+     */
+    public int getLine() {
+<span class="fc" id="L321">        return line;</span>
+    }
+
+    /**
+     * Skips empty lines in the beginning of the file
+     *
+     * @throws IOException IOException
+     */
+    public void skipEmptyLines() throws IOException {
+        int c;
+        do {
+<span class="fc" id="L332">            c = readChar();</span>
+<span class="pc bpc" id="L333" title="1 of 6 branches missed.">        } while (c == '\n' || c == '\r' || c == ' ');</span>
+<span class="fc" id="L334">        unreadChar(c);</span>
+<span class="fc" id="L335">    }</span>
+
+    /**
+     * Special reader to parse the header.
+     * For the identifiers in the header apply other rules as for identifiers in the test data.
+     *
+     * @return the Token
+     * @throws IOException IOException
+     */
+    public Token simpleIdent() throws IOException {
+<span class="fc" id="L345">        builder.setLength(0);</span>
+        while (true) {
+<span class="fc" id="L347">            int c = readChar();</span>
+<span class="pc bpc" id="L348" title="1 of 4 branches missed.">            switch (c) {</span>
+                case -1:
+<span class="nc" id="L350">                    return Token.EOF;</span>
+                case '\n':
+                case '\r':
+<span class="fc bfc" id="L353" title="All 2 branches covered.">                    if (builder.length() &gt; 0) {</span>
+<span class="fc" id="L354">                        unreadChar(c);</span>
+<span class="fc" id="L355">                        return Token.IDENT;</span>
+                    } else
+<span class="fc" id="L357">                        return Token.EOL;</span>
+                case '\t':
+                case ' ':
+<span class="fc bfc" id="L360" title="All 2 branches covered.">                    if (builder.length() &gt; 0) {</span>
+<span class="fc" id="L361">                        return Token.IDENT;</span>
+                    }
+                    break;
+                default:
+<span class="fc" id="L365">                    builder.append((char) c);</span>
+            }
+<span class="fc" id="L367">        }</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

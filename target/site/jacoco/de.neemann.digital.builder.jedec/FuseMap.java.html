@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FuseMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.jedec</a> &gt; <span class="el_source">FuseMap.java</span></div><h1>FuseMap.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.jedec;
+
+/**
+ * Represents the fuses in the fuse map.
+ * Fuse data is represented by bytes containing 8 fuses each
+ */
+public class FuseMap {
+
+    private final int fuses;
+    private final byte[] fuseData;
+
+    /**
+     * Creates a new instance
+     *
+     * @param fuses number of fuses
+     */
+<span class="fc" id="L22">    public FuseMap(int fuses) {</span>
+<span class="fc" id="L23">        this.fuses = fuses;</span>
+<span class="fc" id="L24">        fuseData = new byte[(fuses - 1) / 8 + 1];</span>
+<span class="fc" id="L25">    }</span>
+
+    /**
+     * @return the number of fuses
+     */
+    public int getFuses() {
+<span class="fc" id="L31">        return fuses;</span>
+    }
+
+    /**
+     * Sets the given fuse to one
+     *
+     * @param fuse the fuse
+     */
+    public void setFuse(int fuse) {
+<span class="fc" id="L40">        setFuse(fuse, true);</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Sets the given fuse
+     *
+     * @param fuse the fuse
+     * @param set  true means programmed to 1, false means programmed to 0
+     */
+    public void setFuse(int fuse, boolean set) {
+<span class="fc" id="L50">        int index = fuse &gt;&gt; 3;</span>
+<span class="fc" id="L51">        int n = fuse &amp; 7;</span>
+<span class="fc" id="L52">        int mask = 1 &lt;&lt; n;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (set)</span>
+<span class="fc" id="L54">            fuseData[index] |= mask;</span>
+        else
+<span class="fc" id="L56">            fuseData[index] &amp;= ~mask;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Reads the given fuse
+     *
+     * @param fuse the fuse
+     * @return true is fuse is one
+     */
+    public boolean getFuse(int fuse) {
+<span class="fc" id="L66">        int index = fuse &gt;&gt; 3;</span>
+<span class="fc" id="L67">        int n = fuse &amp; 7;</span>
+<span class="fc" id="L68">        int mask = 1 &lt;&lt; n;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        return (fuseData[index] &amp; mask) != 0;</span>
+    }
+
+    /**
+     * @return the JEDEC checksum
+     */
+    public int getJedecChecksum() {
+<span class="fc" id="L76">        int c = 0;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; fuseData.length; i++)</span>
+<span class="fc" id="L78">            c += fuseData[i] &amp; 0xff;</span>
+<span class="fc" id="L79">        return c &amp; 0xffff;</span>
+    }
+
+    byte[] getFuseData() {
+<span class="fc" id="L83">        return fuseData;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

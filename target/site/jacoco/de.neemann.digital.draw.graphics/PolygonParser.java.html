@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolygonParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">PolygonParser.java</span></div><h1>PolygonParser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+/**
+ * Creates a polygon from a path
+ */
+public class PolygonParser {
+    private final SVGTokenizer t;
+    private float x;
+    private float y;
+    private VectorFloat polyStart;
+    private VectorInterface lastQuadraticControlPoint;
+    private VectorInterface lastCubicControlPoint;
+<span class="fc" id="L18">    private String command = &quot;&quot;;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param path the path to parse
+     */
+<span class="fc" id="L25">    public PolygonParser(String path) {</span>
+<span class="fc" id="L26">        t = new SVGTokenizer(path);</span>
+<span class="fc" id="L27">    }</span>
+
+    private float nextValue() throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L30">        return t.readFloat();</span>
+    }
+
+    private VectorFloat nextVector() throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L34">        x = nextValue();</span>
+<span class="fc" id="L35">        y = nextValue();</span>
+<span class="fc" id="L36">        return new VectorFloat(x, y);</span>
+    }
+
+    private VectorFloat nextVectorInc() throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L40">        x += nextValue();</span>
+<span class="fc" id="L41">        y += nextValue();</span>
+<span class="fc" id="L42">        return new VectorFloat(x, y);</span>
+    }
+
+    private VectorFloat nextVectorRel() throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L46">        return new VectorFloat(x + nextValue(), y + nextValue());</span>
+    }
+
+    /**
+     * Creates a polygon from the given path.
+     *
+     * @return the polygon
+     * @throws ParserException ParserException
+     */
+    public Polygon create() throws ParserException {
+        try {
+<span class="fc" id="L57">            Polygon p = new Polygon(false);</span>
+<span class="fc" id="L58">            boolean closedPending = false;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            while (!t.isEOF()) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (t.nextIsNumber()) {</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                    if (command.equals(&quot;m&quot;))</span>
+<span class="nc" id="L62">                        command = &quot;l&quot;;</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                    else if (command.equals(&quot;M&quot;))</span>
+<span class="nc" id="L64">                        command = &quot;L&quot;;</span>
+                } else
+<span class="fc" id="L66">                    command = t.readCommand();</span>
+<span class="pc bpc" id="L67" title="4 of 20 branches missed.">                switch (command) {</span>
+                    case &quot;M&quot;:
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                        if (closedPending) {</span>
+<span class="fc" id="L70">                            closedPending = false;</span>
+<span class="fc" id="L71">                            p.addClosePath();</span>
+                        }
+<span class="fc" id="L73">                        p.addMoveTo(setPolyStart(nextVector()));</span>
+<span class="fc" id="L74">                        clearControl();</span>
+<span class="fc" id="L75">                        break;</span>
+                    case &quot;m&quot;:
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                        if (closedPending) {</span>
+<span class="fc" id="L78">                            closedPending = false;</span>
+<span class="fc" id="L79">                            p.addClosePath();</span>
+                        }
+<span class="fc" id="L81">                        p.addMoveTo(setPolyStart(nextVectorInc()));</span>
+<span class="fc" id="L82">                        clearControl();</span>
+<span class="fc" id="L83">                        break;</span>
+                    case &quot;V&quot;:
+<span class="fc" id="L85">                        y = nextValue();</span>
+<span class="fc" id="L86">                        p.add(getCurrent());</span>
+<span class="fc" id="L87">                        clearControl();</span>
+<span class="fc" id="L88">                        break;</span>
+                    case &quot;v&quot;:
+<span class="fc" id="L90">                        y += nextValue();</span>
+<span class="fc" id="L91">                        p.add(getCurrent());</span>
+<span class="fc" id="L92">                        clearControl();</span>
+<span class="fc" id="L93">                        break;</span>
+                    case &quot;H&quot;:
+<span class="fc" id="L95">                        x = nextValue();</span>
+<span class="fc" id="L96">                        p.add(getCurrent());</span>
+<span class="fc" id="L97">                        clearControl();</span>
+<span class="fc" id="L98">                        break;</span>
+                    case &quot;h&quot;:
+<span class="fc" id="L100">                        x += nextValue();</span>
+<span class="fc" id="L101">                        p.add(getCurrent());</span>
+<span class="fc" id="L102">                        clearControl();</span>
+<span class="fc" id="L103">                        break;</span>
+                    case &quot;l&quot;:
+<span class="fc" id="L105">                        p.add(nextVectorInc());</span>
+<span class="fc" id="L106">                        clearControl();</span>
+<span class="fc" id="L107">                        break;</span>
+                    case &quot;L&quot;:
+<span class="fc" id="L109">                        p.add(nextVector());</span>
+<span class="fc" id="L110">                        clearControl();</span>
+<span class="fc" id="L111">                        break;</span>
+                    case &quot;c&quot;:
+<span class="fc" id="L113">                        p.add(nextVectorRel(), setLastC3(nextVectorRel()), nextVectorInc());</span>
+<span class="fc" id="L114">                        break;</span>
+                    case &quot;C&quot;:
+<span class="fc" id="L116">                        p.add(nextVector(), setLastC3(nextVector()), nextVector());</span>
+<span class="fc" id="L117">                        break;</span>
+                    case &quot;q&quot;:
+<span class="nc" id="L119">                        p.add(setLastC2(nextVectorRel()), nextVectorInc());</span>
+<span class="nc" id="L120">                        break;</span>
+                    case &quot;Q&quot;:
+<span class="fc" id="L122">                        p.add(setLastC2(nextVector()), nextVector());</span>
+<span class="fc" id="L123">                        break;</span>
+                    case &quot;s&quot;:
+<span class="fc" id="L125">                        addCubicWithReflect(p, getCurrent(), nextVectorRel(), nextVectorInc());</span>
+<span class="fc" id="L126">                        break;</span>
+                    case &quot;S&quot;:
+<span class="nc" id="L128">                        addCubicWithReflect(p, getCurrent(), nextVector(), nextVector());</span>
+<span class="nc" id="L129">                        break;</span>
+                    case &quot;t&quot;:
+<span class="fc" id="L131">                        addQuadraticWithReflect(p, getCurrent(), nextVectorInc());</span>
+<span class="fc" id="L132">                        break;</span>
+                    case &quot;T&quot;:
+<span class="fc" id="L134">                        addQuadraticWithReflect(p, getCurrent(), nextVector());</span>
+<span class="fc" id="L135">                        break;</span>
+                    case &quot;a&quot;:
+<span class="nc bnc" id="L137" title="All 4 branches missed.">                        addArc(p, getCurrent(), nextValue(), nextValue(), nextValue(), nextValue() != 0, nextValue() != 0, nextVectorInc());</span>
+<span class="nc" id="L138">                        clearControl();</span>
+<span class="nc" id="L139">                        break;</span>
+                    case &quot;A&quot;:
+<span class="fc bfc" id="L141" title="All 4 branches covered.">                        addArc(p, getCurrent(), nextValue(), nextValue(), nextValue(), nextValue() != 0, nextValue() != 0, nextVector());</span>
+<span class="fc" id="L142">                        clearControl();</span>
+<span class="fc" id="L143">                        break;</span>
+                    case &quot;Z&quot;:
+                    case &quot;z&quot;:
+<span class="fc" id="L146">                        closedPending = true;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                        if (polyStart != null) {</span>
+<span class="fc" id="L148">                            x = polyStart.getXFloat();</span>
+<span class="fc" id="L149">                            y = polyStart.getYFloat();</span>
+                        }
+<span class="fc" id="L151">                        clearControl();</span>
+<span class="fc" id="L152">                        break;</span>
+                    default:
+<span class="pc" id="L154">                        throw new ParserException(&quot;unsupported path command &quot; + command);</span>
+                }
+            }
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (closedPending)</span>
+<span class="fc" id="L158">                p.setClosed(true);</span>
+<span class="fc" id="L159">            return p;</span>
+<span class="nc" id="L160">        } catch (SVGTokenizer.TokenizerException e) {</span>
+<span class="nc" id="L161">            throw new ParserException(&quot;error parsing a path&quot;, e);</span>
+        }
+    }
+
+    private VectorFloat setPolyStart(VectorFloat v) {
+<span class="fc" id="L166">        polyStart = v;</span>
+<span class="fc" id="L167">        return v;</span>
+    }
+
+    private VectorInterface getCurrent() {
+<span class="fc" id="L171">        return new VectorFloat(x, y);</span>
+    }
+
+    private VectorInterface setLastC2(VectorInterface p) {
+<span class="fc" id="L175">        lastQuadraticControlPoint = p;</span>
+<span class="fc" id="L176">        lastCubicControlPoint = null;</span>
+<span class="fc" id="L177">        return p;</span>
+    }
+
+    private VectorInterface setLastC3(VectorInterface p) {
+<span class="fc" id="L181">        lastCubicControlPoint = p;</span>
+<span class="fc" id="L182">        lastQuadraticControlPoint = null;</span>
+<span class="fc" id="L183">        return p;</span>
+    }
+
+    private void clearControl() {
+<span class="fc" id="L187">        lastQuadraticControlPoint = null;</span>
+<span class="fc" id="L188">        lastCubicControlPoint = null;</span>
+<span class="fc" id="L189">    }</span>
+
+    private VectorInterface getLastC2() {
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (lastQuadraticControlPoint == null)</span>
+<span class="nc" id="L193">            return getCurrent();</span>
+<span class="fc" id="L194">        return lastQuadraticControlPoint;</span>
+    }
+
+    private VectorInterface getLastC3() {
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if (lastCubicControlPoint == null)</span>
+<span class="nc" id="L199">            return getCurrent();</span>
+<span class="fc" id="L200">        return lastCubicControlPoint;</span>
+    }
+
+    /*
+     * Substitutes the arc by a number of quadratic bezier curves
+     */
+    //CHECKSTYLE.OFF: ParameterNumberCheck
+    private void addArc(Polygon p, VectorInterface current, float rx, float ry, float rot, boolean large, boolean sweep, VectorFloat pos) {
+
+        // if rx=0 or ry=0 add a straight line
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">        if (rx == 0 || ry == 0) {</span>
+<span class="nc" id="L211">            p.add(pos);</span>
+<span class="nc" id="L212">            return;</span>
+        }
+
+        // take the absolute value of rx, ry
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (rx &lt; 0)</span>
+<span class="nc" id="L217">            rx = -rx;</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">        if (ry &lt; 0)</span>
+<span class="nc" id="L219">            ry = -ry;</span>
+
+        // transform the ellipse to a circle
+<span class="fc" id="L222">        Transform tr = Transform.IDENTITY;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (rx != ry)</span>
+<span class="fc" id="L224">            tr = TransformMatrix.scale(1, rx / ry);</span>
+
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (rot != 0)</span>
+<span class="fc" id="L227">            tr = Transform.mul(TransformMatrix.rotate(-rot), tr);</span>
+
+<span class="fc" id="L229">        Transform invert = tr.invert();</span>
+
+<span class="fc" id="L231">        VectorInterface p1 = current.transform(tr);</span>
+<span class="fc" id="L232">        VectorInterface p2 = pos.transform(tr);</span>
+
+        // ellipse is transformed to a circle with radius r
+<span class="fc" id="L235">        float r = rx;</span>
+
+        // correct invalid radii
+<span class="fc" id="L238">        final float dist = p1.sub(p2).len();</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        if (dist &gt; r * 2)</span>
+<span class="fc" id="L240">            r = dist / 2;</span>
+
+<span class="fc" id="L242">        double x1 = p1.getXFloat();</span>
+<span class="fc" id="L243">        double y1 = p1.getYFloat();</span>
+<span class="fc" id="L244">        double x2 = p2.getXFloat();</span>
+<span class="fc" id="L245">        double y2 = p2.getYFloat();</span>
+
+<span class="fc" id="L247">        double x1q = x1 * x1;</span>
+<span class="fc" id="L248">        double y1q = y1 * y1;</span>
+<span class="fc" id="L249">        double x2q = x2 * x2;</span>
+<span class="fc" id="L250">        double y2q = y2 * y2;</span>
+<span class="fc" id="L251">        double rq = r * r;</span>
+
+        try {
+<span class="fc" id="L254">            double x0A = (r * (y1 - y2) * sqrt(rq * (4 * rq - y1q + y2 * (2 * y1 - y2)) - rq * (x1q - 2 * x1 * x2 + x2q)) * sign(x1 - x2) + r * (x1 + x2) * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q))) / (2 * r * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)));</span>
+<span class="fc" id="L255">            double y0A = (r * (y1 + y2) * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)) - r * sqrt(rq * (4 * rq - y1q + y2 * (2 * y1 - y2)) - rq * (x1q - 2 * x1 * x2 + x2q)) * abs(x1 - x2)) / (2 * r * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)));</span>
+<span class="fc" id="L256">            double x0B = (r * (x1 + x2) * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)) - r * (y1 - y2) * sqrt(rq * (4 * rq - y1q + y2 * (2 * y1 - y2)) - rq * (x1q - 2 * x1 * x2 + x2q)) * sign(x1 - x2)) / (2 * r * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)));</span>
+<span class="fc" id="L257">            double y0B = (r * sqrt(rq * (4 * rq - y1q + y2 * (2 * y1 - y2)) - rq * (x1q - 2 * x1 * x2 + x2q)) * abs(x1 - x2) + r * (y1 + y2) * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q))) / (2 * r * sqrt(rq * (y1q - 2 * y1 * y2 + y2q) + rq * (x1q - 2 * x1 * x2 + x2q)));</span>
+
+<span class="fc" id="L259">            double startA = Math.atan2(y1 - y0A, x1 - x0A);</span>
+<span class="fc" id="L260">            double endA = Math.atan2(y2 - y0A, x2 - x0A);</span>
+
+<span class="fc" id="L262">            double startB = Math.atan2(y1 - y0B, x1 - x0B);</span>
+<span class="fc" id="L263">            double endB = Math.atan2(y2 - y0B, x2 - x0B);</span>
+
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            if (sweep) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">                if (endA &lt; startA) endA += 2 * Math.PI;</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                if (endB &lt; startB) endB += 2 * Math.PI;</span>
+            } else {
+<span class="fc bfc" id="L269" title="All 2 branches covered.">                if (endA &gt; startA) endA -= 2 * Math.PI;</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">                if (endB &gt; startB) endB -= 2 * Math.PI;</span>
+            }
+
+<span class="fc" id="L273">            double sizeA = Math.abs(startA - endA);</span>
+<span class="fc" id="L274">            double sizeB = Math.abs(startB - endB);</span>
+
+<span class="fc" id="L276">            double start = startA;</span>
+<span class="fc" id="L277">            double end = endA;</span>
+<span class="fc" id="L278">            double x0 = x0A;</span>
+<span class="fc" id="L279">            double y0 = y0A;</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">            if (large ^ (sizeA &gt; sizeB)) {</span>
+<span class="fc" id="L281">                start = startB;</span>
+<span class="fc" id="L282">                end = endB;</span>
+<span class="fc" id="L283">                x0 = x0B;</span>
+<span class="fc" id="L284">                y0 = y0B;</span>
+            }
+
+            // a full circle leads to 12 quadratic bezier curves
+<span class="fc" id="L288">            int n = (int) Math.round(Math.abs(start - end) / (2 * Math.PI / 12));</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            if (n &lt; 1) n = 1;</span>
+<span class="fc" id="L290">            double delta = Math.abs(start - end) / n;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            if (!sweep) delta = -delta;</span>
+
+<span class="fc" id="L293">            double lastStart = start;</span>
+<span class="fc" id="L294">            start += delta;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            for (int i = 1; i &lt; n; i++) {</span>
+<span class="fc" id="L296">                addArcPoint(p, lastStart, start, x0, y0, r, invert);</span>
+<span class="fc" id="L297">                lastStart = start;</span>
+<span class="fc" id="L298">                start += delta;</span>
+            }
+<span class="fc" id="L300">            addArcPoint(p, lastStart, end, x0, y0, r, invert);</span>
+
+<span class="nc" id="L302">        } catch (SqrtException e) {</span>
+<span class="nc" id="L303">            p.add(pos);</span>
+<span class="fc" id="L304">        }</span>
+<span class="fc" id="L305">    }</span>
+    //CHECKSTYLE.ON: ParameterNumberCheck
+
+    private void addArcPoint(Polygon p, double alpha0, double alpha1, double x0, double y0, float r, Transform tr) {
+<span class="fc" id="L309">        final double mean = (alpha0 + alpha1) / 2;</span>
+<span class="fc" id="L310">        double rLong = r / Math.cos(Math.abs(alpha0 - alpha1) / 2);</span>
+<span class="fc" id="L311">        final VectorInterface c = new VectorFloat((float) (x0 + rLong * Math.cos(mean)), (float) (y0 + rLong * Math.sin(mean)));</span>
+<span class="fc" id="L312">        final VectorInterface p1 = new VectorFloat((float) (x0 + r * Math.cos(alpha1)), (float) (y0 + r * Math.sin(alpha1)));</span>
+<span class="fc" id="L313">        p.add(c.transform(tr), p1.transform(tr));</span>
+<span class="fc" id="L314">    }</span>
+
+    private static double sqrt(double x) throws SqrtException {
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        if (x &gt; 0)</span>
+<span class="fc" id="L318">            return Math.sqrt(x);</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">        if (x &gt; -1e-6)</span>
+<span class="fc" id="L320">            return 0;</span>
+
+<span class="nc" id="L322">        throw new SqrtException();</span>
+    }
+
+    private static double sign(double x) {
+<span class="fc" id="L326">        return Math.signum(x);</span>
+    }
+
+    private static double abs(double x) {
+<span class="fc" id="L330">        return Math.abs(x);</span>
+    }
+
+    private void addQuadraticWithReflect(Polygon poly, VectorInterface start, VectorInterface p) {
+<span class="fc" id="L334">        VectorInterface c = start.add(start.sub(getLastC2()));</span>
+<span class="fc" id="L335">        poly.add(setLastC2(c), p);</span>
+<span class="fc" id="L336">    }</span>
+
+    private void addCubicWithReflect(Polygon poly, VectorInterface start, VectorInterface c2, VectorInterface p) {
+<span class="fc" id="L339">        VectorInterface c1 = start.add(start.sub(getLastC3()));</span>
+<span class="fc" id="L340">        poly.add(c1, setLastC3(c2), p);</span>
+<span class="fc" id="L341">    }</span>
+
+    /**
+     * The parser exception
+     */
+    public static final class ParserException extends Exception {
+        private ParserException(String message) {
+<span class="nc" id="L348">            super(message);</span>
+<span class="nc" id="L349">        }</span>
+
+        private ParserException(String message, Exception cause) {
+<span class="nc" id="L352">            super(message, cause);</span>
+<span class="nc" id="L353">        }</span>
+    }
+
+    /**
+     * Parses a polygon.
+     *
+     * @return the polygon
+     * @throws ParserException ParserException
+     */
+    public Polygon parsePolygon() throws ParserException {
+        try {
+<span class="fc" id="L364">            return parsePolygonPolyline(true);</span>
+<span class="nc" id="L365">        } catch (SVGTokenizer.TokenizerException e) {</span>
+<span class="nc" id="L366">            throw new ParserException(&quot;error parsing a polygon&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Parses a polyline.
+     *
+     * @return the polygon
+     * @throws ParserException ParserException
+     */
+    public Polygon parsePolyline() throws ParserException {
+        try {
+<span class="fc" id="L378">            return parsePolygonPolyline(false);</span>
+<span class="nc" id="L379">        } catch (SVGTokenizer.TokenizerException e) {</span>
+<span class="nc" id="L380">            throw new ParserException(&quot;error parsing a polyline&quot;, e);</span>
+        }
+    }
+
+    private Polygon parsePolygonPolyline(boolean closed) throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L385">        Polygon p = new Polygon(closed);</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">        while (!t.isEOF())</span>
+<span class="fc" id="L387">            p.add(new VectorFloat(nextValue(), nextValue()));</span>
+<span class="fc" id="L388">        return p;</span>
+    }
+
+    private static class SqrtException extends Exception {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLNode.java</span></div><h1>HDLNode.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.expression.Visitor;
+import de.neemann.digital.hdl.printer.CodePrinter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+/**
+ * The base class of all nodes
+ */
+public abstract class HDLNode {
+    private final String elementName;
+    private final ElementAttributes elementAttributes;
+    private final HDLModel.BitProvider bitProvider;
+    private final ArrayList&lt;HDLPort&gt; inputs;
+    private final ArrayList&lt;HDLPort&gt; outputs;
+    private final ArrayList&lt;HDLPort&gt; inOutputs;
+    private String hdlEntityName;
+
+    /**
+     * Creates e new instance
+     *
+     * @param elementName       the instances name
+     * @param elementAttributes the attributes
+     * @param bitProvider       the bit provider which provides the outputs bit width
+     */
+<span class="fc" id="L35">    public HDLNode(String elementName, ElementAttributes elementAttributes, HDLModel.BitProvider bitProvider) {</span>
+<span class="fc" id="L36">        this.elementName = elementName;</span>
+<span class="fc" id="L37">        this.elementAttributes = elementAttributes;</span>
+<span class="fc" id="L38">        this.bitProvider = bitProvider;</span>
+<span class="fc" id="L39">        inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L40">        outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L41">        inOutputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * Adds a port to this node
+     *
+     * @param port the port to add
+     * @return this for chained calls
+     */
+    public HDLNode addPort(HDLPort port) {
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        switch (port.getDirection()) {</span>
+            case IN:
+<span class="fc" id="L53">                inputs.add(port);</span>
+<span class="fc" id="L54">                break;</span>
+            case OUT:
+<span class="fc" id="L56">                outputs.add(port);</span>
+<span class="fc" id="L57">                break;</span>
+            case INOUT:
+<span class="fc" id="L59">                inOutputs.add(port);</span>
+                break;
+        }
+
+<span class="fc" id="L63">        port.setParent(this);</span>
+
+<span class="fc" id="L65">        return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L70">        return elementName + &quot; &quot; + inputs + &quot; &quot; + outputs;</span>
+    }
+
+    /**
+     * @return the elements name
+     */
+    public String getElementName() {
+<span class="fc" id="L77">        return elementName;</span>
+    }
+
+    /**
+     * @return the elements attributes
+     */
+    public ElementAttributes getElementAttributes() {
+<span class="fc" id="L84">        return elementAttributes;</span>
+    }
+
+    /**
+     * @return the nodes inputs
+     */
+    public ArrayList&lt;HDLPort&gt; getInputs() {
+<span class="fc" id="L91">        return inputs;</span>
+    }
+
+    /**
+     * @return the nodes single outputs
+     */
+    public HDLPort getOutput() {
+<span class="fc" id="L98">        return outputs.get(0);</span>
+    }
+
+    /**
+     * @return the list of outputs
+     */
+    public ArrayList&lt;HDLPort&gt; getOutputs() {
+<span class="fc" id="L105">        return outputs;</span>
+    }
+
+    /**
+     * @return the list of inOutputs
+     */
+    public ArrayList&lt;HDLPort&gt; getInOutputs() {
+<span class="fc" id="L112">        return inOutputs;</span>
+    }
+
+    int getBits(String name) {
+<span class="fc" id="L116">        return bitProvider.getBits(name);</span>
+    }
+
+    /**
+     * Prints a simple text representation of the node
+     *
+     * @param out the CondePrinter to print to
+     * @throws IOException IOException
+     */
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L126">        out.print(&quot;in&quot;);</span>
+<span class="fc" id="L127">        printWithLocal(out, inputs);</span>
+<span class="fc" id="L128">        out.print(&quot;out&quot;);</span>
+<span class="fc" id="L129">        printWithLocal(out, outputs);</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (!inOutputs.isEmpty()) {</span>
+<span class="nc" id="L131">            out.print(&quot;inOut&quot;);</span>
+<span class="nc" id="L132">            printWithLocal(out, inOutputs);</span>
+        }
+<span class="fc" id="L134">    }</span>
+
+    private void printWithLocal(CodePrinter out, ArrayList&lt;HDLPort&gt; ports) throws IOException {
+<span class="fc" id="L137">        boolean first = true;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        for (HDLPort p : ports) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (first) {</span>
+<span class="fc" id="L140">                first = false;</span>
+<span class="fc" id="L141">                out.print(&quot;(&quot;);</span>
+            } else
+<span class="fc" id="L143">                out.print(&quot;, &quot;);</span>
+<span class="fc" id="L144">            p.print(out);</span>
+<span class="fc" id="L145">        }</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (first)</span>
+<span class="fc" id="L147">            out.print(&quot;(&quot;);</span>
+
+<span class="fc" id="L149">        out.println(&quot;)&quot;);</span>
+<span class="fc" id="L150">    }</span>
+
+    /**
+     * Returns true if the node has the given port as an input
+     *
+     * @param i the port to search for
+     * @return true if the given port is a input of this node
+     */
+    public boolean hasInput(HDLPort i) {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (HDLPort p : inputs)</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (p.getNet() == i.getNet())</span>
+<span class="fc" id="L161">                return true;</span>
+<span class="fc" id="L162">        return false;</span>
+    }
+
+    /**
+     * Replaces a net in this node
+     *
+     * @param oldNet the old net
+     * @param newNet the new net
+     */
+    public void replaceNet(HDLNet oldNet, HDLNet newNet) {
+<span class="nc" id="L172">    }</span>
+
+    /**
+     * Sets the name to use in the target language
+     *
+     * @param hdlEntityName the name of the node in the target hdl
+     */
+    public void setHdlEntityName(String hdlEntityName) {
+<span class="fc" id="L180">        this.hdlEntityName = hdlEntityName;</span>
+<span class="fc" id="L181">    }</span>
+
+    /**
+     * @return the name of the node in the target hdl
+     */
+    public String getHdlEntityName() {
+<span class="fc" id="L187">        return hdlEntityName;</span>
+    }
+
+    /**
+     * Renames the signals in this node.
+     *
+     * @param renaming the renaming algorithm
+     */
+    public void rename(HDLModel.Renaming renaming) {
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (HDLPort p : outputs)</span>
+<span class="fc" id="L197">            p.rename(renaming);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (HDLPort p : inputs)</span>
+<span class="fc" id="L199">            p.rename(renaming);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (HDLPort p : inOutputs)</span>
+<span class="fc" id="L201">            p.rename(renaming);</span>
+<span class="fc" id="L202">    }</span>
+
+    /**
+     * Called to replace a net by an expression.
+     *
+     * @param net        the net to replace
+     * @param expression the expression to use instead
+     */
+    public abstract void replaceNetByExpression(HDLNet net, Expression expression);
+
+    /**
+     * Traverses all expressions
+     *
+     * @param visitor the visitor
+     * @param &lt;V&gt;     the type of the visitor
+     * @return the visitor for chained calls
+     */
+    public abstract &lt;V extends Visitor&gt; V traverseExpressions(V visitor);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLNodeBuildIn.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLNodeBuildIn.java</span></div><h1>HDLNodeBuildIn.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.hdl.model2.expression.ExprVar;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.expression.Visitor;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * A node which represents a build-in component
+ */
+public class HDLNodeBuildIn extends HDLNode implements Iterable&lt;HDLNodeBuildIn.InputAssignment&gt; {
+    private ArrayList&lt;InputAssignment&gt; inputAssignement;
+
+    /**
+     * Creates e new instance
+     *
+     * @param elementName       the instances name
+     * @param elementAttributes the attributes
+     * @param bitProvider       the bit provider which provides the outputs bit width
+     */
+    public HDLNodeBuildIn(String elementName, ElementAttributes elementAttributes, HDLModel.BitProvider bitProvider) {
+<span class="fc" id="L30">        super(elementName, elementAttributes, bitProvider);</span>
+<span class="fc" id="L31">        inputAssignement = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    public void replaceNetByExpression(HDLNet net, Expression expression) {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (InputAssignment ia : inputAssignement)</span>
+<span class="fc" id="L37">            ia.replaceNetByExpression(net, expression);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public &lt;V extends Visitor&gt; V traverseExpressions(V visitor) {
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (InputAssignment ia : this)</span>
+<span class="fc" id="L43">            ia.traverseExpressions(visitor);</span>
+<span class="fc" id="L44">        return visitor;</span>
+    }
+
+    HDLNode createExpressions() {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (HDLPort in : getInputs())</span>
+<span class="fc" id="L49">            inputAssignement.add(new InputAssignment(in.getName(), new ExprVar(in.getNet())));</span>
+
+<span class="fc" id="L51">        return this;</span>
+    }
+
+    @Override
+    public Iterator&lt;InputAssignment&gt; iterator() {
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (getInputs().size() != inputAssignement.size())</span>
+<span class="nc" id="L57">            throw new RuntimeException(&quot;no expressions created for &quot; + getElementName());</span>
+
+<span class="fc" id="L59">        return inputAssignement.iterator();</span>
+    }
+
+    @Override
+    public void rename(HDLModel.Renaming renaming) {
+<span class="fc" id="L64">        super.rename(renaming);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (InputAssignment in : inputAssignement)</span>
+<span class="fc" id="L66">            in.rename(renaming);</span>
+<span class="fc" id="L67">    }</span>
+
+    /**
+     * A port assignment.
+     * Connects a port to an expression
+     */
+    public static final class InputAssignment {
+        private String name;
+        private Expression expression;
+
+<span class="fc" id="L77">        private InputAssignment(String name, Expression expression) {</span>
+<span class="fc" id="L78">            this.name = name;</span>
+<span class="fc" id="L79">            this.expression = expression;</span>
+<span class="fc" id="L80">        }</span>
+
+        /**
+         * @return the targtet signal name
+         */
+        public String getTargetName() {
+<span class="fc" id="L86">            return name;</span>
+        }
+
+        /**
+         * @return the expression to assign
+         */
+        public Expression getExpression() {
+<span class="fc" id="L93">            return expression;</span>
+        }
+
+        private void replaceNetByExpression(HDLNet net, Expression expr) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (Expression.isVar(expression, net))</span>
+<span class="fc" id="L98">                expression = expr;</span>
+            else
+<span class="fc" id="L100">                expr.replace(net, expr);</span>
+<span class="fc" id="L101">        }</span>
+
+        private void rename(HDLModel.Renaming renaming) {
+<span class="fc" id="L104">            name = renaming.checkName(name);</span>
+<span class="fc" id="L105">        }</span>
+
+        private  &lt;V extends Visitor&gt; void traverseExpressions(V visitor) {
+<span class="fc" id="L108">            expression.traverse(visitor);</span>
+<span class="fc" id="L109">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ATF150xCuplExporter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.ATF150x</a> &gt; <span class="el_source">ATF150xCuplExporter.java</span></div><h1>ATF150xCuplExporter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.ATF150x;
+
+import de.neemann.digital.builder.Gal16v8.CuplExporter;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Date;
+
+/**
+ * Creates a CUPL file
+ */
+public class ATF150xCuplExporter extends CuplExporter {
+
+    /**
+     * Creates a new CUPL exporter
+     *
+     * @param devName  the device name
+     * @param clockPin the clock pin
+     * @param pins     the bidirectional pins
+     */
+    public ATF150xCuplExporter(String devName, int clockPin, int[] pins) {
+<span class="nc" id="L27">        this(System.getProperty(&quot;user.name&quot;), new Date(), devName, clockPin, pins);</span>
+<span class="nc" id="L28">    }</span>
+
+    /**
+     * Creates a new project name
+     *
+     * @param username user name
+     * @param date     date
+     * @param devName  the type of the device
+     * @param clockPin the clock pin
+     * @param pins     the bidirectional pins
+     */
+    public ATF150xCuplExporter(String username, Date date, String devName, int clockPin, int[] pins) {
+<span class="fc" id="L40">        super(username, date, devName);</span>
+<span class="fc" id="L41">        getPinMapping()</span>
+<span class="fc" id="L42">                .setAvailBidirectional(pins);</span>
+<span class="fc" id="L43">        setClockPin(clockPin);</span>
+<span class="fc" id="L44">        setCreateNodes(true);</span>
+<span class="fc" id="L45">    }</span>
+
+    @Override
+    protected void headerWritten(Writer out) throws IOException {
+<span class="fc" id="L49">        out.write(&quot;\r\nar = 'b'0 ;\r\n&quot;);</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    protected void sequentialWritten(Writer out, String name) throws IOException {
+<span class="fc" id="L54">        out.write(name + &quot;.ck = CLK ;\r\n&quot;);</span>
+<span class="fc" id="L55">        out.write(name + &quot;.ar = ar ;\r\n&quot;);</span>
+<span class="fc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Splitter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring</a> &gt; <span class="el_source">Splitter.java</span></div><h1>Splitter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.StringTokenizer;
+
+/**
+ * The Splitter.
+ */
+public class Splitter implements Element {
+
+    /**
+     * Create a one to N splitter
+     *
+     * @param bits number of outputs
+     * @return the splitter
+     */
+    public static Splitter createOneToN(int bits) {
+<span class="fc" id="L28">        Ports in = new Ports();</span>
+<span class="fc" id="L29">        in.add(new Port(0, bits));</span>
+<span class="fc" id="L30">        Ports out = new Ports();</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (int i = 0; i &lt; bits; i++)</span>
+<span class="fc" id="L32">            out.add(new Port(i, 1));</span>
+<span class="fc" id="L33">        return new Splitter(in, out);</span>
+    }
+
+    /**
+     * Create a N to one splitter
+     *
+     * @param bits number of inputs
+     * @return the splitter
+     */
+    public static Splitter createNToOne(int bits) {
+<span class="fc" id="L43">        Ports in = new Ports();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; bits; i++)</span>
+<span class="fc" id="L45">            in.add(new Port(i, 1));</span>
+<span class="fc" id="L46">        Ports out = new Ports();</span>
+<span class="fc" id="L47">        out.add(new Port(0, bits));</span>
+<span class="fc" id="L48">        return new Splitter(in, out);</span>
+    }
+
+    /**
+     * The splitters type description
+     */
+<span class="fc" id="L54">    public static final ElementTypeDescription DESCRIPTION</span>
+            = new SplitterTypeDescription()
+<span class="fc" id="L56">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L57">            .addAttribute(Keys.MIRROR)</span>
+<span class="fc" id="L58">            .addAttribute(Keys.INPUT_SPLIT)</span>
+<span class="fc" id="L59">            .addAttribute(Keys.OUTPUT_SPLIT)</span>
+<span class="fc" id="L60">            .addAttribute(Keys.SPLITTER_SPREADING)</span>
+<span class="fc" id="L61">            .setShortName(&quot;&quot;)</span>
+<span class="fc" id="L62">            .supportsHDL();</span>
+
+    private final ObservableValues outputs;
+    private final Ports inPorts;
+    private final Ports outPorts;
+    private ObservableValues inputs;
+
+
+    private static class SplitterTypeDescription extends ElementTypeDescription {
+        SplitterTypeDescription() {
+<span class="fc" id="L72">            super(Splitter.class);</span>
+<span class="fc" id="L73">        }</span>
+
+        @Override
+        public PinDescriptions getInputDescription(ElementAttributes elementAttributes) throws BitsException {
+<span class="fc" id="L77">            Ports p = new Ports(elementAttributes.get(Keys.INPUT_SPLIT));</span>
+<span class="fc" id="L78">            return p.getNames(PinDescription.Direction.input);</span>
+        }
+
+    }
+
+    /**
+     * creates a new instance
+     *
+     * @param attributes the attributes
+     * @throws BitsException BitsException
+     */
+    public Splitter(ElementAttributes attributes) throws BitsException {
+<span class="fc" id="L90">        this(new Ports(attributes.get(Keys.INPUT_SPLIT)),</span>
+<span class="fc" id="L91">                new Ports(attributes.get(Keys.OUTPUT_SPLIT)));</span>
+<span class="fc" id="L92">    }</span>
+
+<span class="fc" id="L94">    private Splitter(Ports inPorts, Ports outPorts) {</span>
+<span class="fc" id="L95">        this.inPorts = inPorts;</span>
+<span class="fc" id="L96">        this.outPorts = outPorts;</span>
+<span class="fc" id="L97">        outputs = outPorts.getOutputs();</span>
+<span class="fc" id="L98">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L102">        this.inputs = inputs;</span>
+
+<span class="fc" id="L104">        inPorts.checkInputConsistency();</span>
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (inPorts.getBits() &lt; outPorts.getBits())</span>
+<span class="fc" id="L107">            throw new BitsException(Lang.get(&quot;err_splitterBitsMismatch&quot;), ImmutableList.combine(inputs, outputs));</span>
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (int i = 0; i &lt; inputs.size(); i++) {</span>
+<span class="fc" id="L110">            Port inPort = inPorts.getPort(i);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            if (inPort.getBits() != inputs.get(i).getBits())</span>
+<span class="nc" id="L112">                throw new BitsException(Lang.get(&quot;err_splitterBitsMismatch&quot;), inputs);</span>
+        }
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (Port out : outPorts)</span>
+<span class="fc" id="L116">            fillOutput(out);</span>
+<span class="fc" id="L117">    }</span>
+
+    private void fillOutput(Port out) throws NodeException {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (Port in : inPorts) {</span>
+<span class="fc bfc" id="L121" title="All 4 branches covered.">            if (in.getPos() + in.getBits() &lt;= out.getPos() || out.getPos() + out.getBits() &lt;= in.getPos())</span>
+<span class="fc" id="L122">                continue; // this input is not needed to fill the output!!!</span>
+
+            // out is filled completely by the actual single input value!
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (out.getPos() &gt;= in.getPos()</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                    &amp;&amp; out.getPos() + out.getBits() &lt;= in.getPos() + in.getBits()) {</span>
+
+<span class="fc" id="L128">                final int bitPos = out.getPos() - in.getPos();</span>
+<span class="fc" id="L129">                final ObservableValue inValue = inputs.get(in.number);</span>
+<span class="fc" id="L130">                final ObservableValue outValue = outputs.get(out.number);</span>
+<span class="fc" id="L131">                inValue.addObserverToValue(new NodeWithoutDelay(outValue) {</span>
+                    @Override
+                    public void hasChanged() {
+<span class="fc" id="L134">                        outValue.set(inValue.getValue() &gt;&gt;&gt; bitPos, inValue.getHighZ() &gt;&gt;&gt; bitPos);</span>
+<span class="fc" id="L135">                    }</span>
+                });
+<span class="fc" id="L137">                break; // done!! out is completely filled!</span>
+            }
+
+            // complete in value needs to be copied to a part of the output
+<span class="fc bfc" id="L141" title="All 4 branches covered.">            if (out.getPos() &lt;= in.getPos() &amp;&amp; in.getPos() + in.getBits() &lt;= out.getPos() + out.getBits()) {</span>
+<span class="fc" id="L142">                final int bitPos = in.getPos() - out.getPos();</span>
+<span class="fc" id="L143">                final long mask = ~Bits.up(Bits.mask(in.bits), bitPos);</span>
+<span class="fc" id="L144">                final ObservableValue inValue = inputs.get(in.number);</span>
+<span class="fc" id="L145">                final ObservableValue outValue = outputs.get(out.number);</span>
+<span class="fc" id="L146">                inputs.get(in.number).addObserverToValue(new NodeWithoutDelay(outValue) {</span>
+                    @Override
+                    public void hasChanged() {
+<span class="fc" id="L149">                        long in1 = inValue.getValue();</span>
+<span class="fc" id="L150">                        long out1 = outValue.getValue();</span>
+<span class="fc" id="L151">                        long inz1 = inValue.getHighZ();</span>
+<span class="fc" id="L152">                        long outz1 = outValue.getHighZ();</span>
+<span class="fc" id="L153">                        outValue.set((out1 &amp; mask) | (in1 &lt;&lt; bitPos), (outz1 &amp; mask) | (inz1 &lt;&lt; bitPos));</span>
+<span class="fc" id="L154">                    }</span>
+                });
+<span class="fc" id="L156">                continue; // done with this input, its completely copied to the output!</span>
+            }
+
+            // If this point is reached, a part of the input needs to be copied to a part of the output!
+
+            // upper part of input needs to be copied to the lower part of the output
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            if (in.getPos() &lt; out.getPos()) {</span>
+<span class="fc" id="L163">                final int bitsToCopy = in.getPos() + in.getBits() - out.getPos();</span>
+<span class="fc" id="L164">                final long mask = ~Bits.mask(bitsToCopy);</span>
+<span class="fc" id="L165">                final int shift = out.getPos() - in.getPos();</span>
+<span class="fc" id="L166">                final ObservableValue inValue = inputs.get(in.number);</span>
+<span class="fc" id="L167">                final ObservableValue outValue = outputs.get(out.number);</span>
+<span class="fc" id="L168">                inputs.get(in.number).addObserverToValue(new NodeWithoutDelay(outValue) {</span>
+                    @Override
+                    public void hasChanged() {
+<span class="fc" id="L171">                        long in12 = inValue.getValue();</span>
+<span class="fc" id="L172">                        long out12 = outValue.getValue();</span>
+<span class="fc" id="L173">                        long inz12 = inValue.getHighZ();</span>
+<span class="fc" id="L174">                        long outz12 = outValue.getHighZ();</span>
+<span class="fc" id="L175">                        outValue.set((out12 &amp; mask) | (in12 &gt;&gt;&gt; shift), (outz12 &amp; mask) | (inz12 &gt;&gt;&gt; shift));</span>
+<span class="fc" id="L176">                    }</span>
+                });
+<span class="fc" id="L178">                continue;</span>
+            }
+
+            // lower part of input needs to be copied to the upper part of the output
+<span class="fc" id="L182">            final int bitsToCopy = out.getPos() + out.getBits() - in.getPos();</span>
+<span class="fc" id="L183">            final int shift = in.getPos() - out.getPos();</span>
+<span class="fc" id="L184">            final long mask = ~Bits.up(Bits.mask(bitsToCopy), shift);</span>
+<span class="fc" id="L185">            final ObservableValue inValue = inputs.get(in.number);</span>
+<span class="fc" id="L186">            final ObservableValue outValue = outputs.get(out.number);</span>
+<span class="fc" id="L187">            inputs.get(in.number).addObserverToValue(new NodeWithoutDelay(outValue) {</span>
+                @Override
+                public void hasChanged() {
+<span class="fc" id="L190">                    long in13 = inValue.getValue();</span>
+<span class="fc" id="L191">                    long out13 = outValue.getValue();</span>
+<span class="fc" id="L192">                    long inz13 = inValue.getHighZ();</span>
+<span class="fc" id="L193">                    long outz13 = outValue.getHighZ();</span>
+<span class="fc" id="L194">                    outValue.set((out13 &amp; mask) | (in13 &lt;&lt; shift), (outz13 &amp; mask) | (inz13 &lt;&lt; shift));</span>
+<span class="fc" id="L195">                }</span>
+            });
+
+<span class="fc" id="L198">        }</span>
+<span class="fc" id="L199">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L203">        return outputs;</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+        // a splitter has no nodes, it works without a delay
+<span class="fc" id="L209">    }</span>
+
+    @Override
+    public void init(Model m) {
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        for (ObservableValue v : inputs)</span>
+<span class="fc" id="L214">            v.fireHasChanged();</span>
+<span class="fc" id="L215">    }</span>
+
+    /**
+     * A splitter port list
+     */
+    public static final class Ports implements Iterable&lt;Port&gt; {
+        private final ArrayList&lt;Port&gt; ports;
+<span class="fc" id="L222">        private int bits = 0;</span>
+
+<span class="fc" id="L224">        Ports() {</span>
+<span class="fc" id="L225">            ports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L226">        }</span>
+
+        /**
+         * Creates a new instance
+         *
+         * @param definition the splitter definition
+         * @throws BitsException BitsException
+         */
+        public Ports(String definition) throws BitsException {
+<span class="fc" id="L235">            this();</span>
+<span class="fc" id="L236">            StringTokenizer st = new StringTokenizer(definition, &quot;,&quot;, false);</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            while (st.hasMoreTokens()) {</span>
+                try {
+<span class="fc" id="L239">                    String strVal = st.nextToken().trim();</span>
+<span class="fc" id="L240">                    int pos = strVal.indexOf('*');</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">                    if (pos &gt;= 0) {</span>
+<span class="fc" id="L242">                        int b = Integer.decode(strVal.substring(0, pos).trim());</span>
+<span class="fc" id="L243">                        int count = Integer.decode(strVal.substring(pos + 1).trim());</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                        for (int i = 0; i &lt; count; i++)</span>
+<span class="fc" id="L245">                            add(new Port(bits, b));</span>
+<span class="fc" id="L246">                    } else {</span>
+<span class="fc" id="L247">                        pos = strVal.indexOf('-');</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">                        if (pos &gt;= 0) {</span>
+<span class="fc" id="L249">                            int from = Integer.decode(strVal.substring(0, pos).trim());</span>
+<span class="fc" id="L250">                            int to = Integer.decode(strVal.substring(pos + 1).trim());</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                            if (to &lt; from) {</span>
+<span class="fc" id="L252">                                int z = to;</span>
+<span class="fc" id="L253">                                to = from;</span>
+<span class="fc" id="L254">                                from = z;</span>
+                            }
+<span class="fc" id="L256">                            add(new Port(from, to - from + 1));</span>
+<span class="fc" id="L257">                        } else</span>
+<span class="fc" id="L258">                            add(new Port(bits, Integer.decode(strVal)));</span>
+                    }
+<span class="fc" id="L260">                } catch (RuntimeException e) {</span>
+<span class="fc" id="L261">                    throw new BitsException(Lang.get(&quot;err_spitterDefSyntaxError&quot;, definition));</span>
+<span class="fc" id="L262">                }</span>
+            }
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">            if (ports.isEmpty())</span>
+<span class="nc" id="L265">                add(new Port(bits, 1));</span>
+
+<span class="fc bfc" id="L267" title="All 2 branches covered.">            if (bits &gt; 64)</span>
+<span class="fc" id="L268">                throw new BitsException(Lang.get(&quot;err_spitterToManyBits&quot;, definition));</span>
+<span class="fc" id="L269">        }</span>
+
+        void checkInputConsistency() throws BitsException {
+<span class="fc" id="L272">            long fullMask = Bits.mask(bits);</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            for (Port p : ports) {</span>
+<span class="fc" id="L274">                long mask = Bits.up(Bits.mask(p.bits), p.pos);</span>
+
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                if ((fullMask &amp; mask) != mask)</span>
+<span class="fc" id="L277">                    throw new BitsException(Lang.get(&quot;err_splitterNotUnambiguously&quot;));</span>
+
+<span class="fc" id="L279">                fullMask = fullMask &amp; (~mask);</span>
+<span class="fc" id="L280">            }</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            if (fullMask != 0)</span>
+<span class="fc" id="L282">                throw new BitsException(Lang.get(&quot;err_splitterNotAllBitsDefined&quot;));</span>
+<span class="fc" id="L283">        }</span>
+
+        private void add(Port port) {
+<span class="fc" id="L286">            port.setNumber(ports.size());</span>
+<span class="fc" id="L287">            ports.add(port);</span>
+<span class="fc" id="L288">            int b = port.pos + port.bits;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">            if (b &gt; bits)</span>
+<span class="fc" id="L290">                bits = b;</span>
+<span class="fc" id="L291">        }</span>
+
+        /**
+         * @return the number of bits
+         */
+        public int getBits() {
+<span class="fc" id="L297">            return bits;</span>
+        }
+
+        private PinDescriptions getNames(PinDescription.Direction dir) {
+<span class="fc" id="L301">            PinInfo[] name = new PinInfo[ports.size()];</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            for (int i = 0; i &lt; name.length; i++) {</span>
+<span class="fc" id="L303">                final Port port = ports.get(i);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                if (port.getBits() == 1)</span>
+<span class="fc" id="L305">                    name[i] = new PinInfo(port.getName(), Lang.get(&quot;elem_Splitter_pin_in_one&quot;, port.getName()), dir);</span>
+                else
+<span class="fc" id="L307">                    name[i] = new PinInfo(port.getName(), Lang.get(&quot;elem_Splitter_pin_in&quot;, port.getName()), dir);</span>
+            }
+
+<span class="fc" id="L310">            return new PinDescriptions(name);</span>
+        }
+
+        ObservableValues getOutputs() {
+<span class="fc" id="L314">            ArrayList&lt;ObservableValue&gt; outputs = new ArrayList&lt;&gt;(ports.size());</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (Port p : ports) {</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                if (p.getBits() == 1)</span>
+<span class="fc" id="L317">                    outputs.add(new ObservableValue(p.getName(), p.getBits()).setDescription(Lang.get(&quot;elem_Splitter_pin_out_one&quot;, p.getName())));</span>
+                else
+<span class="fc" id="L319">                    outputs.add(new ObservableValue(p.getName(), p.getBits()).setDescription(Lang.get(&quot;elem_Splitter_pin_out&quot;, p.getName())));</span>
+<span class="fc" id="L320">            }</span>
+<span class="fc" id="L321">            return new ObservableValues(outputs);</span>
+        }
+
+        /**
+         * returns the port with the given index
+         *
+         * @param i the ports index
+         * @return the port
+         */
+        public Port getPort(int i) {
+<span class="fc" id="L331">            return ports.get(i);</span>
+        }
+
+        @Override
+        public Iterator&lt;Port&gt; iterator() {
+<span class="fc" id="L336">            return ports.iterator();</span>
+        }
+    }
+
+    /**
+     * A single splitter port.
+     */
+    public static final class Port {
+        private final int bits;
+        private final int pos;
+        private final String name;
+        private int number;
+
+<span class="fc" id="L349">        private Port(int pos, int bits) {</span>
+<span class="fc" id="L350">            this.pos = pos;</span>
+<span class="fc" id="L351">            this.bits = bits;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">            if (bits == 1)</span>
+<span class="fc" id="L353">                name = &quot;&quot; + pos;</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            else if (bits == 2)</span>
+<span class="fc" id="L355">                name = &quot;&quot; + pos + &quot;,&quot; + (pos + 1);</span>
+            else
+<span class="fc" id="L357">                name = &quot;&quot; + pos + &quot;-&quot; + (pos + bits - 1);</span>
+<span class="fc" id="L358">        }</span>
+
+        /**
+         * @return the number of bits in this port
+         */
+        public int getBits() {
+<span class="fc" id="L364">            return bits;</span>
+        }
+
+        /**
+         * @return the position of this port
+         */
+        public int getPos() {
+<span class="fc" id="L371">            return pos;</span>
+        }
+
+        /**
+         * @return the name of this port
+         */
+        public String getName() {
+<span class="fc" id="L378">            return name;</span>
+        }
+
+        private void setNumber(int number) {
+<span class="fc" id="L382">            this.number = number;</span>
+<span class="fc" id="L383">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

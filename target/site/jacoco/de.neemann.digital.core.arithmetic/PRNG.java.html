@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PRNG.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.arithmetic</a> &gt; <span class="el_source">PRNG.java</span></div><h1>PRNG.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2021 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.arithmetic;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import java.util.Random;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * Creates a random number using the Java Random class.
+ */
+public class PRNG extends Node implements Element {
+
+    /**
+     * The element type description
+     */
+<span class="fc" id="L26">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(PRNG.class,</span>
+<span class="fc" id="L27">            input(&quot;S&quot;),</span>
+<span class="fc" id="L28">            input(&quot;se&quot;),</span>
+<span class="fc" id="L29">            input(&quot;ne&quot;),</span>
+<span class="fc" id="L30">            input(&quot;C&quot;).setClock())</span>
+<span class="fc" id="L31">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L32">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L33">            .addAttribute(Keys.LABEL);</span>
+
+    private final ObservableValue output;
+    private final int bits;
+    private final long mask;
+    private final Random random;
+    private ObservableValue seedVal;
+    private ObservableValue setVal;
+    private ObservableValue nextVal;
+    private ObservableValue clockVal;
+    private boolean lastClock;
+    private long value;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the elements attributes
+     */
+<span class="fc" id="L51">    public PRNG(ElementAttributes attributes) {</span>
+<span class="fc" id="L52">        bits = attributes.get(Keys.BITS);</span>
+<span class="fc" id="L53">        output = new ObservableValue(&quot;R&quot;, bits).setPinDescription(DESCRIPTION);</span>
+        // Let Java set the initial seed so that different values are generated each simulation,
+        // unless a specific seed is set by the user later on.
+<span class="fc" id="L56">        random = new Random();</span>
+<span class="fc" id="L57">        mask = Bits.mask(bits);</span>
+<span class="fc" id="L58">        value = random.nextLong() &amp; mask;</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L63">        boolean clock = clockVal.getBool();</span>
+
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">        if (clock &amp;&amp; !lastClock) {</span>
+            // First update seed
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (setVal.getBool())</span>
+<span class="fc" id="L68">                random.setSeed(seedVal.getValue());</span>
+
+            // Then value. This keeps the component well defined in case both 'set' and 'next' inputs are set.
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            if (nextVal.getBool())</span>
+<span class="fc" id="L72">                value = random.nextLong() &amp; mask;</span>
+        }
+
+<span class="fc" id="L75">        lastClock = clock;</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L80">        output.setValue(value);</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+        // Note: could separate bit count for seed input &amp; value output
+<span class="fc" id="L86">        seedVal = inputs.get(0).checkBits(bits, this);</span>
+<span class="fc" id="L87">        setVal = inputs.get(1).checkBits(1, this);</span>
+<span class="fc" id="L88">        nextVal = inputs.get(2).checkBits(1, this);</span>
+<span class="fc" id="L89">        clockVal = inputs.get(3).addObserverToValue(this).checkBits(1, this);</span>
+<span class="fc" id="L90">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L94">        return output.asList();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

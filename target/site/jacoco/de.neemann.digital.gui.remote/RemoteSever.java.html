@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RemoteSever.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.remote</a> &gt; <span class="el_source">RemoteSever.java</span></div><h1>RemoteSever.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.remote;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+/**
+ * Simple server to remote control the simulator.
+ * Every incoming request is passed to the {@link HandlerInterface}.
+ * The returned string is then returned to the client as response.
+ * &lt;p/&gt;
+ * Created by helmut.neemann on 23.06.2016.
+ */
+public class RemoteSever implements Runnable {
+    private final HandlerInterface handler;
+    private ServerSocket socket;
+    private Thread thread;
+
+    /**
+     * Creates a new server instance
+     *
+     * @param handler the handler interface to handle simple string requests
+     */
+<span class="nc" id="L31">    public RemoteSever(HandlerInterface handler) {</span>
+<span class="nc" id="L32">        this.handler = handler;</span>
+<span class="nc" id="L33">    }</span>
+
+    /**
+     * Stars the server
+     * @param port the port
+     * @throws IOException IOException
+     */
+    public void start(int port) throws IOException {
+<span class="nc" id="L41">        socket = new ServerSocket(port);</span>
+<span class="nc" id="L42">        thread = new Thread(this);</span>
+<span class="nc" id="L43">        thread.setDaemon(true);</span>
+<span class="nc" id="L44">        thread.start();</span>
+<span class="nc" id="L45">    }</span>
+
+    @Override
+    public void run() {
+        try {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            while (!thread.isInterrupted()) {</span>
+<span class="nc" id="L51">                try (Socket s = socket.accept()) {</span>
+<span class="nc" id="L52">                    DataInputStream in = new DataInputStream(s.getInputStream());</span>
+<span class="nc" id="L53">                    String request = in.readUTF();</span>
+<span class="nc" id="L54">                    String response = handler.handleRequest(request);</span>
+<span class="nc" id="L55">                    DataOutputStream out = new DataOutputStream(s.getOutputStream());</span>
+<span class="nc" id="L56">                    out.writeUTF(response);</span>
+<span class="nc" id="L57">                }</span>
+            }
+<span class="nc" id="L59">        } catch (IOException e) {</span>
+<span class="nc" id="L60">            e.printStackTrace();</span>
+<span class="nc" id="L61">        }</span>
+<span class="nc" id="L62">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

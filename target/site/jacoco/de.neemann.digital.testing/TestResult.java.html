@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing</a> &gt; <span class="el_source">TestResult.java</span></div><h1>TestResult.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing;
+
+import de.neemann.digital.data.Value;
+import de.neemann.digital.data.ValueTable;
+import de.neemann.digital.testing.parser.TestRow;
+
+/**
+ * The test result created by the test executor
+ */
+public class TestResult implements TestResultListener {
+    private static final int MAX_RESULTS = 1 &lt;&lt; 10;
+    private static final int ERR_RESULTS = MAX_RESULTS * 2;
+
+    private final TestExecutor testExecutor;
+    private final ValueTable results;
+    private int passedCount;
+    private int failedCount;
+    private boolean toManyResults;
+    private int visibleRows;
+    private int rowCount;
+
+    /**
+     * Creates a new instance
+     *
+     * @param testExecutor the test executor that created tis instance
+     */
+<span class="fc" id="L32">    TestResult(TestExecutor testExecutor) {</span>
+<span class="fc" id="L33">        this.testExecutor = testExecutor;</span>
+<span class="fc" id="L34">        results = new ValueTable(testExecutor.getNames());</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public void add(TestRow testRow) {
+<span class="fc" id="L39">        Value[] values = testRow.getValues();</span>
+<span class="fc" id="L40">        Value[] res = new Value[values.length];</span>
+
+<span class="fc" id="L42">        testExecutor.advanceModel(testRow, values, res, this);</span>
+
+<span class="fc" id="L44">        boolean ok = true;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (TestExecutor.TestSignal out : testExecutor.getOutputs()) {</span>
+<span class="fc" id="L46">            MatchedValue matchedValue = new MatchedValue(values[out.getIndex()], out.getValue());</span>
+<span class="fc" id="L47">            res[out.getIndex()] = matchedValue;</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (!matchedValue.isPassed())</span>
+<span class="fc" id="L49">                ok = false;</span>
+<span class="fc" id="L50">        }</span>
+
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (ok)</span>
+<span class="fc" id="L53">            passedCount++;</span>
+        else
+<span class="fc" id="L55">            failedCount++;</span>
+
+<span class="fc bfc" id="L57" title="All 4 branches covered.">        if (visibleRows &lt; (ok ? MAX_RESULTS : ERR_RESULTS)) {</span>
+<span class="fc" id="L58">            visibleRows++;</span>
+<span class="fc" id="L59">            results.add(new TestRow(res, testRow.getDescription()).setRow(rowCount));</span>
+        } else
+<span class="fc" id="L61">            toManyResults = true;</span>
+<span class="fc" id="L62">        rowCount++;</span>
+<span class="fc" id="L63">    }</span>
+
+    @Override
+    public void addClockRow(String description) {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (visibleRows &lt; ERR_RESULTS) {</span>
+<span class="fc" id="L68">            Value[] r = new Value[testExecutor.getNames().size()];</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (TestExecutor.TestSignal out : testExecutor.getOutputs())</span>
+<span class="fc" id="L70">                r[out.getIndex()] = new Value(out.getValue());</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            for (TestExecutor.TestSignal in : testExecutor.getInputs())</span>
+<span class="fc" id="L72">                r[in.getIndex()] = new Value(in.getValue());</span>
+<span class="fc" id="L73">            results.add(new TestRow(r, description)).omitInTable();</span>
+<span class="fc" id="L74">        } else</span>
+<span class="nc" id="L75">            toManyResults = true;</span>
+<span class="fc" id="L76">    }</span>
+
+
+    /**
+     * @return true if all tests have passed
+     */
+    public boolean allPassed() {
+<span class="pc bpc" id="L83" title="1 of 6 branches missed.">        return !isErrorOccurred() &amp;&amp; failedCount == 0 &amp;&amp; passedCount &gt; 0;</span>
+    }
+
+    /**
+     * Indicates if there are to many entries in the table to show.
+     * If there are to many entries, the test results is still correct.
+     *
+     * @return true if there are missing items in the results list.
+     */
+    public boolean toManyResults() {
+<span class="nc" id="L93">        return toManyResults;</span>
+    }
+
+    /**
+     * @return true if the test failed due to an error
+     */
+    public boolean isErrorOccurred() {
+<span class="fc" id="L100">        return testExecutor.isErrorOccurred();</span>
+    }
+
+    /**
+     * @return the percentage of failed test rows
+     */
+    public int failedPercent() {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (passedCount == 0)</span>
+<span class="nc" id="L108">            return 100;</span>
+<span class="fc" id="L109">        int p = (100 * failedCount) / (failedCount + passedCount);</span>
+<span class="pc bpc" id="L110" title="3 of 4 branches missed.">        if (p == 0 &amp;&amp; failedCount &gt; 0)</span>
+<span class="nc" id="L111">            p = 1;</span>
+<span class="fc" id="L112">        return p;</span>
+    }
+
+    /**
+     * @return the number of rows tested (passed+failed)
+     */
+    public int getRowsTested() {
+<span class="fc" id="L119">        return passedCount + failedCount;</span>
+    }
+
+    /**
+     * @return the value table containing the detailed result
+     */
+    public ValueTable getValueTable() {
+<span class="fc" id="L126">        return results;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

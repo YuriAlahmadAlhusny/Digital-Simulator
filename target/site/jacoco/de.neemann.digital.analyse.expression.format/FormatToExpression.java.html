@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FormatToExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression.format</a> &gt; <span class="el_source">FormatToExpression.java</span></div><h1>FormatToExpression.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression.format;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.graphics.text.formatter.PlainTextFormatter;
+import de.neemann.digital.draw.graphics.text.text.ExpressionToText;
+import de.neemann.digital.gui.Settings;
+
+import static de.neemann.digital.analyse.expression.Not.not;
+import static de.neemann.digital.analyse.expression.Operation.and;
+import static de.neemann.digital.analyse.expression.Operation.or;
+import static de.neemann.digital.analyse.expression.Variable.v;
+
+/**
+ * Used to format an expression to a simple string.
+ * The hard work is meanwhile done by two separate classes called {@link PlainTextFormatter} and {@link ExpressionToText}.
+ * At first the expression is converted to a {@link de.neemann.digital.draw.graphics.text.text.Text} instance and then
+ * formatted to a string by the {@link PlainTextFormatter}.
+ */
+<span class="fc" id="L25">public enum FormatToExpression implements Formatter {</span>
+
+    /**
+     * Creates a string compatible to Java
+     */
+<span class="fc" id="L30">    JAVA(&quot;||&quot;, &quot;&amp;&amp;&quot;, &quot;^&quot;, &quot;!&quot;, &quot;false&quot;, &quot;true&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a string compatible to Derive
+     */
+<span class="fc" id="L34">    DERIVE(&quot;OR&quot;, &quot;AND&quot;, &quot;XOR&quot;, &quot;NOT &quot;, &quot;false&quot;, &quot;true&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a string compatible to WinCUPL
+     */
+<span class="fc" id="L38">    CUPL(&quot;#&quot;, &quot;&amp;&quot;, &quot;$&quot;, &quot;!&quot;, &quot;'b'0&quot;, &quot;'b'1&quot;, &quot;=&quot;, true),</span>
+    /**
+     * Creates a string compatible to Logisim
+     */
+<span class="fc" id="L42">    LOGISIM(&quot;+&quot;, &quot;&quot;, &quot;^&quot;, &quot;~&quot;, &quot;false&quot;, &quot;true&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a unicode string
+     */
+<span class="fc" id="L46">    UNICODE(&quot;\u2228&quot;, &quot;\u2227&quot;, &quot;\u22BB&quot;, &quot;\u00AC&quot;, &quot;0&quot;, &quot;1&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a unicode string with no AND character
+     */
+<span class="fc" id="L50">    UNICODE_NOAND(&quot;\u2228&quot;, &quot;&quot;, &quot;\u22BB&quot;, &quot;\u00AC&quot;, &quot;0&quot;, &quot;1&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a short string representation
+     */
+<span class="fc" id="L54">    SHORT(&quot;+&quot;, &quot;*&quot;, &quot;^&quot;, &quot;!&quot;, &quot;0&quot;, &quot;1&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a short string representation
+     */
+<span class="fc" id="L58">    SHORTER(&quot;+&quot;, &quot;&quot;, &quot;^&quot;, &quot;!&quot;, &quot;0&quot;, &quot;1&quot;, &quot;=&quot;),</span>
+    /**
+     * Creates a LaTeX representation
+     */
+<span class="fc" id="L62">    LATEX(&quot;\\oder&quot;, &quot;\\und&quot;, &quot;\\xoder&quot;, &quot;&quot;, &quot;0&quot;, &quot;1&quot;, &quot;&amp;=&amp;&quot;);</span>
+
+    private static final Expression TOSTRING_EXPR;
+
+    static {
+<span class="fc" id="L67">        Variable a = v(&quot;A&quot;);</span>
+<span class="fc" id="L68">        Variable b = v(&quot;B&quot;);</span>
+<span class="fc" id="L69">        TOSTRING_EXPR = or(and(a, not(b)), and(not(a), b), Constant.ZERO);</span>
+<span class="fc" id="L70">    }</span>
+
+
+    /**
+     * @return the default format
+     */
+    public static FormatToExpression getDefaultFormat() {
+<span class="nc" id="L77">        return Settings.getInstance().get(Keys.SETTINGS_EXPRESSION_FORMAT);</span>
+    }
+
+    /**
+     * Formats a expression to a string.
+     * Uses the default format for presentation on the screen.
+     *
+     * @param exp the expression to format
+     * @return the string representation
+     */
+    public static String defaultFormat(Expression exp) {
+<span class="nc" id="L88">        return getDefaultFormat().format(exp);</span>
+    }
+
+    private final String orString;
+    private final String andString;
+    private final String falseString;
+    private final String trueString;
+    private final String equal;
+    private final String xorString;
+    private final String notString;
+    private final boolean keepVars;
+    private String name;
+
+    FormatToExpression(String orString, String andString, String xorString, String notString, String falseString, String trueString, String equal) {
+<span class="fc" id="L102">        this(orString, andString, xorString, notString, falseString, trueString, equal, false);</span>
+<span class="fc" id="L103">    }</span>
+
+    //CHECKSTYLE.OFF: ParameterNumber
+<span class="fc" id="L106">    FormatToExpression(String orString, String andString, String xorString, String notString, String falseString, String trueString, String equal, boolean keepVars) {</span>
+<span class="fc" id="L107">        this.orString = orString;</span>
+<span class="fc" id="L108">        this.andString = andString;</span>
+<span class="fc" id="L109">        this.xorString = xorString;</span>
+<span class="fc" id="L110">        this.notString = notString;</span>
+<span class="fc" id="L111">        this.falseString = falseString;</span>
+<span class="fc" id="L112">        this.trueString = trueString;</span>
+<span class="fc" id="L113">        this.equal = equal;</span>
+<span class="fc" id="L114">        this.keepVars = keepVars;</span>
+<span class="fc" id="L115">    }</span>
+    //CHECKSTYLE.ON: ParameterNumber
+
+    /**
+     * @return the OR string
+     */
+    public String getOrString() {
+<span class="fc" id="L122">        return orString;</span>
+    }
+
+    /**
+     * @return the AND string
+     */
+    public String getAndString() {
+<span class="fc" id="L129">        return andString;</span>
+    }
+
+    /**
+     * @return the XOR string
+     */
+    public String getXorString() {
+<span class="fc" id="L136">        return xorString;</span>
+    }
+
+    /**
+     * @return the NOT string
+     */
+    public String getNot() {
+<span class="fc" id="L143">        return notString;</span>
+    }
+
+    /**
+     * @return the EQUAL string
+     */
+    public String getEqual() {
+<span class="fc" id="L150">        return equal;</span>
+    }
+
+    /**
+     * Formats the given constant
+     *
+     * @param value th constant
+     * @return the string representation
+     */
+    public String constant(boolean value) {
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (value) return trueString;</span>
+<span class="fc" id="L161">        else return falseString;</span>
+    }
+
+    @Override
+    public String format(Expression expression) {
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        return PlainTextFormatter.format(new ExpressionToText().setFormatIdentifiers(!keepVars).createText(expression, this), this);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (name == null)</span>
+<span class="fc" id="L172">            name = format(TOSTRING_EXPR);</span>
+<span class="fc" id="L173">        return name;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

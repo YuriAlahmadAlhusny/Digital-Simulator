@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BusSplitter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring</a> &gt; <span class="el_source">BusSplitter.java</span></div><h1>BusSplitter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring;
+
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A bus splitter to split a bidirectional data bus
+ */
+public class BusSplitter extends Node implements Element {
+
+    /**
+     * The bus splitters type description
+     */
+<span class="fc" id="L26">    public static final ElementTypeDescription DESCRIPTION =</span>
+<span class="fc" id="L27">            new ElementTypeDescription(BusSplitter.class, input(&quot;OE&quot;))</span>
+<span class="fc" id="L28">                    .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L29">                    .addAttribute(Keys.MIRROR)</span>
+<span class="fc" id="L30">                    .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L31">                    .addAttribute(Keys.SPLITTER_SPREADING);</span>
+
+    private final int bits;
+    private final ObservableValue commonOut;
+    private final ObservableValue[] out;
+    private final ObservableValue[] in;
+    private ObservableValue oeValue;
+    private ObservableValue commonIn;
+    private boolean oe;
+    private long commonD;
+    private long commonZ;
+    private ObservableValues outputValues;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the components attributes
+     */
+<span class="fc" id="L49">    public BusSplitter(ElementAttributes attr) {</span>
+<span class="fc" id="L50">        ObservableValues.Builder builder = new ObservableValues.Builder();</span>
+<span class="fc" id="L51">        bits = attr.getBits();</span>
+<span class="fc" id="L52">        commonOut = new ObservableValue(&quot;D&quot;, bits)</span>
+<span class="fc" id="L53">                .setToHighZ()</span>
+<span class="fc" id="L54">                .setBidirectional()</span>
+<span class="fc" id="L55">                .setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L56">        builder.add(commonOut);</span>
+<span class="fc" id="L57">        out = new ObservableValue[bits];</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; bits; i++) {</span>
+<span class="fc" id="L59">            out[i] = new ObservableValue(&quot;D&quot; + i, 1)</span>
+<span class="fc" id="L60">                    .setToHighZ()</span>
+<span class="fc" id="L61">                    .setBidirectional()</span>
+<span class="fc" id="L62">                    .setDescription(Lang.get(&quot;elem_BusSplitter_pin_D_N&quot;, i));</span>
+<span class="fc" id="L63">            builder.add(out[i]);</span>
+        }
+<span class="fc" id="L65">        outputValues = builder.build();</span>
+<span class="fc" id="L66">        in = new ObservableValue[bits];</span>
+<span class="fc" id="L67">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L71">        oeValue = inputs.get(0).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L72">        commonIn = inputs.get(1).checkBits(bits, this).addObserverToValue(this);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; bits; i++)</span>
+<span class="fc" id="L74">            in[i] = inputs.get(i + 2).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L75">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L79">        oe = oeValue.getBool();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (oe) {</span>
+<span class="fc" id="L81">            commonD = commonIn.getValue();</span>
+<span class="fc" id="L82">            commonZ = commonIn.getHighZ();</span>
+        } else {
+<span class="fc" id="L84">            commonD = 0;</span>
+<span class="fc" id="L85">            commonZ = 0;</span>
+<span class="fc" id="L86">            long mask = 1;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            for (int i = 0; i &lt; bits; i++) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                if (in[i].getBool())</span>
+<span class="fc" id="L89">                    commonD |= mask;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (in[i].isHighZ())</span>
+<span class="fc" id="L91">                    commonZ |= mask;</span>
+<span class="fc" id="L92">                mask &lt;&lt;= 1;</span>
+            }
+        }
+<span class="fc" id="L95">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (oe) {</span>
+<span class="fc" id="L100">            commonOut.setToHighZ();</span>
+<span class="fc" id="L101">            long mask = 1;</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (int i = 0; i &lt; bits; i++) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if ((commonZ &amp; mask) != 0)</span>
+<span class="fc" id="L104">                    out[i].setToHighZ();</span>
+                else
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                    out[i].setBool((commonD &amp; mask) != 0);</span>
+<span class="fc" id="L107">                mask &lt;&lt;= 1;</span>
+            }
+<span class="fc" id="L109">        } else {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (int i = 0; i &lt; bits; i++)</span>
+<span class="fc" id="L111">                out[i].setToHighZ();</span>
+<span class="fc" id="L112">            commonOut.set(commonD, commonZ);</span>
+        }
+<span class="fc" id="L114">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() throws PinException {
+<span class="fc" id="L118">        return outputValues;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

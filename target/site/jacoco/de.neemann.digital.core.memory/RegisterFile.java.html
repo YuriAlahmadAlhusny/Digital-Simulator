@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegisterFile.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">RegisterFile.java</span></div><h1>RegisterFile.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A register file with two output a one input port.
+ */
+public class RegisterFile extends Node implements Element, RAMInterface {
+
+    /**
+     * The RAMs {@link ElementTypeDescription}
+     */
+<span class="fc" id="L27">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(RegisterFile.class,</span>
+<span class="fc" id="L28">            input(&quot;Din&quot;),</span>
+<span class="fc" id="L29">            input(&quot;we&quot;),</span>
+<span class="fc" id="L30">            input(&quot;Rw&quot;),</span>
+<span class="fc" id="L31">            input(&quot;C&quot;).setClock(),</span>
+<span class="fc" id="L32">            input(&quot;Ra&quot;),</span>
+<span class="fc" id="L33">            input(&quot;Rb&quot;))</span>
+<span class="fc" id="L34">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.ADDR_BITS)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L38">            .supportsHDL();</span>
+
+    private final DataField memory;
+    private final ObservableValue out1;
+    private final ObservableValue out2;
+    private final int addrBits;
+    private final int bits;
+    private final String label;
+    private final int size;
+    private ObservableValue reg1In;
+    private ObservableValue reg2In;
+    private ObservableValue regWIn;
+    private ObservableValue data1In;
+    private ObservableValue weIn;
+    private ObservableValue clk1In;
+    private int reg1;
+    private int reg2;
+<span class="fc" id="L55">    private boolean lastClk = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+    public RegisterFile(ElementAttributes attr) {
+<span class="fc" id="L63">        super(true);</span>
+<span class="fc" id="L64">        bits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L65">        out1 = new ObservableValue(&quot;Da&quot;, bits).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L66">        out2 = new ObservableValue(&quot;Db&quot;, bits).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L67">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L68">        size = 1 &lt;&lt; addrBits;</span>
+<span class="fc" id="L69">        memory = new DataField(size);</span>
+<span class="fc" id="L70">        label = attr.getLabel();</span>
+<span class="fc" id="L71">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L75">        this.data1In = inputs.get(0).checkBits(bits, this);</span>
+<span class="fc" id="L76">        this.weIn = inputs.get(1).checkBits(1, this);</span>
+<span class="fc" id="L77">        this.regWIn = inputs.get(2).checkBits(addrBits, this);</span>
+<span class="fc" id="L78">        this.clk1In = inputs.get(3).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L79">        this.reg1In = inputs.get(4).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L80">        this.reg2In = inputs.get(5).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L85">        return new ObservableValues(out1, out2);</span>
+    }
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L90">        boolean clk = clk1In.getBool();</span>
+<span class="pc bpc" id="L91" title="1 of 6 branches missed.">        boolean str = !lastClk &amp;&amp; clk &amp;&amp; weIn.getBool();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (str) {</span>
+<span class="fc" id="L93">            long data = data1In.getValue();</span>
+<span class="fc" id="L94">            int regW = (int) regWIn.getValue();</span>
+<span class="fc" id="L95">            memory.setData(regW, data);</span>
+        }
+
+<span class="fc" id="L98">        reg1 = (int) reg1In.getValue();</span>
+<span class="fc" id="L99">        reg2 = (int) reg2In.getValue();</span>
+
+<span class="fc" id="L101">        lastClk = clk;</span>
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L106">        out1.setValue(memory.getDataWord(reg1));</span>
+<span class="fc" id="L107">        out2.setValue(memory.getDataWord(reg2));</span>
+<span class="fc" id="L108">    }</span>
+
+    @Override
+    public DataField getMemory() {
+<span class="nc" id="L112">        return memory;</span>
+    }
+
+    @Override
+    public String getLabel() {
+<span class="nc" id="L117">        return label;</span>
+    }
+
+    @Override
+    public int getSize() {
+<span class="nc" id="L122">        return size;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L127">        return bits;</span>
+    }
+
+    @Override
+    public int getAddrBits() {
+<span class="nc" id="L132">        return addrBits;</span>
+    }
+
+    @Override
+    public boolean isProgramMemory() {
+<span class="nc" id="L137">        return false;</span>
+    }
+
+    @Override
+    public void setProgramMemory(DataField dataField) {
+<span class="nc" id="L142">        memory.setDataFrom(dataField);</span>
+<span class="nc" id="L143">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

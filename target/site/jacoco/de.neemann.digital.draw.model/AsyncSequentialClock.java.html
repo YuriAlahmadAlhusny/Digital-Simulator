@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AsyncSequentialClock.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">AsyncSequentialClock.java</span></div><h1>AsyncSequentialClock.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.ModelEvent;
+import de.neemann.digital.core.ModelEventType;
+import de.neemann.digital.core.ModelStateObserverTyped;
+import de.neemann.digital.core.wiring.AsyncSeq;
+
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * The real time clock used to clock a circuit in async mode.
+ */
+public class AsyncSequentialClock implements ModelStateObserverTyped {
+    private final Model model;
+    private final ScheduledThreadPoolExecutor executor;
+    private final int frequency;
+    private RealTimeRunner runner;
+
+    /**
+     * Creates a new real time clock
+     *
+     * @param model    the model
+     * @param asyncSeq the data used to configure the clock
+     * @param executor the executor used to schedule the update
+     */
+<span class="nc" id="L34">    public AsyncSequentialClock(Model model, AsyncSeq asyncSeq, ScheduledThreadPoolExecutor executor) {</span>
+<span class="nc" id="L35">        this.model = model;</span>
+<span class="nc" id="L36">        this.executor = executor;</span>
+<span class="nc" id="L37">        int f = asyncSeq.getFrequency();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (f &lt; 1) f = 1;</span>
+<span class="nc" id="L39">        this.frequency = f;</span>
+<span class="nc" id="L40">    }</span>
+
+    @Override
+    public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L44" title="All 3 branches missed.">        switch (event.getType()) {</span>
+            case STARTED:
+<span class="nc" id="L46">                int delayMuS = 1000000 / frequency;</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">                if (delayMuS &lt; 100)</span>
+<span class="nc" id="L48">                    delayMuS = 100;</span>
+<span class="nc" id="L49">                runner = new RealTimeRunner(delayMuS);</span>
+<span class="nc" id="L50">                break;</span>
+            case CLOSED:
+<span class="nc bnc" id="L52" title="All 2 branches missed.">                if (runner != null)</span>
+<span class="nc" id="L53">                    runner.stop();</span>
+                break;
+        }
+<span class="nc" id="L56">    }</span>
+
+    @Override
+    public ModelEventType[] getEvents() {
+<span class="nc" id="L60">        return new ModelEventType[]{ModelEventType.STARTED, ModelEventType.CLOSED};</span>
+    }
+
+    /**
+     * runs with defined rate
+     */
+    private class RealTimeRunner {
+
+        private final ScheduledFuture&lt;?&gt; timer;
+
+<span class="nc" id="L70">        RealTimeRunner(int delay) {</span>
+<span class="nc" id="L71">            timer = executor.scheduleAtFixedRate(new Runnable() {</span>
+                @Override
+                public void run() {
+<span class="nc" id="L74">                    model.doMicroStep(false);</span>
+<span class="nc" id="L75">                }</span>
+            }, delay, delay, TimeUnit.MICROSECONDS);
+<span class="nc" id="L77">        }</span>
+
+        public void stop() {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (timer != null)</span>
+<span class="nc" id="L81">                timer.cancel(false);</span>
+<span class="nc" id="L82">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

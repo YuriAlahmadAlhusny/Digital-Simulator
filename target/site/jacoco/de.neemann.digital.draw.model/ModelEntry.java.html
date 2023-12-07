@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">ModelEntry.java</span></div><h1>ModelEntry.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.gui.components.CircuitModifier;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * The ModelEntry is used to generate the model.
+ * It holds the element which is able to register nodes to the model and the visual element which is
+ * the visual representation of the circuits.
+ */
+public class ModelEntry {
+    private final Element element;
+    private final Pins pins;
+    private final PinDescriptions inputNames;
+    private final boolean isNestedElement;
+    private final File origin;                           // Only used to create better error messages
+    private final VisualElement containingVisualElement; // Only used to create better error messages
+    private final VisualElement visualElement;
+    private IOState ioState;
+
+    /**
+     * Creates a new instance
+     *
+     * @param element                 the element which is created
+     * @param pins                    the pins transformed in the circuits coordinate system
+     * @param visualElement           the visual element which has created the element
+     * @param inputNames              the pin descriptions of the inputs.
+     * @param isNestedElement         true if this visual element is a nested included element
+     * @param origin                  Used to create better error messages
+     * @param containingVisualElement only used to create better error messages
+     */
+<span class="fc" id="L49">    public ModelEntry(Element element, Pins pins, VisualElement visualElement, PinDescriptions inputNames, boolean isNestedElement, File origin, VisualElement containingVisualElement) {</span>
+<span class="fc" id="L50">        this.element = element;</span>
+<span class="fc" id="L51">        this.pins = pins;</span>
+<span class="fc" id="L52">        this.visualElement = visualElement;</span>
+<span class="fc" id="L53">        this.inputNames = inputNames;</span>
+<span class="fc" id="L54">        this.isNestedElement = isNestedElement;</span>
+<span class="fc" id="L55">        this.origin = origin;</span>
+<span class="fc" id="L56">        this.containingVisualElement = containingVisualElement;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Sets the Inputs of the element contained in this entry
+     *
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    public void applyInputs() throws PinException, NodeException {
+        try {
+<span class="fc" id="L67">            HashMap&lt;String, Pin&gt; ins = pins.getInputs();</span>
+
+<span class="fc" id="L69">            InverterConfig ic = visualElement.getElementAttributes().get(Keys.INVERTER_CONFIG);</span>
+
+<span class="fc" id="L71">            ObservableValues values = ObservableValues.EMPTY_LIST;</span>
+<span class="fc" id="L72">            ArrayList&lt;ObservableValue&gt; inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            for (PinDescription inputName : inputNames) {</span>
+<span class="fc" id="L74">                Pin pin = ins.get(inputName.getName());</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                if (pin == null)</span>
+<span class="nc" id="L76">                    throw new PinException(Lang.get(&quot;err_pin_N0_atElement_N1_notFound&quot;, inputName, visualElement), containingVisualElement);</span>
+
+<span class="fc" id="L78">                ObservableValue value = pin.getValue();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (value == null)</span>
+<span class="fc" id="L80">                    throw new PinException(Lang.get(&quot;err_noValueSetFor_N0_atElement_N1&quot;, inputName, visualElement), containingVisualElement);</span>
+
+<span class="fc" id="L82">                inputs.add(ic.invert(inputName.getName(), value));</span>
+<span class="fc" id="L83">            }</span>
+
+<span class="fc" id="L85">            ArrayList&lt;ObservableValue&gt; bidirect = null;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            for (Pin p : pins) {</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                if (p.getDirection() == Pin.Direction.both) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                    if (bidirect == null)</span>
+<span class="fc" id="L89">                        bidirect = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L90">                    final ObservableValue readerValue = p.getReaderValue();</span>
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">                    if (readerValue == null &amp;&amp; !p.isSwitchPin())</span>
+<span class="nc" id="L92">                        throw new PinException(Lang.get(&quot;err_noValueSetFor_N0_atElement_N1&quot;, p.getName(), visualElement), containingVisualElement);</span>
+<span class="fc" id="L93">                    bidirect.add(readerValue);</span>
+                }
+<span class="fc" id="L95">            }</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (bidirect != null)</span>
+<span class="fc" id="L97">                inputs.addAll(bidirect);</span>
+
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (inputs.size() &gt; 0) {</span>
+<span class="fc" id="L100">                values = new ObservableValues(inputs);</span>
+<span class="fc" id="L101">                element.setInputs(values);</span>
+            }
+<span class="fc" id="L103">            ioState = new IOState(values, element.getOutputs(), element);</span>
+<span class="fc" id="L104">        } catch (PinException | NodeException e) {</span>
+<span class="fc" id="L105">            e.setOrigin(origin);</span>
+<span class="fc" id="L106">            e.setVisualElement(containingVisualElement);</span>
+<span class="fc" id="L107">            throw e;</span>
+<span class="fc" id="L108">        }</span>
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * Connects this model to the gui.
+     *
+     * @param circuitModifier Used to modify the circuit by the running model
+     */
+    public void connectToGui(CircuitModifier circuitModifier) {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (!isNestedElement) {</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            if (ioState == null)</span>
+<span class="nc" id="L119">                throw new RuntimeException(&quot;call applyInputs before connectToGui&quot;);</span>
+<span class="fc" id="L120">            visualElement.setState(ioState);</span>
+<span class="fc" id="L121">            element.enableCircuitModification(visualElement, circuitModifier);</span>
+        }
+<span class="fc" id="L123">    }</span>
+
+    /**
+     * @return the pins of this model entry
+     */
+    public Pins getPins() {
+<span class="fc" id="L129">        return pins;</span>
+    }
+
+    /**
+     * @return the element of this entry
+     */
+    public Element getElement() {
+<span class="fc" id="L136">        return element;</span>
+    }
+
+    /**
+     * @return the visual element which has created the element
+     */
+    public VisualElement getVisualElement() {
+<span class="fc" id="L143">        return visualElement;</span>
+    }
+
+    /**
+     * @return the IOState of this element. The IOState contains the {@link ObservableValue}s of the inputs and outputs.
+     */
+    public IOState getIoState() {
+<span class="fc" id="L150">        return ioState;</span>
+    }
+
+    /**
+     * @return the containing visual element
+     */
+    public VisualElement getContainingVisualElement() {
+<span class="nc" id="L157">        return containingVisualElement;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

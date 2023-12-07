@@ -1,0 +1,1917 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="elem2html.xslt"?>
+<root titel="Digital" titleImage="file:/C:/Digital-0.29/src/test/resources/../../../distribution/screenshot.png" images="file:/C:/Digital-0.29/src/test/resources/docu/images/" toc="Table des matières" lang="fr" fontFamily="SansSerif" rev="v0.29-38-g48d3e30-dirty" revt="Révision" date="2022-05-23 18:51" datet="Date" general="Général" components="Composantes" lib="Bibliothèque" static="file:/C:/Digital-0.29/src/test/resources/docu/static_fr.xml" library="file:/C:/Digital-0.29/target/docu/library.xml">
+  <settings name="Paramètres" descr="Le texte suivant décrit les paramètres disponibles dans le simulateur.">
+    <main name="Paramètres" descr="Les paramètres globaux du simulateur spécifient, entre autres, la langue, la
+        forme des symboles à utiliser,
+        ou les chemins des outils externes.">
+      <attributes name="Attributs">
+        <attr name="Utiliser les formes IEEE 91-1984">استخدام اشكال قياسية  بدلا من الشكال المستطيلة  IEEE</attr>
+        <attr name="Langue">لغة الواجهة  يسري مفعول هذا الزر  فقط بعد إعادة التشغيل   </attr>
+        <attr name="Format">تنسيق التعبير على الشاشة</attr>
+        <attr name="Thème de couleur">موضوع اللون</attr>
+        <attr name="Couleurs personnalisées">ألوان مخصصة</attr>
+        <attr name="Afficher l'arborescence des composantes au démarrage."> إذا تم تحديده يتم عرض شجرة المكونات عند بدء التشغيل</attr>
+        <attr name="Afficher la grille">إظهار الشبكة في النافذة الرئيسية.</attr>
+        <attr name="Afficher le nombre de fils sur un bus."> يتم تحديث القيمة فقط عند بدء المحاكاة </attr>
+        <attr name="Pas d'infobulles pour les composantes du volet principal.">عندما يتم تحديده فلن يتم عرض التلميحات في الجزء الرئيسي</attr>
+        <attr name="Surlignement des fils">إذا تم تحديده يتم تمييز خطوط الأسلاك عندما يكون الماوس فوقها</attr>
+        <attr name="Bibliothèque">  المجلد الذي يحتوي على المكتبة بدوائر فرعية محددة مسبقً
+يحتوي على سبيل المثال على مكونات
+ 74xx.
+ يمكنك أيضا إضافة مساراتك الخاصة عن طريق تخزينها هنا  تأكد من أن أسماء الملفات في هذا المجلد ومجلداته الفرعية فريدة
+        </attr>
+        <attr name="Bibliothèque Java"></attr>
+        <attr name="Ajusteur ATF15xx"></attr>
+        <attr name="ATMISP"></attr>
+        <attr name="GHDL"></attr>
+        <attr name="IVerilog"></attr>
+        <attr name="Configuration de la chaîne d'outils"></attr>
+        <attr name="Taille de la police des menus [%]">حجم الخطوط المستخدمة في القائمة كنسبة مئوية من القيمة الافتراضية </attr>
+        <attr name="Utiliser les clics de souris macOS."></attr>
+        <attr name="Utiliser la touche égal"></attr>
+        <attr name="Afficher le dialogue pour renommer automatiquement les tunnels."></attr>
+      </attributes>
+    </main>
+    <circuit name="Paramètres spécifiques au circuit" descr="Les paramètres spécifiques au circuit affectent le comportement du circuit
+        présentement ouvert.
+        Par exemple, la forme qui représente le circuit quand il est intégré dans d'autres circuits.
+        Ces paramètres sont stockés avec le circuit.">
+      <attributes name="Attributs">
+        <attr name="Étiquette">اسم هذا العنصر</attr>
+        <attr name="Largeur">عرض الرمز إذا تم استخدام الدائرة كمكون في دائرة أخرى</attr>
+        <attr name="Couleur d'arrière-plan"> لون خلفية الدائرة عند دمجها في دائرة أخرى</attr>
+        <attr name="Description"> وصف موجز لهذا العنصر واستخداماته</attr>
+        <attr name="Oscillation detection"> عدد مرات انتشار البوابة التي يتم فيها اكتشاف التذبذب إذا لم تكن الدائرة قد استقرت بحلول ذلك الوقت</attr>
+        <attr name="Empêcher la modification"> </attr>
+        <attr name="Forme"></attr>
+        <attr name="Forme personnalisée">استيراد ملف SVG</attr>
+        <attr name="Hauteur"> ارتفاع الرمز إذا تم استخدام الدائرة كمكون في دائرة أخرى</attr>
+        <attr name="Nombre de broches DIL"></attr>
+        <attr name="Contenu des ROM.">محتوى جميع الأقراص المدمجة المستخدمة </attr>
+        <attr name="Afficher les valeurs de mesures au début de la simulation"> عندما تبدأ المحاكاة يتم عرض جدول بالقيم المقاسة</attr>
+        <attr name="Afficher le graphique de mesures au début de la simulation"> عندما تبدأ المحاكاة يتم عرض رسم بياني بالقيم المقاسة</attr>
+        <attr name="Afficher le graphique de mesures en mode pas-à-pas au début de la simulation"> </attr>
+        <attr name="Nombre maximal d'étapes à afficher"></attr>
+        <attr name="Précharger le mémoire de programme au démarrage."> </attr>
+        <attr name="Fichier de programme"></attr>
+        <attr name="Use big endian at import."> </attr>
+        <attr name="Ignorer lors de l'exportation en Verilog/VHDL"> </attr>
+        <attr name="Circuit générique"> </attr>
+      </attributes>
+    </circuit>
+  </settings>
+  <cli heading="Interface de ligne de commande">
+<indent>
+java -cp Digital.jar CLI<indent>
+test -circ [String] [-tests [String]] [-allowMissingInputs] [-verbose]:<indent>
+يحدد اسم الملف الأول اسم الدائرة المراد اختبارها 
+إذا تم تحديد اسم ملف ثان يتم تشغيل الاختبارات من هذا الملف 
+خلاف ذلك  يتم تشغيل الاختبارات من الملف الأول
+</indent>
+<indent>
+Options:<indent>
+-circ [String(def: )]<indent>
+اسم الملف المراد اختباره.</indent>
+</indent>
+<indent>
+[-tests [String(def: )]]<indent>
+اسم الملف مع الاختبارات </indent>
+</indent>
+<indent>
+[-allowMissingInputs(def: false)]<indent>
+يسمح بحذف المدخلات في الدائرة المحددة في الاختبار.
+يمكن أن يكون هذا مفيدً إذا كانت هناك حلول متعددة قد تعتمد على مدخلات مختلفة
+</indent>
+</indent>
+<indent>
+[-verbose(def: false)]<indent>
+إذا تم تفعيله يتم إرسال جدول القيم في حالة حدوث خطأ
+</indent>
+</indent>
+</indent>
+</indent>
+<indent>
+svg -dig [String] [-svg [String]] [-ieee] [-LaTeX] [-pinsInMathMode] [-hideTest] [-noShapeFilling] [-smallIO] [-noPinMarker] [-thinnerLines] [-highContrast] [-monochrome]:<indent>
+
+</indent>
+<indent>
+Options:<indent>
+-dig [String(def: )]<indent>
+Le nom de fichier du circuit.</indent>
+</indent>
+<indent>
+[-svg [String(def: )]]<indent>
+Le nom du fichier SVG à créer.</indent>
+</indent>
+<indent>
+[-ieee(def: false)]<indent>
+ IEEE   استخدام رموز</indent>
+</indent>
+<indent>
+[-LaTeX(def: false)]<indent>
+
+</indent>
+</indent>
+<indent>
+[-pinsInMathMode(def: false)]<indent>
+Pour les étiquettes de broches, utiliser le mode math même s'elles ne
+        contiennent aucun indice.</indent>
+</indent>
+<indent>
+[-hideTest(def: false)]<indent>
+Cacher les tests</indent>
+</indent>
+<indent>
+[-noShapeFilling(def: false)]<indent>
+Les polygones ne sont pas remplis.</indent>
+</indent>
+<indent>
+[-smallIO(def: false)]<indent>
+Les entrées et les sorties sont représentées comme de petits cercles.</indent>
+</indent>
+<indent>
+[-noPinMarker(def: false)]<indent>
+Les marqueurs de broches bleus et rouges sur les symboles sont omis.</indent>
+</indent>
+<indent>
+[-thinnerLines(def: false)]<indent>
+Si coché, les lignes sont dessinées un peu plus minces.</indent>
+</indent>
+<indent>
+[-highContrast(def: false)]<indent>
+Les fils et le texte des broches sont affichés en noir.</indent>
+</indent>
+<indent>
+[-monochrome(def: false)]<indent>
+Seulement des nuances de gris sont utilisées.</indent>
+</indent>
+</indent>
+</indent>
+<indent>
+stats -dig [String] [-csv [String]]:<indent>
+Créer un fichier CSV qui contient les statistiques du circuit.
+        Toutes les composantes sont listées dans le fichier CSV.</indent>
+<indent>
+Options:<indent>
+-dig [String(def: )]<indent>
+Nom de fichier du circuit.</indent>
+</indent>
+<indent>
+[-csv [String(def: )]]<indent>
+Nom du fichier CSV à créer.
+        Si cette option est manque, la table de vérité est écrite à la sortie standard.</indent>
+</indent>
+</indent>
+</indent>
+</indent>
+  </cli>
+  <lib name="Logique">
+    <element name="Et" img="file:/C:/Digital-0.29/target/docu/img/And_fr.svg">
+      <descr>Porte ET binaire. Retourne une valeur haute lorsque les deux entrées ont une valeur haute. Il est également possible d'utiliser des bus à plusieurs bits comme entrées et sortie. Dans ce cas, une opération bit à bit est effectuée. Cela équivaut à connecter chaque paire de bits d'entrée à une porte ET 1-bit et émettre le résultat correspondant pour chaque bit de sortie. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="Non-Et" img="file:/C:/Digital-0.29/target/docu/img/NAnd_fr.svg">
+      <descr>Une combinaison du ET et du NON. Retourne 0 lorsque toutes les entrées sont mises à 1. Si une des entrées est à 0 alors la sortie est mise à 1. Il est également possible d'utiliser des bus à plusieurs bits comme entrées. Dans ce cas, l'opération s'applique à chaque bit de l'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="Ou" img="file:/C:/Digital-0.29/target/docu/img/Or_fr.svg">
+      <descr>Porte OU binaire. Retourne un 1 lorsqu'au moins une entrée est mise à 1. Il est également possible d'utiliser des bus à plusieurs bits comme entrées et sortie. Dans ce cas, une opération bit à bit est effectuée. Cela équivaut à connecter chaque paire de bits d'entrée à une porte OU 1-bit et émettre le résultat correspondant pour chaque bit de sortie. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="Non-Ou" img="file:/C:/Digital-0.29/target/docu/img/NOr_fr.svg">
+      <descr>Une combinaison du OU et du NON. Retourne 0 lorsqu'au moins une entrée est mise à 1. Si toutes les entrées sont à 1 alors la sortie est à 0. Il est également possible d'utiliser des bus à plusieurs bits comme entrées. Dans ce cas, l'opération s'applique à chaque bit de l'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="XOR" img="file:/C:/Digital-0.29/target/docu/img/XOr_fr.svg">
+      <descr>Aussi appelée Ou-exclusif. Si deux entrées sont utilisées, la sortie est à 0 si les deux entrées sont égales. Sinon la sortie est mise à 1. Si plus de deux entrées sont utilisées, il se comporte que des portes XOR en cascade. (A XOR B XOR C = (A XOR B) XOR C). Il est également possible d'utiliser des bus à plusieurs bits comme entrées. Dans ce cas, l'opération s'applique à chaque bit de l'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="NXOR" img="file:/C:/Digital-0.29/target/docu/img/XNOr_fr.svg">
+      <descr>Une combinaison du XOR et du NON. Les entrées sont combinées avec l'opération XOR. Le résultat de cette opération est ensuite inversé. Il est également possible d'utiliser des bus à plusieurs bits comme entrées. Dans ce cas, l'opération s'applique à chaque bit de l'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="In_1">La valeur d'entrée 1 pour l'opération logique.</pin>
+        <pin name="In_2">La valeur d'entrée 2 pour l'opération logique.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'opération logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="Non" img="file:/C:/Digital-0.29/target/docu/img/Not_fr.svg">
+      <descr>Inverse la valeur d'entrée. Un 1 devient un 0 et un 0 devient un 1. Il est également possible d'utiliser des bus à plusieurs bits comme entrées. Dans ce cas, l'opération s'applique à chaque bit de l'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">L'entrée de la porte NON.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">La valeur inversée de l'entrée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Forme large">Utilise une forme plus large pour visualiser la porte.</attr>
+      </attributes>
+    </element>
+    <element name="Table de recherche" img="file:/C:/Digital-0.29/target/docu/img/LookUpTable_fr.svg">
+      <descr>Trouve la valeur de sortie à partir d'une table stockée. Aussi appelée &quot;lookup table&quot;. Cette porte permet donc d'imiter toutes les portes combinatoires. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="0">Entrée 0. Cette entrée en combinaison avec toutes les autres définit l'adresse de sortie de la valeur stockée à retourner.</pin>
+        <pin name="1">Entrée 1. Cette entrée en combinaison avec toutes les autres définit l'adresse de sortie de la valeur stockée à retourner.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne la valeur stockée à l'adresse fixée par les entrées.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre d'entrées">Le nombre d'entrées utilisées. Chaque entrée doit être connectée.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Données">Les valeurs stockées dans cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="E/S">
+    <element name="Sortie" img="file:/C:/Digital-0.29/target/docu/img/Out_fr.svg">
+      <descr>Peut être utilisé pour afficher un signal de sortie dans un circuit. Cet élément peut aussi servir à connecter un circuit à un circuit intégré. Dans ce cas, la connexion est bidirectionnelle. Il peut aussi servir à assigner un numéro de broche pour la génération de code de CPLD ou FPGA. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Cette valeur est utilisée pour la sortie.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Description">Une courte description de cet élément et son utilisation.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Numéro de broche">Numéro de cette broche. Utilisé pour la représentation d'un circuit dans un boîtier DIL et lors de l'affectation des broches lors de la programmation d'un CPLD. S'il y a plusieurs bits, tous les numéros de broche peuvent être spécifiés dans une liste séparée par des virgules.</attr>
+        <attr name="Afficher dans le graphique de mesures">Affiche la valeur dans le graphique de mesures</attr>
+        <attr name="Forme petite">Si coché, une forme plus petite sera utilisée.</attr>
+      </attributes>
+    </element>
+    <element name="DEL" img="file:/C:/Digital-0.29/target/docu/img/LED_fr.svg">
+      <descr>Une DEL (ou LED) peut être utilisée pour visualiser une valeur de sortie. L'entrée accepte un seul bit. La lumière est allumée quand l'entrée est mise à 1.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Entrée de la DEL. La DEL est allumée si l'entrée est mise à 1.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Taille">La taille de la forme de cet élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Entrée" img="file:/C:/Digital-0.29/target/docu/img/In_fr.svg">
+      <descr>Peut être utilisé pour manipuler interactivement avec la souris un signal d'entrée dans un circuit. Cet élément peut aussi servir à connecter un circuit à un circuit intégré. Dans ce cas, la connexion est bidirectionnelle. Il peut aussi servir à assigner un numéro de broche pour la génération de code de CPLD ou FPGA. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Donne la valeur liée à cette entrée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Description">Une courte description de cet élément et son utilisation.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Un &quot;Z&quot; signifie un état de haute impédance.</attr>
+        <attr name="Entrée à trois états">Si coché, l'entrée pourra être mise dans un état de haute impédance. Pour une entrée, c'est aussi disponible si &quot;Z&quot; est choisi comme valeur par défaut.</attr>
+        <attr name="Pas de sortie à zéro.">Évite la sortie à zéro. Cela est particulièrement pratique pour monter des circuits de relais. Peut seulement être coché si l'état de haute impédance est permis.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Numéro de broche">Numéro de cette broche. Utilisé pour la représentation d'un circuit dans un boîtier DIL et lors de l'affectation des broches lors de la programmation d'un CPLD. S'il y a plusieurs bits, tous les numéros de broche peuvent être spécifiés dans une liste séparée par des virgules.</attr>
+        <attr name="Afficher dans le graphique de mesures">Affiche la valeur dans le graphique de mesures</attr>
+        <attr name="Forme petite">Si coché, une forme plus petite sera utilisée.</attr>
+      </attributes>
+    </element>
+    <element name="Horloge" img="file:/C:/Digital-0.29/target/docu/img/Clock_fr.svg">
+      <descr>Un signal d'horloge. Il est possible de le contrôler avec une horloge temps réel. Selon la complexité du circuit, la fréquence de l'horloge atteinte pourrait être moins que la valeur sélectionnée. Si la fréquence est supérieure à 50Hz, la représentation graphique du circuit ne sera plus mise à jour à chaque cycle d'horloge, donc les couleurs de fils ne pourront plus être mises à jour à chaque changement de valeur. Si l'horloge temps réel est désactivée, l'horloge peut être contrôlée par des clics de la souris. Elle peut aussi servir à assigner un numéro de broche pour la génération de code de CPLD ou FPGA. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="C">Oscille entre 0 et 1 avec la fréquence d'horloge sélectionnée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Partir l'horloge temps réel">Si coché, l'horloge de temps d'exécution est partie quand le circuit débute.</attr>
+        <attr name="Fréquence/Hz">La fréquence utilisée pour l'horloge temps réel.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Numéro de broche">Numéro de cette broche. Utilisé pour la représentation d'un circuit dans un boîtier DIL et lors de l'affectation des broches lors de la programmation d'un CPLD. S'il y a plusieurs bits, tous les numéros de broche peuvent être spécifiés dans une liste séparée par des virgules.</attr>
+        <attr name="Forme petite">Si coché, une forme plus petite sera utilisée.</attr>
+      </attributes>
+    </element>
+    <element name="Bouton" img="file:/C:/Digital-0.29/target/docu/img/Button_fr.svg">
+      <descr>Un simple bouton-poussoir qui revient à son état original lorsqu'il est relâché.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Le signal de sortie du bouton.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Actif bas">Si coché, la sortie est basse lorsque la composante est active.</attr>
+        <attr name="Associer au clavier">Le bouton est associé au clavier. Pour utiliser les touches de direction, utilisez UP, DOWN, LEFT ou RIGHT comme étiquette.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Afficher dans le graphique de mesures">Affiche la valeur dans le graphique de mesures</attr>
+      </attributes>
+    </element>
+    <element name="Interrupteur DIP" img="file:/C:/Digital-0.29/target/docu/img/DipSwitch_fr.svg">
+      <descr>Interrupteur DIP simple (DIP switch) qui peut émettre des valeurs hautes ou basses.</descr>
+      <outputs name="Sorties">
+        <pin name="out">La valeur de sortie pour l'interrupteur</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Description">Une courte description de cet élément et son utilisation.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Sortie haute">La valeur par défaut de l'interrupteur DIP lorsque la simulation débute.</attr>
+      </attributes>
+    </element>
+    <element name="Sonde" img="file:/C:/Digital-0.29/target/docu/img/Probe_fr.svg">
+      <descr>Une mesure qui peut être affichée dans un graphique de données ou un tableau de mesures. Cette composante peut être utilisée pour observer facilement des valeurs dans des circuits embarqués. N'affecte pas la simulation.</descr>
+      <inputs name="Entrées">
+        <pin name="in">La valeur mesurée.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Mode d'affichage">Définit si la valeur ou un compteur doit être affiché.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Afficher dans le graphique de mesures">Affiche la valeur dans le graphique de mesures</attr>
+      </attributes>
+    </element>
+    <element name="Graphique de données" img="file:/C:/Digital-0.29/target/docu/img/Data_fr.svg">
+      <descr>Affiche un graphique de données à l'intérieur de la zone du circuit. Il est possible de tracer des cycles d'horloge complets ou le changement d'une seule porte. N'affecte pas la simulation.</descr>
+      <attributes name="Attributs">
+        <attr name="Afficher les étapes pas-à-pas">Afficher toutes les étapes pas-à-pas dans le graphique.</attr>
+        <attr name="Nombre maximal d'étapes à afficher">Le nombre maximal de valeurs stockées. Si le nombre maximal est atteint, les valeurs plus vieilles disparaissent.</attr>
+        <attr name="Aligner sur la grille">Si coché, la composante reste alignée sur la grille.</attr>
+      </attributes>
+    </element>
+    <element name="Graphique de données avec déclenchement" img="file:/C:/Digital-0.29/target/docu/img/ScopeTrigger_fr.svg">
+      <descr>Affiche un graphique des valeurs mesurées, excepté que les valeurs sont stockées seulement lorsque le signal d'entrée change. Le stockage prend place lorsque le circuit s'est stabilisé. Le déclenchement ne débute pas les mesures comme un vrai oscilloscope, mais plutôt chaque signal de déclenchement stocke la valeur des signaux affichés à un moment donné. La seule entrée directe est celle du déclenchement. Les entrées les sorties du circuit, les bascules, les registres et les sondes peuvent être utilisés comme signaux. Cela peut être activé dans les paramétres de chacune de ces composantes.</descr>
+      <inputs name="Entrées">
+        <pin name="T">Un changement à cette entrée provoque le stockage des valeurs mesurées</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Déclenchement">Condition de déclenchement pour l'enregistrement des données</attr>
+        <attr name="Nombre maximal d'étapes à afficher">Le nombre maximal de valeurs stockées. Si le nombre maximal est atteint, les valeurs plus vieilles disparaissent.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="E/S - Affichages">
+    <element name="DEL-RVB" img="file:/C:/Digital-0.29/target/docu/img/RGBLED_fr.svg">
+      <descr>Une DEL RVB pour laquelle la couleur est établie par trois entrées. Un canal de couleur est associé à chaque entrée.</descr>
+      <inputs name="Entrées">
+        <pin name="R">Le canal de couleur rouge.</pin>
+        <pin name="G">Le canal de couleur verte.</pin>
+        <pin name="B">Le canal de couleur bleue.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Taille">La taille de la forme de cet élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="DEL avec deux connexions." img="file:/C:/Digital-0.29/target/docu/img/PolarityAwareLED_fr.svg">
+      <descr>DEL avec des connexions pour la cathode et l'anode. La DEL s'allume si l'anode est connectée à un signal haut et l'anode à un signal bas. Cette LED ne peut pas être utilisée comme une résistance de tirage. Elle agît comme un élément d'affichage uniquement. La résistance affichée sert seulement à symboliser la résistance qui sert normalement à limiter le courant.</descr>
+      <inputs name="Entrées">
+        <pin name="A">La connexion de l'anode pour la DEL.</pin>
+        <pin name="C">La connexion de la cathode pour la DEL.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Bouton avec DEL" img="file:/C:/Digital-0.29/target/docu/img/ButtonLED_fr.svg">
+      <descr>Un simple bouton-poussoir qui revient à son état original lorsqu'il est relâché. Le bouton a également une DEL qui peut être allumée avec un signal d'entrée.</descr>
+      <inputs name="Entrées">
+        <pin name="in">L'entrée contrôlant la DEL.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Le signal de sortie du bouton.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Actif bas">Si coché, la sortie est basse lorsque la composante est active.</attr>
+        <attr name="Associer au clavier">Le bouton est associé au clavier. Pour utiliser les touches de direction, utilisez UP, DOWN, LEFT ou RIGHT comme étiquette.</attr>
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Affichage 7 segments" img="file:/C:/Digital-0.29/target/docu/img/Seven-Seg_fr.svg">
+      <descr>Affichage 7 segments, chaque segment a sa propre entrée.</descr>
+      <inputs name="Entrées">
+        <pin name="a">Cette entrée contrôle la ligne horizontale du haut.</pin>
+        <pin name="b">Cette entrée contrôle la ligne verticale du haut à droite.</pin>
+        <pin name="c">Cette entrée contrôle la ligne verticale du bas à droite.</pin>
+        <pin name="d">Cette entrée contrôle la ligne horizontale du bas.</pin>
+        <pin name="e">Cette entrée contrôle la ligne verticale du bas à gauche.</pin>
+        <pin name="f">Cette entrée contrôle la ligne verticale du haut à gauche.</pin>
+        <pin name="g">Cette entrée contrôle la ligne horizontale du milieu.</pin>
+        <pin name="dp">Cette entrée contrôle le point décimal.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Connexion commune">Si coché, une entrée de cathode ou d'anode commune est aussi simulée.</attr>
+        <attr name="Commun">Type de connexion commune.</attr>
+        <attr name="Persistence Of Vision">Specifies the duration of the afterglow. The larger the value, the longer the afterglow duration.</attr>
+      </attributes>
+    </element>
+    <element name="Affichage 7 segments Hex" img="file:/C:/Digital-0.29/target/docu/img/Seven-Seg-Hex_fr.svg">
+      <descr>Affichage 7 segments avec une entrée hexadécimale de 4 bits.</descr>
+      <inputs name="Entrées">
+        <pin name="d">La valeur de cette entrée est visualisée sur l'affichage.</pin>
+        <pin name="dp">Cette entrée contrôle le point décimal.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Taille">La taille de la forme de cet élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Affichage 16 segments" img="file:/C:/Digital-0.29/target/docu/img/SixteenSeg_fr.svg">
+      <descr>L'entrée de la DEL a 16 bits qui contrôlent chaque segment. La deuxième entrée contrôle le point décimal.</descr>
+      <inputs name="Entrées">
+        <pin name="led">Bus 16 bits pour contrôler les DELs.</pin>
+        <pin name="dp">Cette entrée contrôle le point décimal.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Taille">La taille de la forme de cet élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Ampoule" img="file:/C:/Digital-0.29/target/docu/img/LightBulb_fr.svg">
+      <descr>Une ampoule avec deux connexions. Si le courant circule, l'ampoule s'allume! La direction du courant n'a pas d'importance. La lampe s'allume quand les entrées ont des valeurs différentes. Ainsi, l'ampoule se comporte de façon similaire à une porte XOR.</descr>
+      <inputs name="Entrées">
+        <pin name="A">Connexion</pin>
+        <pin name="B">Connexion</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Matrice de DELs" img="file:/C:/Digital-0.29/target/docu/img/LedMatrix_fr.svg">
+      <descr>Une matrice de DELs. Les DELs sont affichées dans une fenêtre séparée. Les DELs d'une colonne de l'affichage sont contrôlées par un mot. Dans une autre entrée, la colonne courante est sélectionnée. Ainsi, un affichage multiplexé est réalisé. Les DELs peuvent être allumées indéfiniment dans la simulation pour empêcher l'affichage de clignoter.</descr>
+      <inputs name="Entrées">
+        <pin name="r-data">L'état de la DEL de chaque rangée pour une colonne. Chaque bit de ce mot représente l'état d'une rangée de la colonne courante.</pin>
+        <pin name="c-addr">Le numéro de la colonne qui est sélectionnée pour l'autre entrée.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Lignes">Spécifie le nombre de lignes en spécifiant le nombre de bits du mot de la ligne.</attr>
+        <attr name="Bits d'adressage des colonnes">Pour adresser des colonnes individuelles. Trois bits donnent huit colonnes.</attr>
+        <attr name="Couleur">La couleur de l'élément.</attr>
+        <attr name="Éviter le clignotement">Il n'est pas possible d'augmenter la fréquence assez pour que le clignomenet disparaisse. Afin de supprimer le clignotent quand même, une &quot;rémanence&quot; peut être activée pour les LEDs avec cette option. Si coché, les LEDs restent allumées, même si une des broches change vers un état de haute impédance. Cela simule une fréquence au-delà de la fréquence critique de fusion du clignotement.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="E/S - Mécanique">
+    <element name="Encodeur rotatif" img="file:/C:/Digital-0.29/target/docu/img/RotEncoder_fr.svg">
+      <descr>Roulette tournante avec encodeur rotatif. Sert à détecter les mouvements de rotation.</descr>
+      <outputs name="Sorties">
+        <pin name="A">signal de l'encodeur A</pin>
+        <pin name="B">signal de l'encodeur B</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Moteur pas-à-pas, unipolaire" img="file:/C:/Digital-0.29/target/docu/img/StepperMotorUnipolar_fr.svg">
+      <descr>Moteur pas-à-pas unipolaire avec deux interrupteurs de position limite. Permet le fonctionnement à pas complet, à demi-pas et à une phase (wave).</descr>
+      <inputs name="Entrées">
+        <pin name="P0">Phase 0</pin>
+        <pin name="P1">Phase 1</pin>
+        <pin name="P2">Phase 2</pin>
+        <pin name="P3">Phase 3</pin>
+        <pin name="com">Connexion de bobine centrale commune</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="S0">Interrupteur de position limite 0, devient 1 lorsque l'angle du moteur est de 0°.</pin>
+        <pin name="S1">Interrupteur de position limite 1, devient 1 lorsque l'angle du moteur est de 180°.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Inverser la sortie">Si coché la sortie est inversée.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Moteur pas-à-pas, bipolaire" img="file:/C:/Digital-0.29/target/docu/img/StepperMotorBipolar_fr.svg">
+      <descr>Moteur pas-à-pas bipolaire avec deux interrupteurs de position limite. Permet le fonctionnement à pas complet, à demi-pas et à une phase (wave).</descr>
+      <inputs name="Entrées">
+        <pin name="A+">Bobine A, positif</pin>
+        <pin name="A-">Bobine A, négatif</pin>
+        <pin name="B+">Bobine B, positif</pin>
+        <pin name="B-">Bobine B, négatif</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="S0">Interrupteur de position limite 0, devient 1 lorsque l'angle du moteur est de 0°.</pin>
+        <pin name="S1">Interrupteur de position limite 1, devient 1 lorsque l'angle du moteur est de 180°.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Inverser la sortie">Si coché la sortie est inversée.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="E/S - Périphériques">
+    <element name="Clavier" img="file:/C:/Digital-0.29/target/docu/img/Keyboard_fr.svg">
+      <descr>Un clavier peut être utilisé pour entrer du texte. Cette composante enregistre l'entrée dans un tampon qui peut être lu à la sortie. Une fenêtre séparée est ouverte pour entrer le texte.</descr>
+      <inputs name="Entrées">
+        <pin name="C">Signal d'horloge. Un front montant supprime le caractère le plus vieux du tampon.</pin>
+        <pin name="en">Si activée, la sortie D est active et un caractère est émis. Cette entrée active également la lecture du signal d'horloge.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Le dernier caractère tapé, ou zéro si aucun caractère n'est disponible. La sortie correspond à une valeur de caractère en Java de 16 bits.</pin>
+        <pin name="av">Cette sortie indique que des caractères sont disponibles. Elle peut permettre de déclencher une interruption.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Terminal" img="file:/C:/Digital-0.29/target/docu/img/Terminal_fr.svg">
+      <descr>Des caractères ASCII peuvent être écrits dans ce terminal. Ce terminal s'ouvre dans sa propre fenêtre pour visualiser la sortie.</descr>
+      <inputs name="Entrées">
+        <pin name="D">Les données à écrire dans le terminal</pin>
+        <pin name="C">Signal d'horloge. Un front montant écrit la valeur à l'entrée dans la fenêtre du terminal.</pin>
+        <pin name="en">Une valeur haute à cette entrée active le signal d'horloge.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Caractères par ligne">Le nombre de caractères affichés dans une seule ligne.</attr>
+        <attr name="Lignes">Le nombre de lignes à afficher.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Telnet" img="file:/C:/Digital-0.29/target/docu/img/Telnet_fr.svg">
+      <descr>Permet une connexion Telnet au circuit. Il est possible de recevoir et de transmettre des charactères via Telnet.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Les données à transmettre</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="wr">Si cette entrée est active, l'octet d'entrée est transmis.</pin>
+        <pin name="rd">Si cette entrée est active, l'octet reçu est émis.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Valeur de sortie</pin>
+        <pin name="av">Cette sortie indique que des données sont présentes lorsqu'elle est haute.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Mode Telnet">Si activé, les commandes de contrôle Telnet sont évaluées. De plus, le serveur envoie les commandes SGA et ECHO. Si cette option est désactivée, le serveur est un simple serveur TCP.</attr>
+        <attr name="Port">Le port ouvert par le serveur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Écran VGA" img="file:/C:/Digital-0.29/target/docu/img/VGA_fr.svg">
+      <descr>Analyse les signaux vidéo entrants et affiche les graphiques correspondants. Puisque la simulation ne peut pas s'exécuter en temps réel, le signal d'horloge de pixel est nécessaire en plus du signal vidéo.</descr>
+      <inputs name="Entrées">
+        <pin name="R">La composante rouge</pin>
+        <pin name="G">La composante verte</pin>
+        <pin name="B">La composante bleue</pin>
+        <pin name="H">Le signal de synchronisation horizontal</pin>
+        <pin name="V">Le signal de synchronisation vertical</pin>
+        <pin name="C">Le signal d'horloge de pixel</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="MIDI" img="file:/C:/Digital-0.29/target/docu/img/MIDI_fr.svg">
+      <descr>Utilise le système MIDI pour jouer des notes.</descr>
+      <inputs name="Entrées">
+        <pin name="N">Note</pin>
+        <pin name="V">Volume</pin>
+        <pin name="OnOff">Si activée, cela se traduit par un appui sur une touche (événement de touche enfoncée), sinon, cela se traduit par un relâchement de la touche (événement de touche relâchée).</pin>
+        <pin name="en">Active la composante</pin>
+        <pin name="C">Signal d'horloge</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Canal MIDI">Sélectionne le canal MIDI à utiliser.</attr>
+        <attr name="Instrument MIDI">L'instrument MIDI à utiliser</attr>
+        <attr name="Permettre le changement de programme">Ajoute une nouvelle entrée PC (program change). Si cette entrée est haute, la valeur à l'entrée N est utilisée pour changer le programme (l'instrument).</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Câblage">
+    <element name="Masse" img="file:/C:/Digital-0.29/target/docu/img/Ground_fr.svg">
+      <descr>Une connexion à une masse (mise à la terre). La sortie est toujours zéro. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="out">La sortie est toujours 0.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Tension d'alimentation" img="file:/C:/Digital-0.29/target/docu/img/VDD_fr.svg">
+      <descr>Une connexion à une tension d'alimentation. La sortie est toujours un. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="out">La sortie est toujours 1.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Valeur constante" img="file:/C:/Digital-0.29/target/docu/img/Const_fr.svg">
+      <descr>Une composante qui retourne une valeur donnée comme une constante. Cette valeur peut être mise dans le dialogue des attributs. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Retourne la valeur donnée comme une constante.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Valeur">La valeur de la constante.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+      </attributes>
+    </element>
+    <element name="Tunnel" img="file:/C:/Digital-0.29/target/docu/img/Tunnel_fr.svg">
+      <descr>Connecte des composantes sans un fil. Tous les tunnels ayant le même nom de réseau sont connectés ensemble. Fonctionne uniquement de manière locale, il est donc impossible de connecter des circuits différents. Les tunnels sans nom sont ignorés sans produire d'erreurs. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">La connexion au tunnel.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Nom du réseau">Tous les réseaux avec un nom identique sont connectés ensemble.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Séparateur/Fusionneur" img="file:/C:/Digital-0.29/target/docu/img/Splitter_fr.svg">
+      <descr>Sépare ou crée un amas de fils ou un bus de données de plus d'un bit. Avec un bus il est par exemple possible de générer des connexions 16 bits sans avoir à tracer 16 fils individuels. Les 16 connexions peuvent être fusionnées en un seul fil. Le séparateur possède une direction, ce qui veut dire qu'il ne peut transmettre les signaux que dans une direction. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="0-3">Les bits d'entrée 0-3.</pin>
+        <pin name="4-7">Les bits d'entrée 4-7.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="0-7">Les bits de sortie 0-7.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Séparation de l'entrée">S'il y a par exemple quatre bits, deux bits et encore deux bits à être utilisés comme entrées, cela peut être configuré avec &quot;4,2,2&quot;. Le nombre indique le nombre de bits. Pour plus de facilité, l'astérisque peut être utilisé: 16 bits peuvent ainsi être séparés avec &quot;[Bits]*[Nombre]&quot;, par exemple &quot;1*16&quot; donnera 16 bits individuels. Il est également possible de spécifier les bits à utiliser dans n'importe quel ordre. Par exemple, &quot;4-7,0-3&quot; utilisera les bits 4-7 et 0-3. Cette notation permet n'importe quel arrangement de bits. Les entrées doivent être spécifiées complètement et sans ambiguïté.</attr>
+        <attr name="Séparation de la sortie">S'il y a par exemple quatre bits, deux bits et encore deux bits à être utilisés comme entrées, cela peut être configuré avec &quot;4,2,2&quot;. Le nombre indique le nombre de bits. Pour plus de facilité, l'astérisque peut être utilisé: 16 bits peuvent ainsi être séparés avec &quot;[Bits]*[Nombre]&quot;, par exemple &quot;1*16&quot; donnera 16 bits individuels. Il est également possible de spécifier les bits à utiliser dans n'importe quel ordre. Par exemple, &quot;4-7,0-3&quot; utilisera les bits 4-7 et 0-3. Cette notation permet n'importe quel arrangement de bits. Les bits de sortie peuvent être émis plusieurs fois: &quot;0-7,1-6,4-7&quot;.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Étalement">Configure l'étalement des entrées et des sorties dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pilote" img="file:/C:/Digital-0.29/target/docu/img/Driver_fr.svg">
+      <descr>Un pilote peut être utilisé pour connecter une valeur de signal à un autre fil. Le pilote est contrôlé par l'entrée &quot;sel&quot; (sélection). Si l'entrée &quot;sel&quot; est basse, la sortie est dans un état de haute impédance. Si l'entrée &quot;sel&quot; est haute, la sortie est mise à la valeur d'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">La valeur d'entrée du pilote.</pin>
+        <pin name="sel">Si la valeur est 1, la sortie est mise à la valeur d'entrée. Si la valeur est 0, la sortie est dans un état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Si l'entrée &quot;sel&quot; est haute, la valeur de l'entrée est donnée à cette sortie. Si l'entrée &quot;sel&quot; est basse, la sortie est dans un état de haute impédance.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pilote, sélection inversée" img="file:/C:/Digital-0.29/target/docu/img/DriverInvSel_fr.svg">
+      <descr>Un pilote peut être utilisé pour connecter une valeur de signal à un autre fil. Le pilote est contrôlé par l'entrée &quot;sel&quot; (sélection). Si l'entrée &quot;sel&quot; est haute, la sortie est dans un état de haute impédance. Si l'entrée &quot;sel&quot; est basse, la sortie est mise à la valeur d'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">La valeur d'entrée du pilote.</pin>
+        <pin name="sel">Si la valeur est 0, la sortie est mise à la valeur d'entrée. Si la valeur est 1, la sortie est dans un état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Si l'entrée &quot;sel&quot; est haute, la valeur de l'entrée est donnée à cette sortie. Si l'entrée &quot;sel&quot; est basse, la sortie est dans un état de haute impédance.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Délai" img="file:/C:/Digital-0.29/target/docu/img/Delay_fr.svg">
+      <descr>Retarde un signal par une valeur ajustable de temps de propagation équivalent d'une porte logique. Toutes les autres composantes dans Digital ont un délai de temps de propagation d'une durée de 1. Cette composante peut servir à réaliser n'importe quel temps de propagation nécessaire.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Entrée du signal qui doit être retardé.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">L'entrée du signal retardée d'un temps de propagation équivalent à celui d'une porte logique.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Durée">Temps de délais avec comme unités le temps de propagation équivalent d'une porte logique.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Résistance de tirage" img="file:/C:/Digital-0.29/target/docu/img/PullUp_fr.svg">
+      <descr>Si un réseau n'est pas dans un état de haute impédance (Hi-Z), cette résistance tire le réseau à une valeur haute. Dans n'importe quel autre cas, cette composante n'a aucun effet.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Un signal haut &quot;faible&quot;</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Résistance de rappel" img="file:/C:/Digital-0.29/target/docu/img/PullDown_fr.svg">
+      <descr>Si un réseau n'est pas dans un état de haute impédance (Hi-Z), cette résistance tire le réseau à une valeur basse (à la masse). Dans n'importe quel autre cas, cette composante n'a aucun effet.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Un signal bas &quot;faible&quot;</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pas connecté" img="file:/C:/Digital-0.29/target/docu/img/NotConnected_fr.svg">
+      <descr>Cette composante peut être utilisée pour mettre un fil en état de haute impédance. Si l'entrée d'une porte logique est mise à haute impédance, la valeur lue est indéfinie. À noter qu'en réalité, dans plusieurs situations, cet état de haute impédance tend à endommager les composantes ou à causer une consommation excessive de courant.</descr>
+      <outputs name="Sorties">
+        <pin name="out">Cette sortie émet toujours l'état hi-Z.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Plexeurs">
+    <element name="Multiplexeur" img="file:/C:/Digital-0.29/target/docu/img/Multiplexer_fr.svg">
+      <descr>Une composante qui utilise la valeur de l'entrée &quot;sel&quot; (sélection) pour décider quelle valeur d'entrée est émise à la sortie. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="sel">Cette entrée sert à sélectionner l'entrée qui est émise.</pin>
+        <pin name="in_0">La valeur d'entrée 0 du multiplexeur.</pin>
+        <pin name="in_1">La valeur d'entrée 1 du multiplexeur.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">La valeur de l'entrée sélectionnée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre de bits du sélecteur">Nombre de bits utilisés pour l'entrée du sélecteur.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Démultiplexeur" img="file:/C:/Digital-0.29/target/docu/img/Demultiplexer_fr.svg">
+      <descr>Une composante qui émet la valeur d'entrée à une de ses sorties. Les autres sorties sont mises à la valeur par défaut. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="sel">Cette entrée sélectionner la sortie à utiliser.</pin>
+        <pin name="in">La valeur de cette entrée est donnée à la sortie sélectionnée.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out_0">Valeur de sortie 0.</pin>
+        <pin name="out_1">Valeur de sortie 1.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Nombre de bits du sélecteur">Nombre de bits utilisés pour l'entrée du sélecteur.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+      </attributes>
+    </element>
+    <element name="Décodeur" img="file:/C:/Digital-0.29/target/docu/img/Decoder_fr.svg">
+      <descr>Une sortie sélectionnée est à 1, les autres sorties sont à 0. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="sel">Cette entrée sélectionne la sortie activée. La sortie activée est mise à 1. Les autres sorties sont mises à 0.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out_0">Valeur de sortie 0. Cette sortie est à 1 lorsqu'elle est sélectionnée par l'entrée &quot;sel&quot;.</pin>
+        <pin name="out_1">Valeur de sortie 1. Cette sortie est à 1 lorsqu'elle est sélectionnée par l'entrée &quot;sel&quot;.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Nombre de bits du sélecteur">Nombre de bits utilisés pour l'entrée du sélecteur.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Sélecteur de bit" img="file:/C:/Digital-0.29/target/docu/img/BitSelector_fr.svg">
+      <descr>Sélectionne un seul bit à partir d'un bus de données d'entrée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Le bus d'entrée</pin>
+        <pin name="sel">Cette entrée sélectionne le bit</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Le bit sélectionné.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Nombre de bits du sélecteur">Nombre de bits utilisés pour l'entrée du sélecteur.</attr>
+        <attr name="Inverser la position du sélecteur">Cette option permet de déplacer l'entrée du sélecteur du côté opposé du plexeur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Codeur de priorité" img="file:/C:/Digital-0.29/target/docu/img/PriorityEncoder_fr.svg">
+      <descr>Si une des entrées est mise, sa valeur est émise. Si plusieurs entrées sont mises en même temps, la plus grande valeur est émise. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in0">La valeur d'entrée 0 du codeur de priorité.</pin>
+        <pin name="in1">La valeur d'entrée 1 du codeur de priorité.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="num">Valeur de l'entrée choisie.</pin>
+        <pin name="any">Si cette sortie est active, au moins une des deux entrées est mise.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Nombre de bits du sélecteur">Nombre de bits utilisés pour l'entrée du sélecteur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Bascules">
+    <element name="Bascule RS" img="file:/C:/Digital-0.29/target/docu/img/RS_FF_AS_fr.svg">
+      <descr>Une composante pour stocker un seul bit. Fournit les fonctions &quot;set&quot; et &quot;reset&quot; pour mémoriser ou réinitialiser le bit stocké. Si les deux entrées sont à un, les deux sorties seront aussi à un. Si les deux entrées sont mises à zéro en même temps, l'état final est aléatoire.</descr>
+      <inputs name="Entrées">
+        <pin name="S">L'entrée &quot;set&quot; pour mémoriser.</pin>
+        <pin name="R">L'entrée &quot;reset&quot; pour réinitialiser.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule RS, avec horloge" img="file:/C:/Digital-0.29/target/docu/img/RS_FF_fr.svg">
+      <descr>Une composante pour stocker un seul bit. Fournit les fonctions &quot;set&quot; et &quot;reset&quot; pour mémoriser ou réinitialiser le bit stocké. Si les deux entrées (S, R) sont actives au front montant de l'horloge, l'état final est aléatoire.</descr>
+      <inputs name="Entrées">
+        <pin name="S">L'entrée &quot;set&quot; pour mémoriser.</pin>
+        <pin name="C">Le signal d'horloge. Un front montant amorce une transition d'état.</pin>
+        <pin name="R">L'entrée &quot;reset&quot; pour réinitialiser.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule JK" img="file:/C:/Digital-0.29/target/docu/img/JK_FF_fr.svg">
+      <descr>À la possibilité de stocker (J=K=0), mémoriser (J=1, K=0), réinitialiser (J=0, K=1) ou basculer (J=K=1) la valeur stockée. Un changement d'état se produit seulement lors d'un front montant du signal d'horloge C. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="J">L'entrée &quot;set&quot; de la bascule, pour mémoriser.</pin>
+        <pin name="C">Le signal d'horloge. Un front montant amorce un changement d'état.</pin>
+        <pin name="K">L'entrée &quot;reset&quot; de la bascule, pour réinitialiser.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule D" img="file:/C:/Digital-0.29/target/docu/img/D_FF_fr.svg">
+      <descr>Une composante utilisée pour stocker une valeur. La valeur sur l'entrée D est stockée lors du front montant du signal d'horloge C. La largeur de bit peut être sélectionnée ce qui permet de stocker plusieurs bits. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="D">L'entrée du bit à stocker.</pin>
+        <pin name="C">Signal d'horloge pour stocker une valeur. La valeur à l'entrée D est stockée sur un front montant de cette entrée.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule T" img="file:/C:/Digital-0.29/target/docu/img/T_FF_fr.svg">
+      <descr>Stocke un seul bit. L'état bascule sur un front montant de l'entrée C.</descr>
+      <inputs name="Entrées">
+        <pin name="T">Active la fonction de bascule.</pin>
+        <pin name="C">Signal d'horloge. Un front montant fait basculer la sortie si l'entrée T est à 1.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrée d'activation">Si coché, une entrée d'activation (T) est disponible.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule JK asynchrone" img="file:/C:/Digital-0.29/target/docu/img/JK_FF_AS_fr.svg">
+      <descr>À la possibilité de stocker (J=K=0), mémoriser (J=1, K=0), réinitialiser (J=0, K=1) ou basculer (J=K=1) la valeur stockée. Un changement d'état se produit seulement lors d'un front montant du signal d'horloge C. Il y a deux entrées additionnelles pour mémoriser et réinitialiser immédiatement, sans signal d'horloge. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="Set">Une entrée &quot;set&quot; asynchrone, pour mémoriser. Une valeur de 1 à cette entrée fixe la sortie de la bascule.</pin>
+        <pin name="J">L'entrée &quot;set&quot; de la bascule, pour mémoriser.</pin>
+        <pin name="C">Le signal d'horloge. Un front montant amorce un changement d'état.</pin>
+        <pin name="K">L'entrée &quot;reset&quot; de la bascule, pour réinitialiser.</pin>
+        <pin name="Clr">Une entrée &quot;clear&quot; asynchrone, pour effacer. Une valeur de 1 à cette entrée réinitialise la sortie de la bascule.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule D asynchrone" img="file:/C:/Digital-0.29/target/docu/img/D_FF_AS_fr.svg">
+      <descr>Une composante utilisée pour stocker une valeur. La valeur sur l'entrée D est stockée lors du front montant du signal d'horloge C. Il y a deux entrées additionnelles pour mémoriser et réinitialiser immédiatement, sans signal d'horloge. La largeur de bit peut être sélectionnée ce qui permet de stocker plusieurs bits. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="Set">Une entrée &quot;set&quot; asynchrone, pour mémoriser. Si la valeur est à 1, tous les bits de sortie sont mis à 1.</pin>
+        <pin name="D">L'entrée du bit à stocker.</pin>
+        <pin name="C">Signal d'horloge pour stocker une valeur. La valeur à l'entrée D est stockée sur un front montant de cette entrée.</pin>
+        <pin name="Clr">Une entrée &quot;clear&quot; asynchrone, pour effacer. Si la valeur est à 1, tous les bits de sortie sont mis à 0.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+        <pin name="¬Q">Retourne l'inverse de la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="Bascule monostable" img="file:/C:/Digital-0.29/target/docu/img/Monoflop_fr.svg">
+      <descr>Une bascule monostable est mise à 1 au front montant du signal d'horloge. Après un délai configurable, la bascule est réinitialisée automatiquement. La bascule monostable est redéclenchable. Elle peut seulement être utilisée s'il y a exactement une composante horloge dans le circuit. Cette composante horloge est utilisée comme temps de base pour mesurer le délai.</descr>
+      <inputs name="Entrées">
+        <pin name="C">Le signal d'horloge. Un front montant fixe la sortie de la bascule monostable.</pin>
+        <pin name="R">L'entrée &quot;reset&quot;. Une valeur haute réinitialise la bascule monostable.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Sortie</pin>
+        <pin name="¬Q">Inverse de la sortie</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur d'impulsion">La largeur d'impulsion est mesurée en cycles d'horloge.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Par défaut">Cette valeur est mise lorsque le circuit débute. Pour un démultiplexeur, cette valeur est mise pour les sorties non sélectionnées.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Mémoire - RAM">
+    <element name="RAM, ports séparés" img="file:/C:/Digital-0.29/target/docu/img/RAMDualPort_fr.svg">
+      <descr>Un module de RAM avec des entrées séparées pour stocker une valeur et émettre une valeur stockée. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="Din">La valeur à stocker dans la RAM.</pin>
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="ld">Si cette entrée est active, la sortie est activée et la valeur devient visible à la sortie.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">La valeur de sortie</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="RAM de bloc, ports séparés" img="file:/C:/Digital-0.29/target/docu/img/BlockRAMDualPort_fr.svg">
+      <descr>Un module de RAM avec des entrées séparées pour stocker une valeur et émettre une valeur stockée. Cette RAM met sa sortie à jour uniquement sur un front montant du signal d'horloge. Cela permet de l'utiliser dans un FPGA. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="Din">La valeur à stocker dans la RAM.</pin>
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">La valeur de sortie</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, port bidirectionnel" img="file:/C:/Digital-0.29/target/docu/img/RAMSinglePort_fr.svg">
+      <descr>Un module de RAM avec un port bidirectionnel pour stocker une valeur et émettre une valeur stockée.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="ld">Si cette entrée est active, la sortie est activée et la valeur devient visible à la sortie.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Une connexion bidirectionnelle de valeur</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, sélection de puce" img="file:/C:/Digital-0.29/target/docu/img/RAMSinglePortSel_fr.svg">
+      <descr>Un module de RAM avec un port bidirectionnel pour stocker une valeur et émettre une valeur stockée. Si l'entrée CS est basse, la composante est désactivée. Cela permet de créer une RAM plus grande à partir de RAM plus petite et un décodeur d'adresse. Le cycle d'écriture fonctionne comme suit: en activant l'entrée CS, la composante est activée. Un front montant à l'entrée WE verrouille l'adresse, et le front descendant suivant stocke la valeur.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="CS">Si cette entrée est active, la RAM est activée. Sinon la sortie est dans état de haute impédance.</pin>
+        <pin name="WE">Si cette entrée est activée, la valeur est écrite à la RAM.</pin>
+        <pin name="OE">Si cette entrée est active, la valeur stockée est émise.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Une connexion bidirectionnelle de valeur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="Banc de registres" img="file:/C:/Digital-0.29/target/docu/img/RegisterFile_fr.svg">
+      <descr>Mémoire avec un port qui permet d'écrire et deux ports qui permettent de lire de la mémoire simultanément. Peut être utilisé pour implanté les registres d'un processeur. Deux registres peuvent être lus en même temps et un troisième peut être écrit. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="Din">La valeur à stocker dans la RAM.</pin>
+        <pin name="we">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="Rw">Le registre dans lequel la valeur est écrite.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="Ra">Le registre qui est visible au port A.</pin>
+        <pin name="Rb">Le registre qui est visible au port B.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Da">Port de sortie A</pin>
+        <pin name="Db">Port de sortie B</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, port double" img="file:/C:/Digital-0.29/target/docu/img/RAMDualAccess_fr.svg">
+      <descr>RAM avec un port qui sert à la fois à la lecture et l'écriture et un second port de lecture seulement. Ce second port peut être utilisé pour donner un accès à une logique graphique à partir du contenu de la mémoire. Ainsi, un processeur peut écrire à la RAM et une unité graphique peut y lire simultanément. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="ld">Si cette entrée est active, la sortie est activée et la valeur est visible à la sortie 1D.</pin>
+        <pin name="1A">L'adresse à laquelle le port 1 est lu ou écrit.</pin>
+        <pin name="1Din">La valeur à stocker dans la RAM.</pin>
+        <pin name="2A">L'adresse utilisée pour lire du port 2.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="1D">Port de sortie 1.</pin>
+        <pin name="2D">Port de sortie 2</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, async." img="file:/C:/Digital-0.29/target/docu/img/RAMAsync_fr.svg">
+      <descr>Aussi longtemps que WE est actif, les données sont stockées dans la RAM. Correspond à une RAM très simple, où les lignes d'adresse et de données sont connectées directement aux cellules de mémoire. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="D">La valeur à stocker</pin>
+        <pin name="we">Si cette entrée est activée, la valeur est écrite à la RAM lorsque A ou D changent.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">La valeur de sortie</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="RAM graphique" img="file:/C:/Digital-0.29/target/docu/img/GraphicCard_fr.svg">
+      <descr>Sert à afficher une image matricielle (bitmap). Cet élément se comporte comme une RAM. De plus, il affiche son contenu sur un écran. Chaque pixel est représenté par une adresse en mémoire. La valeur stockée définit la couleur de son pixel à l'aide d'une palette de couleurs fixe. Il y a deux tampons d'écran implantés pour permettre le changement de page. L'entrée B sélectionne le tampon à afficher. Ainsi, la taille totale de la mémoire est de dx * dy * 2 mots. La palette de couleurs utilisée fonctionne comme suit: les indices 0-9 correspondent aux couleurs blanc, noir, rouge, vert, bleu, jaune, cyan, magenta, orange et rose. Les indices 32-63 correspondent des nuances de gris et les indices 64-127 correspondent 64 couleurs avec deux bits par canal de couleur. Cela permet une palette simple qui peut être adressée avec seulement 7 bits. Si l'architecture permet un indice 16 bits, à partir de l'indice 0x8000, un mode 5 bits avec plus de couleurs est utilisé, qui permet 32768 couleurs.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="ld">Si cette entrée est active, la sortie est activée et la valeur devient visible à la sortie.</pin>
+        <pin name="B">Sélectionne le tampon d'écran à afficher</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Une connexion bidirectionnelle de valeur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur en pixels">La largeur de l'écran en pixels.</attr>
+        <attr name="Hauteur en pixels">La hauteur de l'écran en pixels.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Mémoire - EEPROM">
+    <element name="EEPROM" img="file:/C:/Digital-0.29/target/docu/img/EEPROM_fr.svg">
+      <descr>Un module EEPROM avec un port bidirectionnel pour stocker une valeur et émettre une valeur stockée.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="CS">Si cette entrée est active, l'EEPROM est activée. Sinon la sortie est dans un état de haute impédance.</pin>
+        <pin name="WE">Si cette entrée est activée, la valeur est écrite à l'EEPROM.</pin>
+        <pin name="OE">Si cette entrée est active, la valeur stockée est émise.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Une connexion bidirectionnelle de valeur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Données">Les valeurs stockées dans cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+    <element name="EEPROM, ports séparés" img="file:/C:/Digital-0.29/target/docu/img/EEPROMDualPort_fr.svg">
+      <descr>Un module EEPROM avec des entrées séparées pour stocker une valeur et émettre une valeur stockée.</descr>
+      <inputs name="Entrées">
+        <pin name="A">L'adresse à laquelle lire et écrire.</pin>
+        <pin name="Din">La valeur à stocker dans le EEPROM.</pin>
+        <pin name="str">Si cette entrée est active et lorsque le signal d'horloge est haut, la valeur est stockée.</pin>
+        <pin name="C">Signal d'horloge</pin>
+        <pin name="ld">Si cette entrée est active, la sortie est activée et la valeur devient visible à la sortie.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">La valeur de sortie</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Données">Les valeurs stockées dans cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Mémoire">
+    <element name="Registre" img="file:/C:/Digital-0.29/target/docu/img/Register_fr.svg">
+      <descr>Une composante pour stocker des valeurs. La largeur de bit du mot peut être sélectionnée. Contrairement à une bascule D, le registre fournit une entrée qui active l'horloge. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="D">L'entrée du mot à stocker.</pin>
+        <pin name="C">Signal d'horloge. Un front montant stocke la valeur à l'entrée D.</pin>
+        <pin name="en">L'entrée &quot;enable&quot;, pour activer. Il est seulement possible de stocker une valeur si cette entrée est active.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="Q">Retourne la valeur stockée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Pointeur d'instruction">Fait de ce registre un pointeur d'instruction (ou compteur ordinal). La valeur de ce registre est retournée à un assembleur externe pour marquer la ligne de code courante durant le débogage.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+      </attributes>
+    </element>
+    <element name="ROM" img="file:/C:/Digital-0.29/target/docu/img/ROM_fr.svg">
+      <descr>Une composante de mémoire non volatile. Les données stockées peuvent être éditées dans le dialog d'attributs. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="A">Cette entrée définit l'adresse d'un mot à émettre à la sortie.</pin>
+        <pin name="sel">Si cette entrée est active, la sortie est activée. Sinon la sortie est dans état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Le mot sélectionné si l'entrée &quot;sel&quot; est active.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Données">Les valeurs stockées dans cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+        <attr name="Recharger au début">Recharger le fichier HEX à chaque fois que le modèle débute.</attr>
+        <attr name="Fichier">Fichier à charger dans la ROM.</attr>
+        <attr name="Use big endian at import.">Use big endian byte order at import.</attr>
+      </attributes>
+    </element>
+    <element name="ROM, ports séparés" img="file:/C:/Digital-0.29/target/docu/img/ROMDualPort_fr.svg">
+      <descr>Une composante de mémoire non volatile. Les données stockées peuvent être éditées dans le dialog d'attributs.</descr>
+      <inputs name="Entrées">
+        <pin name="A1">Cette entrée définie l'adresse du mot qui sera émis sur D1.</pin>
+        <pin name="s1">Si cette entrée est haute, la sortie D1 est activée. Si elle est basse, la sortie est dans un état de haute impédance.</pin>
+        <pin name="A2">Cette entrée définie l'adresse du mot qui sera émis sur D2.</pin>
+        <pin name="s2">Si cette entrée est haute, la sortie D2 est activée. Si elle est basse, la sortie est dans un état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D1">Le mot sélectionné si l'entrée s1 est haute.</pin>
+        <pin name="D2">Le mot sélectionné si l'entrée s2 est haute.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Bits d'adressage">Nombre de bits utilisés pour l'adresse.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Données">Les valeurs stockées dans cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Format de nombre">Le format utilisé pour afficher les nombres.</attr>
+        <attr name="Décimales (virgule fixe)">Nombre de décimales binaires pour le format à virgule fixe.</attr>
+        <attr name="Mémoire de programme">Fait de cette ROM une mémoire de programme. Ainsi, elle devient accessible par un éditeur externe.</attr>
+        <attr name="Recharger au début">Recharger le fichier HEX à chaque fois que le modèle débute.</attr>
+        <attr name="Fichier">Fichier à charger dans la ROM.</attr>
+        <attr name="Use big endian at import.">Use big endian byte order at import.</attr>
+      </attributes>
+    </element>
+    <element name="Compteur" img="file:/C:/Digital-0.29/target/docu/img/Counter_fr.svg">
+      <descr>Une composante simple pour compter. Le signal d'horloge incrémente le compteur. Peut être réinitialisée à 0 avec l'entrée &quot;clr&quot; (clear). Le nombre de bits est ajustable dans le dialogue des attributs. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="en">Si mise à 1 le compteur est activé!</pin>
+        <pin name="C">Le signal d'horloge. Un front montant incrémente le compteur.</pin>
+        <pin name="clr">Si mis à 1, réinitialise le compteur de façon synchrone.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne la valeur comptée.</pin>
+        <pin name="ovf">Indicateur de débordement. Si cette sortie est à 1 alors le compteur est à sa valeur maximale et l'entrée d'activation &quot;en&quot; est à 1.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+        <attr name="Pointeur d'instruction">Fait de ce registre un pointeur d'instruction (ou compteur ordinal). La valeur de ce registre est retournée à un assembleur externe pour marquer la ligne de code courante durant le débogage.</attr>
+      </attributes>
+    </element>
+    <element name="Compteur prédéfini" img="file:/C:/Digital-0.29/target/docu/img/CounterPreset_fr.svg">
+      <descr>Un compteur pour lequel la valeur peut être changée. De plus, une valeur maximale et une direction peuvent être spécifiés. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="en">Si mis à 1, le compteur est activé!</pin>
+        <pin name="C">Signal d'horloge. Un front montant incrémente ou décrémente le compteur.</pin>
+        <pin name="dir">Spécifie la direction du compte. Un zéro signifie vers le haut (en ordre croissant).</pin>
+        <pin name="in">Cette valeur est stockée dans le compteur lorsque l'entrée &quot;ld&quot; est activée.</pin>
+        <pin name="ld">Si activée, la valeur dans l'entrée &quot;in&quot; est stockée dans le compteur au prochain signal d'horloge.</pin>
+        <pin name="clr">Si mis à 1, réinitialise le compteur de façon synchrone.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne la valeur comptée.</pin>
+        <pin name="ovf">Indicateur de débordement. Si cette sortie est à 1 et que l'entrée d'activation &quot;en&quot; est à 1 alors le compteur est à sa valeur maximale s'il compte vers le haut, ou à zéro s'il compte vers le bas.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Valeur maximale">Si un zéro est entré, la valeur maximale est utilisée (tous les bits à un).</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Utiliser comme valeur de mesure">Si coché, la valeur est une valeur de mesure est s'affiche dans le graphique et le tableau de données. De plus, une étiquette doit être spécifiée afin d'identifier la valeur.</attr>
+        <attr name="Pointeur d'instruction">Fait de ce registre un pointeur d'instruction (ou compteur ordinal). La valeur de ce registre est retournée à un assembleur externe pour marquer la ligne de code courante durant le débogage.</attr>
+      </attributes>
+    </element>
+    <element name="Générateur de nombre aléatoire" img="file:/C:/Digital-0.29/target/docu/img/PRNG_fr.svg">
+      <descr>Peut être utilisé pour générer des nombres aléatoires. Lorsque la simulation débute, le générateur est réinitialisé afin que des nombres aléatoires différents soit générés à chaque simulation. Le générateur peut être initialisé durant la simulation pour modifier la graine utilisée pour générer la séquence de nombres pseudo-aléatoires.</descr>
+      <inputs name="Entrées">
+        <pin name="S">Nouvelle valeur de graine utilisée pour le générateur.</pin>
+        <pin name="se">Si activée, le générateur de nombre aléatoire est réinitialisé avec la nouvelle valeur de graine au prochain front montant de l&quot;horloge.</pin>
+        <pin name="ne">Si activée, une nouveau nombre aléatoire est émis à la sortie au prochain front montant de l'horloge.</pin>
+        <pin name="C">Signal d'horloge</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="R">Émet un nombre pseudo-aléatoire.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Arithmétique">
+    <element name="Addition" img="file:/C:/Digital-0.29/target/docu/img/Add_fr.svg">
+      <descr>Une composante pour des calculs d'addition simples. Additionne deux valeurs entières aux entrées A et B (A+B). Le résultat est incrémenté de un si l'entrée de retenue est active. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="a">Première valeur à additionner.</pin>
+        <pin name="b">Seconde valeur à additionner.</pin>
+        <pin name="c_i">Entrée de retenue, si active le résultat sera incrémenté de un.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="s">Le résultat de l'addition</pin>
+        <pin name="c_o">Indicateur de retenue. Si actif, il y a eu un débordement.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Soustraction" img="file:/C:/Digital-0.29/target/docu/img/Sub_fr.svg">
+      <descr>Une composante pour des soustractions simples. Soustrait des nombres binaires aux entrées A et B (A-B). Le résultat est décrémenté de 1 si l'entrée de retenue est active. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="a">L'entrée A de la soustraction.</pin>
+        <pin name="b">L'entrée B de la soustraction</pin>
+        <pin name="c_i">Entrée de retenue, si active le résultat sera décrémenté de 1.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="s">Retourne le résultat de la soustraction.</pin>
+        <pin name="c_o">Émet un 1 si un débordement a eu lieu.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Multiplication" img="file:/C:/Digital-0.29/target/docu/img/Mul_fr.svg">
+      <descr>Une composante pour la multiplication. Multiplie les nombres entiers aux entrées A et B. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="a">L'entrée A de la multiplication</pin>
+        <pin name="b">L'entrée B de la multiplication</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="mul">La sortie pour le résultat de la multiplication.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Opération signée">Si coché, l'opération est effectuée avec des valeurs signées (complément 2).</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Division" img="file:/C:/Digital-0.29/target/docu/img/Div_fr.svg">
+      <descr>Une composante pour la division. Divise le nombre entier à l'entrée A par le nombre entier à l'entrée B. Si le diviseur est zéro, le nombre est divisé par un à la place. Pour la division signée, le reste est toujours positif.</descr>
+      <inputs name="Entrées">
+        <pin name="a">Dividende</pin>
+        <pin name="b">Diviseur</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="q">Quotient</pin>
+        <pin name="r">Reste</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Opération signée">Si coché, l'opération est effectuée avec des valeurs signées (complément 2).</attr>
+        <attr name="Le reste est toujours positif.">Si coché, le reste d'une division signée sera toujours positif.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Décaleur" img="file:/C:/Digital-0.29/target/docu/img/BarrelShifter_fr.svg">
+      <descr>Une composante pour décaler des bits. Décale la valeur d'entrée par un nombre de bits donné par l'entrée &quot;shift&quot;.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Entrée avec les bits à décaler.</pin>
+        <pin name="shift">Entrée avec le nombre de bits à décaler.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Sortie de la valeur décalée.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="L'entrée de décalage est signée">Si coché, l'entrée de décalage est une valeur signée (complément 2).</attr>
+        <attr name="Direction">Détermine la direction du décalage.</attr>
+        <attr name="Mode">Mode du décaleur</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Comparateur" img="file:/C:/Digital-0.29/target/docu/img/Comparator_fr.svg">
+      <descr>Une composante pour comparer des valeurs binaires. Compare les nombres binaires aux entrées A et B et met la sortie correspondante à 1. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="a">L'entrée A à comparer.</pin>
+        <pin name="b">L'entrée B à comparer.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="&gt;">La sortie est active si A est plus grand que B.</pin>
+        <pin name="=">La sortie est active si A est égal à B.</pin>
+        <pin name="&lt;">La sortie est active si A est plus petit que B.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Opération signée">Si coché, l'opération est effectuée avec des valeurs signées (complément 2).</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Négation" img="file:/C:/Digital-0.29/target/docu/img/Neg_fr.svg">
+      <descr>Négation selon le complément 2. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">L'entrée du mot à inverser selon le complément 2.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le résultat de l'inversion selon le complément 2.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Extension de signe" img="file:/C:/Digital-0.29/target/docu/img/BitExtender_fr.svg">
+      <descr>Augmente la largeur binaire d'une valeur signée en gardant le même signe que la valeur. Si l'entrée est un seul bit, ce bit est répété sur tous les bits de sortie. Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Valeur d'entrée. La largeur binaire d'entrée doit être plus petite que la largeur binaire de sortie!</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Valeur d'entrée étendue. La largeur binaire d'entrée doit être plus petite que la largeur binaire de sortie!</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur binaire d'entrée">Le nombre de bits de sortie doit est plus grand que le nombre de bits d'entrée.</attr>
+        <attr name="Largeur binaire de sortie">Le nombre de bits de sortie doit est plus grand que le nombre de bits d'entrée.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Compteur de bits" img="file:/C:/Digital-0.29/target/docu/img/BitCount_fr.svg">
+      <descr>Retourne le nombre de bits à 1 dans la valeur d'entrée.</descr>
+      <inputs name="Entrées">
+        <pin name="in">La valeur d'entrée pour laquelle les bits à 1 sont comptés.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Retourne le nombre de bits à 1.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Interrupteurs">
+    <element name="Interrupteur" img="file:/C:/Digital-0.29/target/docu/img/Switch_fr.svg">
+      <descr>Interrupteur simple. Il n'y a pas de délai de transmission: un changement est propagé instantanément.</descr>
+      <outputs name="Sorties">
+        <pin name="A1">Une des connexions de l'interrupteur.</pin>
+        <pin name="B1">Une des connexions de l'interrupteur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Nombre de pôles">Nombre de poles disponibles.</attr>
+        <attr name="Fermé">Donne l'état initial de l'interrupteur.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Interrupteur se comporte comme une entrée">Si le modèle est analysé, l'interrupteur se comporte comme une entrée, où &quot;ouverte&quot; correspond à '0' et &quot;fermée&quot; à '1'.</attr>
+      </attributes>
+    </element>
+    <element name="Interrupteur bidirectionnel" img="file:/C:/Digital-0.29/target/docu/img/SwitchDT_fr.svg">
+      <descr>Interrupteur bidirectionnel. Il n'y a pas de délai de transmission: un changement est propagé instantanément.</descr>
+      <outputs name="Sorties">
+        <pin name="A1">Une des connexions de l'interrupteur.</pin>
+        <pin name="B1">Une des connexions de l'interrupteur.</pin>
+        <pin name="C1">Une des connexions de l'interrupteur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Nombre de pôles">Nombre de poles disponibles.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Relais" img="file:/C:/Digital-0.29/target/docu/img/Relay_fr.svg">
+      <descr>Un relais est un interrupteur qui peut être contrôlé par une bobine. Si le courant circule dans la bobine, l'interrupteur est ouvert ou fermé. Il n'y a pas de diode antiretour alors le sens du courant n'a pas d'importance. L'interrupteur est actionné si les deux entrées ont des valeurs différentes. Le relais se comporte de façon similaire à une porte XOR.</descr>
+      <inputs name="Entrées">
+        <pin name="in1">Une des entrées qui contrôle le relais.</pin>
+        <pin name="in2">Une des entrées qui contrôle le relais.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="A1">Une des connexions de l'interrupteur.</pin>
+        <pin name="B1">Une des connexions de l'interrupteur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Nombre de pôles">Nombre de poles disponibles.</attr>
+        <attr name="Relais normalement fermé.">Si coché, le relais est fermé si l'entrée est basse.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Relais bidirectionnel" img="file:/C:/Digital-0.29/target/docu/img/RelayDT_fr.svg">
+      <descr>Un relais est un interrupteur qui peut être contrôlé par une bobine. Si le courant circule dans la bobine, l'interrupteur est ouvert ou fermé. Il n'y a pas de diode antiretour alors le sens du courant n'a pas d'importance. L'interrupteur est actionné si les deux entrées ont des valeurs différentes. Le relais se comporte de façon similaire à une porte XOR.</descr>
+      <inputs name="Entrées">
+        <pin name="in1">Une des entrées qui contrôle le relais.</pin>
+        <pin name="in2">Une des entrées qui contrôle le relais.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="A1">Une des connexions de l'interrupteur.</pin>
+        <pin name="B1">Une des connexions de l'interrupteur.</pin>
+        <pin name="C1">Une des connexions de l'interrupteur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Nombre de pôles">Nombre de poles disponibles.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="FET de type P" img="file:/C:/Digital-0.29/target/docu/img/PFET_fr.svg">
+      <descr>Transistor à effet de champ avec dopage de type P. Le substrat est connecté à l'alimentation et le transistor est simulé sans diode de corps.</descr>
+      <inputs name="Entrées">
+        <pin name="G">Grille</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="S">Source</pin>
+        <pin name="D">Drain</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Unidirectionnel">Les transistors unidirectionnels propagent un signal seulement de la source au drain. Ils sont beaucoup plus rapides à simuler que les transistors bidirectionnels. Dans ce mode, puisqu'il n'y a pas de rétroaction du drain à la source, le transistor ne peut pas court-circuiter les fils connectés lorsqu'il est conducteur. Ainsi, ce mode est nécessaire pour simuler certains circuits CMOS.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="FET de type N" img="file:/C:/Digital-0.29/target/docu/img/NFET_fr.svg">
+      <descr>Transistor à effet de champ avec dopage de type N. Le substrat est connecté à la masse et le transistor est simulé sans diode de corps.</descr>
+      <inputs name="Entrées">
+        <pin name="G">Grille</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Drain</pin>
+        <pin name="S">Source</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Unidirectionnel">Les transistors unidirectionnels propagent un signal seulement de la source au drain. Ils sont beaucoup plus rapides à simuler que les transistors bidirectionnels. Dans ce mode, puisqu'il n'y a pas de rétroaction du drain à la source, le transistor ne peut pas court-circuiter les fils connectés lorsqu'il est conducteur. Ainsi, ce mode est nécessaire pour simuler certains circuits CMOS.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Fusible" img="file:/C:/Digital-0.29/target/docu/img/Fuse_fr.svg">
+      <descr>Un fusible utilisé pour construire une mémoire programmée une seule fois</descr>
+      <outputs name="Sorties">
+        <pin name="out1">Une des connexions de l'interrupteur.</pin>
+        <pin name="out2">Une des connexions de l'interrupteur.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Programmé">Si la diode est &quot;sautée&quot; ou &quot;programmée&quot;. Pour un FET à grille flottante, la grille flottante est chargée. Il est aussi possible de changer cette option avec la touche [P].</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Diode à l'alimentation" img="file:/C:/Digital-0.29/target/docu/img/DiodeForward_fr.svg">
+      <descr>Une diode unidirectionnelle simplifiée, utilisée pour le tirage d'un fil à l'alimentation. Elle est utilisée pour créer un OU câblé. Donc il est nécessaire de connecter une résistance de rappel à la sortie de la diode. Dans la simulation la diode se comporte comme une porte active avec une table de vérité trivalente: si l'entrée est haute, la sortie l'est aussi. Dans tous les autres cas (l'entrée est basse ou Hi-Z), la sortie est dans un état de haute impédance. Donc deux diodes antiparallèles connectées peuvent se garder l'une et l'autre dans un état haut, ce qui n'est pas possible avec de vraies diodes. C'est une diode polarisée idéale: il n'y a pas de sans perte de tension à travers la diode.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Si l'entrée est haute alors la sortie l'est aussi. Dans tous les autres cas la sortie est dans état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Si l'entrée est haute alors la sortie l'est aussi. Dans tous les autres cas la sortie est dans état de haute impédance.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Programmé">Si la diode est &quot;sautée&quot; ou &quot;programmée&quot;. Pour un FET à grille flottante, la grille flottante est chargée. Il est aussi possible de changer cette option avec la touche [P].</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Diode à la masse" img="file:/C:/Digital-0.29/target/docu/img/DiodeBackward_fr.svg">
+      <descr>Une diode unidirectionnelle simplifiée, utilisée pour le rappel d'un fil à la masse. Elle est utilisée pour créer un ET câblé. Donc il est nécessaire de connecter une résistance de tirage à la sortie de la diode. Si l'entrée est basse, la sortie l'est aussi. Dans tous les autres cas (l'entrée est haute ou Hi-Z), la sortie est dans un état de haute impédance. Donc deux diodes antiparallèles connectées peuvent se garder l'une et l'autre dans un état bas, ce qui n'est pas possible avec de vraies diodes. C'est une diode polarisée idéale: il n'y a pas de sans perte de tension à travers la diode.</descr>
+      <inputs name="Entrées">
+        <pin name="in">Si l'entrée est basse alors la sortie l'est aussi. Dans tous les autres cas la sortie est dans état de haute impédance.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out">Si l'entrée est basse alors la sortie l'est aussi. Dans tous les autres cas la sortie est dans état de haute impédance.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Programmé">Si la diode est &quot;sautée&quot; ou &quot;programmée&quot;. Pour un FET à grille flottante, la grille flottante est chargée. Il est aussi possible de changer cette option avec la touche [P].</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="FET de type P à grille flottante" img="file:/C:/Digital-0.29/target/docu/img/FGPFET_fr.svg">
+      <descr>Transistor à effet de champ avec dopage de type P avec grille flottante (floating gate). Le substrat est connecté à l'alimentation et le transistor est simulé sans diode de corps. S'il y a une charge stockée dans la grille flottante, le FET n'est pas conducteur même si la grille est basse.</descr>
+      <inputs name="Entrées">
+        <pin name="G">Grille</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="S">Source</pin>
+        <pin name="D">Drain</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Programmé">Si la diode est &quot;sautée&quot; ou &quot;programmée&quot;. Pour un FET à grille flottante, la grille flottante est chargée. Il est aussi possible de changer cette option avec la touche [P].</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="FET de type N à grille flottante" img="file:/C:/Digital-0.29/target/docu/img/FGNFET_fr.svg">
+      <descr>Transistor à effet de champ avec dopage de type N avec grille flottante (floating gate). Le substrat est connecté à la masse et le transistor est simulé sans diode de corps. S'il y a une charge stockée dans la grille flottante, le FET n'est pas conducteur même si la grille est haute.</descr>
+      <inputs name="Entrées">
+        <pin name="G">Grille</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">Drain</pin>
+        <pin name="S">Source</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Programmé">Si la diode est &quot;sautée&quot; ou &quot;programmée&quot;. Pour un FET à grille flottante, la grille flottante est chargée. Il est aussi possible de changer cette option avec la touche [P].</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Porte de transmission" img="file:/C:/Digital-0.29/target/docu/img/TransGate_fr.svg">
+      <descr>Une vraie porte de transmission est construire à partir de seulement deux transistors. Ainsi, elle est souvent utilisée pour économiser des transistors lors de l'implantation sur le silicium.</descr>
+      <inputs name="Entrées">
+        <pin name="S">Entrée de contrôle</pin>
+        <pin name="¬S">Entrée de contrôle inversée</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="A">Entrée A</pin>
+        <pin name="B">Entrée B</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Divers">
+    <element name="Test" img="file:/C:/Digital-0.29/target/docu/img/Testcase_fr.svg">
+      <descr>Décrit un test. Dans un test, vous pouvez décrire comment le circuit devrait se comporter. Il est ensuite possible de vérifier automatiquement si le comportement du circuit correspond réellement à cette description. Si ce n'est pas le cas, un message d'erreur est affiché. Un message d'aide dans l'éditeur de test décrit en détail la syntaxe utilisée pour les tests. Exportable en VHDL/Verilog.</descr>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Données de test">La description du test. Les détails de la syntaxe peuvent être trouvés dans le dialogue d'aide de l'éditeur de données de test.</attr>
+        <attr name="Activée">Active ou désactive cette composante.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Divers - Décoration">
+    <element name="Texte" img="file:/C:/Digital-0.29/target/docu/img/Text_fr.svg">
+      <descr>Affiche du texte dans le circuit. N'affecte pas la simulation. Le texte peut être changé dans le dialogue d'attributs.</descr>
+      <attributes name="Attributs">
+        <attr name="Description">Une courte description de cet élément et son utilisation.</attr>
+        <attr name="Taille de police">Détermine la taille de la police à utiliser pour ce texte.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Orientation">Position de la coordonnée relativement au texte.</attr>
+        <attr name="Aligner sur la grille">Si coché, la composante reste alignée sur la grille.</attr>
+      </attributes>
+    </element>
+    <element name="Rectangle" img="file:/C:/Digital-0.29/target/docu/img/Rectangle_fr.svg">
+      <descr>Affiche un rectangle dans le circuit. N'affecte pas la simulation. Si un trait d'union est d'utilisé comme titre, le titre n'est pas affiché.</descr>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur">Largeur en unités de grille</attr>
+        <attr name="Hauteur">Hauteur en unités de grille</attr>
+        <attr name="Taille de police">Détermine la taille de la police à utiliser pour ce texte.</attr>
+        <attr name="Texte en dedans">Place le texte à l'intérieur du rectangle.</attr>
+        <attr name="Texte en bas">Place le texte au bas du rectangle.</attr>
+        <attr name="Text à droite">Place le texte à droite du rectangle.</attr>
+        <attr name="Aligner sur la grille">Si coché, la composante reste alignée sur la grille.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Divers - Générique">
+    <element name="Initialisation générique" img="file:/C:/Digital-0.29/target/docu/img/GenericInitCode_fr.svg">
+      <descr>Code qui est exécuté pour simuler un circuit générique directement. Cette composante est requise si un circuit générique doit être simulé directement. Exportable en VHDL/Verilog.</descr>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Activée">Active ou désactive cette composante.</attr>
+        <attr name="Paramétrisation générique">Énoncés utilisés pour générifier un circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Code" img="file:/C:/Digital-0.29/target/docu/img/GenericCode_fr.svg">
+      <descr>Code qui est exécuté lorsqu'un circuit générique est rendu concret. Peut être utilisé, par exemple, pour ajouter des composantes ou des fils au circuit. Exportable en VHDL/Verilog.</descr>
+      <attributes name="Attributs">
+        <attr name="Paramétrisation générique">Énoncés utilisés pour générifier un circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Divers - VHDL/Verilog">
+    <element name="Externe" img="file:/C:/Digital-0.29/target/docu/img/External_fr.svg">
+      <descr>Une composante qui exécute un processus externe pour calculer la fonction logique. Peut être utilisé pour spécifier le comportement d'une composante en VHDL ou en Verilog. La simulation du comportement en tant que telle doit être faite avec un simulateur externe. À l'heure actuelle, seuls le simulateur de VHDL ghdl et le simulateur de Verilog Icarus Verilog sont pris en charge. L'étiquette de la composante doit correspondre au nom de l'entité ou du module! Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in"></pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out"></pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur">Largeur du symbole si le circuit est utilisé comme une composante dans un autre circuit.</attr>
+        <attr name="Entrées">Les entrées du processus externe. C'est une liste de noms de signaux séparée par des virgules. Pour chaque nom de signal, un nombre de bits séparé par un deux-points peut être spécifié. Les entrées d'un additionneur 8-bit pourraient ainsi être séparées avec &quot;a:8,b:8,c_in&quot;.</attr>
+        <attr name="Sorties">Les sorties du processus externe. C'est une liste de noms de signaux séparée par des virgules. Pour chaque nom de signal, un nombre de bits séparé par un deux-points peut être spécifié. Les sorties d'un additionneur 8-bit pourraient ainsi être séparées avec &quot;s:8,c_out&quot;.</attr>
+        <attr name="Code du programme">Le code du programme à exécuter par une application externe.</attr>
+        <attr name="Application">Définit l'application à utiliser.</attr>
+        <attr name="Options GHDL">Options utilisées pour les étapes de traitement par GHDL.</attr>
+        <attr name="Options IVerilog">Options utilisées pour toutes les étapes de traitement par IVerilog.</attr>
+      </attributes>
+    </element>
+    <element name="Fichier externe" img="file:/C:/Digital-0.29/target/docu/img/ExternalFile_fr.svg">
+      <descr>Une composante qui exécute un processus externe pour calculer la fonction logique. Peut être utilisé pour spécifier le comportement d'une composante en VHDL ou en Verilog. La simulation du comportement en tant que telle doit être faite avec un simulateur externe. À l'heure actuelle, seuls le simulateur de VHDL ghdl et le simulateur de Verilog Icarus Verilog sont pris en charge. L'étiquette de la composante doit correspondre au nom de l'entité ou du module! Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="in"></pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="out"></pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Largeur">Largeur du symbole si le circuit est utilisé comme une composante dans un autre circuit.</attr>
+        <attr name="Entrées">Les entrées du processus externe. C'est une liste de noms de signaux séparée par des virgules. Pour chaque nom de signal, un nombre de bits séparé par un deux-points peut être spécifié. Les entrées d'un additionneur 8-bit pourraient ainsi être séparées avec &quot;a:8,b:8,c_in&quot;.</attr>
+        <attr name="Sorties">Les sorties du processus externe. C'est une liste de noms de signaux séparée par des virgules. Pour chaque nom de signal, un nombre de bits séparé par un deux-points peut être spécifié. Les sorties d'un additionneur 8-bit pourraient ainsi être séparées avec &quot;s:8,c_out&quot;.</attr>
+        <attr name="Code du programme">Le fichier contenant le code du programme à exécuter par l'application externe</attr>
+        <attr name="Application">Définit l'application à utiliser.</attr>
+        <attr name="Options GHDL">Options utilisées pour les étapes de traitement par GHDL.</attr>
+        <attr name="Options IVerilog">Options utilisées pour toutes les étapes de traitement par IVerilog.</attr>
+      </attributes>
+    </element>
+    <element name="Commande de broche" img="file:/C:/Digital-0.29/target/docu/img/PinControl_fr.svg">
+      <descr>Logique de commande pour une broche bidirectionnelle. Cette composante est nécessaire seulement dans un contexte de génération de VHDL ou de Verilog, dans le but de créer un port HDL bidirectionnel! Si vous ne voulez pas utiliser un port E/S bidirectionnel sur un FPGA, n'utilisez pas cette composante! L'élément de commande de broche ne peut pas être utilisé dans un circuit intégré, seulement dans le circuit du niveau supérieur! Exportable en VHDL/Verilog.</descr>
+      <inputs name="Entrées">
+        <pin name="wr">La valeur à émettre</pin>
+        <pin name="oe">Active la sortie</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="rd">La valeur à lire</pin>
+        <pin name="pin">Le connecteur pour la broche en tant que telle. Seule une sortie peut être connectée ici.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Divers">
+    <element name="Alimentation" img="file:/C:/Digital-0.29/target/docu/img/PowerSupply_fr.svg">
+      <descr>N'a aucune fonction. S'assure que l'alimentation (VDD) et la masse (GND) sont connectées. Peut être utilisé dans les circuits 74xx pour générer les broches de l'alimentation, qui sont testées pour s'assurer que le câblage est correct.</descr>
+      <inputs name="Entrées">
+        <pin name="VDD">Doit être connecté à l'alimentation (VDD)!</pin>
+        <pin name="GND">Doit être connecté à la masse (GND)!</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Séparateur bidirectionnel" img="file:/C:/Digital-0.29/target/docu/img/BusSplitter_fr.svg">
+      <descr>Peut être utilisé pour les bus de données et simplifie particulièrement la construction de module de mémoire dans un boîtier DIL, car l'implantation du bus de données est simplifiée.</descr>
+      <inputs name="Entrées">
+        <pin name="OE">Lorsqu'activée, la valeur au terminal commun D est émise au bits de sortie D[i], sinon, les bits de sortie D[i] sont émis à la sortie commune D.</pin>
+      </inputs>
+      <outputs name="Sorties">
+        <pin name="D">La connexion de la valeur commune.</pin>
+        <pin name="D0">Le bit de donnée 0 du séparateur de bus.</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Bits de données">Le nombre de bits utilisés pour les données.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+        <attr name="Miroir">Reflète la composante dans le circuit.</attr>
+        <attr name="Étalement">Configure l'étalement des entrées et des sorties dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Réinitialisation" img="file:/C:/Digital-0.29/target/docu/img/Reset_fr.svg">
+      <descr>La sortie de cette composante est gardée haute lors de l'initialisation du circuit. Après que le circuit se soit stabilisé, la sortie devient basse. Si la sortie est inversée alors elle se comporte de la façon inverse. Exportable en VHDL/Verilog.</descr>
+      <outputs name="Sorties">
+        <pin name="Reset">Sortie de réinitialisation</pin>
+      </outputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Inverser la sortie">Si coché la sortie est inversée.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pause" img="file:/C:/Digital-0.29/target/docu/img/Break_fr.svg">
+      <descr>Si cette composante est utilisée dans le circuit, le bouton &quot;Exécuter jusqu'à une pause&quot; entre les boutons &quot;Commencer&quot; et &quot;Arrêter&quot; est activé. Ce bouton exécute le circuit jusqu'à ce que cette composante reçoive un front montant. Cet élément peut aussi être utilisé pour déboguer en exécutant un circuit jusqu'à un point d'arrêt. Une instruction d'assembleur BRK (break) peut également être implantée. Cela permet à un programme de s'exécuter jusqu'à la prochaine instruction BRK. Cette fonction peut seulement être utilisée si l'horloge temps réel est désactivée!</descr>
+      <inputs name="Entrées">
+        <pin name="brk">Arrête la simulation haute vitesse si un front montant est détecté.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Activée">Active ou désactive cette composante.</attr>
+        <attr name="Cycles d'attente">Si ce nombre de cycles est atteint dans signal de pause, une erreur est affichée.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Arrêt" img="file:/C:/Digital-0.29/target/docu/img/Stop_fr.svg">
+      <descr>Un front montant à l'entrée arrête la simulation. A le même effet que d'appuyer sur le bouton &quot;Arrêter&quot; dans la barre d'outils.</descr>
+      <inputs name="Entrées">
+        <pin name="stop">Un front montant arrête la simulation.</pin>
+      </inputs>
+      <attributes name="Attributs">
+        <attr name="Étiquette">Le nom de cet élément.</attr>
+        <attr name="Entrées inversées">Sélectionner les entrées qui doivent être inversées.</attr>
+        <attr name="Rotation">L'orientation de l'élément dans le circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Minuterie asynchrone" img="file:/C:/Digital-0.29/target/docu/img/AsyncSeq_fr.svg">
+      <descr>Permet la configuration d'une minuterie d'un circuit séquentiel asynchrone comme un pipeline de Muller. Le circuit doit être lancé en mode pas-à-pas et doit être en mesure d'atteindre un état stable au démarrage. Le circuit séquentiel peut alors être lancé interactivement ou avec une porte de réinitialisation. Il n'est pas permis d'utiliser une composante d'horloge ordinaire dans ce mode.</descr>
+      <attributes name="Attributs">
+        <attr name="Partir l'horloge temps réel">Si coché, l'horloge de temps d'exécution est partie quand le circuit débute.</attr>
+        <attr name="Fréquence/Hz">La fréquence utilisée pour l'horloge temps réel.</attr>
+      </attributes>
+    </element>
+  </lib>
+</root>

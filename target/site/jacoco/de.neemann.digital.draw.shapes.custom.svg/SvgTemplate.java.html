@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SvgTemplate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes.custom.svg</a> &gt; <span class="el_source">SvgTemplate.java</span></div><h1>SvgTemplate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes.custom.svg;
+
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+
+import java.awt.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * Used to create a SVG template
+ */
+public class SvgTemplate implements Closeable {
+    private final Writer w;
+    private final PinDescription[] inputs;
+    private final ObservableValues outputs;
+    private final int width;
+    private final int height;
+
+    /**
+     * Creates a new instance
+     *
+     * @param file    the file to create
+     * @param circuit the circuit
+     * @throws Exception Exception
+     */
+    public SvgTemplate(File file, Circuit circuit) throws Exception {
+<span class="nc" id="L39">        this(new FileOutputStream(file), circuit);</span>
+<span class="nc" id="L40">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param outputStream the stream to write to
+     * @param circuit      the circuit
+     * @throws Exception Exception
+     */
+<span class="nc" id="L49">    public SvgTemplate(OutputStream outputStream, Circuit circuit) throws Exception {</span>
+<span class="nc" id="L50">        width = circuit.getAttributes().get(Keys.WIDTH) * SIZE;</span>
+<span class="nc" id="L51">        inputs = circuit.getInputNames();</span>
+<span class="nc" id="L52">        outputs = circuit.getOutputNames();</span>
+<span class="nc" id="L53">        height = Math.max(inputs.length, outputs.size()) * SIZE;</span>
+<span class="nc" id="L54">        int border = SIZE * 4;</span>
+
+
+<span class="nc" id="L57">        w = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L58">        w.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot; standalone=\&quot;no\&quot;?&gt;\n&quot;</span>
+                + &quot;&lt;svg\n&quot;
+                + &quot;   xmlns:dc=\&quot;http://purl.org/dc/elements/1.1/\&quot;\n&quot;
+                + &quot;   xmlns:cc=\&quot;http://creativecommons.org/ns#\&quot;\n&quot;
+                + &quot;   xmlns:rdf=\&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#\&quot;\n&quot;
+                + &quot;   xmlns:svg=\&quot;http://www.w3.org/2000/svg\&quot;\n&quot;
+                + &quot;   xmlns=\&quot;http://www.w3.org/2000/svg\&quot;\n&quot;
+                + &quot;   xmlns:sodipodi=\&quot;http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\&quot;\n&quot;
+                + &quot;   xmlns:inkscape=\&quot;http://www.inkscape.org/namespaces/inkscape\&quot;\n&quot;
+                + &quot;   viewBox=\&quot;-&quot; + border + &quot; -&quot; + border + &quot; &quot; + (width + border * 2) + &quot; &quot; + (height - SIZE + border * 2) + &quot;\&quot;\n&quot;
+                + &quot;   version=\&quot;1.1\&quot;&gt;\n&quot;
+                + &quot;  &lt;sodipodi:namedview showgrid=\&quot;true\&quot;&gt;\n&quot;
+                + &quot;    &lt;inkscape:grid\n&quot;
+                + &quot;       type=\&quot;xygrid\&quot;\n&quot;
+                + &quot;       empspacing=\&quot;4\&quot;\n&quot;
+                + &quot;       spacingx=\&quot;5\&quot;\n&quot;
+                + &quot;       spacingy=\&quot;5\&quot; /&gt;\n&quot;
+                + &quot;  &lt;/sodipodi:namedview&gt;\n&quot;);
+<span class="nc" id="L76">    }</span>
+
+    /**
+     * Creates the template
+     *
+     * @throws Exception Exception
+     */
+    public void create() throws Exception {
+<span class="nc" id="L84">        w.write(&quot;  &lt;rect stroke=\&quot;black\&quot; stroke-width=\&quot;4\&quot;&quot;</span>
+<span class="nc" id="L85">                + &quot; fill=\&quot;&quot; + getColor(Keys.BACKGROUND_COLOR.getDefault()) + &quot;\&quot;&quot;</span>
+<span class="nc" id="L86">                + &quot; fill-opacity=\&quot;&quot; + (Keys.BACKGROUND_COLOR.getDefault().getAlpha() / 255f) + &quot;\&quot;&quot;</span>
+                + &quot; x=\&quot;0\&quot; y=\&quot;-10\&quot; width=\&quot;&quot; + width + &quot;\&quot; height=\&quot;&quot; + height + &quot;\&quot;/&gt;\n&quot;);
+
+<span class="nc" id="L89">        Style style = Style.NORMAL;</span>
+<span class="nc" id="L90">        w.write(&quot;    &lt;text id=\&quot;label\&quot; fill=\&quot;&quot; + getColor(style) + &quot;\&quot; font-size=\&quot;&quot;</span>
+<span class="nc" id="L91">                + style.getFontSize() + &quot;\&quot; text-anchor=\&quot;middle\&quot; x=\&quot;&quot; + width / 2 + &quot;\&quot; y=\&quot;&quot; + (-SIZE) + &quot;\&quot;&gt;Label&lt;/text&gt;\n&quot;);</span>
+
+<span class="nc" id="L93">        style = Style.SHAPE_PIN;</span>
+<span class="nc" id="L94">        final int yOffs = style.getFontSize() / 3;</span>
+
+<span class="nc" id="L96">        int y = 0;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (PinDescription i : inputs) {</span>
+<span class="nc" id="L98">            w.write(&quot;  &lt;g&gt;\n&quot;);</span>
+<span class="nc" id="L99">            w.write(&quot;    &lt;circle fill=\&quot;&quot; + getColor(Style.WIRE) + &quot;\&quot; id=\&quot;pin:&quot; + i.getName() + &quot;\&quot; cx=\&quot;0\&quot; cy=\&quot;&quot; + y + &quot;\&quot; r=\&quot;3\&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L100">            Vector labelPos = new Vector(4, y + yOffs);</span>
+<span class="nc" id="L101">            w.write(&quot;    &lt;text fill=\&quot;&quot; + getColor(style) + &quot;\&quot; font-size=\&quot;&quot; + style.getFontSize() + &quot;\&quot; x=\&quot;&quot; + labelPos.getX() + &quot;\&quot; y=\&quot;&quot; + labelPos.getY() + &quot;\&quot;&gt;&quot; + i.getName() + &quot;&lt;/text&gt;\n&quot;);</span>
+<span class="nc" id="L102">            w.write(&quot;  &lt;/g&gt;\n&quot;);</span>
+<span class="nc" id="L103">            y += 20;</span>
+        }
+<span class="nc" id="L105">        y = 0;</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (PinDescription o : outputs) {</span>
+<span class="nc" id="L107">            w.write(&quot;  &lt;g&gt;\n&quot;);</span>
+<span class="nc" id="L108">            w.write(&quot;    &lt;circle fill=\&quot;&quot; + getColor(Style.WIRE_OUT) + &quot;\&quot; id=\&quot;pin:&quot; + o.getName() + &quot;\&quot; cx=\&quot;&quot; + width + &quot;\&quot; cy=\&quot;&quot; + y + &quot;\&quot; r=\&quot;3\&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L109">            Vector labelPos = new Vector(width - 4, y + yOffs);</span>
+<span class="nc" id="L110">            w.write(&quot;    &lt;text fill=\&quot;&quot; + getColor(style) + &quot;\&quot; font-size=\&quot;&quot; + style.getFontSize() + &quot;\&quot; text-anchor=\&quot;end\&quot; x=\&quot;&quot; + labelPos.getX() + &quot;\&quot; y=\&quot;&quot; + labelPos.getY() + &quot;\&quot;&gt;&quot; + o.getName() + &quot;&lt;/text&gt;\n&quot;);</span>
+<span class="nc" id="L111">            w.write(&quot;  &lt;/g&gt;\n&quot;);</span>
+<span class="nc" id="L112">            y += 20;</span>
+<span class="nc" id="L113">        }</span>
+<span class="nc" id="L114">    }</span>
+
+    private String getColor(Style style) {
+<span class="nc" id="L117">        return getColor(style.getColor());</span>
+    }
+
+    private String getColor(Color color) {
+<span class="nc" id="L121">        return &quot;#&quot; + Integer.toHexString(color.getRGB()).substring(2);</span>
+    }
+
+    @Override
+    public void close() throws IOException {
+<span class="nc" id="L126">        w.write(&quot;&lt;/svg&gt;\n&quot;);</span>
+<span class="nc" id="L127">        w.close();</span>
+<span class="nc" id="L128">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

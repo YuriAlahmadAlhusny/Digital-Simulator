@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LineEmitterSimple.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing.parser</a> &gt; <span class="el_source">LineEmitterSimple.java</span></div><h1>LineEmitterSimple.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing.parser;
+
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.data.Value;
+
+import java.util.ArrayList;
+
+/**
+ * Line emitter to create a simple row of values.
+ */
+public class LineEmitterSimple implements LineEmitter {
+
+    private final ArrayList&lt;ValueAppender&gt; appender;
+    private final int valuesCount;
+    private final int line;
+
+    /**
+     * Creates a new Instance
+     *
+     * @param valuesCount number of expected columns
+     * @param line        the source line
+     */
+<span class="fc" id="L28">    public LineEmitterSimple(int valuesCount, int line) {</span>
+<span class="fc" id="L29">        this.valuesCount = valuesCount;</span>
+<span class="fc" id="L30">        this.line = line;</span>
+<span class="fc" id="L31">        this.appender = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Adds a value appender
+     *
+     * @param app the appender
+     */
+    public void add(ValueAppender app) {
+<span class="fc" id="L40">        appender.add(app);</span>
+<span class="fc" id="L41">    }</span>
+
+    @Override
+    public void emitLines(LineListener listener, Context context) throws ParserException {
+<span class="fc" id="L45">        ArrayList&lt;Value&gt; vals = new ArrayList&lt;&gt;(valuesCount);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (ValueAppender ve : appender)</span>
+<span class="fc" id="L47">            ve.appendValues(vals, context);</span>
+
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (vals.size() != valuesCount)</span>
+<span class="fc" id="L50">            throw new ParserException(Lang.get(&quot;err_testDataExpected_N0_found_N1_numbersInLine_N2&quot;, valuesCount, vals.size(), line));</span>
+
+<span class="fc" id="L52">        String description = &quot;L&quot; + line;</span>
+<span class="fc" id="L53">        String conString = context.toString();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (!conString.isEmpty())</span>
+<span class="fc" id="L55">            description += &quot;;&quot; + conString;</span>
+
+<span class="fc" id="L57">        listener.add(new TestRow(vals.toArray(new Value[vals.size()]), description));</span>
+<span class="fc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

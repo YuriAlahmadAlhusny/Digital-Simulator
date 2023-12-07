@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MIDI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">MIDI.java</span></div><h1>MIDI.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+
+import javax.sound.midi.MidiChannel;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The speaker.
+ */
+public class MIDI extends Node implements Element {
+
+    /**
+     * The Speakers description
+     */
+<span class="fc" id="L23">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L24">            = new ElementTypeDescription(MIDI.class) {</span>
+        public PinDescriptions getInputDescription(ElementAttributes elementAttributes) throws NodeException {
+<span class="fc bfc" id="L26" title="All 2 branches covered.">            if (elementAttributes.get(Keys.MIDI_PROG_CHANGE))</span>
+<span class="fc" id="L27">                return new PinDescriptions(input(&quot;N&quot;),</span>
+<span class="fc" id="L28">                        input(&quot;V&quot;),</span>
+<span class="fc" id="L29">                        input(&quot;OnOff&quot;),</span>
+<span class="fc" id="L30">                        input(&quot;PC&quot;),</span>
+<span class="fc" id="L31">                        input(&quot;en&quot;),</span>
+<span class="fc" id="L32">                        input(&quot;C&quot;).setClock()).setLangKey(getPinLangKey());</span>
+            else
+<span class="fc" id="L34">                return new PinDescriptions(input(&quot;N&quot;),</span>
+<span class="fc" id="L35">                        input(&quot;V&quot;),</span>
+<span class="fc" id="L36">                        input(&quot;OnOff&quot;),</span>
+<span class="fc" id="L37">                        input(&quot;en&quot;),</span>
+<span class="fc" id="L38">                        input(&quot;C&quot;).setClock()).setLangKey(getPinLangKey());</span>
+        }
+    }
+<span class="fc" id="L41">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L42">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L43">            .addAttribute(Keys.MIDI_CHANNEL)</span>
+<span class="fc" id="L44">            .addAttribute(Keys.MIDI_INSTRUMENT)</span>
+<span class="fc" id="L45">            .addAttribute(Keys.MIDI_PROG_CHANGE);</span>
+
+    private final int chanNum;
+    private final String instrument;
+    private final boolean progChangeEnable;
+    private ObservableValue note;
+    private ObservableValue volume;
+    private ObservableValue clock;
+    private ObservableValue onOff;
+    private ObservableValue en;
+    private ObservableValue progChange;
+    private MidiChannel channel;
+<span class="fc" id="L57">    private boolean lastCl = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the elements attributes
+     */
+<span class="fc" id="L64">    public MIDI(ElementAttributes attributes) {</span>
+<span class="fc" id="L65">        chanNum = attributes.get(Keys.MIDI_CHANNEL) - 1;</span>
+<span class="fc" id="L66">        instrument = attributes.get(Keys.MIDI_INSTRUMENT);</span>
+<span class="fc" id="L67">        progChangeEnable = attributes.get(Keys.MIDI_PROG_CHANGE);</span>
+<span class="fc" id="L68">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L72">        note = inputs.get(0).checkBits(7, this, 0);</span>
+<span class="fc" id="L73">        volume = inputs.get(1).checkBits(7, this, 1);</span>
+<span class="fc" id="L74">        onOff = inputs.get(2).checkBits(1, this, 2);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (progChangeEnable) {</span>
+<span class="fc" id="L76">            progChange = inputs.get(3).checkBits(1, this, 3);</span>
+<span class="fc" id="L77">            en = inputs.get(4).checkBits(1, this, 4);</span>
+<span class="fc" id="L78">            clock = inputs.get(5).checkBits(1, this, 5).addObserverToValue(this);</span>
+        } else {
+<span class="fc" id="L80">            en = inputs.get(3).checkBits(1, this, 3);</span>
+<span class="fc" id="L81">            clock = inputs.get(4).checkBits(1, this, 4).addObserverToValue(this);</span>
+        }
+<span class="fc" id="L83">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L87">        return ObservableValues.EMPTY_LIST;</span>
+    }
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L92">        boolean cl = clock.getBool();</span>
+<span class="pc bpc" id="L93" title="4 of 6 branches missed.">        if (!lastCl &amp;&amp; cl &amp;&amp; en.getBool()) {</span>
+<span class="nc" id="L94">            int note = (int) this.note.getValue();</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">            if (progChange != null &amp;&amp; progChange.getBool()) {</span>
+<span class="nc" id="L96">                channel.programChange(note);</span>
+            } else {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                if (onOff.getBool()) {</span>
+<span class="nc" id="L99">                    int v = (int) volume.getValue();</span>
+<span class="nc" id="L100">                    channel.noteOn(note, v);</span>
+<span class="nc" id="L101">                } else</span>
+<span class="nc" id="L102">                    channel.noteOff(note);</span>
+            }
+        }
+<span class="fc" id="L105">        lastCl = cl;</span>
+<span class="fc" id="L106">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L110">    }</span>
+
+    @Override
+    public void init(Model model) throws NodeException {
+<span class="fc" id="L114">        channel = MIDIHelper.getInstance().getChannel(chanNum, instrument, model);</span>
+<span class="fc" id="L115">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

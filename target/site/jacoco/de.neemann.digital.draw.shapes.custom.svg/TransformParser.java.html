@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransformParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes.custom.svg</a> &gt; <span class="el_source">TransformParser.java</span></div><h1>TransformParser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes.custom.svg;
+
+import de.neemann.digital.draw.graphics.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+class TransformParser {
+<span class="fc" id="L13">    private static final Logger LOGGER = LoggerFactory.getLogger(TransformParser.class);</span>
+
+    private SVGTokenizer tok;
+
+    /**
+     * Creates a new instance
+     *
+     * @param transform the path to parse
+     */
+<span class="fc" id="L22">    TransformParser(String transform) {</span>
+<span class="fc" id="L23">        tok = new SVGTokenizer(transform);</span>
+<span class="fc" id="L24">    }</span>
+
+    /**
+     * Parses the transformation
+     *
+     * @return the transformation
+     */
+    public Transform parse() {
+<span class="fc" id="L32">        Transform combined = Transform.IDENTITY;</span>
+        try {
+            Transform t;
+<span class="fc bfc" id="L35" title="All 2 branches covered.">            while (!tok.isEOF()) {</span>
+<span class="fc" id="L36">                final String command = tok.readCommand();</span>
+<span class="pc bpc" id="L37" title="1 of 5 branches missed.">                switch (command) {</span>
+                    case &quot;translate&quot;:
+<span class="fc" id="L39">                        tok.expect('(');</span>
+<span class="fc" id="L40">                        final float x = tok.readFloat();</span>
+<span class="fc" id="L41">                        float y = 0;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">                        if (tok.nextIsNumber())</span>
+<span class="fc" id="L43">                            y = tok.readFloat();</span>
+<span class="fc" id="L44">                        tok.expect(')');</span>
+<span class="fc" id="L45">                        t = new TransformTranslate(new VectorFloat(x, y));</span>
+<span class="fc" id="L46">                        break;</span>
+                    case &quot;scale&quot;:
+<span class="fc" id="L48">                        tok.expect('(');</span>
+<span class="fc" id="L49">                        final float xs = tok.readFloat();</span>
+<span class="fc" id="L50">                        float ys = xs;</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">                        if (tok.nextIsNumber())</span>
+<span class="fc" id="L52">                            ys = tok.readFloat();</span>
+<span class="fc" id="L53">                        tok.expect(')');</span>
+<span class="fc" id="L54">                        t = new TransformMatrix(xs, 0, 0, ys, 0, 0);</span>
+<span class="fc" id="L55">                        break;</span>
+                    case &quot;matrix&quot;:
+<span class="fc" id="L57">                        tok.expect('(');</span>
+<span class="fc" id="L58">                        final float ma = tok.readFloat();</span>
+<span class="fc" id="L59">                        final float mb = tok.readFloat();</span>
+<span class="fc" id="L60">                        final float mc = tok.readFloat();</span>
+<span class="fc" id="L61">                        final float md = tok.readFloat();</span>
+<span class="fc" id="L62">                        final float mx = tok.readFloat();</span>
+<span class="fc" id="L63">                        final float my = tok.readFloat();</span>
+<span class="fc" id="L64">                        tok.expect(')');</span>
+<span class="fc" id="L65">                        t = new TransformMatrix(</span>
+                                ma,
+                                mc,
+                                mb,
+                                md,
+                                mx,
+                                my);
+<span class="fc" id="L72">                        break;</span>
+                    case &quot;rotate&quot;:
+<span class="fc" id="L74">                        tok.expect('(');</span>
+<span class="fc" id="L75">                        float w = tok.readFloat();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                        if (tok.nextIsNumber()) {</span>
+<span class="fc" id="L77">                            t = TransformMatrix.rotate(w);</span>
+<span class="fc" id="L78">                            float xc = tok.readFloat();</span>
+<span class="fc" id="L79">                            float yc = tok.readFloat();</span>
+<span class="fc" id="L80">                            t = Transform.mul(new TransformTranslate(-xc, -yc), t);</span>
+<span class="fc" id="L81">                            t = Transform.mul(t, new TransformTranslate(xc, yc));</span>
+<span class="fc" id="L82">                        } else</span>
+<span class="fc" id="L83">                            t = TransformMatrix.rotate(w);</span>
+<span class="fc" id="L84">                        tok.expect(')');</span>
+<span class="fc" id="L85">                        break;</span>
+                    default:
+<span class="nc" id="L87">                        throw new RuntimeException(&quot;unknown transform: &quot; + command, null);</span>
+                }
+<span class="fc" id="L89">                combined = Transform.mul(t, combined);</span>
+<span class="fc" id="L90">            }</span>
+<span class="nc" id="L91">        } catch (Exception e) {</span>
+<span class="nc" id="L92">            LOGGER.warn(tok + &quot;: &quot; + e.getMessage());</span>
+<span class="fc" id="L93">        }</span>
+<span class="fc" id="L94">        return combined;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

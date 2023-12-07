@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EEPROM.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">EEPROM.java</span></div><h1>EEPROM.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.memory.rom.ROMInterface;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.gui.components.CircuitModifier;
+import de.neemann.digital.gui.components.modification.ModifyAttribute;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A EEPROM module.
+ */
+public class EEPROM extends Node implements Element, RAMInterface, ROMInterface {
+
+    /**
+     * The EEPROMs {@link ElementTypeDescription}
+     */
+<span class="fc" id="L29">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(EEPROM.class,</span>
+<span class="fc" id="L30">            input(&quot;A&quot;),</span>
+<span class="fc" id="L31">            input(&quot;CS&quot;),</span>
+<span class="fc" id="L32">            input(&quot;WE&quot;).setClock(),</span>
+<span class="fc" id="L33">            input(&quot;OE&quot;))</span>
+<span class="fc" id="L34">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.ADDR_BITS)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.INT_FORMAT)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.IS_PROGRAM_MEMORY)</span>
+<span class="fc" id="L40">            .addAttribute(Keys.INVERTER_CONFIG)</span>
+<span class="fc" id="L41">            .addAttribute(Keys.DATA);</span>
+
+    private final int bits;
+    private final int addrBits;
+    private final ElementAttributes attr;
+    private final int size;
+    private final String label;
+    private final ObservableValue dataOut;
+    private final boolean isProgramMemory;
+    private final ValueFormatter formatter;
+    private DataField memory;
+    private ObservableValue addrIn;
+    private ObservableValue csIn;
+    private ObservableValue weIn;
+    private ObservableValue oeIn;
+    private ObservableValue dataIn;
+
+    private int readAddr;
+    private int writeAddr;
+    private boolean cs;
+    private boolean oe;
+    private boolean we;
+    private boolean lastWrite;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+    public EEPROM(ElementAttributes attr) {
+<span class="fc" id="L71">        super(true);</span>
+<span class="fc" id="L72">        this.attr = attr;</span>
+<span class="fc" id="L73">        bits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L74">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L75">        size = 1 &lt;&lt; addrBits;</span>
+<span class="fc" id="L76">        memory = new DataField(attr.get(Keys.DATA));</span>
+<span class="fc" id="L77">        label = attr.getLabel();</span>
+<span class="fc" id="L78">        dataOut = new ObservableValue(&quot;D&quot;, bits)</span>
+<span class="fc" id="L79">                .setToHighZ()</span>
+<span class="fc" id="L80">                .setPinDescription(DESCRIPTION)</span>
+<span class="fc" id="L81">                .setBidirectional();</span>
+<span class="fc" id="L82">        isProgramMemory = attr.isProgramMemory();</span>
+<span class="fc" id="L83">        formatter = attr.getValueFormatter();</span>
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public void enableCircuitModification(VisualElement visualElement, CircuitModifier circuitModifier) {
+<span class="fc" id="L88">        getModel().addObserver(event -&gt; {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (event.getType() == ModelEventType.CLOSED) {</span>
+<span class="fc" id="L90">                DataField orig = attr.get(Keys.DATA);</span>
+<span class="fc" id="L91">                memory.trim();</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                if (!orig.equals(memory))</span>
+<span class="fc" id="L93">                    circuitModifier.modify(new ModifyAttribute&lt;&gt;(visualElement, Keys.DATA, memory));</span>
+            }
+<span class="fc" id="L95">        }, ModelEventType.CLOSED);</span>
+<span class="fc" id="L96">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L100">        addrIn = inputs.get(0).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L101">        csIn = inputs.get(1).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L102">        weIn = inputs.get(2).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L103">        oeIn = inputs.get(3).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L104">        dataIn = inputs.get(4).checkBits(bits, this);</span>
+<span class="fc" id="L105">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L109">        cs = csIn.getBool();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (cs) {</span>
+<span class="fc" id="L111">            readAddr = (int) addrIn.getValue();</span>
+<span class="fc" id="L112">            oe = oeIn.getBool();</span>
+        }
+
+<span class="fc" id="L115">        we = weIn.getBool();</span>
+<span class="fc bfc" id="L116" title="All 4 branches covered.">        boolean write = cs &amp;&amp; we;</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">        if (write &amp;&amp; !lastWrite)</span>
+<span class="fc" id="L118">            writeAddr = (int) addrIn.getValue();</span>
+
+<span class="fc bfc" id="L120" title="All 4 branches covered.">        if (!write &amp;&amp; lastWrite) {</span>
+<span class="fc" id="L121">            long data = dataIn.getValue();</span>
+<span class="fc" id="L122">            memory.setData(writeAddr, data);</span>
+        }
+<span class="fc" id="L124">        lastWrite = write;</span>
+<span class="fc" id="L125">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="pc bpc" id="L129" title="1 of 6 branches missed.">        if (cs &amp;&amp; oe &amp;&amp; !we) {</span>
+<span class="fc" id="L130">            dataOut.setValue(memory.getDataWord(readAddr));</span>
+        } else {
+<span class="fc" id="L132">            dataOut.setToHighZ();</span>
+        }
+<span class="fc" id="L134">    }</span>
+
+    @Override
+    public ValueFormatter getValueFormatter() {
+<span class="nc" id="L138">        return formatter;</span>
+    }
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L143">        return dataOut.asList();</span>
+    }
+
+    @Override
+    public DataField getMemory() {
+<span class="nc" id="L148">        return memory;</span>
+    }
+
+    @Override
+    public String getLabel() {
+<span class="fc" id="L153">        return label;</span>
+    }
+
+    @Override
+    public int getSize() {
+<span class="nc" id="L158">        return size;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L163">        return bits;</span>
+    }
+
+    @Override
+    public int getAddrBits() {
+<span class="nc" id="L168">        return addrBits;</span>
+    }
+
+    /**
+     * Sets the rams data
+     *
+     * @param data the data to set
+     */
+    public void setData(DataField data) {
+<span class="fc" id="L177">        this.memory = data;</span>
+<span class="fc" id="L178">    }</span>
+
+    @Override
+    public boolean isProgramMemory() {
+<span class="nc" id="L182">        return isProgramMemory;</span>
+    }
+
+    @Override
+    public void setProgramMemory(DataField dataField) {
+<span class="nc" id="L187">        memory.setDataFrom(dataField);</span>
+<span class="nc" id="L188">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FSMDemos.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">FSMDemos.java</span></div><h1>FSMDemos.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+/**
+ * Provides some demo fsm's
+ */
+public final class FSMDemos {
+
+    private FSMDemos() {
+    }
+
+
+    /**
+     * Blink
+     *
+     * @return the fsm
+     */
+    public static FSM blink() {
+<span class="nc" id="L23">        State off = new State(&quot;off&quot;);</span>
+<span class="nc" id="L24">        State on = new State(&quot;on&quot;);</span>
+<span class="nc" id="L25">        return new FSM(off, on)</span>
+<span class="nc" id="L26">                .transition(on, off, null)</span>
+<span class="nc" id="L27">                .transition(off, on, null);</span>
+    }
+
+    /**
+     * Creates a debounced rotary switch decoder
+     *
+     * @return the fsm
+     */
+    public static FSM rotDecoder() {
+<span class="nc" id="L36">        State init = new State(&quot;init&quot;);</span>
+<span class="nc" id="L37">        State top = new State(&quot;top&quot;);</span>
+<span class="nc" id="L38">        State topSetLeft = new State(&quot;topSetLeft&quot;).setValues(&quot;L=1&quot;);</span>
+<span class="nc" id="L39">        State topSetRight = new State(&quot;topSetRight&quot;).setValues(&quot;R=1&quot;);</span>
+<span class="nc" id="L40">        State leftTop = new State(&quot;leftTop&quot;);</span>
+<span class="nc" id="L41">        State leftBottom = new State(&quot;leftBottom&quot;);</span>
+<span class="nc" id="L42">        State bottom = new State(&quot;bottom&quot;);</span>
+<span class="nc" id="L43">        State bottomSetLeft = new State(&quot;bottomSetRight&quot;).setValues(&quot;R=1&quot;);</span>
+<span class="nc" id="L44">        State bottomSetRight = new State(&quot;bottomSetLeft&quot;).setValues(&quot;L=1&quot;);</span>
+<span class="nc" id="L45">        State rightTop = new State(&quot;rightTop&quot;);</span>
+<span class="nc" id="L46">        State rightBottom = new State(&quot;rightBottom&quot;);</span>
+<span class="nc" id="L47">        return new FSM(init, top, topSetLeft, leftTop, leftBottom, bottomSetLeft, bottom, bottomSetRight, rightBottom, rightTop, topSetRight)</span>
+<span class="nc" id="L48">                .transition(init, top, &quot;A=0 &amp; B=0&quot;)</span>
+<span class="nc" id="L49">                .transition(init, bottom, &quot;A=1 &amp; B=1&quot;)</span>
+
+<span class="nc" id="L51">                .transition(top, leftTop, &quot;A=1 &amp; B=0&quot;)</span>
+<span class="nc" id="L52">                .transition(top, rightTop, &quot;A=0 &amp; B=1&quot;)</span>
+<span class="nc" id="L53">                .transition(topSetLeft, top, null)</span>
+<span class="nc" id="L54">                .transition(topSetRight, top, null)</span>
+
+<span class="nc" id="L56">                .transition(rightTop, top, &quot;A=0 &amp; B=0&quot;)</span>
+<span class="nc" id="L57">                .transition(rightBottom, topSetRight, &quot;A=0 &amp; B=0&quot;)</span>
+<span class="nc" id="L58">                .transition(leftTop, top, &quot;A=0 &amp; B=0&quot;)</span>
+<span class="nc" id="L59">                .transition(leftBottom, topSetLeft, &quot;A=0 &amp; B=0&quot;)</span>
+
+<span class="nc" id="L61">                .transition(bottom, leftBottom, &quot;A=1 &amp; B=0&quot;)</span>
+<span class="nc" id="L62">                .transition(bottom, rightBottom, &quot;A=0 &amp; B=1&quot;)</span>
+<span class="nc" id="L63">                .transition(bottomSetLeft, bottom, null)</span>
+<span class="nc" id="L64">                .transition(bottomSetRight, bottom, null)</span>
+
+<span class="nc" id="L66">                .transition(rightBottom, bottom, &quot;A=1 &amp; B=1&quot;)</span>
+<span class="nc" id="L67">                .transition(rightTop, bottomSetRight, &quot;A=1 &amp; B=1&quot;)</span>
+<span class="nc" id="L68">                .transition(leftBottom, bottom, &quot;A=1 &amp; B=1&quot;)</span>
+<span class="nc" id="L69">                .transition(leftTop, bottomSetLeft, &quot;A=1 &amp; B=1&quot;);</span>
+    }
+
+    /**
+     * Creates a counter
+     *
+     * @param n the number of states
+     * @return the fsm
+     */
+    public static FSM counter(int n) {
+<span class="nc" id="L79">        FSM fsm = new FSM();</span>
+<span class="nc" id="L80">        State last = null;</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L82">            State s = new State(&quot;&quot;).setNumber(i);</span>
+<span class="nc" id="L83">            fsm.add(s);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (last != null)</span>
+<span class="nc" id="L85">                fsm.transition(last, s, null);</span>
+<span class="nc" id="L86">            last = s;</span>
+        }
+<span class="nc" id="L88">        fsm.transition(last, fsm.getStates().get(0), null);</span>
+
+<span class="nc" id="L90">        return fsm;</span>
+    }
+
+    /**
+     * Creates a traffic light fsm
+     *
+     * @return the fsm
+     */
+    public static FSM trafficLight() {
+<span class="nc" id="L99">        State red = new State(&quot;red&quot;).setNumber(0).setValues(&quot;R=1&quot;);</span>
+<span class="nc" id="L100">        State redYellow = new State(&quot;red/yellow&quot;).setNumber(1).setValues(&quot;R=1,Y=1&quot;);</span>
+<span class="nc" id="L101">        State green = new State(&quot;green&quot;).setNumber(2).setValues(&quot;G=1&quot;);</span>
+<span class="nc" id="L102">        State yellow = new State(&quot;yellow&quot;).setNumber(3).setValues(&quot;Y=1&quot;);</span>
+<span class="nc" id="L103">        return new FSM(red, redYellow, green, yellow)</span>
+<span class="nc" id="L104">                .transition(red, redYellow, &quot;!Stop&quot;)</span>
+<span class="nc" id="L105">                .transition(redYellow, green, null)</span>
+<span class="nc" id="L106">                .transition(green, yellow, null)</span>
+<span class="nc" id="L107">                .transition(yellow, red, null);</span>
+    }
+
+    /**
+     * Creates a traffic light fsm
+     *
+     * @return the fsm
+     */
+    public static FSM trafficLightMedwedew() {
+<span class="nc" id="L116">        State init = new State(&quot;init&quot;).setNumber(0);</span>
+<span class="nc" id="L117">        State red = new State(&quot;red&quot;).setNumber(1).setValues(&quot;R=1&quot;);</span>
+<span class="nc" id="L118">        State redYellow = new State(&quot;red/yellow&quot;).setNumber(3).setValues(&quot;R=1, Y=1&quot;);</span>
+<span class="nc" id="L119">        State green = new State(&quot;green&quot;).setNumber(4).setValues(&quot;G=1&quot;);</span>
+<span class="nc" id="L120">        State yellow = new State(&quot;yellow&quot;).setNumber(2).setValues(&quot;Y=1&quot;);</span>
+<span class="nc" id="L121">        return new FSM(init, red, redYellow, green, yellow)</span>
+<span class="nc" id="L122">                .transition(init, red, null)</span>
+<span class="nc" id="L123">                .transition(red, redYellow, &quot;!Stop&quot;)</span>
+<span class="nc" id="L124">                .transition(redYellow, green, null)</span>
+<span class="nc" id="L125">                .transition(green, yellow, null)</span>
+<span class="nc" id="L126">                .transition(yellow, red, null);</span>
+    }
+
+    /**
+     * Creates a traffic light fsm
+     *
+     * @return the fsm
+     */
+    public static FSM selCounter() {
+<span class="nc" id="L135">        State s0 = new State(&quot;s0&quot;).setNumber(0);</span>
+<span class="nc" id="L136">        State s1 = new State(&quot;s1&quot;).setNumber(1);</span>
+<span class="nc" id="L137">        State s2 = new State(&quot;s2&quot;).setNumber(2);</span>
+<span class="nc" id="L138">        State s3 = new State(&quot;s3&quot;).setNumber(3);</span>
+<span class="nc" id="L139">        return new FSM(s0, s1, s2, s3)</span>
+<span class="nc" id="L140">                .transition(s0, s1, null)</span>
+<span class="nc" id="L141">                .transition(s0, s0, &quot;!T0  !T1&quot;)</span>
+<span class="nc" id="L142">                .transition(s1, s2, null)</span>
+<span class="nc" id="L143">                .transition(s1, s0, &quot;T0 !T1&quot;)</span>
+<span class="nc" id="L144">                .transition(s2, s3, null)</span>
+<span class="nc" id="L145">                .transition(s2, s0, &quot;!T0 T1&quot;)</span>
+<span class="nc" id="L146">                .transition(s3, s0, null);</span>
+    }
+
+    /**
+     * Creates a stepper controller
+     *
+     * @return the fsm
+     */
+    public static FSM stepper() {
+<span class="nc" id="L155">        State s0 = new State(&quot;s0&quot;).setNumber(0).setValues(&quot;P0=1,P1=1&quot;);</span>
+<span class="nc" id="L156">        State s1 = new State(&quot;s1&quot;).setNumber(1).setValues(&quot;P1=1,P2=1&quot;);</span>
+<span class="nc" id="L157">        State s2 = new State(&quot;s2&quot;).setNumber(2).setValues(&quot;P2=1,P3=1&quot;);</span>
+<span class="nc" id="L158">        State s3 = new State(&quot;s3&quot;).setNumber(3).setValues(&quot;P3=1,P0=1&quot;);</span>
+<span class="nc" id="L159">        return new FSM(s0, s1, s2, s3)</span>
+<span class="nc" id="L160">                .transition(s0, s1, &quot;D&quot;)</span>
+<span class="nc" id="L161">                .transition(s1, s2, &quot;D&quot;)</span>
+<span class="nc" id="L162">                .transition(s2, s3, &quot;D&quot;)</span>
+<span class="nc" id="L163">                .transition(s3, s0, &quot;D&quot;)</span>
+<span class="nc" id="L164">                .transition(s1, s0, &quot;!D&quot;)</span>
+<span class="nc" id="L165">                .transition(s2, s1, &quot;!D&quot;)</span>
+<span class="nc" id="L166">                .transition(s3, s2, &quot;!D&quot;)</span>
+<span class="nc" id="L167">                .transition(s0, s3, &quot;!D&quot;);</span>
+    }
+
+    /**
+     * Creates a stepper controller
+     *
+     * @return the fsm
+     */
+    public static FSM stepperMedwedew() {
+<span class="nc" id="L176">        State init = new State(&quot;init&quot;).setNumber(0).setValues(&quot;P0=2,P1=2,P2=2,P3=2&quot;);</span>
+<span class="nc" id="L177">        State s0 = new State(&quot;s0&quot;).setNumber(3).setValues(&quot;P0=1,P1=1&quot;);</span>
+<span class="nc" id="L178">        State s1 = new State(&quot;s1&quot;).setNumber(6).setValues(&quot;P1=1,P2=1&quot;);</span>
+<span class="nc" id="L179">        State s2 = new State(&quot;s2&quot;).setNumber(12).setValues(&quot;P2=1,P3=1&quot;);</span>
+<span class="nc" id="L180">        State s3 = new State(&quot;s3&quot;).setNumber(9).setValues(&quot;P3=1,P0=1&quot;);</span>
+<span class="nc" id="L181">        return new FSM(init, s0, s1, s2, s3)</span>
+<span class="nc" id="L182">                .transition(init, s0, null)</span>
+<span class="nc" id="L183">                .transition(s0, s1, &quot;D&quot;)</span>
+<span class="nc" id="L184">                .transition(s1, s2, &quot;D&quot;)</span>
+<span class="nc" id="L185">                .transition(s2, s3, &quot;D&quot;)</span>
+<span class="nc" id="L186">                .transition(s3, s0, &quot;D&quot;)</span>
+<span class="nc" id="L187">                .transition(s1, s0, &quot;!D&quot;)</span>
+<span class="nc" id="L188">                .transition(s2, s1, &quot;!D&quot;)</span>
+<span class="nc" id="L189">                .transition(s3, s2, &quot;!D&quot;)</span>
+<span class="nc" id="L190">                .transition(s0, s3, &quot;!D&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

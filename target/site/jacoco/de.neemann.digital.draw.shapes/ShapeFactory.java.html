@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShapeFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">ShapeFactory.java</span></div><h1>ShapeFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.basic.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.extern.External;
+import de.neemann.digital.core.extern.ExternalFile;
+import de.neemann.digital.core.io.*;
+import de.neemann.digital.core.memory.*;
+import de.neemann.digital.core.pld.*;
+import de.neemann.digital.core.switching.*;
+import de.neemann.digital.core.wiring.*;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.Tunnel;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.library.*;
+import de.neemann.digital.draw.shapes.custom.CustomShape;
+import de.neemann.digital.draw.shapes.custom.CustomShapeDescription;
+import de.neemann.digital.draw.shapes.ieee.IEEEAndShape;
+import de.neemann.digital.draw.shapes.ieee.IEEENotShape;
+import de.neemann.digital.draw.shapes.ieee.IEEEOrShape;
+import de.neemann.digital.draw.shapes.ieee.IEEEXOrShape;
+import de.neemann.digital.gui.components.data.DummyElement;
+import de.neemann.digital.gui.components.data.ScopeTrigger;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseElement;
+
+import java.util.HashMap;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * Used to create a shape matching a given name
+ */
+public final class ShapeFactory {
+
+<span class="fc" id="L46">    private final HashMap&lt;String, Creator&gt; map = new HashMap&lt;&gt;();</span>
+    private final ElementLibrary library;
+
+    /**
+     * Creates a new instance
+     *
+     * @param library the library to get information about the parts to visualize
+     */
+    public ShapeFactory(ElementLibrary library) {
+<span class="fc" id="L55">        this(library, false);</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param library the library to get information about the parts to visualize
+     * @param ieee    true if IEEE shapes required
+     */
+<span class="fc" id="L64">    public ShapeFactory(ElementLibrary library, boolean ieee) {</span>
+<span class="fc" id="L65">        this.library = library;</span>
+<span class="fc" id="L66">        library.setShapeFactory(this);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (ieee) {</span>
+<span class="fc" id="L68">            map.put(And.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEAndShape(inputs, outputs, false, attributes));</span>
+<span class="fc" id="L69">            map.put(NAnd.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEAndShape(inputs, outputs, true, attributes));</span>
+<span class="fc" id="L70">            map.put(Or.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEOrShape(inputs, outputs, false, attributes));</span>
+<span class="fc" id="L71">            map.put(NOr.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEOrShape(inputs, outputs, true, attributes));</span>
+<span class="fc" id="L72">            map.put(XOr.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEXOrShape(inputs, outputs, false, attributes));</span>
+<span class="fc" id="L73">            map.put(XNOr.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEEXOrShape(inputs, outputs, true, attributes));</span>
+<span class="fc" id="L74">            map.put(Not.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new IEEENotShape(inputs, outputs, attributes));</span>
+        } else {
+<span class="fc" id="L76">            map.put(And.DESCRIPTION.getName(), new CreatorSimple(&quot;&amp;&quot;, false));</span>
+<span class="fc" id="L77">            map.put(Or.DESCRIPTION.getName(), new CreatorSimple(&quot;\u22651&quot;, false));</span>
+<span class="fc" id="L78">            map.put(NAnd.DESCRIPTION.getName(), new CreatorSimple(&quot;&amp;&quot;, true));</span>
+<span class="fc" id="L79">            map.put(NOr.DESCRIPTION.getName(), new CreatorSimple(&quot;\u22651&quot;, true));</span>
+<span class="fc" id="L80">            map.put(XOr.DESCRIPTION.getName(), new CreatorSimple(&quot;=1&quot;, false));</span>
+<span class="fc" id="L81">            map.put(XNOr.DESCRIPTION.getName(), new CreatorSimple(&quot;=1&quot;, true));</span>
+<span class="fc" id="L82">            map.put(Not.DESCRIPTION.getName(),</span>
+                    (attributes, inputs, outputs) -&gt; {
+<span class="fc" id="L84">                        final boolean ws = attributes.get(Keys.WIDE_SHAPE);</span>
+<span class="fc bfc" id="L85" title="All 4 branches covered.">                        return new GenericShape(ws ? &quot;1&quot; : &quot;&quot;, inputs, outputs)</span>
+<span class="fc" id="L86">                                .setTopBottomBorder(ws ? SIZE : SIZE2)</span>
+<span class="fc" id="L87">                                .invert(true)</span>
+<span class="fc" id="L88">                                .setWide(ws);</span>
+                    });
+        }
+
+
+<span class="fc" id="L93">        map.put(RAMDualPort.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RAMDualPort.DESCRIPTION));</span>
+<span class="fc" id="L94">        map.put(RAMSinglePort.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RAMSinglePort.DESCRIPTION));</span>
+<span class="fc" id="L95">        map.put(RAMSinglePortSel.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RAMSinglePortSel.DESCRIPTION));</span>
+<span class="fc" id="L96">        map.put(EEPROM.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, EEPROM.DESCRIPTION));</span>
+<span class="fc" id="L97">        map.put(EEPROMDualPort.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, EEPROMDualPort.DESCRIPTION));</span>
+<span class="fc" id="L98">        map.put(RAMDualAccess.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RAMDualAccess.DESCRIPTION));</span>
+<span class="fc" id="L99">        map.put(RegisterFile.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RegisterFile.DESCRIPTION, 4));</span>
+<span class="fc" id="L100">        map.put(BlockRAMDualPort.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, BlockRAMDualPort.DESCRIPTION));</span>
+<span class="fc" id="L101">        map.put(RAMAsync.DESCRIPTION.getName(), (attr, inputs, outputs) -&gt; new RAMShape(attr, RAMAsync.DESCRIPTION));</span>
+
+<span class="fc" id="L103">        map.put(In.DESCRIPTION.getName(), InputShape::new);</span>
+<span class="fc" id="L104">        map.put(Reset.DESCRIPTION.getName(), ResetShape::new);</span>
+<span class="fc" id="L105">        map.put(Const.DESCRIPTION.getName(), ConstShape::new);</span>
+<span class="fc" id="L106">        map.put(Ground.DESCRIPTION.getName(), GroundShape::new);</span>
+<span class="fc" id="L107">        map.put(VDD.DESCRIPTION.getName(), VDDShape::new);</span>
+<span class="fc" id="L108">        map.put(NotConnected.DESCRIPTION.getName(), NotConnectedShape::new);</span>
+<span class="fc" id="L109">        map.put(Out.DESCRIPTION.getName(), OutputShape::new);</span>
+<span class="fc" id="L110">        map.put(Out.LEDDESCRIPTION.getName(), LEDShape::new);</span>
+<span class="fc" id="L111">        map.put(LightBulb.DESCRIPTION.getName(), LightBulbShape::new);</span>
+<span class="fc" id="L112">        map.put(RGBLED.DESCRIPTION.getName(), RGBLEDShape::new);</span>
+<span class="fc" id="L113">        map.put(Out.POLARITYAWARELEDDESCRIPTION.getName(), PolarityAwareLEDShape::new);</span>
+<span class="fc" id="L114">        map.put(Button.DESCRIPTION.getName(), ButtonShape::new);</span>
+<span class="fc" id="L115">        map.put(ButtonLED.DESCRIPTION.getName(), ButtonLEDShape::new);</span>
+<span class="fc" id="L116">        map.put(Probe.DESCRIPTION.getName(), ProbeShape::new);</span>
+<span class="fc" id="L117">        map.put(Clock.DESCRIPTION.getName(), ClockShape::new);</span>
+<span class="fc" id="L118">        map.put(Out.SEVENDESCRIPTION.getName(), SevenSegShape::new);</span>
+<span class="fc" id="L119">        map.put(Out.SEVENHEXDESCRIPTION.getName(), SevenSegHexShape::new);</span>
+<span class="fc" id="L120">        map.put(Out.SIXTEENDESCRIPTION.getName(), SixteenShape::new);</span>
+<span class="fc" id="L121">        map.put(DummyElement.DATADESCRIPTION.getName(), DataShape::new);</span>
+<span class="fc" id="L122">        map.put(ScopeTrigger.DESCRIPTION.getName(), ScopeShape::new);</span>
+<span class="fc" id="L123">        map.put(RotEncoder.DESCRIPTION.getName(), RotEncoderShape::new);</span>
+<span class="fc" id="L124">        map.put(StepperMotorUnipolar.DESCRIPTION.getName(), StepperMotorShape::new);</span>
+<span class="fc" id="L125">        map.put(StepperMotorBipolar.DESCRIPTION.getName(), StepperMotorShape::new);</span>
+<span class="fc" id="L126">        map.put(DipSwitch.DESCRIPTION.getName(), DipSwitchShape::new);</span>
+
+<span class="fc" id="L128">        map.put(Switch.DESCRIPTION.getName(), SwitchShape::new);</span>
+<span class="fc" id="L129">        map.put(SwitchDT.DESCRIPTION.getName(), SwitchDTShape::new);</span>
+<span class="fc" id="L130">        map.put(Fuse.DESCRIPTION.getName(), FuseShape::new);</span>
+<span class="fc" id="L131">        map.put(Relay.DESCRIPTION.getName(), RelayShape::new);</span>
+<span class="fc" id="L132">        map.put(RelayDT.DESCRIPTION.getName(), RelayDTShape::new);</span>
+<span class="fc" id="L133">        map.put(NFET.DESCRIPTION.getName(), FETShapeN::new);</span>
+<span class="fc" id="L134">        map.put(FGNFET.DESCRIPTION.getName(), FGFETShapeN::new);</span>
+<span class="fc" id="L135">        map.put(FGPFET.DESCRIPTION.getName(), FGFETShapeP::new);</span>
+<span class="fc" id="L136">        map.put(PFET.DESCRIPTION.getName(), FETShapeP::new);</span>
+<span class="fc" id="L137">        map.put(TransGate.DESCRIPTION.getName(), TransGateShape::new);</span>
+
+<span class="fc" id="L139">        map.put(Break.DESCRIPTION.getName(), BreakShape::new);</span>
+<span class="fc" id="L140">        map.put(Delay.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new DelayShape());</span>
+
+<span class="fc" id="L142">        map.put(Multiplexer.DESCRIPTION.getName(), MuxerShape::new);</span>
+<span class="fc" id="L143">        map.put(Demultiplexer.DESCRIPTION.getName(), DemuxerShape::new);</span>
+<span class="fc" id="L144">        map.put(Decoder.DESCRIPTION.getName(), DemuxerShape::new);</span>
+<span class="fc" id="L145">        map.put(BitSelector.DESCRIPTION.getName(), BitSelShape::new);</span>
+<span class="fc" id="L146">        map.put(PriorityEncoder.DESCRIPTION.getName(),</span>
+<span class="fc" id="L147">                (attributes, inputs, outputs) -&gt; new GenericShape(</span>
+<span class="fc" id="L148">                        PriorityEncoder.DESCRIPTION.getShortName(),</span>
+                        inputs,
+                        outputs,
+<span class="fc" id="L151">                        attributes.getLabel(),</span>
+                        true,
+                        4));
+
+<span class="fc" id="L155">        map.put(Splitter.DESCRIPTION.getName(), SplitterShape::new);</span>
+<span class="fc" id="L156">        map.put(Driver.DESCRIPTION.getName(), DriverShape::new);</span>
+<span class="fc" id="L157">        map.put(DriverInvSel.DESCRIPTION.getName(), (attributes, inputs, outputs) -&gt; new DriverShape(attributes, inputs, outputs, true));</span>
+<span class="fc" id="L158">        map.put(BusSplitter.DESCRIPTION.getName(), BusSplitterShape::new);</span>
+<span class="fc" id="L159">        map.put(Tunnel.DESCRIPTION.getName(), TunnelShape::new);</span>
+
+<span class="fc" id="L161">        map.put(DummyElement.TEXTDESCRIPTION.getName(), TextShape::new);</span>
+<span class="fc" id="L162">        map.put(DummyElement.RECTDESCRIPTION.getName(), RectShape::new);</span>
+<span class="fc" id="L163">        map.put(TestCaseElement.DESCRIPTION.getName(), TestCaseShape::new);</span>
+<span class="fc" id="L164">        map.put(GenericInitCode.DESCRIPTION.getName(), GenericInitCodeShape::new);</span>
+<span class="fc" id="L165">        map.put(GenericCode.DESCRIPTION.getName(), GenericCodeShape::new);</span>
+<span class="fc" id="L166">        map.put(AsyncSeq.DESCRIPTION.getName(), AsyncClockShape::new);</span>
+
+<span class="fc" id="L168">        map.put(Diode.DESCRIPTION.getName(), DiodeShape::new);</span>
+<span class="fc" id="L169">        map.put(DiodeForward.DESCRIPTION.getName(), DiodeForewardShape::new);</span>
+<span class="fc" id="L170">        map.put(DiodeBackward.DESCRIPTION.getName(), DiodeBackwardShape::new);</span>
+<span class="fc" id="L171">        map.put(PullUp.DESCRIPTION.getName(), PullUpShape::new);</span>
+<span class="fc" id="L172">        map.put(PullDown.DESCRIPTION.getName(), PullDownShape::new);</span>
+<span class="fc" id="L173">        map.put(PinControl.DESCRIPTION.getName(), PinControlShape::new);</span>
+
+        // disables string formatting for external components, see #272
+<span class="fc" id="L176">        map.put(External.DESCRIPTION.getName(), new ExternCreator(External.DESCRIPTION));</span>
+<span class="fc" id="L177">        map.put(ExternalFile.DESCRIPTION.getName(), new ExternCreator(ExternalFile.DESCRIPTION));</span>
+
+<span class="fc" id="L179">        final JarComponentManager jcm = library.getJarComponentManager();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (jcm != null)</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (JarComponentManager.AdditionalShape c : jcm)</span>
+<span class="fc" id="L182">                map.put(c.getDescription().getName(), c.getShape());</span>
+<span class="fc" id="L183">    }</span>
+
+    /**
+     * Returns a shape matching the given name.
+     * If no shape is found, a special &quot;missing shape&quot; shape is returned.
+     *
+     * @param elementName       the elements name
+     * @param elementAttributes the elements attributes
+     * @return the shape
+     */
+    public Shape getShape(String elementName, ElementAttributes elementAttributes) {
+<span class="fc" id="L194">        Creator cr = map.get(elementName);</span>
+        try {
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            if (cr == null) {</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                if (library == null)</span>
+<span class="nc" id="L198">                    throw new NodeException(Lang.get(&quot;err_noShapeFoundFor_N&quot;, elementName));</span>
+                else {
+<span class="fc" id="L200">                    ElementTypeDescription pt = library.getElementType(elementName);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">                    if (pt instanceof ElementTypeDescriptionCustom) {</span>
+                        // Custom component
+<span class="fc" id="L203">                        ElementTypeDescriptionCustom customDescr = (ElementTypeDescriptionCustom) pt;</span>
+<span class="fc" id="L204">                        CustomCircuitShapeType shapeType = customDescr.getAttributes().get(Keys.SHAPE_TYPE);</span>
+<span class="fc" id="L205">                        final CustomCircuitShapeType localShapeType = elementAttributes.get(Keys.SHAPE_TYPE);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                        if (!localShapeType.equals(CustomCircuitShapeType.DEFAULT))</span>
+<span class="fc" id="L207">                            shapeType = localShapeType;</span>
+
+<span class="fc bfc" id="L209" title="All 4 branches covered.">                        switch (shapeType) {</span>
+                            case DIL:
+<span class="fc" id="L211">                                return new DILShape(</span>
+<span class="fc" id="L212">                                        pt.getShortName(),</span>
+<span class="fc" id="L213">                                        pt.getInputDescription(elementAttributes),</span>
+<span class="fc" id="L214">                                        pt.getOutputDescriptions(elementAttributes),</span>
+<span class="fc" id="L215">                                        elementAttributes.getLabel(),</span>
+<span class="fc" id="L216">                                        customDescr.getAttributes());</span>
+                            case LAYOUT:
+<span class="fc" id="L218">                                return new LayoutShape(customDescr, elementAttributes);</span>
+                            case CUSTOM:
+<span class="fc" id="L220">                                final CustomShapeDescription customShapeDescription = customDescr.getAttributes().get(Keys.CUSTOM_SHAPE);</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                                if (!customShapeDescription.isEmpty())</span>
+<span class="fc" id="L222">                                    return new CustomShape(customShapeDescription, elementAttributes.getLabel(),</span>
+<span class="fc" id="L223">                                            pt.getInputDescription(elementAttributes),</span>
+<span class="fc" id="L224">                                            pt.getOutputDescriptions(elementAttributes));</span>
+                            default:
+<span class="fc" id="L226">                                return new GenericShape(</span>
+<span class="fc" id="L227">                                        pt.getShortName(),</span>
+<span class="fc" id="L228">                                        pt.getInputDescription(elementAttributes),</span>
+<span class="fc" id="L229">                                        pt.getOutputDescriptions(elementAttributes),</span>
+<span class="fc" id="L230">                                        elementAttributes.getLabel(),</span>
+                                        true,
+<span class="fc" id="L232">                                        customDescr.getAttributes().get(Keys.WIDTH))</span>
+<span class="fc" id="L233">                                        .setTopBottomBorder(SIZE2 + Style.MAXLINETHICK)</span>
+<span class="fc" id="L234">                                        .setColor(customDescr.getAttributes().get(Keys.BACKGROUND_COLOR));</span>
+                        }
+                    } else {
+                        // Internal component without it's own shape.
+<span class="fc" id="L238">                        return new GenericShape(</span>
+<span class="fc" id="L239">                                pt.getShortName(),</span>
+<span class="fc" id="L240">                                pt.getInputDescription(elementAttributes),</span>
+<span class="fc" id="L241">                                pt.getOutputDescriptions(elementAttributes),</span>
+<span class="fc" id="L242">                                elementAttributes.getLabel(),</span>
+                                true,
+<span class="fc" id="L244">                                elementAttributes.get(Keys.WIDTH))</span>
+<span class="fc" id="L245">                                .setInverterConfig(elementAttributes.get(Keys.INVERTER_CONFIG));</span>
+                    }
+                }
+            } else {
+                // Internal component with it's own shape.
+<span class="fc" id="L250">                ElementTypeDescription pt = library.getElementType(elementName);</span>
+<span class="fc" id="L251">                return cr.create(elementAttributes,</span>
+<span class="fc" id="L252">                        pt.getInputDescription(elementAttributes),</span>
+<span class="fc" id="L253">                        pt.getOutputDescriptions(elementAttributes));</span>
+            }
+<span class="fc" id="L255">        } catch (Exception e) {</span>
+<span class="fc" id="L256">            return new MissingShape(elementName, e);</span>
+        }
+    }
+
+    /**
+     * Creates a new shape
+     */
+    public interface Creator {
+        /**
+         * Called to create a new shape
+         *
+         * @param attributes the elements attributes
+         * @param inputs     the inputs
+         * @param outputs    the outputs
+         * @return the shape
+         * @throws NodeException NodeException
+         * @throws PinException  PinException
+         */
+        Shape create(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) throws NodeException, PinException;
+    }
+
+
+    private static final class CreatorSimple implements Creator {
+
+        private final String name;
+        private final boolean invers;
+
+<span class="fc" id="L283">        private CreatorSimple(String name, boolean invers) {</span>
+<span class="fc" id="L284">            this.name = name;</span>
+<span class="fc" id="L285">            this.invers = invers;</span>
+<span class="fc" id="L286">        }</span>
+
+        @Override
+        public Shape create(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) {
+<span class="fc" id="L290">            return new GenericShape(name, inputs, outputs)</span>
+<span class="fc" id="L291">                    .invert(invers)</span>
+<span class="fc" id="L292">                    .setWide(attributes.get(Keys.WIDE_SHAPE))</span>
+<span class="fc" id="L293">                    .setInverterConfig(attributes.get(Keys.INVERTER_CONFIG));</span>
+        }
+    }
+
+    private static final class ExternCreator implements Creator {
+        private final ElementTypeDescription description;
+
+<span class="fc" id="L300">        private ExternCreator(ElementTypeDescription description) {</span>
+<span class="fc" id="L301">            this.description = description;</span>
+<span class="fc" id="L302">        }</span>
+
+        @Override
+        public Shape create(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) throws NodeException, PinException {
+<span class="fc" id="L306">            return new GenericShape(description.getShortName(), inputs, outputs,</span>
+<span class="fc" id="L307">                    attributes.getLabel(), true, attributes.get(Keys.WIDTH)) {</span>
+                @Override
+                public String format(String s) {
+<span class="fc" id="L310">                    return s.replace(&quot;_&quot;, &quot;\\_&quot;);</span>
+                }
+            };
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

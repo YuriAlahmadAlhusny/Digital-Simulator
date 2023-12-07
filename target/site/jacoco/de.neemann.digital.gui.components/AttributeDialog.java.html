@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">AttributeDialog.java</span></div><h1>AttributeDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * Dialog used to edit Attributes.
+ * The Dialog is configured by a list of {@link Key} instances, which are defined in the
+ * {@link de.neemann.digital.core.element.Keys} class. The values are stored in an instance of
+ * {@link ElementAttributes} which is a essentially a observable hash map.
+ * This class is used to create the dialogs used to edit the element attributes but also to edit the
+ * system settings, the model settings and the models attributes,
+ */
+public class AttributeDialog extends JDialog {
+    private final java.util.List&lt;EditorHolder&gt; editors;
+    private final Window parent;
+    private final Point pos;
+    private final ElementAttributes originalAttributes;
+    private final ElementAttributes modifiedAttributes;
+    private final JPanel buttonPanel;
+    private final AbstractAction okAction;
+    private final EditorPanel primaryPanel;
+    private HashMap&lt;Key, JCheckBox&gt; checkBoxes;
+    private JComponent topMostTextComponent;
+    private VisualElement visualElement;
+<span class="nc" id="L49">    private boolean okPressed = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parent
+     * @param list              the list of keys which are to edit
+     * @param elementAttributes the data stored
+     */
+    public AttributeDialog(Window parent, java.util.List&lt;Key&gt; list, ElementAttributes elementAttributes) {
+<span class="nc" id="L59">        this(parent, null, list, elementAttributes, false);</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parent
+     * @param pos               the position to pop up the dialog
+     * @param list              the list of keys which are to edit
+     * @param elementAttributes the data stored
+     */
+    public AttributeDialog(Window parent, Point pos, java.util.List&lt;Key&gt; list, ElementAttributes elementAttributes) {
+<span class="nc" id="L71">        this(parent, pos, list, elementAttributes, false);</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parent
+     * @param pos               the position to pop up the dialog
+     * @param elementAttributes the data stored
+     * @param keys              the list of keys which are to edit
+     */
+    public AttributeDialog(Window parent, Point pos, ElementAttributes elementAttributes, Key... keys) {
+<span class="nc" id="L83">        this(parent, pos, Arrays.asList(keys), elementAttributes, false);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parent
+     * @param pos               the position to pop up the dialog
+     * @param list              the list of keys which are to edit
+     * @param elementAttributes the initial data to modify
+     * @param addCheckBoxes     th true check boxes behind the attributes are added
+     */
+    public AttributeDialog(Window parent, Point pos, java.util.List&lt;Key&gt; list, ElementAttributes elementAttributes, boolean addCheckBoxes) {
+<span class="nc" id="L96">        super(parent, Lang.get(&quot;attr_dialogTitle&quot;), ModalityType.APPLICATION_MODAL);</span>
+<span class="nc" id="L97">        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);</span>
+<span class="nc" id="L98">        this.parent = parent;</span>
+<span class="nc" id="L99">        this.pos = pos;</span>
+<span class="nc" id="L100">        this.originalAttributes = elementAttributes;</span>
+<span class="nc" id="L101">        this.modifiedAttributes = new ElementAttributes(elementAttributes);</span>
+
+<span class="nc" id="L103">        ArrayList&lt;EditorPanel&gt; panels = new ArrayList&lt;EditorPanel&gt;();</span>
+<span class="nc" id="L104">        primaryPanel = new EditorPanel(EditorPanel.PRIMARY);</span>
+<span class="nc" id="L105">        panels.add(primaryPanel);</span>
+
+<span class="nc" id="L107">        editors = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L109">        topMostTextComponent = null;</span>
+
+<span class="nc" id="L111">        EditorPanel secondaryPanel = null;</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">        if (!addCheckBoxes &amp;&amp; enableTwoTabs(list)) {</span>
+<span class="nc" id="L113">            secondaryPanel = new EditorPanel(EditorPanel.SECONDARY);</span>
+<span class="nc" id="L114">            panels.add(secondaryPanel);</span>
+        }
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        for (Key key : list) {</span>
+<span class="nc" id="L118">            Editor e = EditorFactory.INSTANCE.create(key, modifiedAttributes.get(key));</span>
+<span class="nc" id="L119">            editors.add(new EditorHolder(e, key));</span>
+<span class="nc" id="L120">            EditorPanel panelToUse = primaryPanel;</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">            if (key.isSecondary() &amp;&amp; secondaryPanel != null)</span>
+<span class="nc" id="L122">                panelToUse = secondaryPanel;</span>
+
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (key.getPanelId() != null)</span>
+<span class="nc" id="L125">                panelToUse = findPanel(panels, key.getPanelId());</span>
+
+
+<span class="nc" id="L128">            e.addToPanel(panelToUse, key, modifiedAttributes, this);</span>
+
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (addCheckBoxes) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (checkBoxes == null)</span>
+<span class="nc" id="L132">                    checkBoxes = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L133">                JCheckBox checkBox = new JCheckBox();</span>
+<span class="nc" id="L134">                checkBox.setSelected(true);</span>
+<span class="nc" id="L135">                checkBox.setToolTipText(Lang.get(&quot;msg_modifyThisAttribute&quot;));</span>
+<span class="nc" id="L136">                checkBoxes.put(key, checkBox);</span>
+<span class="nc" id="L137">                panelToUse.add(checkBox, cb -&gt; cb.x(2));</span>
+<span class="nc" id="L138">                checkBox.addChangeListener(event -&gt; e.setEnabled(checkBox.isSelected()));</span>
+            }
+
+<span class="nc" id="L141">            panelToUse.nextRow();</span>
+
+<span class="nc bnc" id="L143" title="All 4 branches missed.">            if (topMostTextComponent == null &amp;&amp; e instanceof EditorFactory.StringEditor)</span>
+<span class="nc" id="L144">                topMostTextComponent = ((EditorFactory.StringEditor) e).getTextComponent();</span>
+
+<span class="nc" id="L146">            final Key dependsOn = key.getDependsOn();</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">            if (dependsOn != null &amp;&amp; !addCheckBoxes) {</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                for (EditorHolder ed : editors) {</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    if (ed.key.getKey().equals(dependsOn.getKey())) {</span>
+<span class="nc" id="L150">                        ed.setDependantEditor(e, key.getCheckEnabled());</span>
+                    }
+<span class="nc" id="L152">                }</span>
+            }
+
+<span class="nc" id="L155">        }</span>
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (panels.size() == 1) {</span>
+<span class="nc" id="L158">            getContentPane().add(primaryPanel.getScrollPane());</span>
+        } else {
+<span class="nc" id="L160">            JTabbedPane tp = new JTabbedPane(JTabbedPane.TOP);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            for (EditorPanel ep : panels)</span>
+<span class="nc" id="L162">                tp.addTab(Lang.get(ep.getLangKey()), ep.getScrollPane());</span>
+<span class="nc" id="L163">            getContentPane().add(tp);</span>
+        }
+
+<span class="nc" id="L166">        okAction = new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L170">                    fireOk();</span>
+<span class="nc" id="L171">                } catch (Editor.EditorParseException err) {</span>
+<span class="nc" id="L172">                    new ErrorMessage(Lang.get(&quot;msg_errorEditingValue&quot;)).addCause(err).show(AttributeDialog.this);</span>
+<span class="nc" id="L173">                }</span>
+<span class="nc" id="L174">            }</span>
+        };
+<span class="nc" id="L176">        JButton okButton = new JButton(okAction);</span>
+
+<span class="nc" id="L178">        final AbstractAction cancel = new AbstractAction(Lang.get(&quot;cancel&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L181">                tryDispose();</span>
+<span class="nc" id="L182">            }</span>
+        };
+
+<span class="nc" id="L185">        buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="nc" id="L186">        buttonPanel.add(new JButton(cancel));</span>
+<span class="nc" id="L187">        buttonPanel.add(okButton);</span>
+
+<span class="nc" id="L189">        getContentPane().add(buttonPanel, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L191">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosing(WindowEvent e) {
+<span class="nc" id="L194">                tryDispose();</span>
+<span class="nc" id="L195">            }</span>
+        });
+
+<span class="nc" id="L198">        getRootPane().setDefaultButton(okButton);</span>
+<span class="nc" id="L199">        getRootPane().registerKeyboardAction(cancel,</span>
+<span class="nc" id="L200">                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),</span>
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+<span class="nc" id="L202">    }</span>
+
+    private void tryDispose() {
+<span class="nc" id="L205">        EditorHolder majorModification = null;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        for (EditorHolder eh : editors)</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (eh.e.invisibleModification())</span>
+<span class="nc" id="L208">                majorModification = eh;</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (majorModification == null)</span>
+<span class="nc" id="L210">            dispose();</span>
+        else {
+<span class="nc" id="L212">            int r = JOptionPane.showOptionDialog(</span>
+                    AttributeDialog.this,
+<span class="nc" id="L214">                    Lang.get(&quot;msg_dataWillBeLost_n&quot;, majorModification.key.getName()),</span>
+<span class="nc" id="L215">                    Lang.get(&quot;msg_warning&quot;),</span>
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+<span class="nc" id="L218">                    null, new String[]{Lang.get(&quot;btn_discard&quot;), Lang.get(&quot;btn_editFurther&quot;)},</span>
+<span class="nc" id="L219">                    Lang.get(&quot;cancel&quot;));</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            if (r == JOptionPane.YES_OPTION)</span>
+<span class="nc" id="L221">                dispose();</span>
+        }
+<span class="nc" id="L223">    }</span>
+
+    private EditorPanel findPanel(ArrayList&lt;EditorPanel&gt; panels, String panelId) {
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        for (EditorPanel p : panels)</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">            if (panelId.equals(p.getPanelId()))</span>
+<span class="nc" id="L228">                return p;</span>
+
+<span class="nc" id="L230">        EditorPanel p = new EditorPanel(panelId);</span>
+<span class="nc" id="L231">        panels.add(p);</span>
+<span class="nc" id="L232">        return p;</span>
+    }
+
+    /**
+     * Sets the dialogs title
+     *
+     * @param title the dialogs title
+     * @return this for chained calls
+     */
+    public AttributeDialog setDialogTitle(String title) {
+<span class="nc" id="L242">        setTitle(title);</span>
+<span class="nc" id="L243">        return this;</span>
+    }
+
+    /**
+     * Returns true if two tabs are to be used.
+     *
+     * @param list the list a keys
+     * @return true if two tabs are to be used.
+     */
+    private boolean enableTwoTabs(List&lt;Key&gt; list) {
+<span class="nc" id="L253">        int secCount = 0;</span>
+<span class="nc" id="L254">        int primCount = 0;</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        for (Key k : list) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            if (k.isSecondary())</span>
+<span class="nc" id="L257">                secCount++;</span>
+            else
+<span class="nc" id="L259">                primCount++;</span>
+<span class="nc" id="L260">        }</span>
+
+<span class="nc bnc" id="L262" title="All 4 branches missed.">        return (primCount &gt; 1) &amp;&amp; (secCount &gt; 1);</span>
+    }
+
+    /**
+     * Closes the dialog and stores modified values
+     *
+     * @throws Editor.EditorParseException Editor.EditorParseException
+     */
+    public void fireOk() throws Editor.EditorParseException {
+<span class="nc" id="L271">        storeEditedValues();</span>
+<span class="nc" id="L272">        okPressed = true;</span>
+<span class="nc" id="L273">        dispose();</span>
+<span class="nc" id="L274">    }</span>
+
+    /**
+     * @return the keys check boxes
+     */
+    HashMap&lt;Key, JCheckBox&gt; getCheckBoxes() {
+<span class="nc" id="L280">        return checkBoxes;</span>
+    }
+
+    /**
+     * Adds a button to this dialog
+     *
+     * @param label  a label
+     * @param action the action
+     * @return this for chained calls
+     */
+    AttributeDialog addButton(String label, ToolTipAction action) {
+<span class="nc" id="L291">        primaryPanel.addButton(label, action);</span>
+<span class="nc" id="L292">        return this;</span>
+    }
+
+    /**
+     * Adds a button to the botton of this dialog
+     *
+     * @param action the action
+     * @return this for chained calls
+     */
+    AttributeDialog addButton(ToolTipAction action) {
+<span class="nc" id="L302">        buttonPanel.add(action.createJButton(), 0);</span>
+<span class="nc" id="L303">        return this;</span>
+    }
+
+    /**
+     * store gui fields to attributes
+     *
+     * @throws Editor.EditorParseException Editor.EditorParseException
+     */
+    void storeEditedValues() throws Editor.EditorParseException {
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        for (EditorHolder e : editors)</span>
+<span class="nc" id="L313">            e.setTo(modifiedAttributes);</span>
+<span class="nc" id="L314">    }</span>
+
+    /**
+     * update gui fields with attributes
+     *
+     * @throws Editor.EditorParseException Editor.EditorParseException
+     */
+    void updateEditedValues() throws Editor.EditorParseException {
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        for (EditorHolder e : editors)</span>
+<span class="nc" id="L323">            e.getFrom(modifiedAttributes);</span>
+<span class="nc" id="L324">    }</span>
+
+    /**
+     * @return the modified attributes
+     */
+    ElementAttributes getModifiedAttributes() {
+<span class="nc" id="L330">        return modifiedAttributes;</span>
+    }
+
+    /**
+     * Shows the dialog
+     *
+     * @return the new attributes of null if nothing has changed
+     */
+    public ElementAttributes showDialog() {
+<span class="nc" id="L339">        pack();</span>
+
+<span class="nc bnc" id="L341" title="All 2 branches missed.">        if (pos == null)</span>
+<span class="nc" id="L342">            setLocationRelativeTo(parent);</span>
+        else
+<span class="nc" id="L344">            Screen.setLocation(this, pos, true);</span>
+
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        if (topMostTextComponent != null)</span>
+<span class="nc" id="L347">            SwingUtilities.invokeLater(() -&gt; topMostTextComponent.requestFocusInWindow());</span>
+
+<span class="nc" id="L349">        setVisible(true);</span>
+<span class="nc bnc" id="L350" title="All 4 branches missed.">        if (okPressed &amp;&amp; !originalAttributes.equals(modifiedAttributes))</span>
+<span class="nc" id="L351">            return modifiedAttributes;</span>
+        else
+<span class="nc" id="L353">            return null;</span>
+    }
+
+    /**
+     * @return the dialogs parent
+     */
+    Window getDialogParent() {
+<span class="nc" id="L360">        return parent;</span>
+    }
+
+
+    /**
+     * @return true if ok is pressed
+     */
+    public boolean isOkPressed() {
+<span class="nc" id="L368">        return okPressed;</span>
+    }
+
+    /**
+     * @return the containing Main instance or null
+     */
+    public Main getMain() {  // ToDo: is a hack! find a better solution for getting the main frame
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (parent instanceof Main)</span>
+<span class="nc" id="L376">            return (Main) parent;</span>
+<span class="nc" id="L377">        return null;</span>
+    }
+
+    /**
+     * @return the root file or null if not available
+     */
+    public File getRootFile() {
+<span class="nc" id="L384">        File root = null;</span>
+<span class="nc" id="L385">        Main main = getMain();</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (main != null)</span>
+<span class="nc" id="L387">            root = main.getLibrary().getRootFilePath();</span>
+<span class="nc" id="L388">        return root;</span>
+    }
+
+    /**
+     * @return the visual element of this dialog, maybe null
+     */
+    public VisualElement getVisualElement() {
+<span class="nc" id="L395">        return visualElement;</span>
+    }
+
+    /**
+     * Sets the visual element of this dialog
+     *
+     * @param visualElement the visual element which attributes are edited
+     * @return this for chained calls
+     */
+    public AttributeDialog setVisualElement(VisualElement visualElement) {
+<span class="nc" id="L405">        this.visualElement = visualElement;</span>
+<span class="nc" id="L406">        return this;</span>
+    }
+
+    /**
+     * Disables the ok button
+     */
+    public void disableOk() {
+<span class="nc" id="L413">        okAction.setEnabled(false);</span>
+<span class="nc" id="L414">        okPressed = false;</span>
+<span class="nc" id="L415">    }</span>
+
+    private static final class EditorHolder&lt;T&gt; {
+        private final Editor&lt;T&gt; e;
+        private final Key&lt;T&gt; key;
+
+<span class="nc" id="L421">        private EditorHolder(Editor&lt;T&gt; e, Key&lt;T&gt; key) {</span>
+<span class="nc" id="L422">            this.e = e;</span>
+<span class="nc" id="L423">            this.key = key;</span>
+<span class="nc" id="L424">        }</span>
+
+        public void setTo(ElementAttributes attr) throws Editor.EditorParseException {
+<span class="nc" id="L427">            T value = e.getValue();</span>
+<span class="nc" id="L428">            attr.set(key, value);</span>
+<span class="nc" id="L429">        }</span>
+
+        void getFrom(ElementAttributes attr) {
+<span class="nc" id="L432">            T value = attr.get(key);</span>
+<span class="nc" id="L433">            e.setValue(value);</span>
+<span class="nc" id="L434">        }</span>
+
+        void setDependantEditor(Editor editor, Key.CheckEnabled&lt;T&gt; checkEnabled) {
+            try {
+<span class="nc" id="L438">                editor.setEnabled(checkEnabled.isEnabled(e.getValue()));</span>
+<span class="nc" id="L439">            } catch (Editor.EditorParseException e1) {</span>
+<span class="nc" id="L440">                e1.printStackTrace();</span>
+<span class="nc" id="L441">            }</span>
+
+<span class="nc" id="L443">            e.addActionListener(actionEvent -&gt; {</span>
+                        try {
+<span class="nc" id="L445">                            editor.setEnabled(checkEnabled.isEnabled(e.getValue()));</span>
+<span class="nc" id="L446">                        } catch (Editor.EditorParseException e1) {</span>
+<span class="nc" id="L447">                            e1.printStackTrace();</span>
+<span class="nc" id="L448">                        }</span>
+<span class="nc" id="L449">                    }</span>
+            );
+<span class="nc" id="L451">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KarnaughMapComponent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.karnaugh</a> &gt; <span class="el_source">KarnaughMapComponent.java</span></div><h1>KarnaughMapComponent.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.karnaugh;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.Not;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.quinemc.BoolTable;
+import de.neemann.digital.draw.graphics.text.formatter.GraphicsFormatter;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.Screen;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+
+/**
+ * JComponent to show a kv map.
+ */
+public class KarnaughMapComponent extends JComponent {
+    private static final int STROKE_WIDTH = 4;
+<span class="nc" id="L29">    private static final Color[] COVER_COLORS = new Color[]{</span>
+            new Color(255, 0, 0, 128), new Color(0, 255, 0, 128),
+            new Color(128, 0, 0, 128), new Color(0, 0, 128, 128),
+            new Color(0, 0, 255, 128), new Color(255, 0, 255, 128),
+            new Color(200, 200, 0, 128), new Color(0, 255, 255, 128)};
+    private KarnaughMap kv;
+    private BoolTable boolTable;
+    private Expression exp;
+    private ArrayList&lt;Variable&gt; vars;
+    private Graphics2D gr;
+<span class="nc" id="L39">    private String message = Lang.get(&quot;msg_noKVMapAvailable&quot;);</span>
+<span class="nc" id="L40">    private final MapLayout mapLayout = new MapLayout(0);</span>
+<span class="nc" id="L41">    private final VarRectList varRectList = new VarRectList();</span>
+
+    private int xOffs;
+    private int yOffs;
+    private int cellSize;
+    private int xDrag;
+    private int yDrag;
+<span class="nc" id="L48">    private VarRectList.VarRect startVarRect = null;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param tableCellModifier the modifier which is used to modify the truth table.
+     */
+<span class="nc" id="L55">    public KarnaughMapComponent(Modifier tableCellModifier) {</span>
+<span class="nc" id="L56">        setPreferredSize(Screen.getInstance().scale(new Dimension(400, 400)));</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (tableCellModifier != null) {</span>
+<span class="nc" id="L58">            MyMouseAdapter ma = new MyMouseAdapter(tableCellModifier);</span>
+<span class="nc" id="L59">            addMouseListener(ma);</span>
+<span class="nc" id="L60">            addMouseMotionListener(ma);</span>
+        }
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Sets a result to the table
+     *
+     * @param vars      the variables
+     * @param boolTable the bool table
+     * @param exp       the expression
+     */
+    public void setResult(ArrayList&lt;Variable&gt; vars, BoolTable boolTable, Expression exp) {
+<span class="nc" id="L72">        this.vars = vars;</span>
+<span class="nc" id="L73">        mapLayout.checkSize(vars.size());</span>
+<span class="nc" id="L74">        this.boolTable = boolTable;</span>
+<span class="nc" id="L75">        this.exp = exp;</span>
+<span class="nc" id="L76">        update();</span>
+<span class="nc" id="L77">    }</span>
+
+    private void update() {
+        try {
+<span class="nc" id="L81">            kv = new KarnaughMap(vars, exp, mapLayout);</span>
+<span class="nc" id="L82">        } catch (KarnaughException e) {</span>
+<span class="nc" id="L83">            kv = null;</span>
+<span class="nc" id="L84">            message = e.getMessage();</span>
+<span class="nc" id="L85">        }</span>
+<span class="nc" id="L86">        repaint();</span>
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * Shows nothing
+     */
+    public void showNothing() {
+<span class="nc" id="L93">        kv = null;</span>
+<span class="nc" id="L94">        message = Lang.get(&quot;msg_noKVMapAvailable&quot;);</span>
+<span class="nc" id="L95">        repaint();</span>
+<span class="nc" id="L96">    }</span>
+
+    @Override
+    protected void paintComponent(Graphics graphics) {
+<span class="nc" id="L100">        gr = (Graphics2D) graphics;</span>
+<span class="nc" id="L101">        gr.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="nc" id="L102">        gr.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);</span>
+<span class="nc" id="L103">        gr.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);</span>
+<span class="nc" id="L104">        gr.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);</span>
+<span class="nc" id="L105">        int width = getWidth();</span>
+<span class="nc" id="L106">        int height = getHeight();</span>
+<span class="nc" id="L107">        gr.setColor(Color.WHITE);</span>
+<span class="nc" id="L108">        gr.fillRect(0, 0, width, height);</span>
+<span class="nc" id="L109">        gr.setColor(Color.BLACK);</span>
+
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (kv != null) {</span>
+<span class="nc" id="L112">            AffineTransform trans = gr.getTransform(); // store the old transform</span>
+
+<span class="nc" id="L114">            int kvWidth = kv.getColumns();</span>
+<span class="nc" id="L115">            int kvHeight = kv.getRows();</span>
+<span class="nc" id="L116">            cellSize = (int) Math.min(height / (kvHeight + 2.5f), width / (kvWidth + 2.5f));</span>
+<span class="nc" id="L117">            Font origFont = gr.getFont();</span>
+<span class="nc" id="L118">            Font valuesFont = origFont.deriveFont(cellSize * 0.5f);</span>
+<span class="nc" id="L119">            gr.setFont(valuesFont);</span>
+
+<span class="nc" id="L121">            Font headerFont = valuesFont;</span>
+<span class="nc" id="L122">            int maxHeaderStrWidth = 0;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="nc" id="L124">                final GraphicsFormatter.Fragment fr = getFragment(i, true);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                if (fr != null) {</span>
+<span class="nc" id="L126">                    int w = fr.getWidth();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                    if (w &gt; maxHeaderStrWidth) maxHeaderStrWidth = w;</span>
+                }
+            }
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (maxHeaderStrWidth &gt; cellSize)</span>
+<span class="nc" id="L131">                headerFont = origFont.deriveFont(cellSize * 0.5f * cellSize / maxHeaderStrWidth);</span>
+
+<span class="nc" id="L133">            xOffs = (width - (kvWidth + 2) * cellSize) / 2;</span>
+<span class="nc" id="L134">            yOffs = (height - (kvHeight + 2) * cellSize) / 2;</span>
+<span class="nc" id="L135">            gr.translate(xOffs, yOffs);   // center the kv map</span>
+
+            // draw table
+<span class="nc" id="L138">            gr.setColor(Color.GRAY);</span>
+<span class="nc" id="L139">            gr.setStroke(new BasicStroke(STROKE_WIDTH / 2f));</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            for (int i = 0; i &lt;= kvWidth; i++) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                int dy1 = isNoHeaderLine(kv.getHeaderTop(), i - 1) ? cellSize : 0;</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                int dy2 = isNoHeaderLine(kv.getHeaderBottom(), i - 1) ? cellSize : 0;</span>
+<span class="nc" id="L143">                gr.drawLine((i + 1) * cellSize, dy1, (i + 1) * cellSize, (kvHeight + 2) * cellSize - dy2);</span>
+            }
+
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            for (int i = 0; i &lt;= kvHeight; i++) {</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                int dx1 = isNoHeaderLine(kv.getHeaderLeft(), i - 1) ? cellSize : 0;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                int dx2 = isNoHeaderLine(kv.getHeaderRight(), i - 1) ? cellSize : 0;</span>
+<span class="nc" id="L149">                gr.drawLine(dx1, (i + 1) * cellSize, (kvWidth + 2) * cellSize - dx2, (i + 1) * cellSize);</span>
+            }
+<span class="nc" id="L151">            gr.setStroke(new BasicStroke(STROKE_WIDTH));</span>
+
+            // fill in bool table content
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            for (KarnaughMap.Cell cell : kv.getCells()) {</span>
+<span class="nc" id="L155">                gr.setColor(Color.BLACK);</span>
+<span class="nc" id="L156">                gr.setFont(valuesFont);</span>
+<span class="nc" id="L157">                drawString(boolTable.get(cell.getBoolTableRow()).toString(), cell.getCol() + 1, cell.getRow() + 1);</span>
+<span class="nc" id="L158">                gr.setColor(Color.GRAY);</span>
+<span class="nc" id="L159">                gr.setFont(origFont);</span>
+<span class="nc" id="L160">                gr.drawString(Integer.toString(cell.getBoolTableRow()),</span>
+<span class="nc" id="L161">                        (cell.getCol() + 1) * cellSize + 1,</span>
+<span class="nc" id="L162">                        (cell.getRow() + 2) * cellSize - 1);</span>
+<span class="nc" id="L163">            }</span>
+
+            // remove old var rectangles
+<span class="nc" id="L166">            varRectList.reset(xOffs, yOffs);</span>
+
+            // draw the text in the borders
+<span class="nc" id="L169">            gr.setColor(Color.BLACK);</span>
+<span class="nc" id="L170">            gr.setFont(headerFont);</span>
+<span class="nc" id="L171">            drawVerticalHeader(kv.getHeaderLeft(), 0);</span>
+<span class="nc" id="L172">            drawVerticalHeader(kv.getHeaderRight(), kvWidth + 1);</span>
+<span class="nc" id="L173">            drawHorizontalHeader(kv.getHeaderTop(), 0);</span>
+<span class="nc" id="L174">            drawHorizontalHeader(kv.getHeaderBottom(), kvHeight + 1);</span>
+
+            // draw the covers
+<span class="nc" id="L177">            int color = 0;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            for (KarnaughMap.Cover c : kv) {</span>
+<span class="nc" id="L179">                gr.setColor(COVER_COLORS[color++]);</span>
+<span class="nc" id="L180">                KarnaughMap.Pos p = c.getPos();</span>
+<span class="nc" id="L181">                int frame = (c.getInset() + 1) * STROKE_WIDTH;</span>
+<span class="nc" id="L182">                int edgesRadius = cellSize - frame * 2;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                if (c.isDisconnected()) {</span>
+<span class="nc" id="L184">                    Rectangle clip = gr.getClipBounds();</span>
+<span class="nc" id="L185">                    gr.setClip(cellSize, cellSize, kvWidth * cellSize, kvHeight * cellSize);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                    if (c.onlyEdges()) {</span>
+<span class="nc" id="L187">                        gr.drawRoundRect(frame, frame, 2 * cellSize - frame * 2, 2 * cellSize - frame * 2, edgesRadius, edgesRadius);</span>
+<span class="nc" id="L188">                        gr.drawRoundRect(4 * cellSize + frame, frame, 2 * cellSize - frame * 2, 2 * cellSize - frame * 2, edgesRadius, edgesRadius);</span>
+<span class="nc" id="L189">                        gr.drawRoundRect(frame, 4 * cellSize + frame, 2 * cellSize - frame * 2, 2 * cellSize - frame * 2, edgesRadius, edgesRadius);</span>
+<span class="nc" id="L190">                        gr.drawRoundRect(4 * cellSize + frame, 4 * cellSize + frame, 2 * cellSize - frame * 2, 2 * cellSize - frame * 2, edgesRadius, edgesRadius);</span>
+                    } else { // draw the two parts of the cover
+<span class="nc" id="L192">                        int xofs = 0;</span>
+<span class="nc" id="L193">                        int yOfs = 0;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                        if (c.isVerticalDivided())</span>
+<span class="nc" id="L195">                            xofs = cellSize * 3;</span>
+                        else
+<span class="nc" id="L197">                            yOfs = cellSize * 3;</span>
+
+<span class="nc" id="L199">                        gr.drawRoundRect((p.getCol() + 1) * cellSize + frame + xofs, (p.getRow() + 1) * cellSize + frame + yOfs,</span>
+<span class="nc" id="L200">                                p.getWidth() * cellSize - frame * 2, p.getHeight() * cellSize - frame * 2,</span>
+                                edgesRadius, edgesRadius);
+<span class="nc" id="L202">                        gr.drawRoundRect((p.getCol() + 1) * cellSize + frame - xofs, (p.getRow() + 1) * cellSize + frame - yOfs,</span>
+<span class="nc" id="L203">                                p.getWidth() * cellSize - frame * 2, p.getHeight() * cellSize - frame * 2,</span>
+                                edgesRadius, edgesRadius);
+
+                    }
+<span class="nc" id="L207">                    gr.setClip(clip.x, clip.y, clip.width, clip.height);</span>
+<span class="nc" id="L208">                } else</span>
+<span class="nc" id="L209">                    gr.drawRoundRect((p.getCol() + 1) * cellSize + frame, (p.getRow() + 1) * cellSize + frame,</span>
+<span class="nc" id="L210">                            p.getWidth() * cellSize - frame * 2, p.getHeight() * cellSize - frame * 2,</span>
+                            edgesRadius, edgesRadius);
+<span class="nc" id="L212">            }</span>
+<span class="nc" id="L213">            gr.setTransform(trans);</span>
+<span class="nc" id="L214">        } else</span>
+<span class="nc" id="L215">            gr.drawString(message, 10, 20);</span>
+
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (startVarRect != null) {</span>
+<span class="nc" id="L218">            gr.setColor(Color.BLACK);</span>
+<span class="nc" id="L219">            startVarRect.getFragment().draw(gr, xDrag, yDrag);</span>
+        }
+<span class="nc" id="L221">    }</span>
+
+    private boolean isNoHeaderLine(KarnaughMap.Header header, int i) {
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (header == null) return false;</span>
+<span class="nc bnc" id="L225" title="All 4 branches missed.">        if (i &lt; 0 || i &gt;= header.size() - 1) return false;</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        return header.getInvert(i) == header.getInvert(i + 1);</span>
+    }
+
+    //CHECKSTYLE.OFF: ModifiedControlVariable
+    private void drawHorizontalHeader(KarnaughMap.Header header, int pos) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (header != null)</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            for (int i = 0; i &lt; header.size(); i++) {</span>
+<span class="nc" id="L233">                int dx = 0;</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                if (isNoHeaderLine(header, i)) {</span>
+<span class="nc" id="L235">                    i++;</span>
+<span class="nc" id="L236">                    dx = cellSize / 2;</span>
+                }
+<span class="nc" id="L238">                int var = header.getVar();</span>
+<span class="nc" id="L239">                boolean invert = header.getInvert(i);</span>
+<span class="nc" id="L240">                drawFragment(var, invert, i + 1, pos, dx, 0);</span>
+            }
+<span class="nc" id="L242">    }</span>
+
+    private void drawVerticalHeader(KarnaughMap.Header header, int pos) {
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (header == null) return;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        for (int i = 0; i &lt; header.size(); i++) {</span>
+<span class="nc" id="L247">            int dy = 0;</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (isNoHeaderLine(header, i)) {</span>
+<span class="nc" id="L249">                i++;</span>
+<span class="nc" id="L250">                dy = cellSize / 2;</span>
+            }
+<span class="nc" id="L252">            int var = header.getVar();</span>
+<span class="nc" id="L253">            boolean invert = header.getInvert(i);</span>
+<span class="nc" id="L254">            drawFragment(var, invert, pos, i + 1, 0, dy);</span>
+        }
+<span class="nc" id="L256">    }</span>
+    //CHECKSTYLE.ON: ModifiedControlVariable
+
+    private void drawString(String s, int row, int col) {
+<span class="nc" id="L260">        FontMetrics fontMetrics = gr.getFontMetrics();</span>
+<span class="nc" id="L261">        Rectangle2D bounds = fontMetrics.getStringBounds(s, gr);</span>
+<span class="nc" id="L262">        int xPos = (int) ((cellSize - bounds.getWidth()) / 2);</span>
+<span class="nc" id="L263">        int yPos = cellSize - (int) ((cellSize - bounds.getHeight()) / 2) - fontMetrics.getDescent();</span>
+<span class="nc" id="L264">        gr.drawString(s, row * cellSize + xPos, col * cellSize + yPos);</span>
+<span class="nc" id="L265">    }</span>
+
+    private void drawFragment(int var, boolean invert, int row, int col, int xOffs, int yOffs) {
+<span class="nc" id="L268">        GraphicsFormatter.Fragment fr = getFragment(var, invert);</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (fr == null)</span>
+<span class="nc" id="L270">            return;</span>
+<span class="nc" id="L271">        FontMetrics fontMetrics = gr.getFontMetrics();</span>
+<span class="nc" id="L272">        int xPos = (cellSize - fr.getWidth()) / 2;</span>
+<span class="nc" id="L273">        int yPos = cellSize - ((cellSize - fr.getHeight()) / 2) - fontMetrics.getDescent();</span>
+<span class="nc" id="L274">        int xFr = row * cellSize + xPos - xOffs;</span>
+<span class="nc" id="L275">        int yFr = col * cellSize + yPos - yOffs;</span>
+<span class="nc" id="L276">        fr.draw(gr, xFr, yFr);</span>
+
+        // register fragment for drag&amp;drop action
+<span class="nc" id="L279">        Rectangle r = new Rectangle(xFr, yFr + fontMetrics.getDescent() - fr.getHeight(), fr.getWidth(), fr.getHeight());</span>
+<span class="nc" id="L280">        varRectList.add(var, invert, r, fr);</span>
+<span class="nc" id="L281">    }</span>
+
+    private GraphicsFormatter.Fragment getFragment(int var, boolean invert) {
+        try {
+<span class="nc bnc" id="L285" title="All 2 branches missed.">            if (invert)</span>
+<span class="nc" id="L286">                return GraphicsFormatter.createFragment(gr, new Not(vars.get(var)));</span>
+            else
+<span class="nc" id="L288">                return GraphicsFormatter.createFragment(gr, vars.get(var));</span>
+<span class="nc" id="L289">        } catch (GraphicsFormatter.FormatterException e) {</span>
+            // can not happen
+<span class="nc" id="L291">            return null;</span>
+        }
+    }
+
+    /**
+     * The modifier which is used to modify the bool table
+     */
+    public interface Modifier {
+
+        /**
+         * Is called if the k-map is clicked and the truth table needs to be changed.
+         *
+         * @param boolTable the table to modify
+         * @param row       the row to modify
+         */
+        void modify(BoolTable boolTable, int row);
+    }
+
+    private final class MyMouseAdapter extends MouseAdapter {
+        private final Modifier tableCellModifier;
+
+<span class="nc" id="L312">        private MyMouseAdapter(Modifier tableCellModifier) {</span>
+<span class="nc" id="L313">            this.tableCellModifier = tableCellModifier;</span>
+<span class="nc" id="L314">        }</span>
+
+        @Override
+        public void mouseClicked(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">            if (kv != null) {</span>
+<span class="nc" id="L319">                int x = (mouseEvent.getX() - xOffs) / cellSize - 1;</span>
+<span class="nc" id="L320">                int y = (mouseEvent.getY() - yOffs) / cellSize - 1;</span>
+<span class="nc bnc" id="L321" title="All 8 branches missed.">                if (x &gt;= 0 &amp;&amp; x &lt; kv.getColumns() &amp;&amp; y &gt;= 0 &amp;&amp; y &lt; kv.getRows()) {</span>
+<span class="nc" id="L322">                    int row = kv.getCell(y, x).getBoolTableRow();</span>
+<span class="nc" id="L323">                    tableCellModifier.modify(boolTable, row);</span>
+                }
+            }
+<span class="nc" id="L326">        }</span>
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+<span class="nc" id="L330">            startVarRect = varRectList.findVarRect(e);</span>
+<span class="nc" id="L331">        }</span>
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+<span class="nc bnc" id="L335" title="All 2 branches missed.">            if (startVarRect != null) {</span>
+<span class="nc" id="L336">                xDrag = e.getX();</span>
+<span class="nc" id="L337">                yDrag = e.getY();</span>
+<span class="nc" id="L338">                repaint();</span>
+            }
+<span class="nc" id="L340">        }</span>
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+<span class="nc" id="L344">            VarRectList.VarRect endVarRect = varRectList.findVarRect(e);</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            if (mapLayout.swapByDragAndDrop(startVarRect, endVarRect))</span>
+<span class="nc" id="L346">                update();</span>
+            else
+<span class="nc" id="L348">                repaint();</span>
+<span class="nc" id="L349">            startVarRect = null;</span>
+<span class="nc" id="L350">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

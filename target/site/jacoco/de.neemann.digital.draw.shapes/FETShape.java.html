@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FETShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">FETShape.java</span></div><h1>FETShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.switching.NFET;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.graphics.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * FET shape.
+ */
+public abstract class FETShape implements Shape {
+    private final PinDescriptions inputs;
+    private final PinDescriptions outputs;
+    private final String label;
+<span class="fc" id="L24">    private int xOffs = SIZE2 - 2;</span>
+    private NFET fet;
+    private boolean isClosed;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     * @param inputs     the inputs
+     * @param outputs    the outputs
+     */
+<span class="fc" id="L35">    FETShape(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L36">        this.inputs = inputs;</span>
+<span class="fc" id="L37">        this.outputs = outputs;</span>
+<span class="fc" id="L38">        label = attributes.getLabel();</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Sets the gap width
+     *
+     * @param xOffs the gap width
+     */
+    void setXOffs(int xOffs) {
+<span class="fc" id="L47">        this.xOffs = xOffs;</span>
+<span class="fc" id="L48">    }</span>
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L52">        fet = (NFET) ioState.getElement();</span>
+<span class="nc" id="L53">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L58">        final int g = SIZE2 / 2;</span>
+<span class="fc" id="L59">        graphic.drawPolygon(new Polygon(false)</span>
+<span class="fc" id="L60">                .add(SIZE, 0)</span>
+<span class="fc" id="L61">                .add(xOffs, 0)</span>
+<span class="fc" id="L62">                .add(xOffs, SIZE2 - g), Style.NORMAL);</span>
+
+<span class="fc" id="L64">        graphic.drawPolygon(new Polygon(false)</span>
+<span class="fc" id="L65">                .add(SIZE, SIZE * 2)</span>
+<span class="fc" id="L66">                .add(xOffs, SIZE * 2)</span>
+<span class="fc" id="L67">                .add(xOffs, SIZE * 2 - SIZE2 + g), Style.NORMAL);</span>
+
+<span class="fc" id="L69">        graphic.drawLine(new Vector(xOffs, SIZE2 + g), new Vector(xOffs, SIZE + SIZE2 - g), Style.NORMAL);</span>
+
+<span class="fc" id="L71">        graphic.drawLine(new Vector(1, 0), new Vector(1, SIZE * 2), Style.NORMAL);</span>
+
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="nc" id="L74">            graphic.drawText(new Vector(SIZE + SIZE2, SIZE * 2), label, Orientation.LEFTBOTTOM, Style.SHAPE_PIN);</span>
+
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (fet != null)</span>
+<span class="nc" id="L77">            drawSwitch(graphic);</span>
+<span class="fc" id="L78">    }</span>
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (fet!=null)</span>
+<span class="nc" id="L83">            isClosed=fet.isClosed();</span>
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * Draws the small switch beside the fet
+     *
+     * @param graphic the instance to draw to
+     */
+    private void drawSwitch(Graphic graphic) {
+<span class="nc" id="L92">        drawSwitch(graphic, isClosed);</span>
+<span class="nc" id="L93">    }</span>
+
+    /**
+     * draws the switch
+     *
+     * @param graphic the graphics instance to draw to
+     * @param closed  state of the switch
+     */
+    public static void drawSwitch(Graphic graphic, boolean closed) {
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (closed) {</span>
+<span class="nc" id="L103">            graphic.drawLine(new Vector(SIZE + SIZE2, 0), new Vector(SIZE + SIZE2, SIZE), Style.SHAPE_PIN);</span>
+        } else {
+<span class="nc" id="L105">            graphic.drawLine(new Vector(SIZE + SIZE2, 0), new Vector(SIZE + SIZE2, SIZE2 / 2), Style.SHAPE_PIN);</span>
+<span class="nc" id="L106">            graphic.drawPolygon(new Polygon(false)</span>
+<span class="nc" id="L107">                    .add(SIZE + SIZE2 / 2, SIZE2 / 2 + 2)</span>
+<span class="nc" id="L108">                    .add(SIZE + SIZE2, SIZE - SIZE2 / 2)</span>
+<span class="nc" id="L109">                    .add(SIZE + SIZE2, SIZE), Style.SHAPE_PIN);</span>
+        }
+<span class="nc" id="L111">    }</span>
+
+    /**
+     * @return the inputs (gate)
+     */
+    public PinDescriptions getInputs() {
+<span class="fc" id="L117">        return inputs;</span>
+    }
+
+    /**
+     * @return the outputs (source and drain)
+     */
+    public PinDescriptions getOutputs() {
+<span class="fc" id="L124">        return outputs;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

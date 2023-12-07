@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLTemplate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.vhdl2.entities</a> &gt; <span class="el_source">VHDLTemplate.java</span></div><h1>VHDLTemplate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.vhdl2.entities;
+
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.hdl.hgs.*;
+import de.neemann.digital.hdl.hgs.function.JavaClass;
+import de.neemann.digital.hdl.model2.HDLNode;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.hdl.vhdl2.Separator;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * Reads a file with the vhdl code to create the entity.
+ */
+public class VHDLTemplate implements VHDLEntity {
+<span class="fc" id="L26">    private static final JavaClass&lt;VHDLTemplateFunctions&gt; TEMP_FUNCTIONS_CLASS</span>
+            = new JavaClass&lt;&gt;(VHDLTemplateFunctions.class);
+    private static final String ENTITY_PREFIX = &quot;DIG_&quot;;
+
+    private final Statement statements;
+    private final String entityName;
+    private HashMap&lt;String, Entity&gt; entities;
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the name of the entity
+     * @param cl   the classloader used to load the template from
+     * @throws IOException IOException
+     */
+<span class="fc" id="L41">    public VHDLTemplate(String name, ClassLoader cl) throws IOException {</span>
+<span class="fc" id="L42">        entityName = ENTITY_PREFIX + name;</span>
+<span class="fc" id="L43">        this.entities = new HashMap&lt;&gt;();</span>
+        try {
+<span class="fc" id="L45">            statements = Parser.createFromJar(createFileName(entityName), cl);</span>
+<span class="nc" id="L46">        } catch (ParserException e) {</span>
+<span class="nc" id="L47">            throw new IOException(&quot;error parsing template &quot; + createFileName(entityName), e);</span>
+<span class="fc" id="L48">        }</span>
+<span class="fc" id="L49">    }</span>
+
+    private static String createFileName(String name) {
+<span class="fc" id="L52">        return &quot;vhdl/&quot; + name + &quot;.tem&quot;;</span>
+    }
+
+    /**
+     * Returns true, if a hdl template is available.
+     *
+     * @param etd the {@link ElementTypeDescription}
+     * @return true if VHDL template is available
+     */
+    public static boolean isTemplate(ElementTypeDescription etd) {
+<span class="fc" id="L62">        ClassLoader cl = etd.getClassLoader();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (cl == null)</span>
+<span class="fc" id="L64">            cl = ClassLoader.getSystemClassLoader();</span>
+<span class="fc" id="L65">        URL url = cl.getResource(createFileName(ENTITY_PREFIX + etd.getName()));</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        return url != null;</span>
+    }
+
+
+    /**
+     * Creates the name of the file used to load the vhdl file for the given element
+     *
+     * @param elementName the element name
+     * @return the filename
+     */
+    public static String neededFileName(String elementName) {
+<span class="nc" id="L77">        return createFileName(ENTITY_PREFIX + elementName);</span>
+    }
+
+    @Override
+    public String print(CodePrinter out, HDLNode node, File root) throws HGSEvalException, IOException {
+<span class="fc" id="L82">        Entity e = getEntity(node, root);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!e.isWritten()) {</span>
+<span class="fc" id="L84">            out.println().println(Value.trimRight(e.getCode())).println();</span>
+<span class="fc" id="L85">            e.setWritten();</span>
+        }
+<span class="fc" id="L87">        return e.getName();</span>
+    }
+
+    @Override
+    public void writeGenericMap(CodePrinter out, HDLNode node, File root) throws IOException {
+        try {
+<span class="fc" id="L93">            final Entity e = getEntity(node, root);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (!e.getGenerics().isEmpty()) {</span>
+<span class="fc" id="L95">                out.println(&quot;generic map (&quot;).inc();</span>
+<span class="fc" id="L96">                Separator semic = new Separator(out, &quot;,\n&quot;);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                for (VHDLTemplateFunctions.Generic gen : e.getGenerics()) {</span>
+<span class="fc" id="L98">                    semic.check();</span>
+<span class="fc" id="L99">                    final Object value = node.getElementAttributes().hgsMapGet(gen.getName());</span>
+<span class="fc" id="L100">                    out.print(gen.getName()).print(&quot; =&gt; &quot;).print(gen.format(value));</span>
+<span class="fc" id="L101">                }</span>
+<span class="fc" id="L102">                out.println(&quot;)&quot;).dec();</span>
+            }
+<span class="nc" id="L104">        } catch (HGSEvalException e) {</span>
+<span class="nc" id="L105">            throw new IOException(&quot;error evaluating the template &quot; + createFileName(entityName), e);</span>
+<span class="fc" id="L106">        }</span>
+<span class="fc" id="L107">    }</span>
+
+    private Entity getEntity(HDLNode node, File root) throws HGSEvalException {
+<span class="fc" id="L110">        Entity newGenerated = new Entity(node, entityName, root);</span>
+
+<span class="fc" id="L112">        Entity e = entities.get(newGenerated.name);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (e == null) {</span>
+<span class="fc" id="L114">            entities.put(newGenerated.name, newGenerated);</span>
+<span class="fc" id="L115">            return newGenerated;</span>
+        } else {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            if (!(newGenerated.code.equals(e.code)))</span>
+<span class="nc" id="L118">                throw new HGSEvalException(Lang.get(&quot;err_ifExternalComponentIsUsedTwiceCodeMustBeIdentical_N&quot;, newGenerated.name));</span>
+            else
+<span class="fc" id="L120">                return e;</span>
+        }
+    }
+
+    private final class Entity {
+        private final String code;
+        private final String name;
+        private final VHDLTemplateFunctions helper;
+<span class="fc" id="L128">        private boolean isWritten = false;</span>
+
+<span class="fc" id="L130">        private Entity(HDLNode node, String name, File root) throws HGSEvalException {</span>
+<span class="fc" id="L131">            helper = new VHDLTemplateFunctions();</span>
+<span class="fc" id="L132">            final Context c = new Context(root)</span>
+<span class="fc" id="L133">                    .declareVar(&quot;elem&quot;, node.getElementAttributes())</span>
+<span class="fc" id="L134">                    .declareVar(&quot;vhdl&quot;, TEMP_FUNCTIONS_CLASS.createMap(helper));</span>
+
+            try {
+<span class="fc" id="L137">                statements.execute(c);</span>
+<span class="nc" id="L138">            } catch (HGSEvalException e) {</span>
+<span class="nc" id="L139">                throw new HGSEvalException(&quot;error evaluating hgs code &quot; + name, e);</span>
+<span class="fc" id="L140">            }</span>
+<span class="fc" id="L141">            code = c.toString();</span>
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (c.contains(&quot;entityName&quot;))</span>
+<span class="fc" id="L144">                this.name = c.getVar(&quot;entityName&quot;).toString();</span>
+            else
+<span class="fc" id="L146">                this.name = name;</span>
+<span class="fc" id="L147">        }</span>
+
+        private String getCode() {
+<span class="fc" id="L150">            return code;</span>
+        }
+
+
+        private boolean isWritten() {
+<span class="fc" id="L155">            return isWritten;</span>
+        }
+
+        private void setWritten() {
+<span class="fc" id="L159">            isWritten = true;</span>
+<span class="fc" id="L160">        }</span>
+
+        private String getName() {
+<span class="fc" id="L163">            return name;</span>
+        }
+
+        private ArrayList&lt;VHDLTemplateFunctions.Generic&gt; getGenerics() {
+<span class="fc" id="L167">            return helper.getGenerics();</span>
+        }
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

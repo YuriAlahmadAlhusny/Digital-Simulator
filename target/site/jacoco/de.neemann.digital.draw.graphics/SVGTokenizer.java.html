@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SVGTokenizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">SVGTokenizer.java</span></div><h1>SVGTokenizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+/**
+ * A tokenizer to parse svg strings
+ */
+public class SVGTokenizer {
+    /**
+     * token types
+     */
+<span class="fc" id="L15">    public enum Token {</span>
+        /**
+         * EOF
+         */
+<span class="fc" id="L19">        EOF,</span>
+        /**
+         * a command
+         */
+<span class="fc" id="L23">        COMMAND,</span>
+        /**
+         * a number
+         */
+<span class="fc" id="L27">        NUMBER,</span>
+        /**
+         * a character
+         */
+<span class="fc" id="L31">        CHAR</span>
+    }
+
+    private final String code;
+    private int lastTokenPos;
+    private int pos;
+    private StringBuilder command;
+    private float value;
+    private char character;
+
+    /**
+     * Creates a new instance
+     *
+     * @param code the code to parse
+     */
+<span class="fc" id="L46">    public SVGTokenizer(String code) {</span>
+<span class="fc" id="L47">        this.code = code;</span>
+<span class="fc" id="L48">        command = new StringBuilder();</span>
+<span class="fc" id="L49">        pos = 0;</span>
+<span class="fc" id="L50">    }</span>
+
+    private Token next() throws TokenizerException {
+<span class="fc" id="L53">        lastTokenPos = pos;</span>
+<span class="fc bfc" id="L54" title="All 6 branches covered.">        while (pos &lt; code.length() &amp;&amp; (Character.isWhitespace(code.charAt(pos)) || code.charAt(pos) == ','))</span>
+<span class="fc" id="L55">            pos++;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (pos == code.length())</span>
+<span class="fc" id="L57">            return Token.EOF;</span>
+
+<span class="fc" id="L59">        character = code.charAt(pos);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (Character.isAlphabetic(character)) {</span>
+<span class="fc" id="L61">            command.setLength(0);</span>
+<span class="fc" id="L62">            pos++;</span>
+<span class="fc" id="L63">            command.append(character);</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">            while (pos &lt; code.length() &amp;&amp; Character.isAlphabetic(code.charAt(pos))) {</span>
+<span class="fc" id="L65">                command.append(code.charAt(pos));</span>
+<span class="fc" id="L66">                pos++;</span>
+            }
+<span class="fc" id="L68">            return Token.COMMAND;</span>
+        }
+<span class="pc bpc" id="L70" title="1 of 6 branches missed.">        if (Character.isDigit(character) || character == '-' || character == '+') {</span>
+<span class="fc" id="L71">            value = parseNumber();</span>
+<span class="fc" id="L72">            return Token.NUMBER;</span>
+        } else {
+<span class="fc" id="L74">            pos++;</span>
+<span class="fc" id="L75">            return Token.CHAR;</span>
+        }
+    }
+
+    private char peekChar() {
+<span class="fc" id="L80">        return code.charAt(pos);</span>
+    }
+
+    private float parseNumber() throws TokenizerException {
+<span class="fc" id="L84">        int p0 = pos;</span>
+<span class="pc bpc" id="L85" title="1 of 4 branches missed.">        if (peekChar() == '+' || peekChar() == '-')</span>
+<span class="fc" id="L86">            pos++;</span>
+
+<span class="fc bfc" id="L88" title="All 6 branches covered.">        while (pos &lt; code.length() &amp;&amp; (Character.isDigit(peekChar()) || peekChar() == '.'))</span>
+<span class="fc" id="L89">            pos++;</span>
+
+<span class="fc bfc" id="L91" title="All 6 branches covered.">        if (pos &lt; code.length() &amp;&amp; (peekChar() == 'e' || peekChar() == 'E')) {</span>
+<span class="fc" id="L92">            pos++;</span>
+<span class="fc bfc" id="L93" title="All 6 branches covered.">            if (peekChar() == '+' || peekChar() == '-' || Character.isDigit(peekChar())) {</span>
+<span class="fc" id="L94">                pos++;</span>
+<span class="pc bpc" id="L95" title="1 of 6 branches missed.">                while (pos &lt; code.length() &amp;&amp; (Character.isDigit(peekChar()) || peekChar() == '.'))</span>
+<span class="fc" id="L96">                    pos++;</span>
+            } else
+<span class="fc" id="L98">                pos--;</span>
+        }
+
+        try {
+<span class="fc" id="L102">            return Float.parseFloat(code.substring(p0, pos));</span>
+<span class="nc" id="L103">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L104">            throw new TokenizerException(&quot;not a number &quot; + code.substring(p0, pos));</span>
+        }
+    }
+
+
+    private void unreadToken() {
+<span class="fc" id="L110">        pos = lastTokenPos;</span>
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Expect the given character c
+     *
+     * @param c the expected character
+     * @throws TokenizerException TokenizerException
+     */
+    public void expect(char c) throws TokenizerException {
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (next() != Token.CHAR)</span>
+<span class="nc" id="L121">            throw new TokenizerException(&quot;expected character &quot; + c);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (character != c)</span>
+<span class="nc" id="L123">            throw new RuntimeException(&quot;expected &quot; + c + &quot; found &quot; + character);</span>
+<span class="fc" id="L124">    }</span>
+
+    /**
+     * Reads a float
+     *
+     * @return the float
+     * @throws TokenizerException TokenizerException
+     */
+    public float readFloat() throws TokenizerException {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (next() != Token.NUMBER)</span>
+<span class="nc" id="L134">            throw new TokenizerException(&quot;expected a number&quot;);</span>
+<span class="fc" id="L135">        return value;</span>
+    }
+
+    /**
+     * Reads a command
+     *
+     * @return the command
+     * @throws TokenizerException TokenizerException
+     */
+    public String readCommand() throws TokenizerException {
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (next() != Token.COMMAND)</span>
+<span class="nc" id="L146">            throw new TokenizerException(&quot;expected a command&quot;);</span>
+<span class="fc" id="L147">        return command.toString();</span>
+    }
+
+    /**
+     * @return true if the next token is a number
+     * @throws TokenizerException TokenizerException
+     */
+    public boolean nextIsNumber() throws TokenizerException {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (next() == Token.NUMBER) {</span>
+<span class="fc" id="L156">            unreadToken();</span>
+<span class="fc" id="L157">            return true;</span>
+        } else {
+<span class="fc" id="L159">            unreadToken();</span>
+<span class="fc" id="L160">            return false;</span>
+        }
+    }
+
+    /**
+     * Checks if the next char is the given char.
+     *
+     * @param c the char
+     * @return true if next char is the given char.
+     * @throws TokenizerException TokenizerException
+     */
+    public boolean nextIsChar(char c) throws TokenizerException {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (next() == Token.CHAR) {</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            if (character == c) {</span>
+<span class="fc" id="L174">                return true;</span>
+            } else {
+<span class="fc" id="L176">                unreadToken();</span>
+<span class="fc" id="L177">                return false;</span>
+            }
+        } else {
+<span class="fc" id="L180">            unreadToken();</span>
+<span class="fc" id="L181">            return false;</span>
+        }
+    }
+
+
+    /**
+     * @return true if the EOF is reached
+     * @throws TokenizerException TokenizerException
+     */
+    public boolean isEOF() throws TokenizerException {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (next() == Token.EOF) {</span>
+<span class="fc" id="L192">            return true;</span>
+        } else {
+<span class="fc" id="L194">            unreadToken();</span>
+<span class="fc" id="L195">            return false;</span>
+        }
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L201">        return code + &quot; (&quot; + pos + &quot;)&quot;;</span>
+    }
+
+    /**
+     * @return the remainig string
+     */
+    public String remaining() {
+<span class="fc" id="L208">        final String s = code.substring(pos).trim();</span>
+<span class="fc" id="L209">        pos = code.length();</span>
+<span class="fc" id="L210">        return s;</span>
+    }
+
+    /**
+     * Reads all up to the given character
+     *
+     * @param c the character
+     * @return the data string
+     */
+    public String readTo(char c) {
+<span class="fc" id="L220">        int p = pos;</span>
+<span class="fc" id="L221">        int brace = 0;</span>
+<span class="fc bfc" id="L222" title="All 6 branches covered.">        while (pos &lt; code.length() &amp;&amp; (code.charAt(pos) != c || brace != 0)) {</span>
+<span class="fc bfc" id="L223" title="All 3 branches covered.">            switch (code.charAt(pos)) {</span>
+                case '(':
+<span class="fc" id="L225">                    brace++;</span>
+<span class="fc" id="L226">                    break;</span>
+                case ')':
+<span class="fc" id="L228">                    brace--;</span>
+                    break;
+            }
+<span class="fc" id="L231">            pos++;</span>
+        }
+
+<span class="fc" id="L234">        final String r = code.substring(p, pos).trim();</span>
+
+<span class="fc bfc" id="L236" title="All 4 branches covered.">        while (pos &lt; code.length() &amp;&amp; code.charAt(pos) == c)</span>
+<span class="fc" id="L237">            pos++;</span>
+
+<span class="fc" id="L239">        return r;</span>
+    }
+
+    /**
+     * Exception thrown by the tokenizer
+     */
+    public static final class TokenizerException extends Exception {
+        private TokenizerException(String message) {
+<span class="nc" id="L247">            super(message);</span>
+<span class="nc" id="L248">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

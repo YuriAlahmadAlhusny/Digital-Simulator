@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TruthTableFormatterLaTeX.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.format</a> &gt; <span class="el_source">TruthTableFormatterLaTeX.java</span></div><h1>TruthTableFormatterLaTeX.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.format;
+
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.ContextFiller;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.quinemc.ThreeStateValue;
+import de.neemann.digital.draw.graphics.text.formatter.LaTeXFormatter;
+
+/**
+ * Creates a LaTeX table using the truth table data
+ */
+<span class="fc" id="L18">public class TruthTableFormatterLaTeX implements TruthTableFormatter {</span>
+    @Override
+    public String format(TruthTable truthTable) throws ExpressionException {
+<span class="fc" id="L21">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L22">        sb.append(&quot;\\begin{center}\n\\begin{tabular}{&quot;);</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        for (Variable v : truthTable.getVars())</span>
+<span class="fc" id="L24">            sb.append(&quot;c&quot;);</span>
+<span class="fc" id="L25">        sb.append(&quot;|&quot;);</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        for (int i = 0; i &lt; truthTable.getResultCount(); i++)</span>
+<span class="fc" id="L27">            sb.append(&quot;c&quot;);</span>
+<span class="fc" id="L28">        sb.append(&quot;}\n&quot;);</span>
+
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        for (Variable v : truthTable.getVars())</span>
+<span class="fc" id="L31">            sb.append(&quot;$&quot;).append(LaTeXFormatter.format(v)).append(&quot;$&amp;&quot;);</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        for (int i = 0; i &lt; truthTable.getResultCount(); i++) {</span>
+<span class="fc" id="L33">            sb.append(&quot;$&quot;).append(LaTeXFormatter.format(new Variable(truthTable.getResultName(i)))).append(&quot;$&quot;);</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            if (i &lt; truthTable.getResultCount() - 1)</span>
+<span class="fc" id="L35">                sb.append(&quot;&amp;&quot;);</span>
+        }
+<span class="fc" id="L37">        sb.append(&quot;\\\\\n&quot;);</span>
+<span class="fc" id="L38">        sb.append(&quot;\\hline\n&quot;);</span>
+
+<span class="fc" id="L40">        ContextFiller cf = new ContextFiller(truthTable.getVars());</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; cf.getRowCount(); i++) {</span>
+<span class="fc" id="L42">            cf.setContextTo(i);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            for (Variable v : cf)</span>
+<span class="fc" id="L44">                sb.append(format(cf.get(v))).append(&quot;&amp;&quot;);</span>
+
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            for (int j = 0; j &lt; truthTable.getResultCount(); j++) {</span>
+<span class="fc" id="L47">                ThreeStateValue r = truthTable.getResult(j).get(i);</span>
+<span class="fc" id="L48">                sb.append(format(r));</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">                if (j &lt; truthTable.getResultCount() - 1)</span>
+<span class="fc" id="L50">                    sb.append(&quot;&amp;&quot;);</span>
+            }
+<span class="fc" id="L52">            sb.append(&quot;\\\\\n&quot;);</span>
+        }
+<span class="fc" id="L54">        sb.append(&quot;\\end{tabular}\n\\end{center}\n&quot;);</span>
+<span class="fc" id="L55">        return sb.toString();</span>
+    }
+
+    private String format(boolean b) {
+<span class="fc" id="L59">        return format(ThreeStateValue.value(b));</span>
+    }
+
+    private String format(ThreeStateValue r) {
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">        switch (r) {</span>
+            case one:
+<span class="fc" id="L65">                return &quot;$1$&quot;;</span>
+            case zero:
+<span class="fc" id="L67">                return &quot;$0$&quot;;</span>
+            case dontCare:
+<span class="nc" id="L69">                return &quot;-&quot;;</span>
+        }
+<span class="nc" id="L71">        return null;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

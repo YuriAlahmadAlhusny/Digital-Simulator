@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderMerger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">OrderMerger.java</span></div><h1>OrderMerger.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import java.util.List;
+
+/**
+ * Takes an old ordering and order the new items in the same way.
+ * The items are compared by calling the {@link OrderMerger#equals(Object, Object)} method.
+ *
+ * @param &lt;O&gt; type of old items
+ * @param &lt;N&gt; type of new items
+ */
+public class OrderMerger&lt;O, N&gt; {
+    private final List&lt;O&gt; oldOrdering;
+
+    /**
+     * Creates a new instance
+     *
+     * @param oldOrdering the old ordering
+     */
+<span class="fc" id="L25">    public OrderMerger(List&lt;O&gt; oldOrdering) {</span>
+<span class="fc" id="L26">        this.oldOrdering = oldOrdering;</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Orders the given list
+     *
+     * @param list the list to order
+     * @param &lt;L&gt;  the type of the items
+     */
+    public &lt;L extends List&lt;N&gt;&gt; void order(L list) {
+<span class="fc bfc" id="L36" title="All 4 branches covered.">        if (oldOrdering == null || oldOrdering.size() == 0)</span>
+<span class="fc" id="L37">            return;</span>
+
+<span class="fc" id="L39">        int n = 0;</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (O o : oldOrdering) {</span>
+<span class="fc" id="L41">            int found = -1;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            for (int i = n; i &lt; list.size(); i++) {</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">                if (equals(list.get(i), o)) {</span>
+<span class="fc" id="L44">                    found = i;</span>
+<span class="fc" id="L45">                    break;</span>
+                }
+            }
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (found &gt;= 0) {</span>
+<span class="fc" id="L49">                N r = list.remove(found);</span>
+<span class="fc" id="L50">                list.add(n, r);</span>
+<span class="fc" id="L51">                n++;</span>
+            }
+<span class="fc" id="L53">        }</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Method to compare the items.
+     * This implementation simply calls &lt;code&gt;a.equals(b);&lt;/code&gt;
+     *
+     * @param a item
+     * @param b item
+     * @return true in equal
+     */
+    public boolean equals(N a, O b) {
+<span class="fc" id="L65">        return a.equals(b);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

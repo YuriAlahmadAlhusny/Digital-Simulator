@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolarityAwareLEDShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">PolarityAwareLEDShape.java</span></div><h1>PolarityAwareLEDShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.Value;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+import static de.neemann.digital.draw.shapes.PullDownShape.HEIGHT;
+import static de.neemann.digital.draw.shapes.PullDownShape.WIDTH2;
+
+/**
+ * The polarity aware LED shape
+ */
+public class PolarityAwareLEDShape implements Shape {
+    private static final int RAD = SIZE * 3 / 4;
+    private final PinDescriptions inputs;
+    private final Style style;
+    private final String label;
+    private ObservableValue aValue;
+    private ObservableValue cValue;
+    private Value a;
+    private Value c;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L44">    public PolarityAwareLEDShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L45">        this.inputs = inputs;</span>
+<span class="fc" id="L46">        style = Style.NORMAL.deriveFillStyle(attr.get(Keys.COLOR));</span>
+<span class="fc" id="L47">        String l = attr.getLabel();</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">        if (l == null || l.trim().length() == 0)</span>
+<span class="fc" id="L49">            label = null;</span>
+        else
+<span class="nc" id="L51">            label = l;</span>
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L56">        return new Pins()</span>
+<span class="fc" id="L57">                .add(new Pin(new Vector(0, 0), inputs.get(0)))</span>
+<span class="fc" id="L58">                .add(new Pin(new Vector(0, SIZE * 4), inputs.get(1)));</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L63">        aValue = ioState.getInput(0);</span>
+<span class="nc" id="L64">        cValue = ioState.getInput(1);</span>
+<span class="nc" id="L65">        return null;</span>
+    }
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L70" title="3 of 4 branches missed.">        if (aValue != null &amp;&amp; cValue != null) {</span>
+<span class="nc" id="L71">            a = aValue.getCopy();</span>
+<span class="nc" id="L72">            c = cValue.getCopy();</span>
+        }
+<span class="fc" id="L74">    }</span>
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+
+<span class="fc" id="L79">        graphic.drawPolygon(</span>
+                new Polygon(true)
+<span class="fc" id="L81">                        .add(-WIDTH2, SIZE * 4 - SIZE2 - 1)</span>
+<span class="fc" id="L82">                        .add(-WIDTH2, SIZE * 4 - SIZE2 - HEIGHT)</span>
+<span class="fc" id="L83">                        .add(WIDTH2, SIZE * 4 - SIZE2 - HEIGHT)</span>
+<span class="fc" id="L84">                        .add(WIDTH2, SIZE * 4 - SIZE2 - 1),</span>
+                Style.NORMAL
+        );
+<span class="fc" id="L87">        graphic.drawLine(new Vector(0, SIZE * 4 - SIZE2), new Vector(0, SIZE * 4), Style.NORMAL);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (label != null) {</span>
+<span class="nc" id="L89">            Vector textPos = new Vector(SIZE + SIZE2, SIZE);</span>
+<span class="nc" id="L90">            graphic.drawText(textPos, label, Orientation.LEFTCENTER, Style.NORMAL);</span>
+        }
+
+<span class="pc bpc" id="L93" title="3 of 4 branches missed.">        if (a == null || c == null) {</span>
+<span class="fc" id="L94">            graphic.drawPolygon(</span>
+                    new Polygon(true)
+<span class="fc" id="L96">                            .add(-SIZE2, 1 + SIZE2)</span>
+<span class="fc" id="L97">                            .add(SIZE2, 1 + SIZE2)</span>
+<span class="fc" id="L98">                            .add(0, -1 + SIZE + SIZE2),</span>
+                    Style.NORMAL
+            );
+<span class="fc" id="L101">            graphic.drawLine(new Vector(-SIZE2, -1 + SIZE + SIZE2), new Vector(SIZE2, -1 + SIZE + SIZE2), Style.NORMAL);</span>
+<span class="fc" id="L102">            graphic.drawLine(new Vector(0, -1 + SIZE + SIZE2), new Vector(0, SIZE * 4 - HEIGHT - SIZE2), Style.NORMAL);</span>
+<span class="fc" id="L103">            graphic.drawLine(new Vector(0, 0), new Vector(0, -1 + SIZE2), Style.NORMAL);</span>
+
+<span class="fc" id="L105">            graphic.drawLine(new Vector(SIZE - 0, SIZE2 + 2), new Vector(SIZE2 + 1, SIZE + 1), Style.THIN);</span>
+<span class="fc" id="L106">            graphic.drawLine(new Vector(SIZE - 2, SIZE2 + 1), new Vector(SIZE + 1, SIZE2 + 1), Style.THIN);</span>
+<span class="fc" id="L107">            graphic.drawLine(new Vector(SIZE + 1, SIZE2 + 4), new Vector(SIZE + 1, SIZE2 + 1), Style.THIN);</span>
+<span class="fc" id="L108">            graphic.drawLine(new Vector(SIZE + 6, SIZE2 + 8), new Vector(SIZE2 + 7, SIZE + 7), Style.THIN);</span>
+<span class="fc" id="L109">            graphic.drawLine(new Vector(SIZE + 4, SIZE2 + 7), new Vector(SIZE + 7, SIZE2 + 7), Style.THIN);</span>
+<span class="fc" id="L110">            graphic.drawLine(new Vector(SIZE + 7, SIZE2 + 10), new Vector(SIZE + 7, SIZE2 + 7), Style.THIN);</span>
+        } else {
+<span class="nc" id="L112">            Vector center = new Vector(0, SIZE);</span>
+<span class="nc" id="L113">            Vector rad = new Vector(RAD, RAD);</span>
+
+<span class="nc" id="L115">            graphic.drawLine(new Vector(0, SIZE * 4 - SIZE2 - HEIGHT), new Vector(0, 0), Style.NORMAL);</span>
+<span class="nc" id="L116">            graphic.drawCircle(center.sub(rad), center.add(rad), Style.FILLED);</span>
+
+<span class="nc bnc" id="L118" title="All 4 branches missed.">            boolean aActive = a.getBool() &amp;&amp; !a.isHighZ();</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">            boolean cActive = !c.getBool() &amp;&amp; !c.isHighZ();</span>
+
+<span class="nc bnc" id="L121" title="All 4 branches missed.">            if (aActive &amp;&amp; cActive) {</span>
+<span class="nc" id="L122">                Vector radL = new Vector(RAD - 2, RAD - 2);</span>
+<span class="nc" id="L123">                graphic.drawCircle(center.sub(radL), center.add(radL), style);</span>
+            }
+        }
+<span class="fc" id="L126">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

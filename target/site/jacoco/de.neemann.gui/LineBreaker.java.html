@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LineBreaker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">LineBreaker.java</span></div><h1>LineBreaker.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+/**
+ * Used to break lines.
+ */
+public class LineBreaker {
+    private static final int DEF_COLS = 70;
+
+    private final String label;
+    private final int indent;
+    private final int cols;
+    private final StringBuilder outText;
+<span class="fc" id="L18">    private String lineBreak = &quot;\n&quot;;</span>
+    private boolean isFirst;
+    private int pos;
+<span class="fc" id="L21">    private boolean preserveLineBreaks = false;</span>
+<span class="fc" id="L22">    private boolean toHTML = false;</span>
+    private int lines;
+
+    /**
+     * Creates a new instance
+     */
+    public LineBreaker() {
+<span class="nc" id="L29">        this(DEF_COLS);</span>
+<span class="nc" id="L30">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param cols number of columns to use
+     */
+    public LineBreaker(int cols) {
+<span class="fc" id="L38">        this(&quot;&quot;, 0, cols);</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param label  the lable to use in the first line
+     * @param indent columns to indent
+     * @param cols   number of columns to use
+     */
+<span class="fc" id="L48">    public LineBreaker(String label, int indent, int cols) {</span>
+<span class="fc" id="L49">        this.label = label;</span>
+<span class="fc" id="L50">        this.indent = indent;</span>
+<span class="fc" id="L51">        this.cols = cols;</span>
+<span class="fc" id="L52">        outText = new StringBuilder(label);</span>
+<span class="fc" id="L53">        isFirst = true;</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Sets the string inserted as a line break.
+     *
+     * @param lineBreak the line break, defaults to &quot;\n&quot;.
+     * @return this for chained calls
+     */
+    public LineBreaker setLineBreak(String lineBreak) {
+<span class="nc" id="L63">        this.lineBreak = lineBreak;</span>
+<span class="nc" id="L64">        return this;</span>
+    }
+
+    /**
+     * Breaks the line
+     *
+     * @param text the text to handle
+     * @return the text containing the line breaks
+     */
+    public String breakLines(String text) {
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (text == null)</span>
+<span class="nc" id="L75">            return null;</span>
+
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (text.startsWith(&quot;&lt;html&gt;&quot;))</span>
+<span class="nc" id="L78">            return text;</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; indent - label.length(); i++)</span>
+<span class="fc" id="L81">            outText.append(&quot; &quot;);</span>
+
+<span class="fc" id="L83">        StringBuilder word = new StringBuilder();</span>
+<span class="fc" id="L84">        pos = indent;</span>
+<span class="fc" id="L85">        boolean lastLineBreak=false;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc" id="L87">            char c = text.charAt(i);</span>
+<span class="fc bfc" id="L88" title="All 3 branches covered.">            switch (c) {</span>
+                case '\n':
+<span class="fc bfc" id="L90" title="All 4 branches covered.">                    if (preserveLineBreaks || lastLineBreak) {</span>
+<span class="fc" id="L91">                        addWord(word);</span>
+<span class="fc" id="L92">                        lineBreak();</span>
+                    } else {
+<span class="fc" id="L94">                        addWord(word);</span>
+<span class="fc" id="L95">                        lastLineBreak = true;</span>
+                    }
+<span class="fc" id="L97">                    break;</span>
+                case '\r':
+                case '\t':
+                case ' ':
+<span class="fc" id="L101">                    addWord(word);</span>
+<span class="fc" id="L102">                    lastLineBreak = false;</span>
+<span class="fc" id="L103">                    break;</span>
+                default:
+<span class="fc" id="L105">                    word.append(c);</span>
+<span class="fc" id="L106">                    lastLineBreak = false;</span>
+            }
+        }
+<span class="fc" id="L109">        addWord(word);</span>
+
+<span class="fc" id="L111">        String ret = outText.toString();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (toHTML) {</span>
+<span class="fc" id="L113">            ret = &quot;&lt;html&gt;&quot; + ret.replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;)</span>
+<span class="fc" id="L114">                    .replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;) + &quot;&lt;/html&gt;&quot;;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (lines &gt; 1)</span>
+<span class="fc" id="L116">                ret = ret.replace(&quot;\n&quot;, &quot;&lt;br&gt;&quot;);</span>
+        }
+
+<span class="fc" id="L119">        return ret;</span>
+    }
+
+    private void addWord(StringBuilder word) {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (word.length() &gt; 0) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (lines == 0)</span>
+<span class="fc" id="L125">                lines = 1;</span>
+<span class="fc bfc" id="L126" title="All 4 branches covered.">            if (pos + (isFirst ? word.length() : word.length() + 1) &gt; cols) {</span>
+<span class="fc" id="L127">                lineBreak();</span>
+            } else {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                if (!isFirst) {</span>
+<span class="fc" id="L130">                    outText.append(&quot; &quot;);</span>
+<span class="fc" id="L131">                    pos++;</span>
+                }
+            }
+<span class="fc" id="L134">            outText.append(word);</span>
+<span class="fc" id="L135">            pos += word.length();</span>
+<span class="fc" id="L136">            word.setLength(0);</span>
+<span class="fc" id="L137">            isFirst = false;</span>
+        }
+<span class="fc" id="L139">    }</span>
+
+    private void lineBreak() {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (!isFirst) {</span>
+<span class="fc" id="L143">            outText.append(lineBreak);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            for (int j = 0; j &lt; indent; j++)</span>
+<span class="fc" id="L145">                outText.append(&quot; &quot;);</span>
+<span class="fc" id="L146">            pos = indent;</span>
+<span class="fc" id="L147">            isFirst = true;</span>
+<span class="fc" id="L148">            lines++;</span>
+        }
+<span class="fc" id="L150">    }</span>
+
+    /**
+     * Preserves the contained line breaks
+     *
+     * @return this for chained calls
+     */
+    public LineBreaker preserveContainedLineBreaks() {
+<span class="fc" id="L158">        this.preserveLineBreaks = true;</span>
+<span class="fc" id="L159">        return this;</span>
+    }
+
+    /**
+     * Returns an HTML string
+     *
+     * @return this for chained calls
+     */
+    public LineBreaker toHTML() {
+<span class="fc" id="L168">        this.toHTML = true;</span>
+<span class="fc" id="L169">        return this;</span>
+    }
+
+    /**
+     * @return the number of created lines
+     */
+    public int getLineCount() {
+<span class="fc" id="L176">        return lines;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

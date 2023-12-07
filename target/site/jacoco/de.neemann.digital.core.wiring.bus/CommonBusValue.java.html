@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommonBusValue.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring.bus</a> &gt; <span class="el_source">CommonBusValue.java</span></div><h1>CommonBusValue.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring.bus;
+
+import de.neemann.digital.core.NodeInterface;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.draw.elements.PinException;
+
+import java.io.File;
+import java.util.Arrays;
+
+/**
+ * This observer represents the common output value of several outputs connected together.
+ * Handles also the switches.
+ */
+public final class CommonBusValue extends ObservableValue implements NodeInterface {
+    private final BusModelStateObserver obs;
+    private final PullResistor resistor;
+    private final ObservableValue[] inputs;
+    private final File origin;
+    private AbstractBusHandler handler;
+
+    CommonBusValue(int bits, BusModelStateObserver obs, PullResistor resistor, ObservableValue[] inputs) {
+<span class="fc" id="L28">        this(bits, obs, resistor, inputs, null);</span>
+<span class="fc" id="L29">    }</span>
+
+    CommonBusValue(int bits, BusModelStateObserver obs, PullResistor resistor, ObservableValue[] inputs, File origin) {
+<span class="fc" id="L32">        super(&quot;commonBusOut&quot;, bits);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (resistor.equals(PullResistor.none))</span>
+<span class="fc" id="L34">            setToHighZ();</span>
+<span class="fc" id="L35">        this.obs = obs;</span>
+<span class="fc" id="L36">        this.resistor = resistor;</span>
+<span class="fc" id="L37">        this.inputs = inputs;</span>
+<span class="fc" id="L38">        this.origin = origin;</span>
+<span class="fc" id="L39">        resetHandler();</span>
+<span class="fc" id="L40">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="fc" id="L44">        handler.recalculate();</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Sets the handler which is needed to calculate the nets state
+     *
+     * @param handler the handler
+     */
+    void setHandler(AbstractBusHandler handler) {
+<span class="fc" id="L53">        this.handler = handler;</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Resets the handler. So this net is isolated to a single simple net.
+     */
+    void resetHandler() {
+<span class="fc" id="L60">        setHandler(new SingleBusHandler(obs, this, resistor, inputs).addOrigin(origin));</span>
+<span class="fc" id="L61">        hasChanged();</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * @return the pull resistor is this net
+     */
+    public PullResistor getResistor() {
+<span class="fc" id="L68">        return resistor;</span>
+    }
+
+    /**
+     * @return the inputs connected to this net.
+     */
+    public ObservableValue[] getInputs() {
+<span class="fc" id="L75">        return inputs;</span>
+    }
+
+    /**
+     * Returns true if this net is a constant
+     *
+     * @return the constant if this is a constant, null otherwise
+     */
+    public ObservableValue searchConstant() {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (ObservableValue i : inputs)</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (i.isConstant())</span>
+<span class="fc" id="L86">                return i;</span>
+<span class="fc" id="L87">        return null;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L92">        return &quot;CommonBusValue{&quot;</span>
+<span class="nc" id="L93">                + &quot;inputs=&quot; + Arrays.toString(inputs)</span>
+<span class="nc" id="L94">                + &quot;', --&gt;&quot; + super.toString() + &quot; }&quot;;</span>
+    }
+
+    @Override
+    public ObservableValues getOutputs() throws PinException {
+<span class="fc" id="L99">        return new ObservableValues(this);</span>
+    }
+
+    /**
+     * @return the origin of this {@link CommonBusValue}
+     */
+    public File getOrigin() {
+<span class="fc" id="L106">        return origin;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

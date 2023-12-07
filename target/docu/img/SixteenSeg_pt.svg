@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:27 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="16.8mm"
+   height="29.0mm"
+   viewBox="-12 -1 84 145">
+<g stroke-linecap="square">
+<path d="M -10,1 L 70,1 L 70,139 L -10,139 Z" stroke="#000000" stroke-width="4.0" fill="none"/>
+<path d="M 12.04,5 L 25.41,5 L 30.76,10.61 L 24.89,16.22 L 11.52,16.22 L 6.17,10.61 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 39.43,5 L 52.8,5 L 58.15,10.61 L 52.28,16.22 L 38.91,16.22 L 33.56,10.61 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 59.49,12.01 L 64.84,17.62 L 62.74,62.99 L 56.87,68.6 L 51.52,62.99 L 53.62,17.62 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 56.74,71.4 L 62.09,77.01 L 60,122.38 L 54.13,127.99 L 48.78,122.38 L 50.88,77.01 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 33.94,123.78 L 47.32,123.78 L 52.67,129.39 L 46.8,135 L 33.43,135 L 28.08,129.39 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 6.55,123.78 L 19.93,123.78 L 25.28,129.39 L 19.41,135 L 6.04,135 L 0.69,129.39 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 1.96,71.4 L 7.31,77.01 L 5.22,122.38 L -0.64,127.99 L -5.99,122.38 L -3.9,77.01 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 4.7,12.01 L 10.05,17.62 L 7.96,62.99 L 2.09,68.6 L -3.25,62.99 L -1.15,17.62 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 9.29,64.39 L 22.67,64.39 L 28.02,70 L 22.15,75.61 L 8.78,75.61 L 3.43,70 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 36.69,64.39 L 50.06,64.39 L 55.41,70 L 49.54,75.61 L 36.17,75.61 L 30.82,70 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 12.01,18.2 L 17.06,18.2 L 22.73,50.48 L 22.18,62.41 L 17.13,62.41 L 11.46,30.13 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 32.09,12.01 L 37.44,17.62 L 35.35,62.99 L 29.48,68.6 L 24.13,62.99 L 26.23,17.62 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 46.56,18.2 L 51.61,18.2 L 51.06,30.13 L 42.41,62.41 L 37.36,62.41 L 37.91,50.48 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 36.66,77.59 L 41.7,77.59 L 47.38,109.87 L 46.83,121.8 L 41.78,121.8 L 36.11,89.52 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 29.35,71.4 L 34.7,77.01 L 32.61,122.38 L 26.74,127.99 L 21.39,122.38 L 23.49,77.01 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<path d="M 16.43,77.59 L 21.48,77.59 L 20.93,89.52 L 12.27,121.8 L 7.22,121.8 L 7.78,109.87 Z" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" fill-opacity="1.0"/>
+<circle cx="62.0" cy="131.0" r="4.0" stroke="#ff0000" stroke-width="0.0" fill="#ff0000" />
+<circle cx="40.0" cy="140.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="60.0" cy="140.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+</g>
+</svg>

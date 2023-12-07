@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionToText.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics.text.text</a> &gt; <span class="el_source">ExpressionToText.java</span></div><h1>ExpressionToText.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics.text.text;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.analyse.expression.format.FormatToExpression;
+import de.neemann.digital.draw.graphics.text.ParseException;
+import de.neemann.digital.draw.graphics.text.Parser;
+
+/**
+ * Used to create a text structure from an expression.
+ */
+public class ExpressionToText {
+
+<span class="fc" id="L18">    private boolean formatIdentifiers = true;</span>
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L23">    public ExpressionToText() {</span>
+<span class="fc" id="L24">    }</span>
+
+    /**
+     * If set to false, the identifiers are unchanged
+     *
+     * @param formatIdentifiers set to false to keep identifiers unchanged
+     * @return this for chained calls
+     */
+    public ExpressionToText setFormatIdentifiers(boolean formatIdentifiers) {
+<span class="fc" id="L33">        this.formatIdentifiers = formatIdentifiers;</span>
+<span class="fc" id="L34">        return this;</span>
+    }
+
+    /**
+     * Creates a text structure from an expression.
+     * Uses the default format
+     *
+     * @param expression the expression
+     * @return the text
+     */
+    public Text createText(Expression expression) {
+<span class="nc" id="L45">        return createText(expression, FormatToExpression.getDefaultFormat());</span>
+    }
+
+    /**
+     * Creates a text structure from an expression
+     *
+     * @param expression the expression
+     * @param format     the format to use
+     * @return the text
+     */
+    public Text createText(Expression expression, FormatToExpression format) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (expression instanceof Variable) {</span>
+<span class="fc" id="L57">            String ident = ((Variable) expression).getIdentifier();</span>
+<span class="fc" id="L58">            return formatIdent(ident);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        } else if (expression instanceof Constant) {</span>
+<span class="fc" id="L60">            String value = format.constant(((Constant) expression).getValue());</span>
+<span class="fc" id="L61">            return new Simple(value);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        } else if (expression instanceof Operation.And) {</span>
+<span class="fc" id="L63">            return createOperationText((Operation) expression, format.getAndString(), format);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        } else if (expression instanceof Operation.Or) {</span>
+<span class="fc" id="L65">            return createOperationText((Operation) expression, format.getOrString(), format);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (expression instanceof Operation.XOr) {</span>
+<span class="fc" id="L67">            return createOperationText((Operation) expression, format.getXorString(), format);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        } else if (expression instanceof Not) {</span>
+<span class="fc" id="L69">            return new Decorate(createText(((Not) expression).getExpression(), format), Decorate.Style.OVERLINE);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        } else if (expression instanceof NamedExpression) {</span>
+<span class="fc" id="L71">            NamedExpression ne = (NamedExpression) expression;</span>
+<span class="fc" id="L72">            Sentence s = new Sentence();</span>
+<span class="fc" id="L73">            s.add(formatIdent(ne.getName()));</span>
+<span class="fc" id="L74">            s.add(Blank.BLANK);</span>
+<span class="fc" id="L75">            s.add(new Simple(format.getEqual()));</span>
+<span class="fc" id="L76">            s.add(Blank.BLANK);</span>
+<span class="fc" id="L77">            s.add(createText(ne.getExpression(), format));</span>
+<span class="fc" id="L78">            return s;</span>
+        } else
+<span class="nc" id="L80">            return new Simple(expression.toString());</span>
+    }
+
+    private Text formatIdent(String ident) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (formatIdentifiers) {</span>
+            try {
+<span class="fc" id="L86">                return new Parser(ident).parse();</span>
+<span class="nc" id="L87">            } catch (ParseException e) {</span>
+<span class="nc" id="L88">                return new Simple(ident);</span>
+            }
+        } else
+<span class="fc" id="L91">            return new Simple(ident);</span>
+    }
+
+    private Text createOperationText(Operation op, String opString, FormatToExpression format) {
+<span class="fc" id="L95">        Sentence s = new Sentence();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (Expression e : op.getExpressions()) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (s.size() &gt; 0) {</span>
+<span class="fc" id="L98">                s.add(Blank.BLANK);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                if (!opString.isEmpty()) {</span>
+<span class="fc" id="L100">                    s.add(new Simple(opString));</span>
+<span class="fc" id="L101">                    s.add(Blank.BLANK);</span>
+                }
+            }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (e instanceof Operation) {</span>
+<span class="fc" id="L105">                s.add(new Simple(&quot;(&quot;));</span>
+<span class="fc" id="L106">                s.add(createText(e, format));</span>
+<span class="fc" id="L107">                s.add(new Simple(&quot;)&quot;));</span>
+            } else {
+<span class="fc" id="L109">                s.add(createText(e, format));</span>
+            }
+<span class="fc" id="L111">        }</span>
+<span class="fc" id="L112">        return s;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

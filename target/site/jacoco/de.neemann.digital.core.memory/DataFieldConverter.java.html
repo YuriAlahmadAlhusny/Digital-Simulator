@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataFieldConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">DataFieldConverter.java</span></div><h1>DataFieldConverter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import com.thoughtworks.xstream.converters.Converter;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import de.neemann.digital.core.Bits;
+
+import java.util.StringTokenizer;
+
+/**
+ * Optimized converter for data fields
+ */
+<span class="fc" id="L20">public class DataFieldConverter implements Converter {</span>
+    @Override
+    public boolean canConvert(Class aClass) {
+<span class="fc" id="L23">        return aClass.equals(DataField.class);</span>
+    }
+
+    @Override
+    public void marshal(Object o, HierarchicalStreamWriter writer, MarshallingContext marshallingContext) {
+<span class="fc" id="L28">        DataField df = (DataField) o;</span>
+<span class="fc" id="L29">        df.trim();</span>
+<span class="fc" id="L30">        StringBuilder dataStr = new StringBuilder();</span>
+<span class="fc" id="L31">        long[] data = df.getData();</span>
+<span class="fc" id="L32">        int pos = 0;</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (data.length &gt; 0) {</span>
+<span class="fc" id="L34">            long akt = data[0];</span>
+<span class="fc" id="L35">            int count = 1;</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            for (int i = 1; i &lt; data.length; i++) {</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">                if (dataStr.length() - pos &gt; 60) {</span>
+<span class="fc" id="L38">                    dataStr.append(&quot;\n&quot;);</span>
+<span class="fc" id="L39">                    pos = dataStr.length();</span>
+                }
+
+<span class="fc" id="L42">                final long now = data[i];</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">                if (now == akt)</span>
+<span class="fc" id="L44">                    count++;</span>
+                else {
+<span class="fc" id="L46">                    writeChunk(dataStr, akt, count);</span>
+<span class="fc" id="L47">                    akt = now;</span>
+<span class="fc" id="L48">                    count = 1;</span>
+                }
+            }
+<span class="fc" id="L51">            writeChunk(dataStr, akt, count);</span>
+        }
+<span class="fc" id="L53">        writer.setValue(dataStr.toString());</span>
+<span class="fc" id="L54">    }</span>
+
+    private void writeChunk(StringBuilder w, long data, int count) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (count &lt; 4) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (int j = 0; j &lt; count; j++) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                if (w.length() &gt; 0)</span>
+<span class="fc" id="L60">                    w.append(&quot;,&quot;);</span>
+<span class="fc" id="L61">                w.append(Long.toHexString(data));</span>
+            }
+        } else {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (w.length() &gt; 0)</span>
+<span class="fc" id="L65">                w.append(&quot;,&quot;);</span>
+<span class="fc" id="L66">            w.append(count);</span>
+<span class="fc" id="L67">            w.append('*');</span>
+<span class="fc" id="L68">            w.append(Long.toHexString(data));</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext unmarshallingContext) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (reader.hasMoreChildren()) {</span>
+            // old type
+<span class="fc" id="L76">            reader.moveDown();</span>
+<span class="fc" id="L77">            DataField df = new DataField(Integer.parseInt(reader.getValue()));</span>
+<span class="fc" id="L78">            reader.moveUp();</span>
+<span class="fc" id="L79">            int i = 0;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            while (reader.hasMoreChildren()) {</span>
+<span class="fc" id="L81">                reader.moveDown();</span>
+<span class="fc" id="L82">                df.setData(i, Long.parseLong(reader.getValue()));</span>
+<span class="fc" id="L83">                i++;</span>
+<span class="fc" id="L84">                reader.moveUp();</span>
+            }
+<span class="fc" id="L86">            return df;</span>
+        } else {
+            try {
+                // new type
+<span class="fc" id="L90">                DataField df = new DataField(1024);</span>
+<span class="fc" id="L91">                StringTokenizer st = new StringTokenizer(reader.getValue(), &quot;,&quot;);</span>
+<span class="fc" id="L92">                int i = 0;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                while (st.hasMoreTokens()) {</span>
+<span class="fc" id="L94">                    String val = st.nextToken().trim();</span>
+<span class="fc" id="L95">                    int p = val.indexOf(&quot;*&quot;);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                    if (p &lt; 0) {</span>
+<span class="fc" id="L97">                        df.setData(i, Bits.decode(val, 0, 16));</span>
+<span class="fc" id="L98">                        i++;</span>
+                    } else {
+<span class="fc" id="L100">                        int count = Integer.parseInt(val.substring(0, p));</span>
+<span class="fc" id="L101">                        long v = Bits.decode(val.substring(p + 1), 0, 16);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                        for (int j = 0; j &lt; count; j++) {</span>
+<span class="fc" id="L103">                            df.setData(i, v);</span>
+<span class="fc" id="L104">                            i++;</span>
+                        }
+                    }
+<span class="fc" id="L107">                }</span>
+<span class="fc" id="L108">                df.trim();</span>
+<span class="fc" id="L109">                return df;</span>
+<span class="nc" id="L110">            } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L111">                throw new RuntimeException(e);</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

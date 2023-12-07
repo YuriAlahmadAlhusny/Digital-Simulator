@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResetShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">ResetShape.java</span></div><h1>ResetShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * The reset shape
+ */
+public class ResetShape implements Shape {
+
+    private final String label;
+    private final PinDescriptions outputs;
+    private final boolean invOut;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L35">    public ResetShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L36">        this.outputs = outputs;</span>
+<span class="fc" id="L37">        this.label = attr.getLabel();</span>
+<span class="fc" id="L38">        invOut = attr.get(Keys.INVERT_OUTPUT);</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L43">        return new Pins().add(new Pin(new Vector(0, 0), outputs.get(0)));</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+        //ioState.getOutput(0).addObserverToValue(guiObserver);
+<span class="nc" id="L49">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L54">        int x = 0;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (invOut) {</span>
+<span class="fc" id="L56">            x -= SIZE - 1;</span>
+<span class="fc" id="L57">            graphic.drawCircle(new Vector(-SIZE + 1, -SIZE2 + 1),</span>
+                    new Vector(-1, SIZE2 - 1), Style.NORMAL);
+        }
+
+<span class="fc" id="L61">        graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L62">                .add(x - OutputShape.OUT_SIZE * 2 - 2, -OutputShape.OUT_SIZE)</span>
+<span class="fc" id="L63">                .add(x - 2, -OutputShape.OUT_SIZE)</span>
+<span class="fc" id="L64">                .add(x - 2, OutputShape.OUT_SIZE)</span>
+<span class="fc" id="L65">                .add(x - OutputShape.OUT_SIZE * 2 - 2, OutputShape.OUT_SIZE), Style.NORMAL);</span>
+
+<span class="fc" id="L67">        Vector textPos = new Vector(x - OutputShape.OUT_SIZE * 2 + 2, -OutputShape.OUT_SIZE + 2);</span>
+<span class="fc" id="L68">        graphic.drawText(textPos, &quot;R&quot;, Orientation.LEFTTOP, Style.SHAPE_PIN);</span>
+
+<span class="fc" id="L70">        textPos = new Vector(x - OutputShape.OUT_SIZE * 3, 0);</span>
+<span class="fc" id="L71">        graphic.drawText(textPos, label, Orientation.RIGHTCENTER, Style.NORMAL);</span>
+<span class="fc" id="L72">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

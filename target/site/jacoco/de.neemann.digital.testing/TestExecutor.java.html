@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestExecutor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing</a> &gt; <span class="el_source">TestExecutor.java</span></div><h1>TestExecutor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.ResolveGenerics;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.parser.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+
+/**
+ * Runs the test and stores the test results created by a single {@link TestCaseDescription} instance.
+ */
+public class TestExecutor {
+    private final String label;
+    private final ArrayList&lt;String&gt; names;
+    private final Model model;
+    private final LineEmitter lines;
+    private final Context context;
+    private final ArrayList&lt;TestSignal&gt; inputs;
+    private final ArrayList&lt;TestSignal&gt; outputs;
+    private boolean allowMissingInputs;
+    private boolean errorOccurred;
+
+    /**
+     * Creates a new testing result.
+     *
+     * @param testCase the testing data
+     * @param circuit  the circuit
+     * @param library  the library
+     * @throws TestingDataException     DataException
+     * @throws ElementNotFoundException ElementNotFoundException
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     */
+    public TestExecutor(Circuit.TestCase testCase, Circuit circuit, ElementLibrary library) throws TestingDataException, NodeException, ElementNotFoundException, PinException {
+<span class="fc" id="L50">        this(testCase.getLabel(), testCase.getTestCaseDescription(), createModel(testCase, circuit, library));</span>
+<span class="fc" id="L51">    }</span>
+
+    static private Model createModel(Circuit.TestCase testCase, Circuit circuit, ElementLibrary library) throws NodeException, ElementNotFoundException, PinException {
+        final Model model;
+<span class="pc bpc" id="L55" title="1 of 6 branches missed.">        if (circuit != null &amp;&amp; circuit.getAttributes().get(Keys.IS_GENERIC) &amp;&amp; testCase.hasGenericCode()) {</span>
+<span class="fc" id="L56">            Circuit c = new ResolveGenerics(circuit, library).resolveCircuit(testCase.getVisualElement().getElementAttributes()).getCircuit();</span>
+<span class="fc" id="L57">            model = new ModelCreator(c, library, false).createModel(false);</span>
+<span class="fc" id="L58">        } else</span>
+<span class="fc" id="L59">            model = new ModelCreator(circuit, library).createModel(false);</span>
+<span class="fc" id="L60">        return model;</span>
+    }
+
+
+    /**
+     * Use for tests only! Don't use this constructor with a model you have created from a circuit.
+     * If a circuit is available use the constructor above.
+     *
+     * @param testCase the test case
+     * @param model    the model
+     * @throws TestingDataException TestingDataException
+     */
+    public TestExecutor(TestCaseDescription testCase, Model model) throws TestingDataException {
+<span class="fc" id="L73">        this(&quot;unknown&quot;, testCase, model);</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * Use for tests only! Don't use this constructor with a model you have created from a circuit.
+     * If a circuit is available use the constructor above.
+     *
+     * @param label    the name of this test case
+     * @param testCase the test case
+     * @param model    the model
+     * @throws TestingDataException TestingDataException
+     */
+<span class="fc" id="L85">    public TestExecutor(String label, TestCaseDescription testCase, Model model) throws TestingDataException {</span>
+<span class="fc" id="L86">        this.label = label;</span>
+<span class="fc" id="L87">        names = testCase.getNames();</span>
+<span class="fc" id="L88">        this.model = model;</span>
+<span class="fc" id="L89">        lines = testCase.getLines();</span>
+
+<span class="fc" id="L91">        HashSet&lt;String&gt; usedSignals = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L92">        inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L93">        outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (Signal s : model.getInputs()) {</span>
+<span class="fc" id="L95">            final int index = getIndexOf(s.getName());</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (index &gt;= 0) {</span>
+<span class="fc" id="L97">                inputs.add(new TestSignal(index, s.getValue()));</span>
+<span class="fc" id="L98">                addTo(usedSignals, s.getName());</span>
+            }
+<span class="fc" id="L100">            ObservableValue outValue = s.getBidirectionalReader();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (outValue != null) {</span>
+<span class="fc" id="L102">                final String outName = s.getName() + &quot;_out&quot;;</span>
+<span class="fc" id="L103">                final int inIndex = getIndexOf(outName);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                if (inIndex &gt;= 0) {</span>
+<span class="fc" id="L105">                    outputs.add(new TestSignal(inIndex, outValue));</span>
+<span class="fc" id="L106">                    addTo(usedSignals, outName);</span>
+                }
+            }
+<span class="fc" id="L109">        }</span>
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (Clock c : model.getClocks()) {</span>
+<span class="fc" id="L112">            final int index = getIndexOf(c.getLabel());</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (index &gt;= 0) {</span>
+<span class="fc" id="L114">                inputs.add(new TestSignal(index, c.getClockOutput()));</span>
+<span class="fc" id="L115">                addTo(usedSignals, c.getLabel());</span>
+            }
+<span class="fc" id="L117">        }</span>
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (Signal s : model.getTestOutputs()) {</span>
+<span class="fc" id="L120">            final int index = getIndexOf(s.getName());</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (index &gt;= 0) {</span>
+<span class="fc" id="L122">                outputs.add(new TestSignal(index, s.getValue()));</span>
+<span class="fc" id="L123">                addTo(usedSignals, s.getName());</span>
+            }
+<span class="fc" id="L125">        }</span>
+
+<span class="fc" id="L127">        context = new Context().setModel(model);</span>
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (VirtualSignal s : testCase.getVirtualSignals()) {</span>
+<span class="fc" id="L130">            final int index = getIndexOf(s.getName());</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            if (index &gt;= 0) {</span>
+<span class="fc" id="L132">                outputs.add(new TestSignal(index, s.getValue(context)));</span>
+<span class="fc" id="L133">                addTo(usedSignals, s.getName());</span>
+            }
+<span class="fc" id="L135">        }</span>
+
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (String name : names)</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">            if (!usedSignals.contains(name))</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                if (allowMissingInputs)</span>
+<span class="nc" id="L140">                    inputs.add(new TestSignal(getIndexOf(name), null));</span>
+                else
+<span class="nc" id="L142">                    throw new TestingDataException(Lang.get(&quot;err_testSignal_N_notFound&quot;, name));</span>
+
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (inputs.size() == 0)</span>
+<span class="nc" id="L145">            throw new TestingDataException(Lang.get(&quot;err_noTestInputSignalsDefined&quot;));</span>
+
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (outputs.size() == 0)</span>
+<span class="nc" id="L148">            throw new TestingDataException(Lang.get(&quot;err_noTestOutputSignalsDefined&quot;));</span>
+
+<span class="fc" id="L150">        testCase.getModelInitializer().init(model);</span>
+
+<span class="fc" id="L152">        model.init();</span>
+<span class="fc" id="L153">        model.addObserver(event -&gt; {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (event.getType() == ModelEventType.ERROR_OCCURRED)</span>
+<span class="fc" id="L155">                errorOccurred = true;</span>
+<span class="fc" id="L156">        }, ModelEventType.ERROR_OCCURRED);</span>
+<span class="fc" id="L157">    }</span>
+
+    /**
+     * Sets the model to the given row.
+     *
+     * @param row the row to advance the model to
+     * @throws ParserException      ParserException
+     * @throws TestingDataException TestingDataException
+     */
+    public void executeTo(int row) throws ParserException, TestingDataException {
+<span class="fc" id="L167">        execute(new TestResultListener() {</span>
+<span class="fc" id="L168">            private int r = row;</span>
+
+            @Override
+            public void add(TestRow testRow) {
+<span class="fc" id="L172">                Value[] values = testRow.getValues();</span>
+<span class="fc" id="L173">                Value[] res = new Value[values.length];</span>
+
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                if (r &gt;= 0) {</span>
+<span class="fc" id="L176">                    advanceModel(testRow, values, res, this);</span>
+<span class="fc" id="L177">                    r--;</span>
+                }
+<span class="fc" id="L179">            }</span>
+
+            @Override
+            public void addClockRow(String description) {
+<span class="nc" id="L183">            }</span>
+
+        }, false);
+<span class="fc" id="L186">    }</span>
+
+    /**
+     * Creates the result by comparing the testing vector with the given model
+     *
+     * @return the result of the test execution
+     * @throws ParserException      ParserException
+     * @throws TestingDataException TestingDataException
+     */
+    public TestResult execute() throws ParserException, TestingDataException {
+<span class="fc" id="L196">        return execute(new TestResult(this), true);</span>
+    }
+
+    /**
+     * Executes the test and sends all the test lines to the {@link LineListener} provided.
+     *
+     * @param lineListener the line listener to use
+     * @param closeModel   if true the model is closed
+     * @throws ParserException ParserException
+     */
+    private &lt;LL extends LineListener&gt; LL execute(LL lineListener, boolean closeModel) throws ParserException, TestingDataException {
+        try {
+<span class="fc" id="L208">            lines.emitLines(new LineListenerResolveDontCare(lineListener, inputs), context);</span>
+<span class="fc" id="L209">            return lineListener;</span>
+<span class="nc" id="L210">        } catch (RuntimeException re) {</span>
+<span class="nc" id="L211">            errorOccurred = true;</span>
+<span class="nc" id="L212">            throw new TestingDataException(Lang.get(&quot;err_whileExecutingTests_N0&quot;, label, re));</span>
+        } finally {
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            if (closeModel)</span>
+<span class="fc" id="L215">                model.close();</span>
+        }
+    }
+
+    private void addTo(HashSet&lt;String&gt; signals, String name) throws TestingDataException {
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (signals.contains(name))</span>
+<span class="nc" id="L221">            throw new TestingDataException(Lang.get(&quot;err_nameUsedTwice_N&quot;, name));</span>
+<span class="fc" id="L222">        signals.add(name);</span>
+<span class="fc" id="L223">    }</span>
+
+    void advanceModel(TestRow testRow, Value[] values, Value[] res, TestResultListener trl) {
+<span class="fc" id="L226">        boolean clockIsUsed = false;</span>
+        // set all values except the clocks
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (TestSignal in : inputs) {</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (values[in.index].getType() != Value.Type.CLOCK) {</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">                if (in.value != null)</span>
+<span class="fc" id="L231">                    values[in.index].copyTo(in.value);</span>
+            } else {
+<span class="fc" id="L233">                clockIsUsed = true;</span>
+            }
+<span class="fc" id="L235">            res[in.index] = values[in.index];</span>
+<span class="fc" id="L236">        }</span>
+
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (clockIsUsed) {  // a clock signal is used</span>
+<span class="fc" id="L239">            model.doStep();  // propagate all except clock</span>
+<span class="fc" id="L240">            trl.addClockRow(testRow.getDescription());</span>
+
+            // set clock
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            for (TestSignal in : inputs)</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (values[in.index].getType() == Value.Type.CLOCK) {</span>
+<span class="fc" id="L245">                    values[in.index].copyTo(in.value);</span>
+<span class="fc" id="L246">                    res[in.index] = values[in.index];</span>
+                }
+
+            // propagate clock change
+<span class="fc" id="L250">            model.doStep();</span>
+<span class="fc" id="L251">            trl.addClockRow(testRow.getDescription());</span>
+
+            // restore clock
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            for (TestSignal in : inputs)   // invert the clock values</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">                if (values[in.index].getType() == Value.Type.CLOCK) {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">                    in.value.setBool(!in.value.getBool());</span>
+<span class="fc" id="L257">                    res[in.index] = new Value(in.value);</span>
+                }
+        }
+
+<span class="fc" id="L261">        model.doStep();</span>
+<span class="fc" id="L262">    }</span>
+
+    private int getIndexOf(String name) {
+<span class="pc bpc" id="L265" title="2 of 4 branches missed.">        if (name == null || name.length() == 0)</span>
+<span class="nc" id="L266">            return -1;</span>
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (int i = 0; i &lt; names.size(); i++) {</span>
+<span class="fc" id="L269">            String n = names.get(i);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            if (n.equals(name))</span>
+<span class="fc" id="L271">                return i;</span>
+        }
+<span class="fc" id="L273">        return -1;</span>
+    }
+
+    /**
+     * Allow missing inputs
+     *
+     * @param allowMissingInputs if true, missing inputs are allowed
+     * @return this for chained calls
+     */
+    public TestExecutor setAllowMissingInputs(boolean allowMissingInputs) {
+<span class="fc" id="L283">        this.allowMissingInputs = allowMissingInputs;</span>
+<span class="fc" id="L284">        return this;</span>
+    }
+
+    /**
+     * Adds a observer to the model of this test executor
+     *
+     * @param observer the observer to add
+     * @return this for chained calls
+     */
+    public TestExecutor addObserver(ModelStateObserverTyped observer) {
+<span class="fc" id="L294">        model.addObserver(observer);</span>
+<span class="fc" id="L295">        return this;</span>
+    }
+
+    /**
+     * @return the list of outputs
+     */
+    public ArrayList&lt;TestSignal&gt; getOutputs() {
+<span class="fc" id="L302">        return outputs;</span>
+    }
+
+    /**
+     * @return the list of inputs
+     */
+    public ArrayList&lt;TestSignal&gt; getInputs() {
+<span class="fc" id="L309">        return inputs;</span>
+    }
+
+    /**
+     * @return true if an error has occurred
+     */
+    public boolean isErrorOccurred() {
+<span class="fc" id="L316">        return errorOccurred;</span>
+    }
+
+    /**
+     * @return the list of names in the test header
+     */
+    public ArrayList&lt;String&gt; getNames() {
+<span class="fc" id="L323">        return names;</span>
+    }
+
+    /**
+     * A test signal
+     */
+    public final static class TestSignal {
+        private final int index;
+        private final ObservableValue value;
+
+<span class="fc" id="L333">        private TestSignal(int index, ObservableValue value) {</span>
+<span class="fc" id="L334">            this.index = index;</span>
+<span class="fc" id="L335">            this.value = value;</span>
+<span class="fc" id="L336">        }</span>
+
+        /**
+         * @return the index of this value
+         */
+        public int getIndex() {
+<span class="fc" id="L342">            return index;</span>
+        }
+
+        /**
+         * @return the observable value of this index
+         */
+        public ObservableValue getValue() {
+<span class="fc" id="L349">            return value;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

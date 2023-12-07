@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Optimizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">Optimizer.java</span></div><h1>Optimizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+import de.neemann.digital.analyse.MinimizerInterface;
+import de.neemann.digital.analyse.MinimizerQuineMcCluskey;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.ExpressionVisitor;
+import de.neemann.digital.analyse.expression.Operation;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.gui.components.table.ExpressionListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Used to determine the optimal state numbers for a given FSM.
+ */
+public class Optimizer {
+<span class="fc" id="L28">    private static final Logger LOGGER = LoggerFactory.getLogger(Optimizer.class);</span>
+<span class="fc" id="L29">    private static final long[] FAC_TABLE = new long[]{1L, 1L, 2L, 6L, 24L, 120L, 720L, 5040L, 40320L, 362880L, 3628800L, 39916800L, 479001600L, 6227020800L, 87178291200L, 1307674368000L, 20922789888000L, 355687428096000L, 6402373705728000L, 121645100408832000L, 2432902008176640000L};</span>
+    private final FSM fsm;
+
+    private final int initialComplexity;
+    private int bestComplexity;
+    private int[] best;
+    private Permute.PermPull pp;
+
+    /**
+     * Returns the factorial of a number.
+     * If the result is greater as the max long value, the max value is returned.
+     *
+     * @param n integer
+     * @return the factorial of the given number
+     */
+    public static long fac(int n) {
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (n &gt; 20)</span>
+<span class="fc" id="L46">            return Long.MAX_VALUE;</span>
+<span class="fc" id="L47">        return FAC_TABLE[n];</span>
+    }
+
+    /**
+     * Creates a new optimizer
+     *
+     * @param fsm the fsm to optimize
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     * @throws FormatterException          FormatterException
+     * @throws ExpressionException         ExpressionException
+     */
+<span class="fc" id="L58">    public Optimizer(FSM fsm) throws FiniteStateMachineException, FormatterException, ExpressionException {</span>
+<span class="fc" id="L59">        this.fsm = fsm;</span>
+<span class="fc" id="L60">        initialComplexity = calcComplexity(fsm, false);</span>
+<span class="fc" id="L61">        bestComplexity = initialComplexity;</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Called to optimize the state numbers in a FSM
+     *
+     * @return this for chained calls
+     * @throws FiniteStateMachineException   FiniteStateMachineException
+     * @throws FormatterException            FormatterException
+     * @throws ExpressionException           ExpressionException
+     * @throws Permute.PermListenerException PermListenerException
+     */
+    public Optimizer optimizeFSM() throws FiniteStateMachineException, FormatterException, ExpressionException, Permute.PermListenerException {
+<span class="fc" id="L74">        LOGGER.info(&quot;optimizing time complexity: &quot; + getTimeComplexity(fsm));</span>
+
+<span class="fc" id="L76">        bestComplexity = calcComplexity(fsm, false);</span>
+<span class="fc" id="L77">        LOGGER.info(&quot;start complexity &quot; + bestComplexity);</span>
+<span class="fc" id="L78">        List&lt;State&gt; states = fsm.getStates();</span>
+<span class="fc" id="L79">        int size = states.size();</span>
+<span class="fc" id="L80">        int sizeInclDC = 1 &lt;&lt; Bits.binLn2(size - 1);</span>
+
+<span class="fc" id="L82">        Permute.permute(size, sizeInclDC, perm -&gt; {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            for (int i = 0; i &lt; states.size(); i++)</span>
+<span class="fc" id="L84">                states.get(i).setNumber(perm[i]);</span>
+
+            int c;
+            try {
+<span class="fc" id="L88">                c = calcComplexity(fsm, false);</span>
+<span class="nc" id="L89">            } catch (ExpressionException | FiniteStateMachineException | FormatterException e) {</span>
+<span class="nc" id="L90">                throw new Permute.PermListenerException(e);</span>
+<span class="fc" id="L91">            }</span>
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (c &lt; bestComplexity) {</span>
+<span class="fc" id="L94">                bestComplexity = c;</span>
+<span class="fc" id="L95">                best = Arrays.copyOf(perm, size);</span>
+            }
+<span class="fc" id="L97">        });</span>
+
+<span class="fc" id="L99">        return this;</span>
+    }
+
+    /**
+     * Returns the time complexity of optimizing the given fsm
+     *
+     * @param fsm the fsm
+     * @return the time complexity
+     */
+    public static long getTimeComplexity(FSM fsm) {
+<span class="fc" id="L109">        List&lt;State&gt; states = fsm.getStates();</span>
+<span class="fc" id="L110">        int size = states.size();</span>
+<span class="fc" id="L111">        int sizeInclDC = 1 &lt;&lt; Bits.binLn2(size - 1);</span>
+
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (sizeInclDC &gt; 20)</span>
+<span class="nc" id="L114">            return Long.MAX_VALUE;</span>
+
+<span class="fc" id="L116">        return fac(sizeInclDC) / fac(sizeInclDC - size);</span>
+    }
+
+    /**
+     * Use to optimize the fsm by utilizing all evalable cores
+     *
+     * @param el the event listener to inform a client apout th state of the optimization
+     * @return this for chained calls
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     * @throws FormatterException          FormatterException
+     * @throws ExpressionException         ExpressionException
+     */
+    public Optimizer optimizeFSMParallel(EventListener el) throws FiniteStateMachineException, FormatterException, ExpressionException {
+<span class="fc" id="L129">        LOGGER.info(&quot;optimizing time complexity: &quot; + getTimeComplexity(fsm));</span>
+<span class="fc" id="L130">        bestComplexity = calcComplexity(fsm, false);</span>
+<span class="fc" id="L131">        LOGGER.info(&quot;start complexity &quot; + bestComplexity);</span>
+<span class="fc" id="L132">        List&lt;State&gt; states = fsm.getStates();</span>
+<span class="fc" id="L133">        int size = states.size();</span>
+<span class="fc" id="L134">        int sizeInclDC = 1 &lt;&lt; Bits.binLn2(size - 1);</span>
+<span class="fc" id="L135">        pp = new Permute.PermPull(size, sizeInclDC);</span>
+
+<span class="fc" id="L137">        final Object lock = new Object();</span>
+
+<span class="fc" id="L139">        BestListener l = (b, bcplx) -&gt; {</span>
+<span class="fc" id="L140">            synchronized (lock) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                if (bcplx &lt; bestComplexity) {</span>
+<span class="fc" id="L142">                    bestComplexity = bcplx;</span>
+<span class="fc" id="L143">                    best = b;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">                    if (el != null)</span>
+<span class="nc" id="L145">                        el.bestSoFar(best, bestComplexity);</span>
+                }
+<span class="fc" id="L147">            }</span>
+<span class="fc" id="L148">        };</span>
+
+<span class="fc" id="L150">        WaitGroup wg = new WaitGroup(() -&gt; {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            if (el != null)</span>
+<span class="nc" id="L152">                el.finished();</span>
+<span class="fc" id="L153">        });</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (int i = 0; i &lt; Runtime.getRuntime().availableProcessors(); i++) {</span>
+<span class="fc" id="L155">            wg.add();</span>
+<span class="fc" id="L156">            new ThreadRunner(wg, new FSM(fsm), pp, l).start();</span>
+        }
+
+<span class="fc" id="L159">        return this;</span>
+    }
+
+    /**
+     * Waits for the optimizer to finish
+     *
+     * @return this for chained calls
+     */
+    public Optimizer waitFor() {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (pp != null)</span>
+<span class="fc" id="L169">            pp.waitFor();</span>
+
+<span class="fc" id="L171">        return this;</span>
+    }
+
+    /**
+     * stops the optimizer
+     */
+    public void stop() {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (pp != null)</span>
+<span class="nc" id="L179">            pp.stop();</span>
+<span class="nc" id="L180">    }</span>
+
+    /**
+     * Apply the best permutation to the fsm
+     *
+     * @return this for chained calls
+     */
+    public Optimizer applyBest() {
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (best != null) {</span>
+<span class="fc" id="L189">            List&lt;State&gt; states = fsm.getStates();</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            for (int i = 0; i &lt; states.size(); i++)</span>
+<span class="fc" id="L191">                states.get(i).setNumber(best[i]);</span>
+        }
+<span class="fc" id="L193">        return this;</span>
+    }
+
+    /**
+     * @return the minimal complexity
+     */
+    public int getBestComplexity() {
+<span class="fc" id="L200">        return bestComplexity;</span>
+    }
+
+    static int calcComplexity(FSM fsm, boolean out) throws
+            ExpressionException, FiniteStateMachineException, FormatterException {
+<span class="fc" id="L205">        TruthTable tt = fsm.createTruthTable(null);</span>
+<span class="fc" id="L206">        MinimizerInterface mi = new MinimizerQuineMcCluskey();</span>
+<span class="fc" id="L207">        ComplexityListener listener = new ComplexityListener(out);</span>
+
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (int i = 0; i &lt; tt.getResultCount(); i++)</span>
+<span class="fc" id="L210">            mi.minimize(tt.getVars(), tt.getResult(i), tt.getResultName(i), listener);</span>
+<span class="fc" id="L211">        return listener.complexity;</span>
+    }
+
+    /**
+     * @return the initial complexity
+     */
+    public int getInitialComplexity() {
+<span class="nc" id="L218">        return initialComplexity;</span>
+    }
+
+    private final static class ComplexityListener implements ExpressionListener {
+        private final boolean out;
+        private int complexity;
+
+<span class="fc" id="L225">        private ComplexityListener(boolean out) {</span>
+<span class="fc" id="L226">            this.out = out;</span>
+<span class="fc" id="L227">        }</span>
+
+        @Override
+        public void resultFound(String name, Expression expression) {
+<span class="fc" id="L231">            int complexity = expression.traverse(new ComplexityVisitorL()).getComplexity();</span>
+
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">            if (out)</span>
+<span class="nc" id="L234">                System.out.println(&quot;   &quot; + name + &quot;=&quot; + expression + &quot;; &quot; + complexity);</span>
+
+<span class="fc" id="L236">            this.complexity += complexity;</span>
+<span class="fc" id="L237">        }</span>
+
+        @Override
+        public void close() {
+<span class="nc" id="L241">        }</span>
+
+        private static class ComplexityVisitorL implements ExpressionVisitor {
+            private int complexity;
+
+            @Override
+            public boolean visit(Expression expression) {
+<span class="fc bfc" id="L248" title="All 2 branches covered.">                if (expression instanceof Operation)</span>
+<span class="fc" id="L249">                    complexity += ((Operation) expression).getExpressions().size();</span>
+<span class="fc" id="L250">                return true;</span>
+            }
+
+            public int getComplexity() {
+<span class="fc" id="L254">                return complexity;</span>
+            }
+        }
+    }
+
+    private static final class ThreadRunner extends Thread {
+        private final WaitGroup wg;
+        private final FSM fsm;
+        private final Permute.PermPull pp;
+        private final BestListener l;
+
+<span class="fc" id="L265">        private ThreadRunner(WaitGroup wg, FSM fsm, Permute.PermPull pp, BestListener l) {</span>
+<span class="fc" id="L266">            this.wg = wg;</span>
+<span class="fc" id="L267">            this.fsm = fsm;</span>
+<span class="fc" id="L268">            this.pp = pp;</span>
+<span class="fc" id="L269">            this.l = l;</span>
+<span class="fc" id="L270">        }</span>
+
+        public void run() {
+            try {
+<span class="fc" id="L274">                int bestComplexity = Integer.MAX_VALUE;</span>
+<span class="fc" id="L275">                List&lt;de.neemann.digital.fsm.State&gt; states = fsm.getStates();</span>
+<span class="fc" id="L276">                int size = states.size();</span>
+                int[] p;
+<span class="fc bfc" id="L278" title="All 2 branches covered.">                while ((p = pp.next()) != null) {</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                    for (int i = 0; i &lt; size; i++)</span>
+<span class="fc" id="L280">                        states.get(i).setNumber(p[i]);</span>
+
+                    int c;
+                    try {
+<span class="fc" id="L284">                        c = calcComplexity(fsm, false);</span>
+
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                        if (c &lt; bestComplexity) {</span>
+<span class="fc" id="L287">                            bestComplexity = c;</span>
+<span class="fc" id="L288">                            l.bestSoFar(Arrays.copyOf(p, size), bestComplexity);</span>
+                        }
+<span class="nc" id="L290">                    } catch (ExpressionException | FiniteStateMachineException | FormatterException e) {</span>
+                        // do nothing
+<span class="pc" id="L292">                    }</span>
+                }
+            } finally {
+<span class="fc" id="L295">                wg.done();</span>
+            }
+<span class="fc" id="L297">        }</span>
+    }
+
+    private interface BestListener {
+        /**
+         * Called if a new, better permutation is found
+         *
+         * @param best           the permutation
+         * @param bestComplexity the complexity
+         */
+        void bestSoFar(int[] best, int bestComplexity);
+    }
+
+    /**
+     * Used to inform the user of the parallel optimizer
+     */
+    public interface EventListener extends BestListener {
+        /**
+         * Called if the optimizer has finished
+         */
+        void finished();
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

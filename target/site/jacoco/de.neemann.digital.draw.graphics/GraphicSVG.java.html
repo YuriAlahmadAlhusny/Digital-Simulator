@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphicSVG.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">GraphicSVG.java</span></div><h1>GraphicSVG.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import de.neemann.digital.core.element.ElementAttributes;
+
+import java.awt.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.HashSet;
+
+import static de.neemann.digital.draw.graphics.GraphicSwing.getMirrorYOrientation;
+
+/**
+ * Used to create a SVG representation of the circuit.
+ */
+public class GraphicSVG extends Graphic {
+    private static final int DEF_SCALE = 15;
+    private final OutputStream out;
+    private final File source;
+    private final int svgScale;
+    private BufferedWriter w;
+<span class="fc" id="L27">    private TextStyle textStyle = new TextFormatSVG();</span>
+<span class="fc" id="L28">    private ColorStyle colorStyle = Style::getColor;</span>
+<span class="fc" id="L29">    private HashSet&lt;Flag&gt; flags = new HashSet&lt;&gt;();</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param out the stream
+     */
+    public GraphicSVG(OutputStream out) {
+<span class="nc" id="L37">        this(out, SVGSettings.getInstance().getAttributes());</span>
+<span class="nc" id="L38">    }</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param out the stream
+     * @param a   the attributes
+     */
+    public GraphicSVG(OutputStream out, ElementAttributes a) {
+<span class="fc" id="L47">        this(out, null, DEF_SCALE);</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (a.get(SVGSettings.LATEX))</span>
+<span class="fc" id="L49">            setTextStyle(new TextFormatLaTeX(a.get(SVGSettings.PINS_IN_MATH_MODE)));</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (a.get(SVGSettings.HIGH_CONTRAST))</span>
+<span class="nc" id="L51">            setColorStyle(new ColorStyleHighContrast());</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (a.get(SVGSettings.SMALL_IO))</span>
+<span class="nc" id="L53">            setFlag(Flag.smallIO);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (a.get(SVGSettings.HIDE_TEST))</span>
+<span class="nc" id="L55">            setFlag(Flag.hideTest);</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (a.get(SVGSettings.NO_SHAPE_FILLING))</span>
+<span class="nc" id="L57">            setFlag(Flag.noShapeFilling);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (a.get(SVGSettings.NO_PIN_MARKER))</span>
+<span class="nc" id="L59">            setFlag(Flag.noPinMarker);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (a.get(SVGSettings.THINNER_LINES))</span>
+<span class="nc" id="L61">            setFlag(Flag.thinnerLines);</span>
+
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (a.get(SVGSettings.MONOCHROME))</span>
+<span class="nc" id="L64">            setColorStyle(new ColorStyleMonochrome(colorStyle));</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param file     the file
+     * @param source   source file, only used to create a comment in the SVG file
+     * @param svgScale the scaling
+     * @throws IOException IOException
+     */
+    public GraphicSVG(File file, File source, int svgScale) throws IOException {
+<span class="nc" id="L76">        this(new FileOutputStream(file), source, svgScale);</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param out      the stream to write the file to
+     * @param source   source file, only used to create a comment in the SVG file
+     * @param svgScale the scaling
+     */
+<span class="fc" id="L86">    public GraphicSVG(OutputStream out, File source, int svgScale) {</span>
+<span class="fc" id="L87">        this.out = out;</span>
+<span class="fc" id="L88">        this.source = source;</span>
+<span class="fc" id="L89">        this.svgScale = svgScale;</span>
+<span class="fc" id="L90">    }</span>
+
+    @Override
+    public Graphic setBoundingBox(VectorInterface min, VectorInterface max) {
+        try {
+<span class="fc" id="L95">            w = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L96">            w.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot; standalone=\&quot;no\&quot;?&gt;\n&quot;</span>
+                    + &quot;&lt;!-- Created with Digital by H.Neemann --&gt;\n&quot;);
+<span class="fc" id="L98">            w.write(&quot;&lt;!-- created: &quot; + new Date() + &quot; --&gt;\n&quot;);</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">            if (source != null) {</span>
+<span class="nc" id="L100">                w.write(&quot;&lt;!-- source: &quot; + source.getPath() + &quot; --&gt;\n&quot;);</span>
+            }
+<span class="fc" id="L102">            w.write(&quot;\n&quot;</span>
+                    + &quot;&lt;svg\n&quot;
+                    + &quot;   xmlns:svg=\&quot;http://www.w3.org/2000/svg\&quot;\n&quot;
+                    + &quot;   xmlns=\&quot;http://www.w3.org/2000/svg\&quot;\n&quot;);
+<span class="fc" id="L106">            double width = (max.getXFloat() - min.getXFloat() + Style.MAXLINETHICK) * svgScale / 100.0;</span>
+<span class="fc" id="L107">            double height = (max.getYFloat() - min.getYFloat() + Style.MAXLINETHICK) * svgScale / 100.0;</span>
+
+<span class="fc" id="L109">            final int lineCorr = Style.MAXLINETHICK / 2;</span>
+
+<span class="fc" id="L111">            w.write(&quot;   width=\&quot;&quot; + width + &quot;mm\&quot;\n&quot;</span>
+                    + &quot;   height=\&quot;&quot; + height + &quot;mm\&quot;\n&quot;
+<span class="fc" id="L113">                    + &quot;   viewBox=\&quot;&quot; + (min.getX() - lineCorr)</span>
+<span class="fc" id="L114">                    + &quot; &quot; + (min.getY() - lineCorr)</span>
+<span class="fc" id="L115">                    + &quot; &quot; + (max.getX() - min.getX() + Style.MAXLINETHICK)</span>
+<span class="fc" id="L116">                    + &quot; &quot; + (max.getY() - min.getY() + Style.MAXLINETHICK) + &quot;\&quot;&gt;\n&quot;);</span>
+<span class="fc" id="L117">            w.write(&quot;&lt;g stroke-linecap=\&quot;square\&quot;&gt;\n&quot;);</span>
+<span class="fc" id="L118">            return this;</span>
+<span class="nc" id="L119">        } catch (IOException e) {</span>
+<span class="nc" id="L120">            throw new RuntimeException(e);</span>
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (w != null) {</span>
+<span class="fc" id="L127">            w.write(&quot;&lt;/g&gt;\n&quot;);</span>
+<span class="fc" id="L128">            w.write(&quot;&lt;/svg&gt;&quot;);</span>
+<span class="fc" id="L129">            w.close();</span>
+        }
+<span class="fc" id="L131">    }</span>
+
+    @Override
+    public void drawLine(VectorInterface p1, VectorInterface p2, Style style) {
+        try {
+<span class="fc" id="L136">            w.write(&quot;&lt;line x1=\&quot;&quot; + p1.getXFloat() + &quot;\&quot; y1=\&quot;&quot; + p1.getYFloat()</span>
+<span class="fc" id="L137">                    + &quot;\&quot; x2=\&quot;&quot; + p2.getXFloat() + &quot;\&quot; y2=\&quot;&quot; + p2.getYFloat()</span>
+<span class="fc" id="L138">                    + &quot;\&quot; stroke=\&quot;&quot; + getColor(style) + &quot;\&quot; stroke-linecap=\&quot;square\&quot; stroke-width=\&quot;&quot; + getStrokeWidth(style) + &quot;\&quot;&quot;);</span>
+<span class="fc" id="L139">            addStrokeDash(w, style.getDash());</span>
+<span class="fc" id="L140">            w.write(&quot; /&gt;\n&quot;);</span>
+<span class="nc" id="L141">        } catch (IOException e) {</span>
+<span class="nc" id="L142">            throw new RuntimeException(e);</span>
+<span class="fc" id="L143">        }</span>
+<span class="fc" id="L144">    }</span>
+
+    @Override
+    public void drawPolygon(Polygon p, Style style) {
+        try {
+<span class="fc" id="L149">            w.write(&quot;&lt;path d=\&quot;&quot; + p + &quot;\&quot;&quot;);</span>
+<span class="fc" id="L150">            addStrokeDash(w, style.getDash());</span>
+<span class="pc bpc" id="L151" title="3 of 4 branches missed.">            if (p.getEvenOdd() &amp;&amp; style.isFilled())</span>
+<span class="nc" id="L152">                w.write(&quot; fill-rule=\&quot;evenodd\&quot;&quot;);</span>
+
+<span class="pc bpc" id="L154" title="1 of 6 branches missed.">            if (style.isFilled() &amp;&amp; p.isClosed() &amp;&amp; !isFlagSet(Flag.noShapeFilling))</span>
+<span class="fc" id="L155">                w.write(&quot; stroke=\&quot;&quot; + getColor(style) + &quot;\&quot; stroke-width=\&quot;&quot; + getStrokeWidth(style) + &quot;\&quot; fill=\&quot;&quot; + getColor(style) + &quot;\&quot; fill-opacity=\&quot;&quot; + getOpacity(style) + &quot;\&quot;/&gt;\n&quot;);</span>
+            else {
+<span class="fc" id="L157">                double strokeWidth = getStrokeWidth(style);</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">                if (strokeWidth == 0)</span>
+<span class="nc" id="L159">                    strokeWidth = getStrokeWidth(Style.THIN);</span>
+<span class="fc" id="L160">                w.write(&quot; stroke=\&quot;&quot; + getColor(style) + &quot;\&quot; stroke-width=\&quot;&quot; + strokeWidth + &quot;\&quot; fill=\&quot;none\&quot;/&gt;\n&quot;);</span>
+            }
+<span class="nc" id="L162">        } catch (IOException e) {</span>
+<span class="nc" id="L163">            throw new RuntimeException(e);</span>
+<span class="fc" id="L164">        }</span>
+<span class="fc" id="L165">    }</span>
+
+    private double getStrokeWidth(Style style) {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (isFlagSet(Flag.thinnerLines))</span>
+<span class="nc" id="L169">            return style.getThickness() * 0.7;</span>
+        else
+<span class="fc" id="L171">            return style.getThickness();</span>
+    }
+
+    @Override
+    public void drawCircle(VectorInterface p1, VectorInterface p2, Style style) {
+        try {
+<span class="fc" id="L177">            VectorInterface c = p1.add(p2).div(2);</span>
+<span class="fc" id="L178">            double r = Math.abs(p2.sub(p1).getXFloat()) / 2.0;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (style.isFilled())</span>
+<span class="fc" id="L180">                w.write(&quot;&lt;circle cx=\&quot;&quot; + c.getXFloat() + &quot;\&quot; cy=\&quot;&quot; + c.getYFloat() + &quot;\&quot; r=\&quot;&quot; + r + &quot;\&quot; stroke=\&quot;&quot; + getColor(style) + &quot;\&quot; stroke-width=\&quot;&quot; + getStrokeWidth(style) + &quot;\&quot; fill=\&quot;&quot; + getColor(style) + &quot;\&quot; /&gt;\n&quot;);</span>
+            else {
+<span class="fc" id="L182">                w.write(&quot;&lt;circle cx=\&quot;&quot; + c.getXFloat() + &quot;\&quot; cy=\&quot;&quot; + c.getYFloat() + &quot;\&quot; r=\&quot;&quot; + r + &quot;\&quot; stroke=\&quot;&quot; + getColor(style) + &quot;\&quot; stroke-width=\&quot;&quot; + getStrokeWidth(style) + &quot;\&quot; fill=\&quot;none\&quot;&quot;);</span>
+<span class="fc" id="L183">                addStrokeDash(w, style.getDash());</span>
+<span class="fc" id="L184">                w.write(&quot; /&gt;\n&quot;);</span>
+            }
+<span class="nc" id="L186">        } catch (IOException e) {</span>
+<span class="nc" id="L187">            throw new RuntimeException(e);</span>
+<span class="fc" id="L188">        }</span>
+<span class="fc" id="L189">    }</span>
+
+    @Override
+    public void drawText(VectorInterface p1, VectorInterface p2, VectorInterface p3, String text, Orientation orientation, Style style) {
+<span class="pc bpc" id="L193" title="1 of 4 branches missed.">        if (text == null || text.length() == 0) return;</span>
+
+        try {
+<span class="fc" id="L196">            text = textStyle.format(text, style);</span>
+
+<span class="fc" id="L198">            boolean rotateText = false;</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            if (p1.getY() == p2.getY()) {   // 0 and 180 deg</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                if (p1.getX() &gt; p2.getX())   // 180</span>
+<span class="fc" id="L201">                    orientation = orientation.rot(2);</span>
+            } else {
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                if (p1.getY() &lt; p2.getY()) // 270</span>
+<span class="fc" id="L204">                    orientation = orientation.rot(2);</span>
+                else            // 90
+<span class="nc" id="L206">                    orientation = orientation.rot(0);</span>
+<span class="fc" id="L207">                rotateText = true;</span>
+            }
+
+<span class="fc" id="L210">            VectorFloat p = new VectorFloat(p1);</span>
+<span class="fc" id="L211">            int oy = getMirrorYOrientation(orientation, p1, p2, p3);</span>
+<span class="fc bfc" id="L212" title="All 3 branches covered.">            switch (oy) {</span>
+                case 1:
+<span class="fc" id="L214">                    p = p.add(new VectorFloat(0, style.getFontSize() / 2f - style.getFontSize() / 8f));</span>
+<span class="fc" id="L215">                    break;</span>
+                case 2:
+<span class="fc" id="L217">                    p = p.add(new VectorFloat(0, style.getFontSize() * 3 / 4f));</span>
+<span class="fc" id="L218">                    break;</span>
+                case 0:
+                    //p = p.add(0, -style.getFontSize() / 4);
+                    break;
+            }
+
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (rotateText)</span>
+<span class="fc" id="L225">                w.write(&quot;&lt;text text-anchor=\&quot;&quot; + getAchor(orientation.getX()) + &quot;\&quot; x=\&quot;&quot; + p.getXFloat() + &quot;\&quot; y=\&quot;&quot; + p.getYFloat() + &quot;\&quot; fill=\&quot;&quot; + getColor(style) + &quot;\&quot; style=\&quot;font-size:&quot; + style.getFontSize() + &quot;px\&quot; transform=\&quot;rotate(-90,&quot; + str(p1) + &quot;)\&quot; &gt;&quot; + text + &quot;&lt;/text&gt;\n&quot;);</span>
+            else
+<span class="fc" id="L227">                w.write(&quot;&lt;text text-anchor=\&quot;&quot; + getAchor(orientation.getX()) + &quot;\&quot; x=\&quot;&quot; + p.getXFloat() + &quot;\&quot; y=\&quot;&quot; + p.getYFloat() + &quot;\&quot; fill=\&quot;&quot; + getColor(style) + &quot;\&quot; style=\&quot;font-size:&quot; + style.getFontSize() + &quot;px\&quot;&gt;&quot; + text + &quot;&lt;/text&gt;\n&quot;);</span>
+<span class="nc" id="L228">        } catch (IOException e) {</span>
+<span class="nc" id="L229">            throw new RuntimeException(e);</span>
+<span class="fc" id="L230">        }</span>
+<span class="fc" id="L231">    }</span>
+
+    /**
+     * Creates the color to use from the given Style instance.
+     * This instance creates the common HTML representation.
+     *
+     * @param style the {@link Style}
+     * @return the COLOR
+     */
+    private String getColor(Style style) {
+<span class="fc" id="L241">        return &quot;#&quot; + Integer.toHexString(colorStyle.getColor(style).getRGB()).substring(2);</span>
+    }
+
+    private String getOpacity(Style style) {
+<span class="fc" id="L245">        double op = style.getColor().getAlpha() / 255.0;</span>
+<span class="fc" id="L246">        return Double.toString(op);</span>
+    }
+
+
+    /**
+     * Escapes a given string to XML
+     *
+     * @param text the text to escape
+     * @return the escaped text.
+     */
+    public static String escapeXML(String text) {
+<span class="fc" id="L257">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc" id="L259">            char c = text.charAt(i);</span>
+<span class="pc bpc" id="L260" title="3 of 5 branches missed.">            switch (c) {</span>
+                case '&amp;':
+<span class="fc" id="L262">                    sb.append(&quot;&amp;amp;&quot;);</span>
+<span class="fc" id="L263">                    break;</span>
+                case '&lt;':
+<span class="nc" id="L265">                    sb.append(&quot;&amp;lt;&quot;);</span>
+<span class="nc" id="L266">                    break;</span>
+                case '&gt;':
+<span class="nc" id="L268">                    sb.append(&quot;&amp;gt;&quot;);</span>
+<span class="nc" id="L269">                    break;</span>
+                case '&quot;':
+<span class="nc" id="L271">                    sb.append(&quot;&amp;quot;&quot;);</span>
+<span class="nc" id="L272">                    break;</span>
+                default:
+<span class="fc" id="L274">                    sb.append(c);</span>
+            }
+        }
+<span class="fc" id="L277">        return sb.toString();</span>
+    }
+
+    private String getAchor(int x) {
+<span class="fc bfc" id="L281" title="All 3 branches covered.">        switch (x) {</span>
+            case 1:
+<span class="fc" id="L283">                return &quot;middle&quot;;</span>
+            case 2:
+<span class="fc" id="L285">                return &quot;end&quot;;</span>
+            default:
+<span class="fc" id="L287">                return &quot;start&quot;;</span>
+        }
+    }
+
+
+    @Override
+    public void openGroup() {
+        try {
+<span class="fc" id="L295">            w.write(&quot;&lt;g&gt;\n&quot;);</span>
+<span class="nc" id="L296">        } catch (IOException e) {</span>
+<span class="nc" id="L297">            e.printStackTrace();</span>
+<span class="fc" id="L298">        }</span>
+<span class="fc" id="L299">    }</span>
+
+    @Override
+    public void closeGroup() {
+        try {
+<span class="fc" id="L304">            w.write(&quot;&lt;/g&gt;\n&quot;);</span>
+<span class="nc" id="L305">        } catch (IOException e) {</span>
+<span class="nc" id="L306">            e.printStackTrace();</span>
+<span class="fc" id="L307">        }</span>
+<span class="fc" id="L308">    }</span>
+
+
+    private static void addStrokeDash(Writer w, float[] dashArray) throws IOException {
+<span class="fc bfc" id="L312" title="All 2 branches covered.">        if (dashArray != null) {</span>
+<span class="fc" id="L313">            w.write(&quot; stroke-dasharray=\&quot;&quot;);</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">            for (int i = 0; i &lt; dashArray.length; i++) {</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">                if (i != 0) w.write(',');</span>
+<span class="fc" id="L316">                w.write(Float.toString(dashArray[i]));</span>
+            }
+<span class="fc" id="L318">            w.write('&quot;');</span>
+        }
+<span class="fc" id="L320">    }</span>
+
+    private String str(VectorInterface p) {
+<span class="fc" id="L323">        return p.getXFloat() + &quot;,&quot; + p.getYFloat();</span>
+    }
+
+    private void setTextStyle(TextStyle textStyle) {
+<span class="fc" id="L327">        this.textStyle = textStyle;</span>
+<span class="fc" id="L328">    }</span>
+
+    private void setColorStyle(ColorStyle colorStyle) {
+<span class="nc" id="L331">        this.colorStyle = colorStyle;</span>
+<span class="nc" id="L332">    }</span>
+
+    private void setFlag(Flag flag) {
+<span class="nc" id="L335">        flags.add(flag);</span>
+<span class="nc" id="L336">    }</span>
+
+    @Override
+    public boolean isFlagSet(Flag flag) {
+<span class="fc" id="L340">        return flags.contains(flag);</span>
+    }
+
+    /**
+     * Defines the text style.
+     */
+    public interface TextStyle {
+        /**
+         * Is used by drawText to format the given text to SVG.
+         * This implementation only calls escapeXML(text).
+         *
+         * @param text  the text
+         * @param style the text style
+         * @return the formatted text
+         */
+        String format(String text, Style style);
+    }
+
+    /**
+     * Defines the color style
+     */
+    public interface ColorStyle {
+        /**
+         * Returns the color to by used for the given style.
+         *
+         * @param style the style
+         * @return the color to be used
+         */
+        Color getColor(Style style);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

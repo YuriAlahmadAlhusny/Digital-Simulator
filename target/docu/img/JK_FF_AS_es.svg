@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:23 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="13.6mm"
+   height="25.2mm"
+   viewBox="-4 -12 68 126">
+<g stroke-linecap="square">
+<path d="M 1,-10 L 59,-10 L 59,90 L 1,90 Z" stroke="#000000" stroke-width="4.0" fill="none"/>
+<text text-anchor="start" x="4.0" y="6.75" fill="#808080" style="font-size:18px">Set</text>
+<text text-anchor="start" x="4.0" y="26.75" fill="#808080" style="font-size:18px">J</text>
+<path d="M 1,47 L 8,40 L 1,33" stroke="#000000" stroke-width="2.0" fill="none"/>
+<text text-anchor="start" x="11.0" y="46.75" fill="#808080" style="font-size:18px">C</text>
+<text text-anchor="start" x="4.0" y="66.75" fill="#808080" style="font-size:18px">K</text>
+<text text-anchor="start" x="4.0" y="86.75" fill="#808080" style="font-size:18px">Clr</text>
+<text text-anchor="end" x="56.0" y="6.75" fill="#808080" style="font-size:18px">Q</text>
+<text text-anchor="end" x="56.0" y="26.75" fill="#808080" style="font-size:18px"><tspan style="text-decoration:overline;">Q</tspan></text>
+<text text-anchor="middle" x="30.0" y="107.5" fill="#808080" style="font-size:18px">JK-As</text>
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="20.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="40.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="60.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="80.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="60.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+<circle cx="60.0" cy="20.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+</g>
+</svg>

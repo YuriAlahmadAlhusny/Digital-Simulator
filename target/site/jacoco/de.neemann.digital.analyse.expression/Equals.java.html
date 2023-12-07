@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Equals.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression</a> &gt; <span class="el_source">Equals.java</span></div><h1>Equals.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+/**
+ * Checks if two expressions are equal.
+ * Is an expensive operation with O(2^numVars). Use with care!
+ */
+public class Equals {
+
+    private final Expression a;
+    private final Expression b;
+
+    /**
+     * Creates a new instance
+     *
+     * @param a first expression
+     * @param b second expression
+     */
+<span class="fc" id="L26">    public Equals(Expression a, Expression b) {</span>
+<span class="fc" id="L27">        this.a = a;</span>
+<span class="fc" id="L28">        this.b = b;</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * @return true if expressions are equal
+     * @throws ExpressionException error calculating expression
+     */
+    public boolean isEqual() throws ExpressionException {
+<span class="fc" id="L36">        VariableVisitor vva = a.traverse(new VariableVisitor());</span>
+<span class="fc" id="L37">        VariableVisitor vvb = b.traverse(new VariableVisitor());</span>
+
+<span class="fc" id="L39">        Collection&lt;Variable&gt; variables = vva.getVariables();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (!variables.equals(vvb.getVariables()))</span>
+<span class="fc" id="L41">            return false;</span>
+
+<span class="fc" id="L43">        ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;(variables.size());</span>
+<span class="fc" id="L44">        vars.addAll(variables);</span>
+
+<span class="fc" id="L46">        ContextFiller cf = new ContextFiller(vars);</span>
+<span class="fc" id="L47">        int count = 1 &lt;&lt; vars.size();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (int i = 0; i &lt; count; i++) {</span>
+<span class="fc" id="L49">            cf.setContextTo(i);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (a.calculate(cf) != b.calculate(cf))</span>
+<span class="fc" id="L51">                return false;</span>
+        }
+<span class="fc" id="L53">        return true;</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

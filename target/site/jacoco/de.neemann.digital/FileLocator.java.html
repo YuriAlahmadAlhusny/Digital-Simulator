@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileLocator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital</a> &gt; <span class="el_source">FileLocator.java</span></div><h1>FileLocator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital;
+
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.gui.FileHistory;
+import de.neemann.digital.gui.Main;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+
+/**
+ * Helper to find a file if only the filename is known.
+ */
+public class FileLocator {
+<span class="fc" id="L22">    private static final Logger LOGGER = LoggerFactory.getLogger(FileLocator.class);</span>
+    private static final int MAX_FILE_COUNTER = 5000;
+
+    private final String filename;
+    private File file;
+    private FileHistory history;
+    private File libraryRoot;
+    private File baseFile;
+
+
+    /**
+     * Creates a new instance
+     *
+     * @param file the file to search for
+     */
+    public FileLocator(File file) {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        this(file == null ? null : file.getName());</span>
+<span class="fc" id="L39">        this.file = file;</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param filename the file name
+     */
+<span class="fc" id="L47">    public FileLocator(String filename) {</span>
+<span class="fc" id="L48">        this.filename = filename;</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Sets the relevant file history
+     *
+     * @param history the file history
+     * @return this for chained calls
+     */
+    public FileLocator setHistory(FileHistory history) {
+<span class="nc" id="L58">        this.history = history;</span>
+<span class="nc" id="L59">        return this;</span>
+    }
+
+    /**
+     * Sets the used library.
+     * If called the library folder is scanned to locate the file.
+     *
+     * @param library the library
+     * @return this for chained calls
+     */
+    public FileLocator setLibrary(ElementLibrary library) {
+<span class="nc" id="L70">        this.libraryRoot = library.getRootFilePath();</span>
+<span class="nc" id="L71">        return this;</span>
+    }
+
+    /**
+     * Sets the projects root folder
+     *
+     * @param libraryRoot the folder
+     * @return this for chained calls
+     */
+    public FileLocator setLibraryRoot(File libraryRoot) {
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (libraryRoot.isFile())</span>
+<span class="fc" id="L82">            this.libraryRoot = libraryRoot.getParentFile();</span>
+        else
+<span class="nc" id="L84">            this.libraryRoot = libraryRoot;</span>
+<span class="fc" id="L85">        return this;</span>
+    }
+
+    /**
+     * The base file from which the specified file name originates.
+     * Often the base file is a file with a different extension,
+     * which is located in the same directory.
+     *
+     * @param baseFile the base file
+     * @return this for chained calls
+     */
+    public FileLocator setBaseFile(File baseFile) {
+<span class="nc" id="L97">        this.baseFile = baseFile;</span>
+<span class="nc" id="L98">        return this;</span>
+    }
+
+    /**
+     * Configures the file locator with the given main
+     *
+     * @param main the main class
+     * @return this for chained calls
+     */
+    public FileLocator setupWithMain(Main main) {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (main != null) {</span>
+<span class="nc" id="L109">            setBaseFile(main.getBaseFileName());</span>
+<span class="nc" id="L110">            setLibrary(main.getLibrary());</span>
+        }
+<span class="nc" id="L112">        return this;</span>
+    }
+
+    /**
+     * Tries to locate the given file.
+     *
+     * @return the file or null if not found
+     */
+    public File locate() {
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">        if (file != null &amp;&amp; file.exists())</span>
+<span class="nc" id="L122">            return file;</span>
+
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (filename == null)</span>
+<span class="nc" id="L125">            return null;</span>
+
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (baseFile != null) {</span>
+<span class="nc" id="L128">            File f = new File(baseFile.getParentFile(), filename);</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">            if (f.isFile() &amp;&amp; f.exists()) {</span>
+<span class="nc" id="L130">                LOGGER.debug(filename + &quot; found in base file folder&quot;);</span>
+<span class="nc" id="L131">                return f;</span>
+            }
+        }
+
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (history != null) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            for (File h : history.getFiles()) {</span>
+<span class="nc bnc" id="L137" title="All 4 branches missed.">                if (h.getName().equals(filename) &amp;&amp; h.exists()) {</span>
+<span class="nc" id="L138">                    LOGGER.debug(filename + &quot; found in file history&quot;);</span>
+<span class="nc" id="L139">                    return h;</span>
+                }
+<span class="nc" id="L141">            }</span>
+        }
+
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (libraryRoot != null) {</span>
+<span class="fc" id="L145">            LOGGER.debug(filename + &quot;: start library folder lookup&quot;);</span>
+<span class="fc" id="L146">            ArrayList&lt;File&gt; foundFiles = new ArrayList&lt;&gt;();</span>
+            try {
+<span class="fc" id="L148">                search(libraryRoot, foundFiles, MAX_FILE_COUNTER);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                if (foundFiles.size() == 1) {</span>
+<span class="fc" id="L150">                    LOGGER.debug(filename + &quot; found in library folder&quot;);</span>
+<span class="fc" id="L151">                    return foundFiles.get(0);</span>
+                }
+<span class="nc" id="L153">            } catch (IOException e) {</span>
+<span class="nc" id="L154">                LOGGER.debug(filename + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L155">            }</span>
+        }
+<span class="nc" id="L157">        LOGGER.debug(filename + &quot; not found&quot;);</span>
+<span class="nc" id="L158">        return file;</span>
+    }
+
+    private int search(File path, ArrayList&lt;File&gt; foundFiles, int fileCounter) throws IOException {
+<span class="fc" id="L162">        File[] list = path.listFiles();</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (list != null) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            for (File f : list) {</span>
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">                if (f.isFile() &amp;&amp; f.getName().equals(filename)) {</span>
+<span class="fc" id="L166">                    foundFiles.add(f);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">                    if (foundFiles.size() &gt; 1)</span>
+<span class="nc" id="L168">                        throw new IOException(&quot;multiple matching files: &quot; + foundFiles);</span>
+                }
+<span class="fc" id="L170">                fileCounter--;</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">                if (fileCounter &lt; 0)</span>
+<span class="nc" id="L172">                    throw new IOException(&quot;to many files&quot;);</span>
+            }
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (File f : list)</span>
+<span class="pc bpc" id="L175" title="3 of 4 branches missed.">                if (f.isDirectory() &amp;&amp; !f.getName().startsWith(&quot;.&quot;))</span>
+<span class="nc" id="L176">                    fileCounter = search(f, foundFiles, fileCounter);</span>
+        }
+<span class="fc" id="L178">        return fileCounter;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

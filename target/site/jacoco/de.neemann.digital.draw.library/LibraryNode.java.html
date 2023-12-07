@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LibraryNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.library</a> &gt; <span class="el_source">LibraryNode.java</span></div><h1>LibraryNode.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.library;
+
+import de.neemann.digital.core.basic.Not;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.IconCreator;
+import de.neemann.gui.LineBreaker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * A node in the components library
+ */
+public class LibraryNode implements Iterable&lt;LibraryNode&gt; {
+<span class="fc" id="L32">    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryNode.class);</span>
+<span class="fc" id="L33">    private static final Icon ICON_NOT_UNIQUE = IconCreator.create(&quot;testFailed.png&quot;);</span>
+
+    private final ArrayList&lt;LibraryNode&gt; children;
+    private final String translatedName;
+    private final String name;
+    private final File file;
+    private final boolean isHidden;
+    private ElementTypeDescription description;
+    private String toolTipText;
+    private ImageIcon icon;
+    private ElementLibrary library;
+    private LibraryNode parent;
+    private boolean unique;
+<span class="fc" id="L46">    private boolean descriptionImportError = false;</span>
+
+    /**
+     * Creates a new node with the given name.
+     * The node can have children
+     *
+     * @param name name of the node
+     */
+<span class="fc" id="L54">    LibraryNode(String name) {</span>
+<span class="fc" id="L55">        this.name = name;</span>
+<span class="fc" id="L56">        this.translatedName = name;</span>
+<span class="fc" id="L57">        this.children = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L58">        this.description = null;</span>
+<span class="fc" id="L59">        this.toolTipText = null;</span>
+<span class="fc" id="L60">        this.file = null;</span>
+<span class="fc" id="L61">        this.isHidden = false;</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Creates a new leaf
+     *
+     * @param description the description
+     */
+<span class="fc" id="L69">    private LibraryNode(ElementTypeDescription description) {</span>
+<span class="fc" id="L70">        this.children = null;</span>
+<span class="fc" id="L71">        this.description = description;</span>
+<span class="fc" id="L72">        this.toolTipText = null;</span>
+<span class="fc" id="L73">        this.name = description.getName();</span>
+<span class="fc" id="L74">        this.translatedName = description.getTranslatedName();</span>
+<span class="fc" id="L75">        this.file = null;</span>
+<span class="fc" id="L76">        this.isHidden = false;</span>
+<span class="fc" id="L77">    }</span>
+
+    /**
+     * Creates a new leaf
+     *
+     * @param file the file containing the leaf
+     */
+<span class="fc" id="L84">    LibraryNode(File file, boolean isLibrary) {</span>
+<span class="fc" id="L85">        children = null;</span>
+<span class="fc" id="L86">        name = file.getName();</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (name.toLowerCase().endsWith(&quot;.dig&quot;))</span>
+<span class="fc" id="L88">            translatedName = name.substring(0, name.length() - 4);</span>
+        else
+<span class="nc" id="L90">            translatedName = name;</span>
+
+<span class="fc bfc" id="L92" title="All 4 branches covered.">        isHidden = isLibrary &amp;&amp; name.endsWith(&quot;-inc.dig&quot;);</span>
+
+<span class="fc" id="L94">        this.file = file;</span>
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * Adds a node.
+     * Throws an exception if this node is a leaf
+     *
+     * @param node the node to add
+     * @return this for chained calls
+     */
+    LibraryNode add(LibraryNode node) {
+<span class="fc" id="L105">        children.add(node);</span>
+<span class="fc" id="L106">        node.parent = this;</span>
+<span class="fc" id="L107">        node.setLibrary(library);</span>
+<span class="fc" id="L108">        return this;</span>
+    }
+
+    LibraryNode add(ElementTypeDescription node) {
+<span class="fc" id="L112">        add(new LibraryNode(node));</span>
+<span class="fc" id="L113">        return this;</span>
+    }
+
+    /**
+     * Traverse the tree
+     *
+     * @param v   a visitor
+     * @param &lt;V&gt; the type of the visitor
+     * @return the visitor
+     */
+    public &lt;V extends Visitor&gt; V traverse(V v) {
+<span class="fc" id="L124">        v.visit(this);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (children != null) {</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (LibraryNode tn : children)</span>
+<span class="fc" id="L127">                tn.traverse(v);</span>
+        }
+<span class="fc" id="L129">        return v;</span>
+    }
+
+    /**
+     * @return true if this is a leaf
+     */
+    public boolean isLeaf() {
+<span class="fc bfc" id="L136" title="All 4 branches covered.">        return description != null || file != null;</span>
+    }
+
+    /**
+     * @return true if the description is already loaded
+     */
+    public boolean isDescriptionLoaded() {
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        return description != null;</span>
+    }
+
+
+    /**
+     * Returns the description of the element
+     *
+     * @return the description, null if not available
+     **/
+    public ElementTypeDescription getDescriptionOrNull() {
+<span class="fc" id="L153">        return description;</span>
+    }
+
+    /**
+     * Returns the description of the element
+     *
+     * @return the description
+     * @throws IOException IOException
+     */
+    public ElementTypeDescription getDescription() throws IOException {
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (description == null) {</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if (!unique)</span>
+<span class="nc" id="L165">                throw new IOException(Lang.get(&quot;err_file_N0_ExistsTwiceBelow_N1&quot;, file.getName(), library.getRootFilePath()));</span>
+            try {
+<span class="fc" id="L167">                description = library.importElement(file);</span>
+<span class="nc" id="L168">            } catch (IOException e) {</span>
+<span class="nc" id="L169">                descriptionImportError = true;</span>
+<span class="nc" id="L170">                throw e;</span>
+<span class="fc" id="L171">            }</span>
+<span class="fc" id="L172">            library.fireLibraryChanged(this);</span>
+        }
+<span class="fc" id="L174">        return description;</span>
+    }
+
+    /**
+     * @return the translated name of the element
+     */
+    public String getTranslatedName() {
+<span class="nc" id="L181">        return translatedName;</span>
+    }
+
+    /**
+     * @return the name od id of this element
+     */
+    public String getName() {
+<span class="fc" id="L188">        return name;</span>
+    }
+
+    @Override
+    public Iterator&lt;LibraryNode&gt; iterator() {
+<span class="fc" id="L193">        return children.iterator();</span>
+    }
+
+    /**
+     * all children are removed
+     */
+    public void removeAll() {
+<span class="nc" id="L200">        children.clear();</span>
+<span class="nc" id="L201">    }</span>
+
+    /**
+     * @return true if this node is empty
+     */
+    public boolean isEmpty() {
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (isLeaf())</span>
+<span class="nc" id="L208">            return false;</span>
+
+<span class="fc" id="L210">        return children.isEmpty();</span>
+    }
+
+    /**
+     * @return returns the description if present, null otherwise
+     */
+    public boolean isCustom() {
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        return file != null;</span>
+    }
+
+    /**
+     * get the child with index i
+     *
+     * @param i the index
+     * @return the child
+     */
+    public LibraryNode getChild(int i) {
+<span class="nc" id="L227">        return children.get(i);</span>
+    }
+
+    /**
+     * get the child with the given name
+     *
+     * @param name the name
+     * @return the child
+     */
+    public LibraryNode getChild(String name) {
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        for (LibraryNode n : children)</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            if (n.getName().equals(name))</span>
+<span class="fc" id="L239">                return n;</span>
+<span class="nc" id="L240">        return null;</span>
+    }
+
+    /**
+     * @return the number of children
+     */
+    public int size() {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        return children == null ? 0 : children.size();</span>
+    }
+
+    /**
+     * Returns the index of the gicen child
+     *
+     * @param node the node
+     * @return the nodes index
+     */
+    public int indexOf(LibraryNode node) {
+<span class="nc" id="L257">        return children.indexOf(node);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L262">        return translatedName;</span>
+    }
+
+    /**
+     * Returns the icon.
+     * If icon not available the icon is created
+     *
+     * @param shapeFactory the shape factory to create the icon
+     * @return the icon
+     * @throws IOException IOException
+     */
+    public Icon getIcon(ShapeFactory shapeFactory) throws IOException {
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (descriptionImportError)</span>
+<span class="nc" id="L275">            return ICON_NOT_UNIQUE;</span>
+
+<span class="nc" id="L277">        getDescription();</span>
+<span class="nc" id="L278">        return getIconOrNull(shapeFactory);</span>
+    }
+
+    /**
+     * Returns the icon.
+     * If icon not available null is returned
+     *
+     * @param shapeFactory the shape factory to create the icon
+     * @return the icon or null
+     */
+    public Icon getIconOrNull(ShapeFactory shapeFactory) {
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (unique) {</span>
+<span class="nc bnc" id="L290" title="All 4 branches missed.">            if (icon == null &amp;&amp; description != null)</span>
+<span class="nc" id="L291">                icon = setWideShapeFlagTo(</span>
+<span class="nc" id="L292">                        new VisualElement(description.getName())</span>
+<span class="nc" id="L293">                                .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L294">                ).createIcon(75);</span>
+<span class="nc" id="L295">            return icon;</span>
+        } else
+<span class="nc" id="L297">            return ICON_NOT_UNIQUE;</span>
+    }
+
+    /**
+     * Sets the wide shape flag to this element if necessary
+     *
+     * @param visualElement the visual element
+     * @return the given visual element
+     */
+    public VisualElement setWideShapeFlagTo(VisualElement visualElement) {
+        // set the wide shape option to the element
+        try {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            if (Settings.getInstance().get(Keys.SETTINGS_IEEE_SHAPES)</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">                    &amp;&amp; getDescription().hasAttribute(Keys.WIDE_SHAPE)</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                    &amp;&amp; !visualElement.equalsDescription(Not.DESCRIPTION))</span>
+<span class="nc" id="L312">                visualElement.setAttribute(Keys.WIDE_SHAPE, true);</span>
+<span class="nc" id="L313">        } catch (IOException e1) {</span>
+            // do nothing on error
+<span class="nc" id="L315">        }</span>
+<span class="nc" id="L316">        return visualElement;</span>
+    }
+
+    /**
+     * Removes the given child.
+     *
+     * @param child the element to remove
+     */
+    public void remove(LibraryNode child) {
+<span class="nc" id="L325">        children.remove(child);</span>
+<span class="nc" id="L326">    }</span>
+
+    /**
+     * Sets the library this node belongs to
+     *
+     * @param library the library
+     * @return this for chained calls
+     */
+    public LibraryNode setLibrary(ElementLibrary library) {
+<span class="fc bfc" id="L335" title="All 2 branches covered.">        if (this.library != library) {</span>
+<span class="fc" id="L336">            this.library = library;</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">            if (children != null)</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">                for (LibraryNode c : children)</span>
+<span class="fc" id="L339">                    c.setLibrary(library);</span>
+        }
+<span class="fc" id="L341">        return this;</span>
+    }
+
+    /**
+     * returns the tree path
+     *
+     * @return the path
+     */
+    public Object[] getPath() {
+<span class="nc" id="L350">        ArrayList&lt;Object&gt; path = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L351">        LibraryNode n = this;</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        while (n != null) {</span>
+<span class="nc" id="L353">            path.add(0, n);</span>
+<span class="nc" id="L354">            n = n.parent;</span>
+        }
+<span class="nc" id="L356">        return path.toArray(new Object[0]);</span>
+    }
+
+    /**
+     * Invalidate this node
+     */
+    public void invalidate() {
+<span class="nc" id="L363">        description = null;</span>
+<span class="nc" id="L364">        toolTipText = null;</span>
+<span class="nc" id="L365">        icon = null;</span>
+<span class="nc" id="L366">        library.fireLibraryChanged(this);</span>
+<span class="nc" id="L367">    }</span>
+
+    /**
+     * @return the tool tip text
+     */
+    public String getToolTipText() {
+<span class="nc bnc" id="L373" title="All 2 branches missed.">        if (isCustom()) {</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">            if (isUnique()) {</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">                if (description == null) {</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">                    if (toolTipText == null) {</span>
+                        try {
+<span class="nc" id="L378">                            LOGGER.debug(&quot;load tooltip from &quot; + file);</span>
+<span class="nc" id="L379">                            Circuit c = Circuit.loadCircuit(file, null);</span>
+<span class="nc" id="L380">                            toolTipText = new LineBreaker().toHTML().breakLines(Lang.evalMultilingualContent(c.getAttributes().get(Keys.DESCRIPTION)));</span>
+<span class="nc" id="L381">                        } catch (Exception e) {</span>
+<span class="nc" id="L382">                            toolTipText = Lang.get(&quot;msg_fileNotImportedYet&quot;);</span>
+<span class="nc" id="L383">                        }</span>
+                    }
+<span class="nc" id="L385">                    return toolTipText;</span>
+                } else
+<span class="nc" id="L387">                    return new LineBreaker().toHTML().breakLines(description.getDescription(new ElementAttributes()));</span>
+            } else
+<span class="nc" id="L389">                return new LineBreaker().toHTML().breakLines(Lang.get(&quot;msg_fileIsNotUnique&quot;));</span>
+        } else
+<span class="nc" id="L391">            return new LineBreaker().toHTML().breakLines(Lang.getNull(&quot;elem_&quot; + getName() + &quot;_tt&quot;));</span>
+    }
+
+    /**
+     * sets the unique state of this node
+     *
+     * @param unique true if this node is unique
+     */
+    void setUnique(boolean unique) {
+<span class="fc" id="L400">        this.unique = unique;</span>
+<span class="fc" id="L401">    }</span>
+
+    /**
+     * @return true if element is unique
+     */
+    public boolean isUnique() {
+<span class="nc" id="L407">        return unique;</span>
+    }
+
+    /**
+     * @return the file containing this circuit
+     */
+    public File getFile() {
+<span class="fc" id="L414">        return file;</span>
+    }
+
+    /**
+     * If the hidden flag is set, this circuit should not appear in the select menus
+     *
+     * @return the hidden flag
+     */
+    public boolean isHidden() {
+<span class="nc" id="L423">        return isHidden;</span>
+    }
+
+    /**
+     * Checks if both files are equal.
+     * If one of the files is null, false is returned.
+     *
+     * @param other the other file
+     * @return true if both files are equal.
+     */
+    public boolean equalsFile(LibraryNode other) {
+<span class="pc bpc" id="L434" title="2 of 4 branches missed.">        if (file == null || other.file == null)</span>
+<span class="nc" id="L435">            return false;</span>
+
+<span class="fc" id="L437">        return file.equals(other.file);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

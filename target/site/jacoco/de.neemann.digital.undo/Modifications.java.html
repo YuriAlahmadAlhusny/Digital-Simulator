@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Modifications.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.undo</a> &gt; <span class="el_source">Modifications.java</span></div><h1>Modifications.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.undo;
+
+import java.util.ArrayList;
+
+/**
+ * A single modification which is build from a set of other modifications.
+ *
+ * @param &lt;A&gt; The component to track
+ */
+public final class Modifications&lt;A extends Copyable&lt;A&gt;&gt; implements Modification&lt;A&gt; {
+    private final ArrayList&lt;Modification&lt;A&gt;&gt; modifications;
+    private final String name;
+
+<span class="nc" id="L19">    private Modifications(ArrayList&lt;Modification&lt;A&gt;&gt; modifications, String name) {</span>
+<span class="nc" id="L20">        this.modifications = modifications;</span>
+<span class="nc" id="L21">        this.name = name;</span>
+<span class="nc" id="L22">    }</span>
+
+    @Override
+    public void modify(A a) throws ModifyException {
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        for (Modification&lt;A&gt; m : modifications)</span>
+<span class="nc" id="L27">            m.modify(a);</span>
+<span class="nc" id="L28">    }</span>
+
+    /**
+     * @return The contained modifications
+     */
+    public ArrayList&lt;Modification&lt;A&gt;&gt; getModifications() {
+<span class="nc" id="L34">        return modifications;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L39">        return name;</span>
+    }
+
+    /**
+     * The builder to construct an instance
+     *
+     * @param &lt;A&gt; The component to track
+     */
+    public static final class Builder&lt;A extends Copyable&lt;A&gt;&gt; {
+        private final ArrayList&lt;Modification&lt;A&gt;&gt; list;
+        private final String name;
+
+        /**
+         * Creates a new instance
+         *
+         * @param name the name of this modification
+         */
+<span class="fc" id="L56">        public Builder(String name) {</span>
+<span class="fc" id="L57">            this.name = name;</span>
+<span class="fc" id="L58">            list = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L59">        }</span>
+
+        /**
+         * Adds a modification to this set
+         *
+         * @param m the modification to add
+         * @return this for chained calls
+         */
+        public Builder&lt;A&gt; add(Modification&lt;A&gt; m) {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (m != null)</span>
+<span class="fc" id="L69">                list.add(m);</span>
+<span class="fc" id="L70">            return this;</span>
+        }
+
+        /**
+         * Builds the unified of modification
+         *
+         * @return the unified modification
+         */
+        public Modification&lt;A&gt; build() {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (list.isEmpty())</span>
+<span class="nc" id="L80">                return null;</span>
+
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (list.size() == 1)</span>
+<span class="fc" id="L83">                return list.get(0);</span>
+            else
+<span class="nc" id="L85">                return new Modifications&lt;&gt;(list, name);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

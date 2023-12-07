@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ROMEditorDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">ROMEditorDialog.java</span></div><h1>ROMEditorDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.rom.ROMInterface;
+import de.neemann.digital.core.memory.rom.ROMManger;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Comparator;
+
+/**
+ * The editor to edit the roms
+ */
+public class ROMEditorDialog extends JDialog {
+    private final ROMModel romModel;
+<span class="nc" id="L32">    private boolean ok = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent     the dialogs parent
+     * @param model      the mode touse
+     * @param romManager the rom manager
+     */
+    public ROMEditorDialog(JDialog parent, Model model, ROMManger romManager) {
+<span class="nc" id="L42">        super(parent, Lang.get(&quot;win_romDialog&quot;), true);</span>
+
+<span class="nc" id="L44">        romModel = new ROMModel();</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (Node n : model.findNode(n -&gt; n instanceof ROMInterface)) {</span>
+<span class="nc" id="L46">            final ROMInterface ri = (ROMInterface) n;</span>
+<span class="nc" id="L47">            final String label = ri.getLabel().trim();</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            if (label.length() &gt; 0) {</span>
+<span class="nc" id="L49">                DataField df = romManager.getRom(label);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">                if (df == null) df = new DataField(0);</span>
+<span class="nc" id="L51">                romModel.add(new RomHolder(ri, df));</span>
+            }
+<span class="nc" id="L53">        }</span>
+
+<span class="nc" id="L55">        romModel.sort();</span>
+
+<span class="nc" id="L57">        final JList&lt;RomHolder&gt; list = new JList&lt;&gt;(romModel);</span>
+<span class="nc" id="L58">        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L59">        getContentPane().add(new JScrollPane(list));</span>
+
+<span class="nc" id="L61">        list.addMouseListener(new MouseAdapter() {</span>
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
+<span class="nc" id="L64">                int i = list.getSelectedIndex();</span>
+<span class="nc bnc" id="L65" title="All 6 branches missed.">                if (mouseEvent.getClickCount() == 2 &amp;&amp; i &gt;= 0 &amp;&amp; i &lt; romModel.getSize())</span>
+<span class="nc" id="L66">                    romModel.edit(i);</span>
+<span class="nc" id="L67">            }</span>
+        });
+
+<span class="nc" id="L70">        JPanel buttons = new JPanel(new FlowLayout());</span>
+<span class="nc" id="L71">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_edit&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L74">                int i = list.getSelectedIndex();</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">                if (i &gt;= 0 &amp;&amp; i &lt; romModel.getSize())</span>
+<span class="nc" id="L76">                    romModel.edit(i);</span>
+<span class="nc" id="L77">            }</span>
+<span class="nc" id="L78">        }.setToolTip(Lang.get(&quot;btn_editRom_tt&quot;)).createJButton());</span>
+<span class="nc" id="L79">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_clearData&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L82">                int i = list.getSelectedIndex();</span>
+<span class="nc bnc" id="L83" title="All 4 branches missed.">                if (i &gt;= 0 &amp;&amp; i &lt; romModel.getSize())</span>
+<span class="nc" id="L84">                    romModel.delete(i);</span>
+<span class="nc" id="L85">            }</span>
+<span class="nc" id="L86">        }.setToolTip(Lang.get(&quot;btn_clearRom_tt&quot;)).createJButton());</span>
+<span class="nc" id="L87">        getContentPane().add(buttons, BorderLayout.EAST);</span>
+
+<span class="nc" id="L89">        buttons.add(new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L92">                ok = true;</span>
+<span class="nc" id="L93">                dispose();</span>
+<span class="nc" id="L94">            }</span>
+        }));
+<span class="nc" id="L96">        getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L98">        pack();</span>
+<span class="nc" id="L99">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * opens the dialog
+     *
+     * @return true if content was modified
+     */
+    public boolean showDialog() {
+<span class="nc" id="L108">        setVisible(true);</span>
+<span class="nc" id="L109">        return ok;</span>
+    }
+
+    /**
+     * @return returns the modified content
+     */
+    public ROMManger getROMManager() {
+<span class="nc" id="L116">        return romModel.createRomManager();</span>
+    }
+
+    private static final class RomHolder {
+        private final ROMInterface ri;
+        private DataField data;
+
+<span class="nc" id="L123">        private RomHolder(ROMInterface ri, DataField data) {</span>
+<span class="nc" id="L124">            this.ri = ri;</span>
+<span class="nc" id="L125">            this.data = data;</span>
+<span class="nc" id="L126">        }</span>
+
+        @Override
+        public String toString() {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (!hasData())</span>
+<span class="nc" id="L131">                return ri.getLabel() + &quot; (&quot; + Lang.get(&quot;msg_noData&quot;) + &quot;)&quot;;</span>
+            else
+<span class="nc" id="L133">                return ri.getLabel();</span>
+        }
+
+        boolean hasData() {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            return data.getData().length &gt; 0;</span>
+        }
+
+        public boolean edit(ROMEditorDialog romEditorDialog) {
+<span class="nc" id="L141">            DataEditor de = new DataEditor(romEditorDialog, data, ri.getDataBits(), ri.getAddrBits(), false, SyncAccess.NOSYNC, ri.getValueFormatter());</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (de.showDialog()) {</span>
+<span class="nc" id="L143">                data = de.getModifiedDataField();</span>
+<span class="nc" id="L144">                return true;</span>
+            } else
+<span class="nc" id="L146">                return false;</span>
+        }
+    }
+
+    private final class ROMModel implements ListModel&lt;RomHolder&gt; {
+        private final ArrayList&lt;RomHolder&gt; romlist;
+<span class="nc" id="L152">        private ArrayList&lt;ListDataListener&gt; listeners = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L154">        private ROMModel() {</span>
+<span class="nc" id="L155">            romlist = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L156">        }</span>
+
+        public void add(RomHolder ri) {
+<span class="nc" id="L159">            romlist.add(ri);</span>
+<span class="nc" id="L160">        }</span>
+
+        @Override
+        public int getSize() {
+<span class="nc" id="L164">            return romlist.size();</span>
+        }
+
+        @Override
+        public RomHolder getElementAt(int i) {
+<span class="nc" id="L169">            return romlist.get(i);</span>
+        }
+
+        @Override
+        public void addListDataListener(ListDataListener listDataListener) {
+<span class="nc" id="L174">            listeners.add(listDataListener);</span>
+<span class="nc" id="L175">        }</span>
+
+        @Override
+        public void removeListDataListener(ListDataListener listDataListener) {
+<span class="nc" id="L179">            listeners.remove(listDataListener);</span>
+<span class="nc" id="L180">        }</span>
+
+        private void sort() {
+<span class="nc" id="L183">            romlist.sort(Comparator.comparing(r -&gt; r.ri.getLabel()));</span>
+<span class="nc" id="L184">        }</span>
+
+        public void delete(int i) {
+<span class="nc" id="L187">            romlist.get(i).data = new DataField(0);</span>
+<span class="nc" id="L188">            fireChanged(i);</span>
+<span class="nc" id="L189">        }</span>
+
+        public void edit(int i) {
+<span class="nc" id="L192">            RomHolder rh = romlist.get(i);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (rh.edit(ROMEditorDialog.this))</span>
+<span class="nc" id="L194">                fireChanged(i);</span>
+<span class="nc" id="L195">        }</span>
+
+        private void fireChanged(int i) {
+<span class="nc" id="L198">            ListDataEvent ev = new ListDataEvent(this, ListDataEvent.CONTENTS_CHANGED, i, i);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            for (ListDataListener l : listeners)</span>
+<span class="nc" id="L200">                l.contentsChanged(ev);</span>
+<span class="nc" id="L201">        }</span>
+
+        private ROMManger createRomManager() {
+<span class="nc" id="L204">            ROMManger rm = new ROMManger();</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            for (RomHolder rh : romlist)</span>
+<span class="nc" id="L207">                rm.addRom(rh.ri.getLabel(), rh.data);</span>
+
+<span class="nc" id="L209">            return rm;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

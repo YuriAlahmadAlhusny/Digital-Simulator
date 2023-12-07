@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ToolTipAction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">ToolTipAction.java</span></div><h1>ToolTipAction.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.gui.Settings;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+
+/**
+ * Action to handle tool tips.
+ */
+public abstract class ToolTipAction extends AbstractAction {
+    private Icon icon;
+    private String toolTipText;
+    private ToolTipProvider toolTipProvider;
+    private KeyStroke accelerator;
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the name of the action
+     */
+    public ToolTipAction(String name) {
+<span class="nc" id="L31">        super(name);</span>
+<span class="nc" id="L32">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the name of the action
+     * @param icon the icon
+     */
+    public ToolTipAction(String name, Icon icon) {
+<span class="nc" id="L41">        super(name, icon);</span>
+<span class="nc" id="L42">        this.icon = icon;</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * sets the icon
+     *
+     * @param icon the icon to set
+     */
+    public void setIcon(Icon icon) {
+<span class="nc" id="L51">        putValue(Action.SMALL_ICON, icon);</span>
+<span class="nc" id="L52">        this.icon = icon;</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * @return the icon
+     */
+    public Icon getIcon() {
+<span class="nc" id="L59">        return icon;</span>
+    }
+
+    /**
+     * Sets the tool tip text
+     *
+     * @param text the tool tip text
+     * @return this for call chaining
+     */
+    public ToolTipAction setToolTip(String text) {
+<span class="nc" id="L69">        this.toolTipText = new LineBreaker().toHTML().breakLines(text);</span>
+<span class="nc" id="L70">        return this;</span>
+    }
+
+    /**
+     * Sets a tool tip provider
+     *
+     * @param toolTipProvider the tool tip provider
+     * @return this for call chaining
+     */
+    public ToolTipAction setToolTipProvider(ToolTipProvider toolTipProvider) {
+<span class="nc" id="L80">        this.toolTipProvider = toolTipProvider;</span>
+<span class="nc" id="L81">        return this;</span>
+    }
+
+    /**
+     * Sets an accelerator to the action
+     *
+     * @param key the accelerator key
+     * @return this for call chaining
+     */
+    public ToolTipAction setAcceleratorCTRLplus(char key) {
+<span class="nc" id="L91">        return setAccelerator(KeyStroke.getKeyStroke(key, getCTRLMask()));</span>
+    }
+
+    /**
+     * Sets an accelerator to the action
+     *
+     * @param key the accelerator key
+     * @return this for call chaining
+     */
+    public ToolTipAction setAcceleratorCTRLplus(String key) {
+<span class="nc" id="L101">        int keyCode = KeyStroke.getKeyStroke(key).getKeyCode();</span>
+<span class="nc" id="L102">        return setAccelerator(KeyStroke.getKeyStroke(keyCode, getCTRLMask()));</span>
+    }
+
+    /**
+     * @return the system specific CTRL mask.
+     */
+    public static int getCTRLMask() {
+<span class="nc" id="L109">        int mask = InputEvent.CTRL_DOWN_MASK;</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (Screen.isMac())</span>
+<span class="nc" id="L111">            mask = InputEvent.META_DOWN_MASK;</span>
+<span class="nc" id="L112">        return mask;</span>
+    }
+
+    /**
+     * Sets an accelerator to the action
+     *
+     * @param key the accelerator key
+     * @return this for call chaining
+     */
+    public ToolTipAction setAccelerator(String key) {
+<span class="nc" id="L122">        return setAccelerator(KeyStroke.getKeyStroke(key));</span>
+    }
+
+    /**
+     * Sets an accelerator to the action
+     *
+     * @param accelerator the accelerator
+     * @return this for call chaining
+     */
+    public ToolTipAction setAccelerator(KeyStroke accelerator) {
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        if (accelerator.getKeyCode() == KeyEvent.VK_PLUS &amp;&amp; Settings.getInstance().get(Keys.SETTINGS_USE_EQUALS_KEY))</span>
+<span class="nc" id="L133">            accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, accelerator.getModifiers());</span>
+<span class="nc" id="L134">        this.accelerator = accelerator;</span>
+<span class="nc" id="L135">        return this;</span>
+    }
+
+    /**
+     * enables the accelerator in the given component
+     *
+     * @param component the component
+     * @return this for call chaining
+     */
+    public ToolTipAction enableAcceleratorIn(JComponent component) {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (accelerator == null)</span>
+<span class="nc" id="L146">            throw new RuntimeException(&quot;no accelerator given&quot;);</span>
+<span class="nc" id="L147">        component.getInputMap().put(accelerator, this);</span>
+<span class="nc" id="L148">        component.getActionMap().put(this, this);</span>
+<span class="nc" id="L149">        return this;</span>
+    }
+
+    /**
+     * Sets the activated state for this action
+     *
+     * @param newValue the new state
+     * @return this for call chaining
+     */
+    public ToolTipAction setEnabledChain(boolean newValue) {
+<span class="nc" id="L159">        super.setEnabled(newValue);</span>
+<span class="nc" id="L160">        return this;</span>
+    }
+
+    /**
+     * @return a JButton associated with this action
+     */
+    public JButton createJButton() {
+<span class="nc" id="L167">        JButton b = new JButton(this);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        if (toolTipText != null) {</span>
+<span class="nc" id="L169">            b.setToolTipText(toolTipText);</span>
+        }
+<span class="nc" id="L171">        return b;</span>
+    }
+
+    /**
+     * @return a JButton associated with this action, contains only the icon
+     */
+    public JButton createJButtonNoText() {
+        JButton b;
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (toolTipProvider == null) {</span>
+<span class="nc" id="L180">            b = new JButton(this);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (toolTipText != null) {</span>
+<span class="nc" id="L182">                b.setToolTipText(toolTipText);</span>
+            } else {
+<span class="nc" id="L184">                b.setToolTipText(b.getText());</span>
+            }
+        } else {
+<span class="nc" id="L187">            b = new JButton(this) {</span>
+                @Override
+                public String getToolTipText() {
+<span class="nc" id="L190">                    return toolTipProvider.getToolTip();</span>
+                }
+            };
+<span class="nc" id="L193">            ToolTipManager.sharedInstance().registerComponent(b);</span>
+        }
+<span class="nc" id="L195">        b.setText(null);</span>
+<span class="nc" id="L196">        b.setFocusable(false);</span>
+<span class="nc" id="L197">        return b;</span>
+    }
+
+    /**
+     * @return a JButton associated with this action, contains only the icon
+     */
+    public JButton createJButtonNoTextSmall() {
+<span class="nc" id="L204">        JButton b = createJButtonNoText();</span>
+<span class="nc" id="L205">        b.setPreferredSize(new Dimension(icon.getIconWidth() + 4, icon.getIconHeight() + 4));</span>
+<span class="nc" id="L206">        return b;</span>
+    }
+
+    /**
+     * @return a JMenuItem associated with this action
+     */
+    public JMenuItem createJMenuItem() {
+        JMenuItem i;
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (toolTipProvider == null) {</span>
+<span class="nc" id="L215">            i = new JMenuItem(this);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (toolTipText != null)</span>
+<span class="nc" id="L217">                i.setToolTipText(toolTipText);</span>
+        } else {
+<span class="nc" id="L219">            i = new JMenuItem(this) {</span>
+                @Override
+                public String getToolTipText() {
+<span class="nc" id="L222">                    return toolTipProvider.getToolTip();</span>
+                }
+            };
+<span class="nc" id="L225">            ToolTipManager.sharedInstance().registerComponent(i);</span>
+        }
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (accelerator != null)</span>
+<span class="nc" id="L228">            i.setAccelerator(accelerator);</span>
+<span class="nc" id="L229">        return i;</span>
+    }
+
+    /**
+     * @return a JMenuItem associated with this action, contains no icon
+     */
+    public JMenuItem createJMenuItemNoIcon() {
+<span class="nc" id="L236">        JMenuItem i = createJMenuItem();</span>
+<span class="nc" id="L237">        i.setIcon(null);</span>
+<span class="nc" id="L238">        return i;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

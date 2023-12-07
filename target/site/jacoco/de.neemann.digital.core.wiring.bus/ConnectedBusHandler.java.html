@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConnectedBusHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring.bus</a> &gt; <span class="el_source">ConnectedBusHandler.java</span></div><h1>ConnectedBusHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring.bus;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.PinDescription;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * The ConnectedBusHandler calculates the state of net, which is formed by the single nets
+ * connected by a closed switch.
+ */
+public final class ConnectedBusHandler extends AbstractBusHandler {
+<span class="fc" id="L21">    private PinDescription.PullResistor resistor = PinDescription.PullResistor.none;</span>
+    private final ArrayList&lt;CommonBusValue&gt; values;
+    private final ArrayList&lt;ObservableValue&gt; inputs;
+    private final ArrayList&lt;ObservableValue&gt; excludes;
+
+    /**
+     * Creates a new instance
+     *
+     * @param obs The observer needed to check the burn condition
+     */
+    public ConnectedBusHandler(BusModelStateObserver obs) {
+<span class="fc" id="L32">        super(obs);</span>
+<span class="fc" id="L33">        values = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L34">        inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L35">        excludes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Adds a commonBusValue to the common unified commonBusValue
+     *
+     * @param commonBusValue the commonBusValue to add
+     */
+    public void addNet(CommonBusValue commonBusValue) {
+<span class="fc" id="L44">        values.add(commonBusValue);</span>
+<span class="fc" id="L45">        inputs.addAll(Arrays.asList(commonBusValue.getInputs()));</span>
+
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (!commonBusValue.getResistor().equals(PinDescription.PullResistor.none)) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (resistor.equals(PinDescription.PullResistor.none)) {</span>
+<span class="fc" id="L49">                resistor = commonBusValue.getResistor();</span>
+            } else {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">                if (!resistor.equals(commonBusValue.getResistor())) {</span>
+                    // set error condition
+<span class="fc" id="L53">                    resistor = PinDescription.PullResistor.both;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L58">        commonBusValue.setHandler(this);</span>
+<span class="fc" id="L59">        addOrigin(commonBusValue.getOrigin());</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * Adds all nets in the given {@link ConnectedBusHandler}.
+     *
+     * @param h2 the {@link ConnectedBusHandler}
+     */
+    public void addNet(ConnectedBusHandler h2) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (CommonBusValue cbv : h2.values)</span>
+<span class="fc" id="L69">            addNet(cbv);</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public List&lt;ObservableValue&gt; getInputs() {
+<span class="fc" id="L74">        return inputs;</span>
+    }
+
+    @Override
+    public PinDescription.PullResistor getResistor() {
+<span class="fc" id="L79">        return resistor;</span>
+    }
+
+    @Override
+    public void set(long value, long highz) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (ObservableValue val : values)</span>
+<span class="fc" id="L85">            val.set(value, highz);</span>
+<span class="fc" id="L86">    }</span>
+
+    @Override
+    public ObservableValues getAllValues() {
+<span class="fc" id="L90">        return new ObservableValues.Builder().add(getInputs()).add(values).build();</span>
+    }
+
+    /**
+     * @return all the nets connected by this handler.
+     */
+    public ArrayList&lt;CommonBusValue&gt; getValues() {
+<span class="fc" id="L97">        return values;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L102">        return &quot;ConnectedBusHandler{&quot;</span>
+                + &quot;values=&quot; + values + '}';
+    }
+
+    /**
+     * Adds output to the net which are to ignore.
+     *
+     * @param output1 output1
+     * @param output2 output2
+     */
+    public void addExclude(ObservableValue output1, ObservableValue output2) {
+<span class="fc" id="L113">        excludes.add(output1);</span>
+<span class="fc" id="L114">        excludes.add(output2);</span>
+<span class="fc" id="L115">    }</span>
+
+    /**
+     * Adds output which are to ignore by net other.
+     *
+     * @param other adds the outputs to ignore from this net
+     */
+    public void addExcludesFrom(ConnectedBusHandler other) {
+<span class="fc" id="L123">        excludes.addAll(other.excludes);</span>
+<span class="fc" id="L124">    }</span>
+
+    /**
+     * Removes all the outputs which are to ignore
+     */
+    public void removeExcludes() {
+<span class="fc" id="L130">        inputs.removeAll(excludes);</span>
+<span class="fc" id="L131">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

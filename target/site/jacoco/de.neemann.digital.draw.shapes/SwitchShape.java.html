@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SwitchShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">SwitchShape.java</span></div><h1>SwitchShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.switching.Switch;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.gui.components.CircuitComponent;
+
+import java.awt.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The switch shape
+ */
+public class SwitchShape implements Shape {
+
+    private final PinDescriptions outputs;
+    private final String label;
+    private final int poles;
+    private boolean closed;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     * @param inputs     the inputs
+     * @param outputs    the outputs
+     */
+<span class="fc" id="L45">    public SwitchShape(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L46">        this.outputs = outputs;</span>
+<span class="fc" id="L47">        closed = attributes.get(Keys.CLOSED);</span>
+<span class="fc" id="L48">        poles = attributes.get(Keys.POLES);</span>
+<span class="fc" id="L49">        label = attributes.getLabel();</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L54">        Pins pins = new Pins();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int p = 0; p &lt; poles; p++) {</span>
+<span class="fc" id="L56">            pins</span>
+<span class="fc" id="L57">                    .add(new Pin(new Vector(0, SIZE * 2 * p), outputs.get(p * 2)))</span>
+<span class="fc" id="L58">                    .add(new Pin(new Vector(SIZE * 2, SIZE * 2 * p), outputs.get(p * 2 + 1)));</span>
+
+        }
+<span class="fc" id="L61">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L66">        return new Interactor() {</span>
+            @Override
+            public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                closed = !closed;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                if (ioState != null)</span>
+<span class="nc" id="L71">                    modelSync.modify(() -&gt; ((Switch) element).setClosed(closed));</span>
+<span class="nc" id="L72">            }</span>
+        };
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L78">        int yOffs = 0;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (closed) {</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            for (int p = 0; p &lt; poles; p++)</span>
+<span class="nc" id="L81">                graphic.drawLine(</span>
+                        new Vector(0, 2 * SIZE * p),
+                        new Vector(SIZE * 2, 2 * SIZE * p), Style.NORMAL);
+        } else {
+<span class="fc" id="L85">            yOffs = SIZE2 / 2;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            for (int p = 0; p &lt; poles; p++)</span>
+<span class="fc" id="L87">                graphic.drawLine(</span>
+                        new Vector(0, 2 * SIZE * p),
+                        new Vector(SIZE * 2 - 4, 2 * SIZE * p - yOffs * 2), Style.NORMAL);
+        }
+<span class="fc" id="L91">        graphic.drawLine(</span>
+                new Vector(SIZE, -yOffs + (poles - 1) * 2 * SIZE),
+                new Vector(SIZE, -yOffs - SIZE), Style.DASH);
+<span class="fc" id="L94">        graphic.drawLine(</span>
+                new Vector(SIZE2, -yOffs - SIZE),
+                new Vector(SIZE + SIZE2, -yOffs - SIZE), Style.THIN);
+
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="nc" id="L99">            graphic.drawText(</span>
+                    new Vector(SIZE, 4 + (poles - 1) * 2 * SIZE),
+                    label, Orientation.CENTERTOP, Style.SHAPE_PIN);
+<span class="fc" id="L102">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

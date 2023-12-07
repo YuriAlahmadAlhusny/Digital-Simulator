@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlainSwitch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.switching</a> &gt; <span class="el_source">PlainSwitch.java</span></div><h1>PlainSwitch.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.switching;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.wiring.bus.BusModelStateObserver;
+import de.neemann.digital.core.wiring.bus.CommonBusValue;
+import de.neemann.digital.lang.Lang;
+
+/**
+ * A simple switch
+ */
+public final class PlainSwitch implements NodeInterface {
+
+    /**
+     * Defines a direction for the switch. NO means no direction is given, the switch is bidirectional.
+     */
+<span class="fc" id="L21">    public enum Unidirectional {NO, FROM1TO2, FROM2TO1}</span>
+
+    private final ObservableValue output1;
+    private final ObservableValue output2;
+    private final int bits;
+    private boolean closed;
+    private SwitchModel switchModel;
+<span class="fc" id="L28">    private Unidirectional unidirectional = Unidirectional.NO;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param bits   the number of bits
+     * @param closed initial state
+     * @param out1   name of output 1
+     * @param out2   name of output 2
+     */
+<span class="fc" id="L38">    PlainSwitch(int bits, boolean closed, String out1, String out2) {</span>
+<span class="fc" id="L39">        this.bits = bits;</span>
+<span class="fc" id="L40">        this.closed = closed;</span>
+<span class="fc" id="L41">        output1 = new ObservableValue(out1, bits).setBidirectional().setToHighZ().setDescription(Lang.get(&quot;elem_Switch_pin&quot;)).setSwitchPin(true);</span>
+<span class="fc" id="L42">        output2 = new ObservableValue(out2, bits).setBidirectional().setToHighZ().setDescription(Lang.get(&quot;elem_Switch_pin&quot;)).setSwitchPin(true);</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Sets this switch to unidirectional
+     *
+     * @param unidirectional the state
+     * @return this for chained calls
+     */
+    public PlainSwitch setUnidirectional(Unidirectional unidirectional) {
+<span class="fc" id="L52">        this.unidirectional = unidirectional;</span>
+<span class="fc" id="L53">        return this;</span>
+    }
+
+    /**
+     * @return the number of data bits
+     */
+    public int getBits() {
+<span class="nc" id="L60">        return bits;</span>
+    }
+
+    /**
+     * Sets the inputs of this switch
+     *
+     * @param input1 first input
+     * @param input2 second input
+     * @throws NodeException NodeException
+     */
+    public void setInputs(ObservableValue input1, ObservableValue input2) throws NodeException {
+        // create a switch only if both sides are connected. null means pin is not connected
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">        if (input1 != null &amp;&amp; input2 != null) {</span>
+<span class="fc" id="L73">            input1.addObserverToValue(this).checkBits(bits, null);</span>
+<span class="fc" id="L74">            input2.addObserverToValue(this).checkBits(bits, null);</span>
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">            switch (unidirectional) {</span>
+                case NO:
+<span class="fc" id="L77">                    switchModel = createSwitchModel(input1, input2, output1, output2);</span>
+<span class="fc" id="L78">                    break;</span>
+                case FROM1TO2:
+<span class="fc" id="L80">                    switchModel = new UniDirectionalSwitch(input1, output2);</span>
+<span class="fc" id="L81">                    break;</span>
+                case FROM2TO1:
+<span class="fc" id="L83">                    switchModel = new UniDirectionalSwitch(input2, output1);</span>
+                    break;
+            }
+        }
+<span class="fc" id="L87">    }</span>
+
+    static SwitchModel createSwitchModel(
+            ObservableValue input1, ObservableValue input2,
+            ObservableValue output1, ObservableValue output2) throws NodeException {
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (input1 instanceof CommonBusValue) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (input2 instanceof CommonBusValue) {</span>
+<span class="fc" id="L95">                final CommonBusValue in1 = (CommonBusValue) input1;</span>
+<span class="fc" id="L96">                final CommonBusValue in2 = (CommonBusValue) input2;</span>
+<span class="fc" id="L97">                ObservableValue constant = in1.searchConstant();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                if (constant != null)</span>
+<span class="fc" id="L99">                    return new UniDirectionalSwitch(constant, output2);</span>
+                else {
+<span class="fc" id="L101">                    constant = in2.searchConstant();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                    if (constant != null)</span>
+<span class="fc" id="L103">                        return new UniDirectionalSwitch(constant, output1);</span>
+                    else
+<span class="fc" id="L105">                        return new RealSwitch(in1, output1, in2, output2);</span>
+                }
+            } else
+<span class="fc" id="L108">                return new UniDirectionalSwitch(input1, output2);</span>
+        } else {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (input2 instanceof CommonBusValue) {</span>
+<span class="fc" id="L111">                return new UniDirectionalSwitch(input2, output1);</span>
+            } else {
+<span class="fc" id="L113">                throw new NodeException(Lang.get(&quot;err_switchHasNoNet&quot;), output1, output2);</span>
+            }
+        }
+    }
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L120">        return new ObservableValues(output1, output2);</span>
+    }
+
+    /**
+     * Adds the outputs to the given builder
+     *
+     * @param ov the builder to use
+     */
+    void addOutputsTo(ObservableValues.Builder ov) {
+<span class="fc" id="L129">        ov.add(output1, output2);</span>
+<span class="fc" id="L130">    }</span>
+
+    /**
+     * Initializes the switch
+     *
+     * @param model the model
+     */
+    public void init(Model model) {
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (switchModel != null) {</span>
+<span class="fc" id="L139">            switchModel.setModel(model);</span>
+<span class="fc" id="L140">            switchModel.setClosed(closed);</span>
+<span class="fc" id="L141">            hasChanged();</span>
+        }
+<span class="fc" id="L143">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="fc" id="L147">        switchModel.propagate();</span>
+<span class="fc" id="L148">    }</span>
+
+    /**
+     * Sets the closed state of the switch
+     *
+     * @param closed true if closed
+     */
+    public void setClosed(boolean closed) {
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (switchModel != null) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (this.closed != closed) {</span>
+<span class="fc" id="L158">                this.closed = closed;</span>
+<span class="fc" id="L159">                switchModel.setClosed(closed);</span>
+<span class="fc" id="L160">                hasChanged();</span>
+            }
+        }
+<span class="fc" id="L163">    }</span>
+
+    /**
+     * @return true if switch is closed
+     */
+    public boolean isClosed() {
+<span class="nc" id="L169">        return closed;</span>
+    }
+
+    /**
+     * @return output 1
+     */
+    ObservableValue getOutput1() {
+<span class="fc" id="L176">        return output1;</span>
+    }
+
+    /**
+     * @return output 2
+     */
+    ObservableValue getOutput2() {
+<span class="fc" id="L183">        return output2;</span>
+    }
+
+    interface SwitchModel {
+        void propagate();
+
+        void setClosed(boolean closed);
+
+        void setModel(Model model);
+
+        default void dontTouchOpenContact() {
+<span class="nc" id="L194">        }</span>
+
+        default boolean isUniDirOutput(ObservableValue out) {
+<span class="fc" id="L197">            return false;</span>
+        }
+    }
+
+    /**
+     * A simple unidirectional switch.
+     * Works like a driver: When the switch is closed, the signal value at the input
+     * is forwarded to the output. When the switch is open, the output is set to HighZ.
+     */
+    private static final class UniDirectionalSwitch implements SwitchModel {
+        private final ObservableValue input;
+        private final ObservableValue output;
+        private boolean setOpenContactToHighZ;
+        private boolean closed;
+
+<span class="fc" id="L212">        UniDirectionalSwitch(ObservableValue input, ObservableValue output) {</span>
+<span class="fc" id="L213">            this.input = input;</span>
+<span class="fc" id="L214">            this.output = output;</span>
+<span class="fc" id="L215">            this.setOpenContactToHighZ = true;</span>
+<span class="fc" id="L216">        }</span>
+
+        @Override
+        public void propagate() {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (closed) {</span>
+<span class="fc" id="L221">                output.set(input.getValue(), input.getHighZ());</span>
+            } else {
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                if (setOpenContactToHighZ)</span>
+<span class="fc" id="L224">                    output.setToHighZ();</span>
+            }
+<span class="fc" id="L226">        }</span>
+
+        @Override
+        public void setClosed(boolean closed) {
+<span class="fc" id="L230">            this.closed = closed;</span>
+<span class="fc" id="L231">        }</span>
+
+        @Override
+        public void setModel(Model model) {
+<span class="fc" id="L235">        }</span>
+
+        @Override
+        public void dontTouchOpenContact() {
+<span class="fc" id="L239">            setOpenContactToHighZ = false;</span>
+<span class="fc" id="L240">        }</span>
+
+        @Override
+        public boolean isUniDirOutput(ObservableValue out) {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            return output == out;</span>
+        }
+    }
+
+    /**
+     * Represents a real bidirectional switch.
+     */
+    public static final class RealSwitch implements SwitchModel {
+        private final CommonBusValue input1;
+        private final ObservableValue output1;
+        private final CommonBusValue input2;
+        private final ObservableValue output2;
+        private BusModelStateObserver obs;
+
+<span class="fc" id="L258">        private RealSwitch(CommonBusValue input1, ObservableValue output1, CommonBusValue input2, ObservableValue output2) {</span>
+<span class="fc" id="L259">            this.input1 = input1;</span>
+<span class="fc" id="L260">            this.output1 = output1;</span>
+<span class="fc" id="L261">            this.input2 = input2;</span>
+<span class="fc" id="L262">            this.output2 = output2;</span>
+<span class="fc" id="L263">        }</span>
+
+        @Override
+        public void propagate() {
+<span class="fc" id="L267">        }</span>
+
+        @Override
+        public void setClosed(boolean closed) {
+<span class="fc" id="L271">            obs.setClosed(this, closed);</span>
+<span class="fc" id="L272">        }</span>
+
+        @Override
+        public void setModel(Model model) {
+<span class="fc" id="L276">            obs = model.getObserver(BusModelStateObserver.class);</span>
+<span class="fc" id="L277">        }</span>
+
+        /**
+         * @return the left hand side net
+         */
+        public CommonBusValue getInput1() {
+<span class="fc" id="L283">            return input1;</span>
+        }
+
+        /**
+         * @return the right hand side net
+         */
+        public CommonBusValue getInput2() {
+<span class="fc" id="L290">            return input2;</span>
+        }
+
+        /**
+         * @return the output used by the left hand side pin
+         */
+        public ObservableValue getOutput1() {
+<span class="fc" id="L297">            return output1;</span>
+        }
+
+        /**
+         * @return the output used by the right hand side pin
+         */
+        public ObservableValue getOutput2() {
+<span class="fc" id="L304">            return output2;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

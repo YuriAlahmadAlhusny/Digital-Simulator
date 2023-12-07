@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReorderInputs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">ReorderInputs.java</span></div><h1>ReorderInputs.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.ContextFiller;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.gui.components.ElementOrderer;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+
+/**
+ * Used to reorder the table inputs
+ */
+public class ReorderInputs {
+    private final TruthTable table;
+    private final ArrayList&lt;String&gt; names;
+
+    /**
+     * /**
+     * Creates a new instance
+     *
+     * @param table the original table
+     * @param names the new ordering
+     */
+<span class="nc" id="L31">    public ReorderInputs(TruthTable table, ArrayList&lt;String&gt; names) {</span>
+<span class="nc" id="L32">        this.table = table;</span>
+<span class="nc" id="L33">        this.names = names;</span>
+<span class="nc" id="L34">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param table the original table
+     */
+<span class="fc" id="L41">    public ReorderInputs(TruthTable table) {</span>
+<span class="fc" id="L42">        this.table = table;</span>
+<span class="fc" id="L43">        names = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (Variable v : table.getVars())</span>
+<span class="fc" id="L45">            names.add(v.getIdentifier());</span>
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * @return the items to reorder
+     */
+    public ElementOrderer.OrderInterface&lt;String&gt; getItems() {
+<span class="fc" id="L52">        return new ElementOrderer.ListOrder&lt;&gt;(names);</span>
+    }
+
+    /**
+     * Creates a new table matching the actual state of the items
+     *
+     * @throws ExpressionException ExpressionException
+     */
+    public void reorder() throws ExpressionException {
+<span class="fc" id="L61">        ArrayList&lt;Variable&gt; newVars = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L62">        ArrayList&lt;Variable&gt; deletedVars = new ArrayList&lt;&gt;(table.getVars());</span>
+
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (String name : names) {</span>
+<span class="fc" id="L65">            Variable found = null;</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            for (Variable v : deletedVars)</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                if (v.getIdentifier().equals(name)) {</span>
+<span class="fc" id="L68">                    found = v;</span>
+<span class="fc" id="L69">                    break;</span>
+                }
+
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (found != null) {</span>
+<span class="fc" id="L73">                newVars.add(found);</span>
+<span class="fc" id="L74">                deletedVars.remove(found);</span>
+            }
+<span class="fc" id="L76">        }</span>
+
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (newVars.size() &lt; 2)</span>
+<span class="nc" id="L79">            throw new ExpressionException(Lang.get(&quot;err_tableBecomesToSmall&quot;));</span>
+
+<span class="fc" id="L81">        TruthTable oldTable = this.table.createDeepCopy();</span>
+
+<span class="fc" id="L83">        table.clear(newVars);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int j = 0; j &lt; oldTable.getResultCount(); j++)</span>
+<span class="fc" id="L85">            table.addResult(oldTable.getResultName(j));</span>
+
+<span class="fc" id="L87">        ContextFiller fc = new ContextFiller(table.getVars());</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (Variable v : deletedVars)</span>
+<span class="fc" id="L89">            fc.set(v, false);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int row = 0; row &lt; table.getRows(); row++) {</span>
+<span class="fc" id="L92">            fc.setContextTo(row);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            for (int t = 0; t &lt; table.getResultCount(); t++)</span>
+<span class="fc" id="L94">                table.setByContext(t, fc, oldTable.getByContext(t, fc));</span>
+        }
+<span class="fc" id="L96">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

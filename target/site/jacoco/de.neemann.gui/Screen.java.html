@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Screen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">Screen.java</span></div><h1>Screen.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+/*
+ * Win 150% : getScreenResolution() = 144
+ * Win 100% : getScreenResolution() = 96
+ * Linux    : getScreenResolution() = 95
+ */
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.gui.Settings;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+
+/**
+ * Class used to handle different screen resolution by defining a new default font
+ * used by the GUI components. Also all the icons are scaled.
+ */
+public final class Screen {
+<span class="fc" id="L26">    private static final String OS = System.getProperty(&quot;os.name&quot;).toLowerCase();</span>
+<span class="fc" id="L27">    private static final boolean IS_LINUX = OS.contains(&quot;linux&quot;);</span>
+<span class="fc" id="L28">    private static final boolean IS_MAC = OS.contains(&quot;mac&quot;);</span>
+
+    private static final class InstanceHolder {
+<span class="fc" id="L31">        private static Screen instance = new Screen();</span>
+    }
+
+    private final int size;
+    private final float scaling;
+    private final Font font;
+
+    /**
+     * @return the Screen instance
+     */
+    public static Screen getInstance() {
+<span class="fc" id="L42">        return InstanceHolder.instance;</span>
+    }
+
+
+    private static int getDefaultScreenResolution() {
+        try {
+<span class="fc" id="L48">            int dpi = Toolkit.getDefaultToolkit().getScreenResolution();</span>
+
+            // plausibility check
+<span class="fc" id="L51">            int widthInPixel = Toolkit.getDefaultToolkit().getScreenSize().width;</span>
+<span class="fc" id="L52">            int widthInInch = widthInPixel / dpi;</span>
+            // most people don't use a screen larger than 27 inch, so the resolution is presumably wrong
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            if (widthInInch &gt; 27)</span>
+                // assume a 27 inch screen
+<span class="nc" id="L56">                dpi = widthInPixel / 27;</span>
+
+<span class="fc" id="L58">            return dpi;</span>
+<span class="nc" id="L59">        } catch (HeadlessException e) {</span>
+<span class="nc" id="L60">            return 95;</span>
+        }
+    }
+
+    /**
+     * @return the default font scaling in percent
+     */
+    public static int getDefaultFontScaling() {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (IS_MAC)   // macOS has its own retina handling</span>
+<span class="nc" id="L69">            return 100;</span>
+
+<span class="fc" id="L71">        int dpi = getDefaultScreenResolution();</span>
+<span class="fc" id="L72">        int s = (dpi * 100) / 96;</span>
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (s &gt; 95 &amp;&amp; s &lt; 105)</span>
+<span class="fc" id="L74">            s = 100;</span>
+<span class="fc" id="L75">        return s;</span>
+    }
+
+<span class="fc" id="L78">    private Screen() {</span>
+<span class="fc" id="L79">        Font font = new JLabel().getFont();</span>
+<span class="fc" id="L80">        float scaling = 1;</span>
+<span class="fc" id="L81">        int size = font.getSize();</span>
+<span class="fc" id="L82">        int fontScalingPercent = Settings.getInstance().get(Keys.SETTINGS_FONT_SCALING);</span>
+<span class="fc" id="L83">        int s = fontScalingPercent * size / 100;</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (s != size) {</span>
+<span class="nc" id="L85">            scaling = ((float) s) / size;</span>
+<span class="nc" id="L86">            size = s;</span>
+<span class="nc" id="L87">            font = font.deriveFont((float) s);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            for (Object key : javax.swing.UIManager.getLookAndFeel().getDefaults().keySet()) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                if (key.toString().endsWith(&quot;.font&quot;))</span>
+<span class="nc" id="L90">                    javax.swing.UIManager.put(key, font);</span>
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                if (!IS_MAC) { // macOS has its own icon handling</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">                    if (key.toString().endsWith(&quot;.icon&quot;) || key.toString().endsWith(&quot;Icon&quot;)) {</span>
+<span class="nc" id="L94">                        Icon icon = UIManager.getIcon(key);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                        if (icon != null)</span>
+<span class="nc" id="L96">                            javax.swing.UIManager.put(key, new ScaleIcon(icon, scaling));</span>
+                    }
+                }
+<span class="nc" id="L99">            }</span>
+<span class="nc" id="L100">            UIManager.put(&quot;ScrollBar.width&quot;, size * 17 / 12);</span>
+        }
+<span class="fc" id="L102">        this.scaling = scaling;</span>
+<span class="fc" id="L103">        this.size = size;</span>
+<span class="fc" id="L104">        this.font = font;</span>
+<span class="fc" id="L105">    }</span>
+
+    private static final class ScaleIcon implements Icon {
+        private final Icon icon;
+        private final float scaling;
+        private final int width;
+        private final int height;
+
+<span class="nc" id="L113">        private ScaleIcon(Icon icon, float scaling) {</span>
+<span class="nc" id="L114">            this.icon = icon;</span>
+<span class="nc" id="L115">            this.scaling = scaling;</span>
+<span class="nc" id="L116">            width = (int) (icon.getIconWidth() * scaling);</span>
+<span class="nc" id="L117">            height = (int) (icon.getIconHeight() * scaling);</span>
+<span class="nc" id="L118">        }</span>
+
+        @Override
+        public void paintIcon(Component component, Graphics graphics, int x, int y) {
+<span class="nc" id="L122">            Graphics2D gr = (Graphics2D) graphics;</span>
+<span class="nc" id="L123">            AffineTransform tr = gr.getTransform();</span>
+<span class="nc" id="L124">            gr.translate(x, y);</span>
+<span class="nc" id="L125">            gr.scale(scaling, scaling);</span>
+<span class="nc" id="L126">            gr.translate(-x, -y);</span>
+<span class="nc" id="L127">            icon.paintIcon(component, gr, x, y);</span>
+<span class="nc" id="L128">            gr.setTransform(tr);</span>
+<span class="nc" id="L129">        }</span>
+
+        @Override
+        public int getIconWidth() {
+<span class="nc" id="L133">            return width;</span>
+        }
+
+        @Override
+        public int getIconHeight() {
+<span class="nc" id="L138">            return height;</span>
+        }
+    }
+
+    /**
+     * @return font size
+     */
+    public int getFontSize() {
+<span class="nc" id="L146">        return size;</span>
+    }
+
+    /**
+     * @return the font
+     */
+    public Font getFont() {
+<span class="nc" id="L153">        return font;</span>
+    }
+
+    /**
+     * Get scaled font
+     *
+     * @param scale the scaling factor
+     * @return the scaled font
+     */
+    public Font getFont(float scale) {
+<span class="nc" id="L163">        return font.deriveFont(font.getSize2D() * scale);</span>
+    }
+
+    /**
+     * @return the scaling
+     */
+    public float getScaling() {
+<span class="fc" id="L170">        return scaling;</span>
+    }
+
+    /**
+     * Scales the given dimension
+     *
+     * @param dimension the given dimension
+     * @return the scaled dimension
+     */
+    public Dimension scale(Dimension dimension) {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (scaling == 1)</span>
+<span class="nc" id="L181">            return dimension;</span>
+        else
+<span class="nc" id="L183">            return new Dimension((int) (dimension.width * scaling), (int) (dimension.height * scaling));</span>
+    }
+
+    /**
+     * @return true if running on a windows system
+     */
+    public static boolean isLinux() {
+<span class="nc" id="L190">        return IS_LINUX;</span>
+    }
+
+    /**
+     * @return true if running on a mac
+     */
+    public static boolean isMac() {
+<span class="nc" id="L197">        return IS_MAC;</span>
+    }
+
+    /**
+     * Sets the location of a window.
+     * Ensures that the window is completely visible on the screen the given position belongs to.
+     * The window is centered relative to the given position.
+     *
+     * @param w      the window
+     * @param pos    the position
+     * @param center if true the window is centered
+     */
+    public static void setLocation(Window w, Point pos, boolean center) {
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (pos == null)</span>
+<span class="nc" id="L211">            return;</span>
+
+<span class="nc" id="L213">        Rectangle screen = null;</span>
+<span class="nc" id="L214">        GraphicsDevice[] dev = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        for (GraphicsDevice d : dev) {</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            for (GraphicsConfiguration c : d.getConfigurations()) {</span>
+<span class="nc" id="L217">                Rectangle b = c.getBounds();</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">                if (b.contains(pos))</span>
+<span class="nc" id="L219">                    screen = b;</span>
+            }
+        }
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (center) {</span>
+<span class="nc" id="L224">            pos.x -= w.getWidth() / 2;</span>
+<span class="nc" id="L225">            pos.y -= w.getHeight() / 2;</span>
+        }
+
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (screen != null) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (pos.x + w.getWidth() &gt; screen.x + screen.width) pos.x = screen.x + screen.width - w.getWidth();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            if (pos.y + w.getHeight() &gt; screen.y + screen.height) pos.y = screen.y + screen.height - w.getHeight();</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (pos.x &lt; screen.x) pos.x = screen.x;</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (pos.y &lt; screen.y) pos.y = screen.y;</span>
+        }
+
+<span class="nc" id="L235">        w.setLocation(pos.x, pos.y);</span>
+<span class="nc" id="L236">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

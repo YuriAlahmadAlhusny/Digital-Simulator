@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLTokenizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">VHDLTokenizer.java</span></div><h1>VHDLTokenizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.ExceptionWithOrigin;
+
+import java.io.IOException;
+import java.io.Reader;
+
+import static de.neemann.digital.core.extern.VHDLTokenizer.Token.IDENT;
+import static de.neemann.digital.core.extern.VHDLTokenizer.Token.NUMBER;
+
+/**
+ * Simple tokenizer to tokenize boolean expressions.
+ */
+public class VHDLTokenizer {
+
+<span class="fc" id="L21">    enum Token {UNKNOWN, IDENT, OPEN, CLOSE, NUMBER, COMMA, COLON, SEMICOLON}</span>
+
+    private final Reader in;
+    private Token token;
+    private boolean isToken;
+    private StringBuilder builder;
+<span class="fc" id="L27">    private boolean isUnreadChar = false;</span>
+    private int unreadChar;
+
+    /**
+     * Creates a new instance
+     *
+     * @param in the reader
+     */
+<span class="fc" id="L35">    public VHDLTokenizer(Reader in) {</span>
+<span class="fc" id="L36">        this.in = in;</span>
+<span class="fc" id="L37">        token = Token.UNKNOWN;</span>
+<span class="fc" id="L38">        isToken = false;</span>
+<span class="fc" id="L39">        builder = new StringBuilder();</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * Reads the next token
+     *
+     * @return the token
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public Token next() throws IOException, TokenizerException {
+<span class="fc" id="L50">        Token token = peek();</span>
+<span class="fc" id="L51">        consume();</span>
+<span class="fc" id="L52">        return token;</span>
+    }
+
+    /**
+     * Consumes the token after a peek call
+     */
+    public void consume() {
+<span class="fc" id="L59">        isToken = false;</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * Consumes the given token
+     *
+     * @param t the token to consume
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public void consume(Token t) throws TokenizerException, IOException {
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (next() != t)</span>
+<span class="nc" id="L71">            throw new TokenizerException(&quot;ident expected&quot;);</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Peeks the next token.
+     * The token is kept in the stream, so next() or peek() will return this token again!
+     *
+     * @return the token
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public Token peek() throws IOException, TokenizerException {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (isToken)</span>
+<span class="fc" id="L84">            return token;</span>
+
+        int c;
+        do {
+<span class="fc" id="L88">            c = readChar();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (c == '-') {</span>
+<span class="fc" id="L90">                int cc = readChar();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                if (cc == '-') {</span>
+                    do {
+<span class="fc" id="L93">                        c = readChar();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                    } while (c != '\n');</span>
+                } else
+<span class="fc" id="L96">                    unreadChar(cc);</span>
+            }
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        } while (isWhiteSpace(c));</span>
+
+<span class="pc bpc" id="L100" title="1 of 7 branches missed.">        switch (c) {</span>
+            case -1:
+<span class="nc" id="L102">                throw new TokenizerException(&quot;unexpected EOF&quot;);</span>
+            case '(':
+<span class="fc" id="L104">                token = Token.OPEN;</span>
+<span class="fc" id="L105">                break;</span>
+            case ')':
+<span class="fc" id="L107">                token = Token.CLOSE;</span>
+<span class="fc" id="L108">                break;</span>
+            case ';':
+<span class="fc" id="L110">                token = Token.SEMICOLON;</span>
+<span class="fc" id="L111">                break;</span>
+            case ',':
+<span class="fc" id="L113">                token = Token.COMMA;</span>
+<span class="fc" id="L114">                break;</span>
+            case ':':
+<span class="fc" id="L116">                token = Token.COLON;</span>
+<span class="fc" id="L117">                break;</span>
+            default:
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                if (isIdentChar(c)) {</span>
+<span class="fc" id="L120">                    token = IDENT;</span>
+<span class="fc" id="L121">                    builder.setLength(0);</span>
+<span class="fc" id="L122">                    builder.append((char) c);</span>
+<span class="fc" id="L123">                    boolean wasChar = true;</span>
+                    do {
+<span class="fc" id="L125">                        c = readChar();</span>
+<span class="fc bfc" id="L126" title="All 4 branches covered.">                        if (isIdentChar(c) || isNumberChar(c)) {</span>
+<span class="fc" id="L127">                            builder.append((char) c);</span>
+                        } else {
+<span class="fc" id="L129">                            unreadChar(c);</span>
+<span class="fc" id="L130">                            wasChar = false;</span>
+                        }
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                    } while (wasChar);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                } else if (isNumberChar(c)) {</span>
+<span class="fc" id="L134">                    token = NUMBER;</span>
+<span class="fc" id="L135">                    builder.setLength(0);</span>
+<span class="fc" id="L136">                    builder.append((char) c);</span>
+<span class="fc" id="L137">                    boolean wasChar = true;</span>
+                    do {
+<span class="fc" id="L139">                        c = readChar();</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">                        if (isNumberChar(c)) {</span>
+<span class="nc" id="L141">                            builder.append((char) c);</span>
+                        } else {
+<span class="fc" id="L143">                            unreadChar(c);</span>
+<span class="fc" id="L144">                            wasChar = false;</span>
+                        }
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">                    } while (wasChar);</span>
+<span class="fc" id="L147">                } else {</span>
+<span class="fc" id="L148">                    token = Token.UNKNOWN;</span>
+<span class="fc" id="L149">                    builder.setLength(0);</span>
+<span class="fc" id="L150">                    builder.append((char) c);</span>
+                }
+        }
+
+<span class="fc" id="L154">        isToken = true;</span>
+<span class="fc" id="L155">        return token;</span>
+    }
+
+    /**
+     * @return the identifier
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public String consumeIdent() throws IOException, TokenizerException {
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (next() != IDENT)</span>
+<span class="nc" id="L165">            throw new TokenizerException(&quot;ident expected&quot;);</span>
+<span class="fc" id="L166">        return builder.toString();</span>
+    }
+
+    /**
+     * Consumes an identifier
+     *
+     * @param ident the identifier to consume
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public void consumeIdent(String ident) throws IOException, TokenizerException {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (next() != IDENT)</span>
+<span class="nc" id="L178">            throw new TokenizerException(&quot;ident expected&quot;);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (builder.toString().equalsIgnoreCase(ident))</span>
+<span class="fc" id="L180">            return;</span>
+<span class="fc" id="L181">        throw new TokenizerException(&quot;ident &quot; + ident + &quot; expected&quot;);</span>
+    }
+
+    /**
+     * @return the identifier
+     * @throws IOException        IOException
+     * @throws TokenizerException TokenizerException
+     */
+    public int consumeNumber() throws TokenizerException, IOException {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (next() != NUMBER)</span>
+<span class="nc" id="L191">            throw new TokenizerException(&quot;ident expected&quot;);</span>
+        try {
+<span class="fc" id="L193">            return Integer.parseInt(builder.toString());</span>
+<span class="nc" id="L194">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L195">            throw new TokenizerException(&quot;not a number &quot; + builder.toString());</span>
+        }
+    }
+
+    /**
+     * @return the value of the last parsed token
+     */
+    public String value() {
+<span class="fc" id="L203">        return builder.toString();</span>
+    }
+
+    private int readChar() throws IOException {
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (isUnreadChar) {</span>
+<span class="fc" id="L208">            isUnreadChar = false;</span>
+<span class="fc" id="L209">            return unreadChar;</span>
+        } else
+<span class="fc" id="L211">            return in.read();</span>
+    }
+
+    private void unreadChar(int c) {
+<span class="fc" id="L215">        unreadChar = c;</span>
+<span class="fc" id="L216">        isUnreadChar = true;</span>
+<span class="fc" id="L217">    }</span>
+
+    private boolean isIdentChar(int c) {
+<span class="pc bpc" id="L220" title="1 of 10 branches missed.">        return (c &gt;= 'a' &amp;&amp; c &lt;= 'z')</span>
+                || (c &gt;= 'A' &amp;&amp; c &lt;= 'Z')
+                || (c == '_');
+    }
+
+    private boolean isNumberChar(int c) {
+<span class="fc bfc" id="L226" title="All 4 branches covered.">        return (c &gt;= '0' &amp;&amp; c &lt;= '9');</span>
+    }
+
+    private boolean isWhiteSpace(int c) {
+<span class="pc bpc" id="L230" title="1 of 8 branches missed.">        return c == ' ' || c == '\n' || c == '\r' || c == '\t';</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L235" title="All 6 branches missed.">        if (token == NUMBER || token == IDENT || token == Token.UNKNOWN)</span>
+<span class="nc" id="L236">            return builder.toString();</span>
+        else
+<span class="nc" id="L238">            return token.name();</span>
+    }
+
+    /**
+     * The tokenizer exception
+     */
+    public static final class TokenizerException extends ExceptionWithOrigin {
+        private TokenizerException(String message) {
+<span class="fc" id="L246">            super(message);</span>
+<span class="fc" id="L247">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

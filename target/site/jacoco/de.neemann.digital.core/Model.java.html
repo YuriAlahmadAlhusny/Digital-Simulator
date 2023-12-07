@@ -1,0 +1,1130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Model.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core</a> &gt; <span class="el_source">Model.java</span></div><h1>Model.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core;
+
+import de.neemann.digital.analyse.AnalyseException;
+import de.neemann.digital.core.io.Button;
+import de.neemann.digital.core.wiring.AsyncSeq;
+import de.neemann.digital.core.wiring.Break;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.core.wiring.Reset;
+import de.neemann.digital.gui.components.WindowPosManager;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.*;
+
+/**
+ * The Model contains all the nodes of the model.
+ * Every time the circuit is started a new model is created.
+ * The model has the possibility to be run in full step mode (all changes of values are propagated to a stable state)
+ * or in micro stepping mode: Only the gates which had a change on one of the input signals are updated. Then the
+ * calculation is stopped.
+ * &lt;br&gt;
+ * There are tho ways of model execution: With noise turned on or off.
+ * &lt;ol&gt;
+ * &lt;li&gt;
+ * If noise is turned off, the steps of the model are calculated in a synchronized way. So the change of a signal
+ * happens at the same time at every node in the model. And every node in the model needs the same time to update its
+ * outputs. In this mode you can observe oscillations in the model, which makes it impossible to start the model.
+ * So a RS-FF typically does not start because of oscillations.
+ * &lt;/li&gt;
+ * &lt;li&gt;
+ * If noise is turned on, all the nodes to update a updated in a random order. So the startup of a RS-FF is no problem.
+ * But the initial state of the model is undefined. To bring the model to a defined initial state you can use the
+ * Reset element. Its output is hold down at zero during startup, and when a stable state is reached it becomes one.
+ * &lt;/li&gt;
+ * &lt;/ol&gt;
+ * There are also some lists to store special elements. These lists are populated by the elements during the
+ * call of the registerNodes method. These lists are necessary to keep track of all elements which are not a node like
+ * inputs and outputs. All elements which are nodes can be obtained by {@link #findNode(Class, NodeFilter)} or
+ * {@link #findNode(Class)}.
+ *
+ * @see de.neemann.digital.core.element.Element#registerNodes(Model)
+ */
+public class Model implements Iterable&lt;Node&gt;, SyncAccess {
+<span class="fc" id="L51">    private static final Logger LOGGER = LoggerFactory.getLogger(Model.class);</span>
+    /**
+     * Maximal number of calculation loops before oscillating behaviour is detected
+     */
+    private static final int COLLECTING_LOOP_COUNTER_OFFS = 100;
+    private ArrayList&lt;BreakDetector&gt; brVal;
+<span class="fc" id="L57">    private int oscillationDetectionCounter = 1000;</span>
+
+<span class="fc" id="L59">    private enum State {BUILDING, INITIALIZING, RUNNING, CLOSED}</span>
+
+<span class="fc" id="L61">    private State state = State.BUILDING;</span>
+
+    private final ArrayList&lt;Clock&gt; clocks;
+    private final ArrayList&lt;Break&gt; breaks;
+    private final ArrayList&lt;Reset&gt; resets;
+    private final HashMap&lt;Integer, Button&gt; buttonsToMap;
+
+    private final ArrayList&lt;Signal&gt; signals;
+    private final ArrayList&lt;Signal&gt; inputs;
+    private final ArrayList&lt;Signal&gt; outputs;
+    private final ArrayList&lt;Signal&gt; testOutputs;
+
+    private final ArrayList&lt;Node&gt; nodes;
+    private ArrayList&lt;Node&gt; nodesToUpdateAct;
+    private ArrayList&lt;Node&gt; nodesToUpdateNext;
+    private int version;
+    private WindowPosManager windowPosManager;
+    private HashSet&lt;Node&gt; oscillatingNodes;
+<span class="fc" id="L79">    private Signal invalidSignal = null;</span>
+    private AsyncSeq asyncInfos;
+<span class="fc" id="L81">    private boolean asyncMode = false;</span>
+<span class="fc" id="L82">    private boolean allowGlobalValues = false;</span>
+    private File rootPath;
+
+    private final ArrayList&lt;ModelStateObserver&gt; observers;
+    private ArrayList&lt;ModelStateObserver&gt; observersStep;
+    private ArrayList&lt;ModelStateObserver&gt; observersMicroStep;
+
+    /**
+     * Creates a new model
+     */
+<span class="fc" id="L92">    public Model() {</span>
+<span class="fc" id="L93">        this.clocks = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L94">        this.breaks = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L95">        this.resets = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L96">        this.buttonsToMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L97">        this.signals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L98">        this.outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L99">        this.testOutputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L100">        this.inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L101">        this.nodes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L102">        this.nodesToUpdateAct = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L103">        this.nodesToUpdateNext = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L104">        this.observers = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L105">    }</span>
+
+    /**
+     * Sets the number of gate delays at which an oscillation is detected.
+     *
+     * @param oscillationDetectionCounter number of steps
+     * @return this for chained calls
+     */
+    public Model setOscillationDetectionCounter(int oscillationDetectionCounter) {
+<span class="fc" id="L114">        this.oscillationDetectionCounter = oscillationDetectionCounter;</span>
+<span class="fc" id="L115">        return this;</span>
+    }
+
+    /**
+     * Sets this model to async mode.
+     * Async mode means that the circuit is not able to reach a stable state once the reset gates are released.
+     *
+     * @return this for chained calls
+     */
+    public Model setAsyncMode() {
+<span class="fc" id="L125">        this.asyncMode = true;</span>
+<span class="fc" id="L126">        return this;</span>
+    }
+
+    /**
+     * Sets the window position manager.
+     * Allows the model to place new and close old gui windows.
+     *
+     * @param windowPosManager the window position manager
+     */
+    public void setWindowPosManager(WindowPosManager windowPosManager) {
+<span class="nc" id="L136">        this.windowPosManager = windowPosManager;</span>
+<span class="nc" id="L137">    }</span>
+
+    /**
+     * The WindowPosManager allows the model to place new and close old gui windows.
+     *
+     * @return the window position manager
+     */
+    public WindowPosManager getWindowPosManager() {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (windowPosManager == null)</span>
+<span class="nc" id="L146">            windowPosManager = new WindowPosManager(null);</span>
+<span class="nc" id="L147">        return windowPosManager;</span>
+    }
+
+    /**
+     * @return true if this model runs in the main frame
+     */
+    public boolean runningInMainFrame() {
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (windowPosManager == null)</span>
+<span class="fc" id="L155">            return false;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        return windowPosManager.getMainFrame() != null;</span>
+    }
+
+    /**
+     * Returns the actual step counter.
+     * This counter is incremented by every micro step
+     *
+     * @return the step counter
+     */
+    public int getStepCounter() {
+<span class="fc" id="L166">        return version;</span>
+    }
+
+    /**
+     * Adds a node to the model
+     *
+     * @param node the node
+     * @param &lt;T&gt;  type of the node
+     * @return the node itself for chained calls
+     */
+    public &lt;T extends Node&gt; T add(T node) {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (state != State.BUILDING)</span>
+<span class="nc" id="L178">            throw new RuntimeException(Lang.get(&quot;err_isAlreadyInitialized&quot;));</span>
+
+<span class="fc" id="L180">        nodes.add(node);</span>
+<span class="fc" id="L181">        node.setModel(this);</span>
+<span class="fc" id="L182">        return node;</span>
+    }
+
+    /**
+     * Needs to be called after all nodes are added.
+     * Resets and initializes the model.
+     * Calls &lt;code&gt;init(true);&lt;/code&gt;
+     */
+    public void init() {
+<span class="fc" id="L191">        init(true);</span>
+<span class="fc" id="L192">    }</span>
+
+    /**
+     * Needs to be called after all nodes are added.
+     * Resets and initializes the model.
+     *
+     * @param noise setup with or without noise
+     */
+    public void init(boolean noise) {
+<span class="fc" id="L201">        nodesToUpdateNext.addAll(nodes);</span>
+<span class="fc" id="L202">        state = State.INITIALIZING;</span>
+<span class="fc" id="L203">        doStep(noise);</span>
+        // state is CLOSED if an error during the first doStep has occurred!
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (state != State.CLOSED) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            if (!resets.isEmpty()) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                for (Reset reset : resets)</span>
+<span class="fc" id="L208">                    reset.clearReset();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">                if (!asyncMode)</span>
+<span class="fc" id="L210">                    doStep(false);</span>
+                else
+<span class="fc" id="L212">                    doMicroStep(false);</span>
+            }
+<span class="fc" id="L214">            LOGGER.debug(&quot;stabilizing took &quot; + version + &quot; micro steps&quot;);</span>
+<span class="fc" id="L215">            state = State.RUNNING;</span>
+<span class="fc" id="L216">            fireEvent(ModelEvent.STARTED);</span>
+        }
+<span class="fc" id="L218">    }</span>
+
+    /**
+     * Closes the model.
+     * A STOPPED event is fired.
+     */
+    public synchronized void close() {
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (state != State.CLOSED) {</span>
+<span class="fc" id="L226">            state = State.CLOSED;</span>
+<span class="fc" id="L227">            int obs = observers.size();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            if (observersStep != null) obs += observersStep.size();</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (observersMicroStep != null) obs += observersMicroStep.size();</span>
+<span class="fc" id="L230">            LOGGER.debug(&quot;Observers &quot; + obs);</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">            for (ModelStateObserver ob : observers)</span>
+<span class="fc" id="L232">                LOGGER.debug(&quot;Observer Slow : &quot; + ob.getClass().getSimpleName());</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">            if (observersStep != null)</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                for (ModelStateObserver ob : observersStep)</span>
+<span class="fc" id="L235">                    LOGGER.debug(&quot;Observer Step : &quot; + ob.getClass().getSimpleName());</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">            if (observersMicroStep != null)</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">                for (ModelStateObserver ob : observersMicroStep)</span>
+<span class="fc" id="L238">                    LOGGER.debug(&quot;Observer Micro: &quot; + ob.getClass().getSimpleName());</span>
+
+<span class="fc" id="L240">            fireEvent(ModelEvent.CLOSED);</span>
+<span class="fc" id="L241">            fireEvent(ModelEvent.POSTCLOSED);</span>
+        }
+<span class="fc" id="L243">    }</span>
+
+    /**
+     * Called if a error has occurred during model execution.
+     * Also closes the model.
+     *
+     * @param cause the cause
+     */
+    public void errorOccurred(Exception cause) {
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (state != State.CLOSED)</span>
+<span class="fc" id="L253">            fireEvent(new ModelEvent(cause));</span>
+<span class="fc" id="L254">        close();</span>
+<span class="fc" id="L255">    }</span>
+
+    /**
+     * @return true if model is not closed
+     */
+    public boolean isRunning() {
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        return state != State.CLOSED;</span>
+    }
+
+    /**
+     * Adds a node to the update list.
+     *
+     * @param node the node
+     */
+    final void addToUpdateList(Node node) {
+<span class="fc" id="L270">        nodesToUpdateNext.add(node);</span>
+<span class="fc" id="L271">    }</span>
+
+    /**
+     * Performs a step without noise.
+     */
+    public void doStep() {
+<span class="fc" id="L277">        doStep(false);</span>
+<span class="fc" id="L278">    }</span>
+
+    /**
+     * Performs a step.
+     * This means all nodes which needs a update are updated, and all further nodes to
+     * update are also updated until there is no further node to update.
+     * So this method propagates a value change through the whole model.
+     *
+     * @param noise calculation is performed using noise
+     */
+    public void doStep(boolean noise) {
+<span class="fc" id="L289">        stepWithCondition(noise, this::needsUpdate);</span>
+<span class="fc" id="L290">    }</span>
+
+    synchronized private void stepWithCondition(boolean noise, StepCondition cond) {
+        try {
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            if (cond.doNextMicroStep()) {</span>
+<span class="fc" id="L295">                int counter = 0;</span>
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">                while (cond.doNextMicroStep() &amp;&amp; state != State.CLOSED) {</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">                    if (counter++ &gt; oscillationDetectionCounter) {</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                        if (oscillatingNodes == null)</span>
+<span class="nc" id="L299">                            oscillatingNodes = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">                        if (counter &gt; oscillationDetectionCounter + COLLECTING_LOOP_COUNTER_OFFS) {</span>
+<span class="nc" id="L301">                            NodeException seemsToOscillate = new NodeException(Lang.get(&quot;err_seemsToOscillate&quot;)).addNodes(oscillatingNodes);</span>
+<span class="nc" id="L302">                            oscillatingNodes = null;</span>
+<span class="nc" id="L303">                            throw seemsToOscillate;</span>
+                        } else {
+<span class="nc" id="L305">                            oscillatingNodes.addAll(nodesToUpdateNext);</span>
+                        }
+                    }
+<span class="fc" id="L308">                    doMicroStep(noise);</span>
+                }
+<span class="fc" id="L310">            } else {</span>
+                // if a calculation is initiated but there is nothing to do because there was
+                // no gate input change, perform a burn check to detect short circuits caused by
+                // directly connected inputs.
+<span class="fc" id="L314">                fireEvent(ModelEvent.CHECKBURN);</span>
+            }
+<span class="fc" id="L316">        } catch (Exception e) {</span>
+<span class="fc" id="L317">            errorOccurred(e);</span>
+<span class="fc" id="L318">        }</span>
+<span class="fc" id="L319">    }</span>
+
+    /**
+     * Performs a micro step in the model
+     * &lt;p&gt;
+     * Typical usage is a loop like:
+     * &lt;pre&gt;
+     * while (needsUpdate())
+     *     doMicroStep(noise);
+     * &lt;/pre&gt;
+     *
+     * @param noise if true the micro step is performed with noise
+     */
+    synchronized public void doMicroStep(boolean noise) {
+<span class="fc" id="L333">        version++;</span>
+        // swap lists
+<span class="fc" id="L335">        ArrayList&lt;Node&gt; nl = nodesToUpdateNext;</span>
+<span class="fc" id="L336">        nodesToUpdateNext = nodesToUpdateAct;</span>
+<span class="fc" id="L337">        nodesToUpdateAct = nl;</span>
+
+<span class="fc" id="L339">        nodesToUpdateNext.clear();</span>
+
+        try {
+<span class="fc bfc" id="L342" title="All 2 branches covered.">            if (noise) {</span>
+<span class="fc" id="L343">                Collections.shuffle(nodesToUpdateAct);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">                for (Node n : nodesToUpdateAct) {</span>
+<span class="fc" id="L345">                    n.readInputs();</span>
+<span class="fc" id="L346">                    n.writeOutputs();</span>
+<span class="fc" id="L347">                }</span>
+            } else {
+<span class="fc bfc" id="L349" title="All 2 branches covered.">                for (Node n : nodesToUpdateAct) {</span>
+<span class="fc" id="L350">                    n.readInputs();</span>
+<span class="fc" id="L351">                }</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">                for (Node n : nodesToUpdateAct) {</span>
+<span class="fc" id="L353">                    n.writeOutputs();</span>
+<span class="fc" id="L354">                }</span>
+            }
+<span class="fc bfc" id="L356" title="All 2 branches covered.">            if (observersMicroStep != null)</span>
+<span class="fc" id="L357">                fireEvent(ModelEvent.MICROSTEP);</span>
+
+<span class="fc bfc" id="L359" title="All 2 branches covered.">            if (nodesToUpdateNext.isEmpty())</span>
+<span class="fc" id="L360">                fireEvent(ModelEvent.STEP);</span>
+<span class="fc" id="L361">        } catch (Exception e) {</span>
+<span class="fc" id="L362">            errorOccurred(e);</span>
+<span class="fc" id="L363">        }</span>
+<span class="fc" id="L364">    }</span>
+
+    /**
+     * Runs the model until a positive edge at a break element is detected.
+     *
+     * @return The {@link BreakInfo} containig the number of clock cycles necessary to get the positive edge.
+     */
+    public BreakInfo runToBreak() {
+<span class="fc" id="L372">        return runToBreak(-1);</span>
+    }
+
+    /**
+     * Runs the model until a positive edge at a break element is detected.
+     * If timeout half cycles are executed with no break detected the method returns
+     * with a {@link BreakInfo} in timeout state.
+     *
+     * @param timeout the timeout half cycle count, -1 means infinite
+     * @return The number of clock cycles necessary to get the positive edge
+     */
+    public BreakInfo runToBreak(int timeout) {
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">        if (brVal == null) {</span>
+<span class="fc" id="L385">            brVal = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">            for (Break b : breaks)</span>
+<span class="fc" id="L387">                brVal.add(new BreakDetector(b));</span>
+<span class="fc" id="L388">            fireEvent(ModelEvent.RUN_TO_BREAK);</span>
+        }
+
+<span class="fc" id="L391">        ObservableValue clkVal = clocks.get(0).getClockOutput();</span>
+
+        try {
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">            while (state != State.CLOSED) {</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">                clkVal.setBool(!clkVal.getBool());</span>
+<span class="fc" id="L396">                doStep();</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">                for (BreakDetector bd : brVal)</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">                    if (bd.detected()) {</span>
+<span class="fc" id="L399">                        fireEvent(ModelEvent.BREAK);</span>
+<span class="fc" id="L400">                        brVal = null;</span>
+<span class="fc" id="L401">                        return bd.createInfo();</span>
+                    }
+
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">                if (timeout &gt; 0) {</span>
+<span class="nc" id="L405">                    timeout--;</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">                    if (timeout == 0) {</span>
+<span class="nc" id="L407">                        fireEvent(ModelEvent.RUN_TO_BREAK_TIMEOUT);</span>
+<span class="nc" id="L408">                        return new BreakInfo(timeout);</span>
+                    }
+                }
+            }
+<span class="nc" id="L412">        } catch (Exception e) {</span>
+<span class="nc" id="L413">            errorOccurred(e);</span>
+<span class="nc" id="L414">        }</span>
+<span class="nc" id="L415">        return null;</span>
+    }
+
+    /**
+     * Runs the model until a positive edge at the break element is detected in micro step mode.
+     *
+     * @return The number of clock cycles necessary to get the positive edge
+     */
+    public BreakInfo runToBreakMicro() {
+<span class="nc" id="L424">        return runToBreakMicro(-1);</span>
+    }
+
+    /**
+     * Runs the model until a positive edge at the break element is detected in micro step mode.
+     *
+     * @param timeout the timeout half cycle count, -1 means infinite
+     * @return The number of clock cycles necessary to get the positive edge
+     */
+    public BreakInfo runToBreakMicro(int timeout) {
+<span class="nc bnc" id="L434" title="All 2 branches missed.">        if (brVal == null) {</span>
+<span class="nc" id="L435">            brVal = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">            for (Break b : breaks)</span>
+<span class="nc" id="L437">                brVal.add(new BreakDetector(b));</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">            if (!brVal.isEmpty())</span>
+<span class="nc" id="L439">                fireEvent(ModelEvent.RUN_TO_BREAK);</span>
+        }
+
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (brVal.isEmpty()) {</span>
+            // simply stabilize the circuit
+<span class="nc" id="L444">            doStep();</span>
+        } else {
+<span class="nc" id="L446">            ObservableValue clkVal = null;</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (clocks.size() == 1)</span>
+<span class="nc" id="L448">                clkVal = clocks.get(0).getClockOutput();</span>
+
+<span class="nc bnc" id="L450" title="All 2 branches missed.">            while (state != State.CLOSED) {</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">                if (!needsUpdate()) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                    if (clkVal != null)</span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">                        clkVal.setBool(!clkVal.getBool());</span>
+                    else
+                        break;
+                }
+<span class="nc" id="L457">                final BreakDetector[] wasBreak = {null};</span>
+<span class="nc" id="L458">                stepWithCondition(false, () -&gt; {</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">                    for (BreakDetector bd : brVal)</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">                        if (bd.detected()) {</span>
+<span class="nc" id="L461">                            fireEvent(ModelEvent.BREAK);</span>
+<span class="nc" id="L462">                            wasBreak[0] = bd;</span>
+                        }
+<span class="nc bnc" id="L464" title="All 4 branches missed.">                    return needsUpdate() &amp;&amp; wasBreak[0] == null;</span>
+                });
+
+<span class="nc bnc" id="L467" title="All 2 branches missed.">                if (wasBreak[0] != null) {</span>
+<span class="nc" id="L468">                    brVal = null;</span>
+<span class="nc" id="L469">                    return wasBreak[0].createInfo();</span>
+                }
+
+<span class="nc bnc" id="L472" title="All 2 branches missed.">                if (timeout &gt; 0) {</span>
+<span class="nc" id="L473">                    timeout--;</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">                    if (timeout == 0) {</span>
+<span class="nc" id="L475">                        fireEvent(ModelEvent.RUN_TO_BREAK_TIMEOUT);</span>
+<span class="nc" id="L476">                        return new BreakInfo(timeout);</span>
+                    }
+                }
+<span class="nc" id="L479">            }</span>
+        }
+<span class="nc" id="L481">        return null;</span>
+    }
+
+    /**
+     * @return true if the models allows fast run steps
+     */
+    public boolean isRunToBreakAllowed() {
+<span class="pc bpc" id="L488" title="2 of 4 branches missed.">        return clocks.size() == 1 &amp;&amp; !breaks.isEmpty();</span>
+    }
+
+    /**
+     * @return the nodes in this model
+     */
+    public List&lt;Node&gt; getNodes() {
+<span class="fc" id="L495">        return Collections.unmodifiableList(nodes);</span>
+    }
+
+    /**
+     * Asks if an update is necessary.
+     * &lt;p&gt;
+     * Typical usage is a loop like:
+     * &lt;pre&gt;
+     * while (needsUpdate())
+     *     doMicroStep(noise);
+     * &lt;/pre&gt;
+     *
+     * @return true if model has more nodes to update
+     */
+    public boolean needsUpdate() {
+<span class="fc bfc" id="L510" title="All 2 branches covered.">        return !nodesToUpdateNext.isEmpty();</span>
+    }
+
+    /**
+     * @return the nodes to update in the next step
+     */
+    public Collection&lt;Node&gt; nodesToUpdate() {
+<span class="nc" id="L517">        return nodesToUpdateNext;</span>
+    }
+
+    /**
+     * Adds an observer to this model.
+     * The events this observer needs to be called are needed to be given.
+     * You have to check for the correct event in the event handler also, because the event handler is
+     * maybe called on more events than given.
+     *
+     * @param observer the observer to add
+     * @param event    the mandatory event
+     * @param events   more optional events
+     */
+    public synchronized void addObserver(ModelStateObserver observer, ModelEventType event, ModelEventType... events) {
+<span class="fc" id="L531">        addObserverForEvent(observer, event);</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">        for (ModelEventType ev : events)</span>
+<span class="nc" id="L533">            addObserverForEvent(observer, ev);</span>
+<span class="fc" id="L534">    }</span>
+
+    /**
+     * Adds an observer to this model.
+     *
+     * @param observer the observer to add
+     */
+    public synchronized void addObserver(ModelStateObserverTyped observer) {
+<span class="fc bfc" id="L542" title="All 2 branches covered.">        for (ModelEventType ev : observer.getEvents())</span>
+<span class="fc" id="L543">            addObserverForEvent(observer, ev);</span>
+<span class="fc" id="L544">    }</span>
+
+    private synchronized void addObserverForEvent(ModelStateObserver observer, ModelEventType event) {
+<span class="fc" id="L547">        ArrayList&lt;ModelStateObserver&gt; obs = observers;</span>
+<span class="fc bfc" id="L548" title="All 4 branches covered.">        if (event == ModelEventType.STEP || event == ModelEventType.CHECKBURN) {</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">            if (observersStep == null)</span>
+<span class="fc" id="L550">                observersStep = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L551">            obs = observersStep;</span>
+<span class="fc bfc" id="L552" title="All 2 branches covered.">        } else if (event == ModelEventType.MICROSTEP) {</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">            if (observersMicroStep == null)</span>
+<span class="fc" id="L554">                observersMicroStep = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L555">            obs = observersMicroStep;</span>
+        }
+
+<span class="fc bfc" id="L558" title="All 2 branches covered.">        if (!obs.contains(observer))</span>
+<span class="fc" id="L559">            obs.add(observer);</span>
+<span class="fc" id="L560">    }</span>
+
+    /**
+     * Removes an observer to this model.
+     *
+     * @param observer the observer to remove
+     */
+    public synchronized void removeObserver(ModelStateObserver observer) {
+<span class="nc" id="L568">        observers.remove(observer);</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        if (observersStep != null)</span>
+<span class="nc" id="L570">            observersStep.remove(observer);</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (observersMicroStep != null)</span>
+<span class="nc" id="L572">            observersMicroStep.remove(observer);</span>
+<span class="nc" id="L573">    }</span>
+
+    /**
+     * Returns the first observer of the given class.
+     *
+     * @param observerClass the observer class
+     * @param &lt;T&gt;           the type of the observer
+     * @return the found observer or null if not present
+     */
+    public synchronized &lt;T extends ModelStateObserver&gt; T getObserver(Class&lt;T&gt; observerClass) {
+<span class="fc bfc" id="L583" title="All 2 branches covered.">        for (ModelStateObserver mso : observers)</span>
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">            if (mso.getClass() == observerClass)</span>
+<span class="nc" id="L585">                return (T) mso;</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">        if (observersStep != null)</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">            for (ModelStateObserver mso : observersStep)</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">                if (mso.getClass() == observerClass)</span>
+<span class="fc" id="L589">                    return (T) mso;</span>
+<span class="pc bpc" id="L590" title="1 of 2 branches missed.">        if (observersMicroStep != null)</span>
+<span class="nc bnc" id="L591" title="All 2 branches missed.">            for (ModelStateObserver mso : observersMicroStep)</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">                if (mso.getClass() == observerClass)</span>
+<span class="nc" id="L593">                    return (T) mso;</span>
+<span class="fc" id="L594">        return null;</span>
+    }
+
+    /**
+     * Gets an observer of the given class.
+     * If no observer is available the factory is used to create and register one.
+     *
+     * @param observerClass the observers class
+     * @param factory       the factory to create an instance if necessary
+     * @param &lt;T&gt;           the type of the observer
+     * @return the already present or newly created observer; never null
+     */
+    public synchronized &lt;T extends ModelStateObserverTyped&gt; T getOrCreateObserver(Class&lt;T&gt; observerClass, ObserverFactory&lt;T&gt; factory) {
+<span class="fc" id="L607">        T o = getObserver(observerClass);</span>
+<span class="fc bfc" id="L608" title="All 2 branches covered.">        if (o == null) {</span>
+<span class="fc" id="L609">            o = factory.create();</span>
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">            if (o == null)</span>
+<span class="nc" id="L611">                throw new NullPointerException(&quot;no observer created!&quot;);</span>
+<span class="fc" id="L612">            addObserver(o);</span>
+        }
+<span class="fc" id="L614">        return o;</span>
+    }
+
+    private void fireEvent(ModelEvent event) {
+<span class="fc bfc" id="L618" title="All 3 branches covered.">        switch (event.getType()) {</span>
+            case MICROSTEP:
+<span class="fc bfc" id="L620" title="All 2 branches covered.">                if (observersMicroStep != null)</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">                    for (ModelStateObserver observer : observersMicroStep)</span>
+<span class="fc" id="L622">                        observer.handleEvent(event);</span>
+                break;
+            case CHECKBURN:
+            case STEP:
+<span class="fc bfc" id="L626" title="All 2 branches covered.">                if (observersStep != null)</span>
+<span class="fc bfc" id="L627" title="All 2 branches covered.">                    for (ModelStateObserver observer : observersStep)</span>
+<span class="fc" id="L628">                        observer.handleEvent(event);</span>
+                break;
+            default:
+<span class="fc bfc" id="L631" title="All 2 branches covered.">                for (ModelStateObserver observer : observers)</span>
+<span class="fc" id="L632">                    observer.handleEvent(event);</span>
+        }
+<span class="fc" id="L634">    }</span>
+
+    /**
+     * Registers a Clock to the model.
+     *
+     * @param clock the clock
+     */
+    public void addClock(Clock clock) {
+<span class="fc" id="L642">        clocks.add(clock);</span>
+<span class="fc" id="L643">    }</span>
+
+    /**
+     * @return all registered clocks
+     */
+    public ArrayList&lt;Clock&gt; getClocks() {
+<span class="fc" id="L649">        return clocks;</span>
+    }
+
+    /**
+     * Registers a Break to the model
+     *
+     * @param aBreak the break
+     */
+    public void addBreak(Break aBreak) {
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">        if (aBreak.isEnabled())</span>
+<span class="fc" id="L659">            breaks.add(aBreak);</span>
+<span class="fc" id="L660">    }</span>
+
+    /**
+     * Registers a Reset to the model.
+     *
+     * @param reset the Reset
+     */
+    public void addReset(Reset reset) {
+<span class="fc" id="L668">        resets.add(reset);</span>
+<span class="fc" id="L669">    }</span>
+
+    /**
+     * @return all registered Resets
+     */
+    public ArrayList&lt;Reset&gt; getResets() {
+<span class="nc" id="L675">        return resets;</span>
+    }
+
+    /**
+     * Registers a signal to the model.
+     *
+     * @param signal the signal
+     */
+    public void addSignal(Signal signal) {
+<span class="fc bfc" id="L684" title="All 2 branches covered.">        if (signal.isValid()) {</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">            if (signals.contains(signal))</span>
+<span class="fc" id="L686">                invalidSignal = signal;</span>
+<span class="fc" id="L687">            signals.add(signal);</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">            if (signal.isTestOutput())</span>
+<span class="fc" id="L689">                testOutputs.add(signal);</span>
+        }
+<span class="fc" id="L691">    }</span>
+
+    /**
+     * Registers an input to the model.
+     *
+     * @param signal the signal
+     */
+    public void addInput(Signal signal) {
+<span class="fc bfc" id="L699" title="All 2 branches covered.">        if (signal.isValid()) {</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">            if (signals.contains(signal))</span>
+<span class="fc" id="L701">                invalidSignal = signal;</span>
+<span class="fc" id="L702">            signals.add(signal);</span>
+<span class="fc" id="L703">            inputs.add(signal);</span>
+        } else
+<span class="fc" id="L705">            invalidSignal = signal;</span>
+<span class="fc" id="L706">    }</span>
+
+    /**
+     * @return the models inputs
+     */
+    public ArrayList&lt;Signal&gt; getInputs() {
+<span class="fc" id="L712">        return inputs;</span>
+    }
+
+    /**
+     * Registers a output to the model.
+     *
+     * @param signal the signal
+     */
+    public void addOutput(Signal signal) {
+<span class="fc bfc" id="L721" title="All 2 branches covered.">        if (signal.isValid()) {</span>
+<span class="fc bfc" id="L722" title="All 2 branches covered.">            if (signals.contains(signal))</span>
+<span class="fc" id="L723">                invalidSignal = signal;</span>
+<span class="fc" id="L724">            signals.add(signal);</span>
+<span class="fc" id="L725">            outputs.add(signal);</span>
+<span class="fc" id="L726">            testOutputs.add(signal);</span>
+        } else
+<span class="fc" id="L728">            invalidSignal = signal;</span>
+<span class="fc" id="L729">    }</span>
+
+    /**
+     * Checks for invalid signals.
+     *
+     * @throws AnalyseException AnalyseException
+     */
+    public void checkForInvalidSignals() throws AnalyseException {
+<span class="nc bnc" id="L737" title="All 2 branches missed.">        if (invalidSignal != null) {</span>
+<span class="nc" id="L738">            String name = invalidSignal.getName();</span>
+<span class="nc bnc" id="L739" title="All 4 branches missed.">            if (name == null || name.trim().length() == 0)</span>
+<span class="nc" id="L740">                throw new AnalyseException(Lang.get(&quot;err_thereIsAUnnamedIO&quot;));</span>
+            else
+<span class="nc" id="L742">                throw new AnalyseException(Lang.get(&quot;err_NameOfIOIsInvalidOrNotUnique_N&quot;, name));</span>
+        }
+<span class="nc" id="L744">    }</span>
+
+    /**
+     * @return the models outputs
+     */
+    public ArrayList&lt;Signal&gt; getOutputs() {
+<span class="fc" id="L750">        return outputs;</span>
+    }
+
+    /**
+     * @return the models outputs
+     */
+    public ArrayList&lt;Signal&gt; getTestOutputs() {
+<span class="fc" id="L757">        return testOutputs;</span>
+    }
+
+    /**
+     * @return all registered signals
+     */
+    public ArrayList&lt;Signal&gt; getSignals() {
+<span class="fc" id="L764">        return signals;</span>
+    }
+
+    /**
+     * @return a copy of all registered signals
+     */
+    public ArrayList&lt;Signal&gt; getSignalsCopy() {
+<span class="fc" id="L771">        ArrayList&lt;Signal&gt; n = new ArrayList&lt;&gt;(signals.size());</span>
+<span class="fc" id="L772">        n.addAll(signals);</span>
+<span class="fc" id="L773">        return n;</span>
+    }
+
+    /**
+     * @return the number of nodes
+     */
+    public int size() {
+<span class="fc" id="L780">        return nodes.size();</span>
+    }
+
+    /**
+     * Returns all nodes of the given class.
+     *
+     * @param nodeClass the class
+     * @param &lt;NODE&gt;    the node type
+     * @return the list, not null, but maybe empty
+     */
+    public &lt;NODE extends Node&gt; List&lt;NODE&gt; findNode(Class&lt;NODE&gt; nodeClass) {
+<span class="fc" id="L791">        return findNode(nodeClass, n -&gt; true);</span>
+    }
+
+    /**
+     * Returns all nodes of the given class.
+     * A filter can be used to narrow down the amount of nodes found.
+     *
+     * @param nodeClass the class
+     * @param filter    filter to filter the nodes
+     * @param &lt;NODE&gt;    the node type
+     * @return the list, not null, but maybe empty
+     */
+    public &lt;NODE extends Node&gt; List&lt;NODE&gt; findNode(Class&lt;NODE&gt; nodeClass, NodeFilter&lt;NODE&gt; filter) {
+<span class="fc" id="L804">        ArrayList&lt;NODE&gt; found = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">        for (Node n : nodes)</span>
+<span class="pc bpc" id="L806" title="1 of 4 branches missed.">            if (n.getClass() == nodeClass &amp;&amp; filter.accept((NODE) n))</span>
+<span class="fc" id="L807">                found.add((NODE) n);</span>
+<span class="fc" id="L808">        return found;</span>
+    }
+
+    /**
+     * Returns all nodes witch match the given filter.
+     *
+     * @param filter filter to filter the nodes
+     * @return the list, not null, but maybe empty
+     */
+    public List&lt;Node&gt; findNode(NodeFilter&lt;Node&gt; filter) {
+<span class="fc" id="L818">        ArrayList&lt;Node&gt; found = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L819" title="All 2 branches covered.">        for (Node n : nodes)</span>
+<span class="fc bfc" id="L820" title="All 2 branches covered.">            if (filter.accept(n))</span>
+<span class="fc" id="L821">                found.add(n);</span>
+<span class="fc" id="L822">        return found;</span>
+    }
+
+    /**
+     * Adds a button which is to map to a keyboard key
+     *
+     * @param button  the button
+     * @param keyCode the key code
+     */
+    public void addButtonToMap(Button button, int keyCode) {
+<span class="nc" id="L832">        buttonsToMap.put(keyCode, button);</span>
+<span class="nc" id="L833">    }</span>
+
+    /**
+     * Gets the button which matches a givrn key
+     *
+     * @param keyCode the key
+     * @return the button or null if not present
+     */
+    public Button getButtonToMap(int keyCode) {
+<span class="nc" id="L842">        return buttonsToMap.get(keyCode);</span>
+    }
+
+    /**
+     * A filter for nodes.
+     *
+     * @param &lt;NODE&gt;
+     */
+    public interface NodeFilter&lt;NODE extends Node&gt; {
+        /**
+         * Accepts the node
+         *
+         * @param n the node
+         * @return true if accepted
+         */
+        boolean accept(NODE n);
+    }
+
+    @Override
+    public Iterator&lt;Node&gt; iterator() {
+<span class="fc" id="L862">        return nodes.iterator();</span>
+    }
+
+    /**
+     * Removes a node from this model.
+     *
+     * @param node the node to remove
+     */
+    public void removeNode(Node node) {
+<span class="fc" id="L871">        nodes.remove(node);</span>
+<span class="fc" id="L872">    }</span>
+
+    /**
+     * replaces a node by an other node
+     *
+     * @param oldNode old node
+     * @param newNode new node
+     * @throws NodeException NodeException
+     */
+    public void replace(Node oldNode, Node newNode) throws NodeException {
+<span class="nc" id="L882">        int i = nodes.indexOf(oldNode);</span>
+<span class="nc bnc" id="L883" title="All 2 branches missed.">        if (i &lt; 0)</span>
+<span class="nc" id="L884">            throw new NodeException(&quot;node not found&quot;, oldNode, -1, null);</span>
+<span class="nc" id="L885">        nodes.set(i, newNode);</span>
+<span class="nc" id="L886">    }</span>
+
+
+    /**
+     * Returns the input with the given name.
+     *
+     * @param name the name
+     * @return the input value
+     */
+    public ObservableValue getInput(String name) {
+<span class="pc bpc" id="L896" title="1 of 2 branches missed.">        for (Signal i : inputs)</span>
+<span class="fc bfc" id="L897" title="All 2 branches covered.">            if (i.getName().equals(name))</span>
+<span class="fc" id="L898">                return i.getValue();</span>
+<span class="nc" id="L899">        return null;</span>
+    }
+
+    /**
+     * Returns the output with the given name.
+     *
+     * @param name the name
+     * @return the input value
+     */
+    public ObservableValue getOutput(String name) {
+<span class="pc bpc" id="L909" title="1 of 2 branches missed.">        for (Signal i : outputs)</span>
+<span class="fc bfc" id="L910" title="All 2 branches covered.">            if (i.getName().equals(name))</span>
+<span class="fc" id="L911">                return i.getValue();</span>
+<span class="nc" id="L912">        return null;</span>
+    }
+
+    /**
+     * Returns the signal setter with the given name.
+     *
+     * @param name the name
+     * @return the input value
+     */
+    public Signal.Setter getSignalSetter(String name) {
+<span class="pc bpc" id="L922" title="1 of 2 branches missed.">        for (Signal i : signals)</span>
+<span class="fc bfc" id="L923" title="All 2 branches covered.">            if (i.getName().equals(name))</span>
+<span class="fc" id="L924">                return i.getSetter();</span>
+<span class="nc" id="L925">        return null;</span>
+    }
+
+    /**
+     * Registers a global value.
+     *
+     * @param name  the name
+     * @param value the value
+     */
+    public void registerGlobalValue(String name, ObservableValue value) {
+<span class="pc bpc" id="L935" title="1 of 2 branches missed.">        if (allowGlobalValues)</span>
+<span class="nc" id="L936">            GlobalValues.getInstance().register(name, value, this);</span>
+<span class="fc" id="L937">    }</span>
+
+    /**
+     * Set or denies the creation of global values.
+     *
+     * @param allowGlobalValues if true, global values are published
+     * @return this for chained calls
+     */
+    public Model setAllowGlobalValues(boolean allowGlobalValues) {
+<span class="fc" id="L946">        this.allowGlobalValues = allowGlobalValues;</span>
+<span class="fc" id="L947">        return this;</span>
+    }
+
+    /**
+     * Sets async execution infos
+     *
+     * @param asyncInfos essentially the frequency
+     */
+    public void setAsyncInfos(AsyncSeq asyncInfos) {
+<span class="fc" id="L956">        this.asyncInfos = asyncInfos;</span>
+<span class="fc" id="L957">    }</span>
+
+    /**
+     * @return the infos used for async execution
+     */
+    public AsyncSeq getAsyncInfos() {
+<span class="fc" id="L963">        return asyncInfos;</span>
+    }
+
+    /**
+     * Sets the root path of this model.
+     * If the given file is a file instead of a directory, the parent directory is used.
+     *
+     * @param rootPath the root path
+     * @return this for chained calls;
+     */
+
+    public Model setRootPath(File rootPath) {
+<span class="pc bpc" id="L975" title="1 of 4 branches missed.">        if (rootPath != null &amp;&amp; rootPath.isFile())</span>
+<span class="fc" id="L976">            this.rootPath = rootPath.getParentFile();</span>
+        else
+<span class="fc" id="L978">            this.rootPath = rootPath;</span>
+<span class="fc" id="L979">        return this;</span>
+    }
+
+    /**
+     * @return the models root path
+     */
+    public File getRootPath() {
+<span class="nc" id="L986">        return rootPath;</span>
+    }
+
+    @Override
+    public &lt;A extends Runnable&gt; A modify(A run) {
+<span class="fc" id="L991">        synchronized (this) {</span>
+<span class="fc" id="L992">            run.run();</span>
+<span class="fc" id="L993">        }</span>
+<span class="fc" id="L994">        fireEvent(ModelEvent.MICROSTEP);  // record the external modification as a micro step!</span>
+<span class="fc" id="L995">        doStep();</span>
+<span class="fc" id="L996">        return run;</span>
+    }
+
+    /**
+     * Creates a {@link SyncAccess} instance to access the model.
+     * If microStep is true, there is no foll step performed, in case of a user interaction.
+     *
+     * @param microStep if true no full step is calculated at a user interaction
+     * @return the instance
+     */
+    public SyncAccess createSync(boolean microStep) {
+<span class="nc bnc" id="L1007" title="All 2 branches missed.">        if (microStep) {</span>
+<span class="nc" id="L1008">            return new SyncAccess() {</span>
+                @Override
+                public &lt;A extends Runnable&gt; A modify(A run) {
+<span class="nc" id="L1011">                    synchronized (Model.this) {</span>
+<span class="nc" id="L1012">                        run.run();</span>
+<span class="nc" id="L1013">                    }</span>
+<span class="nc" id="L1014">                    fireEvent(ModelEvent.MICROSTEP);  // record the external modification as a micro step!</span>
+<span class="nc" id="L1015">                    return run;</span>
+                }
+
+                @Override
+                public &lt;A extends Runnable&gt; A read(A run) {
+<span class="nc" id="L1020">                    return Model.this.read(run);</span>
+                }
+            };
+        } else
+<span class="nc" id="L1024">            return this;</span>
+    }
+
+
+    @Override
+    public &lt;A extends Runnable&gt; A read(A run) {
+<span class="fc" id="L1030">        synchronized (this) {</span>
+<span class="fc" id="L1031">            run.run();</span>
+<span class="fc" id="L1032">        }</span>
+<span class="fc" id="L1033">        return run;</span>
+    }
+
+    /**
+     * Used to return the break info
+     */
+    public static final class BreakInfo {
+        private final boolean timeout;
+        private final int steps;
+        private final String label;
+
+<span class="nc" id="L1044">        private BreakInfo(int steps) {</span>
+<span class="nc" id="L1045">            this.steps = steps;</span>
+<span class="nc" id="L1046">            this.label = null;</span>
+<span class="nc" id="L1047">            this.timeout = true;</span>
+
+<span class="nc" id="L1049">        }</span>
+
+<span class="fc" id="L1051">        private BreakInfo(int steps, String label) {</span>
+<span class="fc" id="L1052">            this.steps = steps;</span>
+<span class="fc" id="L1053">            this.label = label;</span>
+<span class="fc" id="L1054">            this.timeout = false;</span>
+<span class="fc" id="L1055">        }</span>
+
+        /**
+         * @return the number of steps used to reach a break point
+         */
+        public int getSteps() {
+<span class="fc" id="L1061">            return steps;</span>
+        }
+
+        /**
+         * @return the break point reached
+         */
+        public String getLabel() {
+<span class="nc" id="L1068">            return label;</span>
+        }
+
+        /**
+         * @return true if timeout occurred
+         */
+        public boolean isTimeout() {
+<span class="nc" id="L1075">            return timeout;</span>
+        }
+    }
+
+    private static final class BreakDetector {
+        private final ObservableValue brVal;
+        private final int count;
+        private final String label;
+        private boolean lastIn;
+        private int c;
+
+<span class="fc" id="L1086">        private BreakDetector(Break breakComp) {</span>
+<span class="fc" id="L1087">            label = breakComp.getLabel();</span>
+<span class="fc" id="L1088">            count = breakComp.getCycles() * 2;</span>
+<span class="fc" id="L1089">            brVal = breakComp.getBreakInput();</span>
+<span class="fc" id="L1090">            lastIn = brVal.getBool();</span>
+<span class="fc" id="L1091">            c = 0;</span>
+<span class="fc" id="L1092">        }</span>
+
+        private boolean detected() throws NodeException {
+<span class="fc" id="L1095">            c++;</span>
+<span class="pc bpc" id="L1096" title="1 of 2 branches missed.">            if (c &gt;= count)</span>
+<span class="nc" id="L1097">                throw new NodeException(Lang.get(&quot;err_breakTimeOut&quot;, c, label), brVal);</span>
+
+<span class="fc" id="L1099">            boolean aktIn = brVal.getBool();</span>
+<span class="pc bpc" id="L1100" title="1 of 4 branches missed.">            if (!lastIn &amp;&amp; aktIn) {</span>
+<span class="fc" id="L1101">                lastIn = aktIn;</span>
+<span class="fc" id="L1102">                return true;</span>
+            } else {
+<span class="fc" id="L1104">                lastIn = aktIn;</span>
+<span class="fc" id="L1105">                return false;</span>
+            }
+        }
+
+        private BreakInfo createInfo() {
+<span class="fc" id="L1110">            return new BreakInfo(c, label);</span>
+        }
+    }
+
+    private interface StepCondition {
+        boolean doNextMicroStep() throws NodeException;
+    }
+
+    /**
+     * Factory used to create a {@link ModelStateObserverTyped}
+     *
+     * @param &lt;T&gt; the type of the observer
+     */
+    public interface ObserverFactory&lt;T extends ModelStateObserverTyped&gt; {
+        /**
+         * @return the created observer
+         */
+        T create();
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RealTimeClock.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">RealTimeClock.java</span></div><h1>RealTimeClock.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.gui.StatusInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * The real time clock which is used to fire the models clocks with real time signals
+ * If the maximum frequency is selected a dedicated thread is started which runs the model.
+ * So you get the highest speed but no real time. The model runs as fast as possible.
+ */
+public class RealTimeClock implements ModelStateObserverTyped {
+<span class="nc" id="L24">    private static final Logger LOGGER = LoggerFactory.getLogger(RealTimeClock.class);</span>
+
+    private final Model model;
+    private final ScheduledThreadPoolExecutor executor;
+    private final StatusInterface status;
+    private final int frequency;
+    private final ObservableValue output;
+    private Runner runner;
+
+    /**
+     * Creates a new real time clock
+     *
+     * @param model    the model
+     * @param clock    the clock element which is modify
+     * @param executor the executor used to schedule the update
+     * @param status   allows sending messages to the status line
+     */
+<span class="nc" id="L41">    public RealTimeClock(Model model, Clock clock, ScheduledThreadPoolExecutor executor, StatusInterface status) {</span>
+<span class="nc" id="L42">        this.model = model;</span>
+<span class="nc" id="L43">        this.executor = executor;</span>
+<span class="nc" id="L44">        this.status = status;</span>
+<span class="nc" id="L45">        int f = clock.getFrequency();</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (f &lt; 1) f = 1;</span>
+<span class="nc" id="L47">        this.frequency = f;</span>
+<span class="nc" id="L48">        this.output = clock.getClockOutput();</span>
+<span class="nc" id="L49">        model.addObserver(this);</span>
+<span class="nc" id="L50">    }</span>
+
+    @Override
+    public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L54" title="All 3 branches missed.">        switch (event.getType()) {</span>
+            case STARTED:
+<span class="nc" id="L56">                int delayMuS = 500000 / frequency;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                if (delayMuS &lt; 1)</span>
+<span class="nc" id="L58">                    runner = new ThreadRunner();</span>
+                else
+<span class="nc" id="L60">                    runner = new RealTimeRunner(delayMuS);</span>
+<span class="nc" id="L61">                break;</span>
+            case CLOSED:
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (runner != null)</span>
+<span class="nc" id="L64">                    runner.stop();</span>
+                break;
+        }
+<span class="nc" id="L67">    }</span>
+
+    @Override
+    public ModelEventType[] getEvents() {
+<span class="nc" id="L71">        return new ModelEventType[]{ModelEventType.STARTED, ModelEventType.CLOSED};</span>
+    }
+
+    /**
+     * @return true if a thread runner is used
+     */
+    public boolean isThreadRunner() {
+<span class="nc" id="L78">        int delayMuS = 500000 / frequency;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        return delayMuS &lt; 1;</span>
+    }
+
+    interface Runner {
+        void stop();
+    }
+
+    /**
+     * runs with defined rate
+     */
+    private class RealTimeRunner implements Runner {
+
+        private final ScheduledFuture&lt;?&gt; timer;
+
+<span class="nc" id="L93">        RealTimeRunner(int delay) {</span>
+            FrequencyCalculator frequencyCalculator;
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            if (frequency &gt; 2000)</span>
+<span class="nc" id="L96">                frequencyCalculator = new FrequencyCalculator(status, frequency);</span>
+            else
+<span class="nc" id="L98">                frequencyCalculator = null;</span>
+<span class="nc" id="L99">            timer = executor.scheduleAtFixedRate(() -&gt; {</span>
+<span class="nc" id="L100">                model.modify(() -&gt; output.setValue(1 - output.getValue()));</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                if (frequencyCalculator != null)</span>
+<span class="nc" id="L102">                    frequencyCalculator.calc();</span>
+<span class="nc" id="L103">            }, delay, delay, TimeUnit.MICROSECONDS);</span>
+<span class="nc" id="L104">        }</span>
+
+        @Override
+        public void stop() {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (timer != null)</span>
+<span class="nc" id="L109">                timer.cancel(false);</span>
+<span class="nc" id="L110">        }</span>
+    }
+
+    /**
+     * runs as fast as possible!
+     */
+    private class ThreadRunner implements Runner {
+
+        private final Thread thread;
+
+<span class="nc" id="L120">        ThreadRunner() {</span>
+<span class="nc" id="L121">            thread = new Thread(() -&gt; {</span>
+<span class="nc" id="L122">                LOGGER.debug(&quot;thread start&quot;);</span>
+<span class="nc" id="L123">                FrequencyCalculator frequencyCalculator = new FrequencyCalculator(status, frequency);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                while (!Thread.interrupted()) {</span>
+<span class="nc" id="L125">                    model.modify(() -&gt; output.setValue(1 - output.getValue()));</span>
+<span class="nc" id="L126">                    frequencyCalculator.calc();</span>
+                }
+<span class="nc" id="L128">            });</span>
+<span class="nc" id="L129">            thread.setDaemon(true);</span>
+<span class="nc" id="L130">            thread.start();</span>
+<span class="nc" id="L131">        }</span>
+
+        @Override
+        public void stop() {
+<span class="nc" id="L135">            thread.interrupt();</span>
+<span class="nc" id="L136">        }</span>
+    }
+
+    private static final class FrequencyCalculator {
+        private final StatusInterface status;
+        private final long minCounter;
+        private long checkCounter;
+        private int counter;
+        private long time;
+
+<span class="nc" id="L146">        private FrequencyCalculator(StatusInterface status, int frequency) {</span>
+<span class="nc" id="L147">            this.status = status;</span>
+<span class="nc" id="L148">            time = System.currentTimeMillis();</span>
+<span class="nc" id="L149">            counter = 0;</span>
+<span class="nc" id="L150">            minCounter = Math.min(frequency, 50000);</span>
+<span class="nc" id="L151">            checkCounter = minCounter;</span>
+<span class="nc" id="L152">        }</span>
+
+        private void calc() {
+<span class="nc" id="L155">            counter++;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            if (counter == checkCounter) {</span>
+<span class="nc" id="L157">                long t = System.currentTimeMillis();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                if (t - time &gt; 2000) {</span>
+<span class="nc" id="L159">                    final long l = counter / (t - time) / 2;</span>
+<span class="nc" id="L160">                    status.setStatus(l + &quot; kHz&quot;);</span>
+<span class="nc" id="L161">                    time = t;</span>
+<span class="nc" id="L162">                    counter = 0;</span>
+<span class="nc" id="L163">                    checkCounter = minCounter;</span>
+<span class="nc" id="L164">                } else {</span>
+<span class="nc" id="L165">                    checkCounter += minCounter;</span>
+                }
+            }
+<span class="nc" id="L168">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

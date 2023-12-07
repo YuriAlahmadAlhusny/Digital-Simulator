@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettingsBase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">SettingsBase.java</span></div><h1>SettingsBase.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.core.element.AttributeListener;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.draw.elements.Circuit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+/**
+ * Base class for Settings
+ */
+public class SettingsBase implements AttributeListener {
+<span class="fc" id="L25">    private static final Logger LOGGER = LoggerFactory.getLogger(SettingsBase.class);</span>
+
+    private final ElementAttributes attributes;
+    private final File filename;
+    private final List&lt;Key&gt; settingsKeys;
+
+    /**
+     * Creates a new instance
+     *
+     * @param settingsKeys the list of keys
+     * @param name         the filename
+     */
+<span class="fc" id="L37">    protected SettingsBase(List&lt;Key&gt; settingsKeys, String name) {</span>
+<span class="fc" id="L38">        this.settingsKeys = settingsKeys;</span>
+
+<span class="fc" id="L40">        filename = new File(new File(System.getProperty(&quot;user.home&quot;)), name);</span>
+
+<span class="fc" id="L42">        ElementAttributes attr = null;</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (filename.exists()) {</span>
+<span class="fc" id="L44">            XStream xStream = Circuit.getxStream();</span>
+<span class="fc" id="L45">            try (InputStream in = new FileInputStream(filename)) {</span>
+<span class="fc" id="L46">                attr = (ElementAttributes) xStream.fromXML(in);</span>
+<span class="nc" id="L47">            } catch (Exception e) {</span>
+<span class="nc" id="L48">                e.printStackTrace();</span>
+<span class="fc" id="L49">            }</span>
+<span class="fc" id="L50">        } else {</span>
+<span class="nc" id="L51">            LOGGER.debug(&quot;no settings file: &quot; + filename);</span>
+        }
+
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (attr == null) {</span>
+<span class="nc" id="L55">            LOGGER.debug(&quot;Use default settings!&quot;);</span>
+<span class="nc" id="L56">            attributes = new ElementAttributes();</span>
+        } else
+<span class="fc" id="L58">            attributes = attr;</span>
+
+<span class="fc" id="L60">        attributes.addListener(this);</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * @return the settings
+     */
+    public ElementAttributes getAttributes() {
+<span class="fc" id="L67">        return attributes;</span>
+    }
+
+    /**
+     * Gets a value from the settings.
+     * If the value is not present the default value is returned
+     *
+     * @param key     the key
+     * @param &lt;VALUE&gt; the type of the value
+     * @return the value
+     */
+    public &lt;VALUE&gt; VALUE get(Key&lt;VALUE&gt; key) {
+<span class="fc" id="L79">        return attributes.get(key);</span>
+    }
+
+    @Override
+    public void attributeChanged() {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (LOGGER.isDebugEnabled())</span>
+<span class="nc" id="L85">            LOGGER.debug(&quot;write settings &quot; + filename);</span>
+<span class="nc" id="L86">        XStream xStream = Circuit.getxStream();</span>
+<span class="nc" id="L87">        try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L88">            out.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="nc" id="L89">            xStream.marshal(attributes, new PrettyPrintWriter(out));</span>
+<span class="nc" id="L90">        } catch (Exception e) {</span>
+<span class="nc" id="L91">            e.printStackTrace();</span>
+<span class="nc" id="L92">        }</span>
+<span class="nc" id="L93">    }</span>
+
+    /**
+     * @return the settings keys
+     */
+    public List&lt;Key&gt; getKeys() {
+<span class="fc" id="L99">        return settingsKeys;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

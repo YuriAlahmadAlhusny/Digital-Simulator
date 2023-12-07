@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementOrderer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">ElementOrderer.java</span></div><h1>ElementOrderer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.util.ArrayList;
+
+/**
+ * Orders items.
+ * The items are ordered in their container described by {@link ElementOrderer.OrderInterface}.
+ *
+ * @param &lt;T&gt; the element types to order
+ */
+public class ElementOrderer&lt;T&gt; extends JDialog {
+
+    private final JPanel buttons;
+    private final JList&lt;T&gt; list;
+    private final MyListModel&lt;T&gt; listModel;
+    private final OrderInterface&lt;T&gt; data;
+
+<span class="nc" id="L32">    private boolean okPressed = true;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param owner the owner of this dialog
+     * @param title the dialogs title
+     * @param data  the data to order
+     */
+    public ElementOrderer(Window owner, String title, OrderInterface&lt;T&gt; data) {
+<span class="nc" id="L42">        super(owner, title, ModalityType.APPLICATION_MODAL);</span>
+<span class="nc" id="L43">        this.data = data;</span>
+<span class="nc" id="L44">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L46">        listModel = new MyListModel&lt;T&gt;(data);</span>
+<span class="nc" id="L47">        list = new JList&lt;T&gt;(listModel);</span>
+<span class="nc" id="L48">        list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);</span>
+<span class="nc" id="L49">        JScrollPane scrollPane = new JScrollPane(list);</span>
+<span class="nc" id="L50">        getContentPane().add(scrollPane);</span>
+<span class="nc" id="L51">        scrollPane.setPreferredSize(Screen.getInstance().scale(new Dimension(100, 150)));</span>
+
+<span class="nc" id="L53">        buttons = new JPanel();</span>
+<span class="nc" id="L54">        buttons.setLayout(new BoxLayout(buttons, BoxLayout.Y_AXIS));</span>
+<span class="nc" id="L55">        buttons.add(new ToolTipAction(&quot;\u2191&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L58">                int i0 = list.getSelectionModel().getMinSelectionIndex();</span>
+<span class="nc" id="L59">                int i1 = list.getSelectionModel().getMaxSelectionIndex();</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">                if (i0 &gt; 0 &amp;&amp; i1 &gt; 0) {</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">                    for (int i = i0; i &lt;= i1; i++)</span>
+<span class="nc" id="L62">                        listModel.swap(i, i - 1);</span>
+<span class="nc" id="L63">                    list.getSelectionModel().setSelectionInterval(i0 - 1, i1 - 1);</span>
+                }
+<span class="nc" id="L65">            }</span>
+<span class="nc" id="L66">        }.setToolTip(Lang.get(&quot;tt_moveItemUp&quot;)).createJButton());</span>
+<span class="nc" id="L67">        buttons.add(new ToolTipAction(&quot;\u2193&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L70">                int i0 = list.getSelectionModel().getMinSelectionIndex();</span>
+<span class="nc" id="L71">                int i1 = list.getSelectionModel().getMaxSelectionIndex();</span>
+<span class="nc bnc" id="L72" title="All 8 branches missed.">                if (i0 &gt;= 0 &amp;&amp; i0 &lt; data.size() - 1 &amp;&amp; i1 &gt;= 0 &amp;&amp; i1 &lt; data.size() - 1) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                    for (int i = i1; i &gt;= i0; i--)</span>
+<span class="nc" id="L74">                        listModel.swap(i, i + 1);</span>
+<span class="nc" id="L75">                    list.getSelectionModel().setSelectionInterval(i0 + 1, i1 + 1);</span>
+                }
+<span class="nc" id="L77">            }</span>
+<span class="nc" id="L78">        }.setToolTip(Lang.get(&quot;tt_moveItemDown&quot;)).createJButton());</span>
+<span class="nc" id="L79">        getContentPane().add(buttons, BorderLayout.EAST);</span>
+
+<span class="nc" id="L81">        pack();</span>
+<span class="nc" id="L82">        setLocationRelativeTo(owner);</span>
+<span class="nc" id="L83">    }</span>
+
+    /**
+     * Called to add a ok button
+     *
+     * @return this for chained calls
+     */
+    public ElementOrderer&lt;T&gt; addOkButton() {
+<span class="nc" id="L91">        JButton okButton = new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L94">                okPressed = true;</span>
+<span class="nc" id="L95">                dispose();</span>
+<span class="nc" id="L96">            }</span>
+        });
+<span class="nc" id="L98">        getContentPane().add(okButton, BorderLayout.SOUTH);</span>
+<span class="nc" id="L99">        okPressed = false;</span>
+<span class="nc" id="L100">        return this;</span>
+    }
+
+    /**
+     * Called to add a delete button
+     *
+     * @param minEntries the min number of entries
+     * @return this for chained calls
+     */
+    public ElementOrderer&lt;T&gt; addDeleteButton(final int minEntries) {
+<span class="nc" id="L110">        buttons.add(new ToolTipAction(&quot;\u2717&quot;) { // 274C is not visible on Windows, 2715,2716,2717,2718 works an linux</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L113">                int i0 = list.getSelectionModel().getMinSelectionIndex();</span>
+<span class="nc" id="L114">                int i1 = list.getSelectionModel().getMaxSelectionIndex();</span>
+<span class="nc" id="L115">                int del = i1 - i0 + 1;</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">                if (data.size() - del &gt;= minEntries &amp;&amp; del &gt; 0)</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                    for (int i = i1; i &gt;= i0; i--)</span>
+<span class="nc" id="L118">                        listModel.delete(i);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                if (data.size() &lt;= minEntries)</span>
+<span class="nc" id="L120">                    setEnabled(false);</span>
+<span class="nc" id="L121">            }</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        }.setToolTip(Lang.get(&quot;tt_deleteItem&quot;)).setEnabledChain(data.size() &gt; minEntries).createJButton());</span>
+<span class="nc" id="L123">        return this;</span>
+    }
+
+    /**
+     * Shows the dialog
+     *
+     * @return true if ok was pressed
+     */
+    public boolean showDialog() {
+<span class="nc" id="L132">        pack();</span>
+<span class="nc" id="L133">        setVisible(true);</span>
+<span class="nc" id="L134">        return okPressed;</span>
+    }
+
+    /**
+     * Container for the items to order
+     *
+     * @param &lt;T&gt; the type of the items
+     */
+    public interface OrderInterface&lt;T&gt; {
+
+        /**
+         * @return number of items
+         */
+        int size();
+
+        /**
+         * Returns the requested items
+         *
+         * @param index the index
+         * @return the item
+         */
+        T get(int index);
+
+        /**
+         * Swap the items
+         *
+         * @param i th item
+         * @param j th item
+         */
+        void swap(int i, int j);
+
+        /**
+         * Deletes the given item
+         *
+         * @param index the element to delete
+         */
+        default void delete(int index) {
+<span class="nc" id="L171">            throw new UnsupportedOperationException(&quot;delete&quot;);</span>
+        }
+
+    }
+
+    /**
+     * Implementation to order a list
+     *
+     * @param &lt;T&gt; type of items
+     */
+    public static class ListOrder&lt;T&gt; implements OrderInterface&lt;T&gt; {
+        private java.util.List&lt;T&gt; list;
+
+        /**
+         * Creates a new instance
+         *
+         * @param list the list to order
+         */
+<span class="fc" id="L189">        public ListOrder(java.util.List&lt;T&gt; list) {</span>
+<span class="fc" id="L190">            this.list = list;</span>
+<span class="fc" id="L191">        }</span>
+
+        @Override
+        public int size() {
+<span class="nc" id="L195">            return list.size();</span>
+        }
+
+        @Override
+        public T get(int index) {
+<span class="nc" id="L200">            return list.get(index);</span>
+        }
+
+        @Override
+        public void swap(int i, int j) {
+<span class="fc" id="L205">            T z = list.get(i);</span>
+<span class="fc" id="L206">            list.set(i, list.get(j));</span>
+<span class="fc" id="L207">            list.set(j, z);</span>
+<span class="fc" id="L208">        }</span>
+
+        @Override
+        public void delete(int index) {
+<span class="fc" id="L212">            list.remove(index);</span>
+<span class="fc" id="L213">        }</span>
+    }
+
+    private class MyListModel&lt;T&gt; implements ListModel&lt;T&gt; {
+        private final OrderInterface&lt;T&gt; data;
+        private ArrayList&lt;ListDataListener&gt; listener;
+
+<span class="nc" id="L220">        MyListModel(OrderInterface&lt;T&gt; data) {</span>
+<span class="nc" id="L221">            this.data = data;</span>
+<span class="nc" id="L222">            listener = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L223">        }</span>
+
+        @Override
+        public int getSize() {
+<span class="nc" id="L227">            return data.size();</span>
+        }
+
+        @Override
+        public T getElementAt(int index) {
+<span class="nc" id="L232">            return data.get(index);</span>
+        }
+
+        @Override
+        public void addListDataListener(ListDataListener l) {
+<span class="nc" id="L237">            listener.add(l);</span>
+<span class="nc" id="L238">        }</span>
+
+        @Override
+        public void removeListDataListener(ListDataListener l) {
+<span class="nc" id="L242">            listener.remove(l);</span>
+<span class="nc" id="L243">        }</span>
+
+        void swap(int i, int j) {
+<span class="nc" id="L246">            data.swap(i, j);</span>
+<span class="nc" id="L247">            fireEvent(Math.min(i, j), Math.max(i, j));</span>
+<span class="nc" id="L248">        }</span>
+
+        void delete(int i) {
+<span class="nc" id="L251">            data.delete(i);</span>
+<span class="nc" id="L252">            fireEventDeleted(i);</span>
+<span class="nc" id="L253">        }</span>
+
+        private void fireEvent(int min, int max) {
+<span class="nc" id="L256">            ListDataEvent e = new ListDataEvent(this, ListDataEvent.CONTENTS_CHANGED, min, max);</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">            for (ListDataListener l : listener)</span>
+<span class="nc" id="L258">                l.contentsChanged(e);</span>
+<span class="nc" id="L259">        }</span>
+
+        private void fireEventDeleted(int item) {
+<span class="nc" id="L262">            ListDataEvent e = new ListDataEvent(this, ListDataEvent.INTERVAL_REMOVED, item, item);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">            for (ListDataListener l : listener)</span>
+<span class="nc" id="L264">                l.contentsChanged(e);</span>
+<span class="nc" id="L265">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

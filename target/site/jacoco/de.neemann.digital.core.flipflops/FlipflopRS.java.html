@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FlipflopRS.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.flipflops</a> &gt; <span class="el_source">FlipflopRS.java</span></div><h1>FlipflopRS.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.flipflops;
+
+import de.neemann.digital.core.BitsException;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The RS flip-flop
+ */
+public class FlipflopRS extends FlipflopBit {
+
+    /**
+     * The RS-FF description
+     */
+<span class="fc" id="L26">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L27">            = new ElementTypeDescription(&quot;RS_FF&quot;, FlipflopRS.class, input(&quot;S&quot;), input(&quot;C&quot;).setClock(), input(&quot;R&quot;))</span>
+<span class="fc" id="L28">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.MIRROR)</span>
+<span class="fc" id="L30">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.DEFAULT)</span>
+<span class="fc" id="L32">            .addAttribute(Keys.INVERTER_CONFIG)</span>
+<span class="fc" id="L33">            .addAttribute(Keys.VALUE_IS_PROBE);</span>
+
+
+    private ObservableValue sVal;
+    private ObservableValue rVal;
+    private ObservableValue clockVal;
+    private boolean lastClock;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+    public FlipflopRS(ElementAttributes attributes) {
+<span class="fc" id="L47">        super(attributes, DESCRIPTION);</span>
+<span class="fc" id="L48">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L52">        boolean clock = clockVal.getBool();</span>
+<span class="pc bpc" id="L53" title="1 of 4 branches missed.">        if (clock &amp;&amp; !lastClock) {</span>
+<span class="fc" id="L54">            boolean s = sVal.getBool();</span>
+<span class="fc" id="L55">            boolean r = rVal.getBool();</span>
+
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if (s) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                if (r) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                    setOut(Math.random()&lt;0.5);</span>
+                } else {
+<span class="fc" id="L61">                    setOut(true);</span>
+                }
+            } else {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">                if (r) {</span>
+<span class="fc" id="L65">                    setOut(false);</span>
+                }
+            }
+        }
+<span class="fc" id="L69">        lastClock = clock;</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws BitsException {
+<span class="fc" id="L74">        sVal = inputs.get(0).checkBits(1, this, 0);</span>
+<span class="fc" id="L75">        clockVal = inputs.get(1).addObserverToValue(this).checkBits(1, this, 1);</span>
+<span class="fc" id="L76">        rVal = inputs.get(2).checkBits(1, this, 2);</span>
+<span class="fc" id="L77">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

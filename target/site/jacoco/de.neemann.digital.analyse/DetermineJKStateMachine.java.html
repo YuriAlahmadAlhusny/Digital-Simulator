@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DetermineJKStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">DetermineJKStateMachine.java</span></div><h1>DetermineJKStateMachine.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.analyse.quinemc.QuineMcCluskey;
+import de.neemann.digital.lang.Lang;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import static de.neemann.digital.analyse.expression.Not.not;
+import static de.neemann.digital.analyse.expression.Operation.and;
+import static de.neemann.digital.analyse.expression.Operation.or;
+
+/**
+ * Creates the expressions to create a JK-FF state machine
+ */
+public class DetermineJKStateMachine {
+<span class="fc" id="L23">    private Expression j = null;</span>
+<span class="fc" id="L24">    private Expression nk = null;</span>
+<span class="fc" id="L25">    private Expression simpj = null;</span>
+<span class="fc" id="L26">    private Expression simpk = null;</span>
+    private boolean isDFF;
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the name of the state variable
+     * @param e    the expression to split in J and K expression
+     * @throws ExpressionException ExpressionException
+     */
+<span class="fc" id="L36">    public DetermineJKStateMachine(String name, Expression e) throws ExpressionException {</span>
+<span class="fc" id="L37">        final Expression var = new Variable(name);</span>
+<span class="fc" id="L38">        final Expression notVar = not(var);</span>
+
+<span class="fc" id="L40">        boolean wasK = false;</span>
+<span class="fc" id="L41">        boolean wasJ = false;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (Expression or : getOrs(e)) {</span>
+
+<span class="fc" id="L44">            Expression term = null;</span>
+<span class="fc" id="L45">            boolean belongsToK = false;</span>
+<span class="fc" id="L46">            boolean belongsToJ = false;</span>
+
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            for (Expression a : getAnds(or)) {</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">                if (a.equals(var)) {</span>
+<span class="fc" id="L50">                    belongsToK = true;</span>
+<span class="fc" id="L51">                    wasK = true;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">                } else if (a.equals(notVar)) {</span>
+<span class="fc" id="L53">                    belongsToJ = true;</span>
+<span class="fc" id="L54">                    wasJ = true;</span>
+                } else {
+<span class="fc" id="L56">                    term = and(term, a);</span>
+                }
+<span class="fc" id="L58">            }</span>
+
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">            if (belongsToJ &amp;&amp; belongsToK) {</span>
+<span class="nc" id="L61">                throw new ExpressionException(Lang.get(&quot;err_containsVarAndNotVar&quot;));</span>
+            } else {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                if (belongsToJ) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">                    if (term == null) term = Constant.ONE;</span>
+<span class="fc" id="L65">                    j = or(term, j);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">                } else if (belongsToK) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                    if (term == null) term = Constant.ONE;</span>
+<span class="fc" id="L68">                    nk = or(term, nk);</span>
+                } else {
+<span class="fc" id="L70">                    j = or(term, j);</span>
+<span class="fc" id="L71">                    nk = or(term, nk);</span>
+                }
+            }
+<span class="fc" id="L74">        }</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (j == null) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            if (wasJ) j = Constant.ONE;</span>
+<span class="fc" id="L77">            else j = Constant.ZERO;</span>
+        }
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (nk == null) {</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (wasK) nk = Constant.ONE;</span>
+<span class="fc" id="L81">            else nk = Constant.ZERO;</span>
+        }
+<span class="fc bfc" id="L83" title="All 4 branches covered.">        isDFF = !wasJ &amp;&amp; !wasK;</span>
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * @return returns a measure of the complexity of the JK expressions.
+     * @throws ExpressionException ExpressionException
+     */
+    public int getComplexity() throws ExpressionException {
+<span class="fc" id="L91">        return getSimplifiedJ().traverse(new ComplexityVisitor()).getComplexity()</span>
+<span class="fc" id="L92">                + getSimplifiedK().traverse(new ComplexityVisitor()).getComplexity();</span>
+    }
+
+    private Iterable&lt;Expression&gt; getOrs(Expression e) {
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (e instanceof Operation.Or) {</span>
+<span class="fc" id="L97">            return ((Operation.Or) e).getExpressions();</span>
+        } else
+<span class="fc" id="L99">            return new AsIterable&lt;&gt;(e);</span>
+    }
+
+    private Iterable&lt;? extends Expression&gt; getAnds(Expression e) {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (e instanceof Operation.And) {</span>
+<span class="fc" id="L104">            return ((Operation.And) e).getExpressions();</span>
+        } else
+<span class="fc" id="L106">            return new AsIterable&lt;&gt;(e);</span>
+    }
+
+    /**
+     * @return the J expression
+     */
+    public Expression getJ() {
+<span class="fc" id="L113">        return j;</span>
+    }
+
+    /**
+     * @return the not(K) expression
+     */
+    public Expression getNK() {
+<span class="fc" id="L120">        return nk;</span>
+    }
+
+    /**
+     * @return the K expression
+     */
+    public Expression getK() {
+<span class="fc" id="L127">        return not(nk);</span>
+    }
+
+    /**
+     * Returns true if it is logical a D flipflop.
+     * This means that K = not(J).
+     *
+     * @return true if it is logical a D flipflop
+     */
+    public boolean isDFF() {
+<span class="fc" id="L137">        return isDFF;</span>
+    }
+
+    /**
+     * @return simplified J
+     * @throws ExpressionException ExpressionException
+     */
+    public Expression getSimplifiedJ() throws ExpressionException {
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (simpj == null)</span>
+<span class="fc" id="L146">            simpj = QuineMcCluskey.simplify(getJ());</span>
+<span class="fc" id="L147">        return simpj;</span>
+    }
+
+    /**
+     * @return simplified K
+     * @throws ExpressionException ExpressionException
+     */
+    public Expression getSimplifiedK() throws ExpressionException {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (simpk == null)</span>
+<span class="fc" id="L156">            simpk = QuineMcCluskey.simplify(getK());</span>
+<span class="fc" id="L157">        return simpk;</span>
+    }
+
+    private static final class AsIterable&lt;T&gt; implements Iterable&lt;T&gt; {
+        private final T item;
+
+<span class="fc" id="L163">        private AsIterable(T item) {</span>
+<span class="fc" id="L164">            this.item = item;</span>
+<span class="fc" id="L165">        }</span>
+
+        @Override
+        public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L169">            return new SingleItemIterator&lt;&gt;(item);</span>
+        }
+
+        private static final class SingleItemIterator&lt;T&gt; implements Iterator&lt;T&gt; {
+            private T item;
+
+<span class="fc" id="L175">            private SingleItemIterator(T item) {</span>
+<span class="fc" id="L176">                this.item = item;</span>
+<span class="fc" id="L177">            }</span>
+
+            @Override
+            public boolean hasNext() {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">                return item != null;</span>
+            }
+
+            @Override
+            public T next() {
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">                if (item == null)</span>
+<span class="nc" id="L187">                    throw new NoSuchElementException();</span>
+<span class="fc" id="L188">                T ee = item;</span>
+<span class="fc" id="L189">                item = null;</span>
+<span class="fc" id="L190">                return ee;</span>
+            }
+
+            @Override
+            public void remove() {
+<span class="nc" id="L195">            }</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

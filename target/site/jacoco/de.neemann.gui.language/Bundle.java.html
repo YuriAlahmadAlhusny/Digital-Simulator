@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Bundle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui.language</a> &gt; <span class="el_source">Bundle.java</span></div><h1>Bundle.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui.language;
+
+import com.thoughtworks.xstream.XStream;
+import de.neemann.digital.XStreamValid;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ *
+ */
+public class Bundle {
+
+    private final Map&lt;String, String&gt; languages;
+    private final String name;
+    private final ArrayList&lt;Language&gt; list;
+
+    private static XStream getxStream() {
+<span class="nc" id="L27">        XStream xStream = new XStreamValid();</span>
+<span class="nc" id="L28">        xStream.alias(&quot;languages&quot;, Map.class);</span>
+<span class="nc" id="L29">        xStream.registerConverter(new Resources.MapEntryConverter(&quot;string&quot;));</span>
+<span class="nc" id="L30">        return xStream;</span>
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the bundles name
+     */
+<span class="fc" id="L38">    public Bundle(String name) {</span>
+<span class="fc" id="L39">        this.name = name;</span>
+<span class="fc" id="L40">        InputStream in = getClass().getClassLoader().getResourceAsStream(name + &quot;.xml&quot;);</span>
+<span class="fc" id="L41">        XStream xStream = new XStreamValid();</span>
+<span class="fc" id="L42">        xStream.alias(&quot;languages&quot;, MyLang.class);</span>
+<span class="fc" id="L43">        xStream.addImplicitCollection(MyLang.class, &quot;lang&quot;);</span>
+<span class="fc" id="L44">        xStream.alias(&quot;lang&quot;, MyLangEntry.class);</span>
+<span class="fc" id="L45">        xStream.aliasAttribute(MyLangEntry.class, &quot;name&quot;, &quot;name&quot;);</span>
+<span class="fc" id="L46">        xStream.aliasAttribute(MyLangEntry.class, &quot;filename&quot;, &quot;file&quot;);</span>
+<span class="fc" id="L47">        xStream.aliasAttribute(MyLangEntry.class, &quot;displayName&quot;, &quot;display&quot;);</span>
+<span class="fc" id="L48">        MyLang l = (MyLang) xStream.fromXML(in);</span>
+<span class="fc" id="L49">        languages = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L50">        list = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (MyLangEntry e : l.lang) {</span>
+<span class="fc" id="L52">            languages.put(e.name, e.displayName);</span>
+<span class="fc" id="L53">            list.add(new Language(e.name, e.displayName, e.filename));</span>
+<span class="fc" id="L54">        }</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * returns the resources for the given language
+     *
+     * @param lang the language
+     * @return the resources or null if not available
+     */
+    public Resources getResources(String lang) {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (!languages.containsKey(lang))</span>
+<span class="nc" id="L65">            return null;</span>
+
+<span class="fc" id="L67">        InputStream in = getClass().getClassLoader().getResourceAsStream(name + &quot;_&quot; + lang + &quot;.xml&quot;);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (in == null)</span>
+<span class="nc" id="L69">            return null;</span>
+
+<span class="fc" id="L71">        return new Resources(in);</span>
+    }
+
+    /**
+     * Returns all supported languages
+     *
+     * @return the languages
+     */
+    public List&lt;Language&gt; getSupportedLanguages() {
+<span class="fc" id="L80">        return list;</span>
+    }
+
+    private static class MyLang {
+        private ArrayList&lt;MyLangEntry&gt; lang;
+    }
+
+    private static class MyLangEntry {
+        private String name;
+        private String displayName;
+        private String filename;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

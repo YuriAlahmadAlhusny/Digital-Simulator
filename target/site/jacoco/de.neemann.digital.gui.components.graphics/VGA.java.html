@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VGA.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.graphics</a> &gt; <span class="el_source">VGA.java</span></div><h1>VGA.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.graphics;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.lang.Lang;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * Analyzes VGA signals
+ */
+public class VGA extends Node implements Element {
+
+<span class="fc" id="L29">    private static final HashMap&lt;VideoId, VideoMode&gt; MODES = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L32">        vm(new VideoMode(70, 25.175, 640, 16, 96, 48, 350, 37, 2, 60, false, true));</span>
+<span class="fc" id="L33">        vm(new VideoMode(85, 31.5, 640, 32, 64, 96, 350, 32, 3, 60, false, true));</span>
+<span class="fc" id="L34">        vm(new VideoMode(70, 25.175, 640, 16, 96, 48, 400, 12, 2, 35, true, false));</span>
+<span class="fc" id="L35">        vm(new VideoMode(85, 31.5, 640, 32, 64, 96, 400, 1, 3, 41, true, false));</span>
+<span class="fc" id="L36">        vm(new VideoMode(60, 25.175, 640, 16, 96, 48, 480, 10, 2, 33, true, true));</span>
+<span class="fc" id="L37">        vm(new VideoMode(73, 31.5, 640, 24, 40, 128, 480, 9, 2, 29, true, true));</span>
+<span class="fc" id="L38">        vm(new VideoMode(75, 31.5, 640, 16, 64, 120, 480, 1, 3, 16, true, true));</span>
+<span class="fc" id="L39">        vm(new VideoMode(85, 36, 640, 56, 56, 80, 480, 1, 3, 25, true, true));</span>
+<span class="fc" id="L40">        vm(new VideoMode(100, 43.16, 640, 40, 64, 104, 480, 1, 3, 25, true, false));</span>
+<span class="fc" id="L41">        vm(new VideoMode(85, 35.5, 720, 36, 72, 108, 400, 1, 3, 42, true, false));</span>
+<span class="fc" id="L42">        vm(new VideoMode(60, 27, 720, 16, 62, 60, 480, 9, 6, 30, true, true));</span>
+<span class="fc" id="L43">        vm(new VideoMode(60, 34.96, 768, 24, 80, 104, 576, 1, 3, 17, true, false));</span>
+<span class="fc" id="L44">        vm(new VideoMode(72, 42.93, 768, 32, 80, 112, 576, 1, 3, 21, true, false));</span>
+<span class="fc" id="L45">        vm(new VideoMode(75, 45.51, 768, 40, 80, 120, 576, 1, 3, 22, true, false));</span>
+<span class="fc" id="L46">        vm(new VideoMode(85, 51.84, 768, 40, 80, 120, 576, 1, 3, 25, true, false));</span>
+<span class="fc" id="L47">        vm(new VideoMode(100, 62.57, 768, 48, 80, 128, 576, 1, 3, 31, true, false));</span>
+<span class="fc" id="L48">        vm(new VideoMode(56, 36, 800, 24, 72, 128, 600, 1, 2, 22, false, false));</span>
+<span class="fc" id="L49">        vm(new VideoMode(60, 40, 800, 40, 128, 88, 600, 1, 4, 23, false, false));</span>
+<span class="fc" id="L50">        vm(new VideoMode(75, 49.5, 800, 16, 80, 160, 600, 1, 3, 21, false, false));</span>
+<span class="fc" id="L51">        vm(new VideoMode(72, 50, 800, 56, 120, 64, 600, 37, 6, 23, false, false));</span>
+<span class="fc" id="L52">        vm(new VideoMode(85, 56.25, 800, 32, 64, 152, 600, 1, 3, 27, false, false));</span>
+<span class="fc" id="L53">        vm(new VideoMode(100, 68.18, 800, 48, 88, 136, 600, 1, 3, 32, true, false));</span>
+<span class="fc" id="L54">        vm(new VideoMode(43, 44.9, 1024, 8, 176, 56, 768, 0, 8, 41, false, false));</span>
+<span class="fc" id="L55">        vm(new VideoMode(60, 65, 1024, 24, 136, 160, 768, 3, 6, 29, true, true));</span>
+<span class="fc" id="L56">        vm(new VideoMode(70, 75, 1024, 24, 136, 144, 768, 3, 6, 29, true, true));</span>
+<span class="fc" id="L57">        vm(new VideoMode(75, 78.8, 1024, 16, 96, 176, 768, 1, 3, 28, false, false));</span>
+<span class="fc" id="L58">        vm(new VideoMode(85, 94.5, 1024, 48, 96, 208, 768, 1, 3, 36, false, false));</span>
+<span class="fc" id="L59">        vm(new VideoMode(100, 113.31, 1024, 72, 112, 184, 768, 1, 3, 42, true, false));</span>
+<span class="fc" id="L60">        vm(new VideoMode(75, 108, 1152, 64, 128, 256, 864, 1, 3, 32, false, false));</span>
+<span class="fc" id="L61">        vm(new VideoMode(85, 119.65, 1152, 72, 128, 200, 864, 1, 3, 39, true, false));</span>
+<span class="fc" id="L62">        vm(new VideoMode(100, 143.47, 1152, 80, 128, 208, 864, 1, 3, 47, true, false));</span>
+<span class="fc" id="L63">        vm(new VideoMode(60, 81.62, 1152, 64, 120, 184, 864, 1, 3, 27, true, false));</span>
+<span class="fc" id="L64">        vm(new VideoMode(60, 72.25, 1280, 110, 40, 220, 720, 5, 5, 20, false, false));</span>
+<span class="fc" id="L65">        vm(new VideoMode(60, 108, 1280, 48, 112, 248, 1024, 1, 3, 38, false, false));</span>
+<span class="fc" id="L66">        vm(new VideoMode(75, 135, 1280, 16, 144, 248, 1024, 1, 3, 38, false, false));</span>
+<span class="fc" id="L67">        vm(new VideoMode(85, 157.5, 1280, 64, 160, 224, 1024, 1, 3, 44, false, false));</span>
+<span class="fc" id="L68">        vm(new VideoMode(100, 190.96, 1280, 96, 144, 240, 1024, 1, 3, 57, true, false));</span>
+<span class="fc" id="L69">        vm(new VideoMode(60, 83.46, 1280, 64, 136, 200, 800, 1, 3, 24, true, false));</span>
+<span class="fc" id="L70">        vm(new VideoMode(60, 102.1, 1280, 80, 136, 216, 960, 1, 3, 30, true, false));</span>
+<span class="fc" id="L71">        vm(new VideoMode(72, 124.54, 1280, 88, 136, 224, 960, 1, 3, 37, true, false));</span>
+<span class="fc" id="L72">        vm(new VideoMode(75, 129.86, 1280, 88, 136, 224, 960, 1, 3, 38, true, false));</span>
+<span class="fc" id="L73">        vm(new VideoMode(85, 148.5, 1280, 64, 160, 224, 960, 1, 3, 47, false, false));</span>
+<span class="fc" id="L74">        vm(new VideoMode(100, 178.99, 1280, 96, 144, 240, 960, 1, 3, 53, true, false));</span>
+<span class="fc" id="L75">        vm(new VideoMode(60, 85.86, 1368, 72, 144, 216, 768, 1, 3, 23, true, false));</span>
+<span class="fc" id="L76">        vm(new VideoMode(60, 122.61, 1400, 88, 152, 240, 1050, 1, 3, 33, true, false));</span>
+<span class="fc" id="L77">        vm(new VideoMode(72, 149.34, 1400, 96, 152, 248, 1050, 1, 3, 40, true, false));</span>
+<span class="fc" id="L78">        vm(new VideoMode(75, 155.85, 1400, 96, 152, 248, 1050, 1, 3, 42, true, false));</span>
+<span class="fc" id="L79">        vm(new VideoMode(85, 179.26, 1400, 104, 152, 256, 1050, 1, 3, 49, true, false));</span>
+<span class="fc" id="L80">        vm(new VideoMode(100, 214.39, 1400, 112, 152, 264, 1050, 1, 3, 58, true, false));</span>
+<span class="fc" id="L81">        vm(new VideoMode(60, 106.47, 1440, 80, 152, 232, 900, 1, 3, 28, true, false));</span>
+<span class="fc" id="L82">        vm(new VideoMode(60, 162, 1600, 64, 192, 304, 1200, 1, 3, 46, false, false));</span>
+<span class="fc" id="L83">        vm(new VideoMode(100, 280.64, 1600, 128, 176, 304, 1200, 1, 3, 67, true, false));</span>
+<span class="fc" id="L84">        vm(new VideoMode(60, 147.14, 1680, 104, 184, 288, 1050, 1, 3, 33, true, false));</span>
+<span class="fc" id="L85">        vm(new VideoMode(60, 204.8, 1792, 128, 200, 328, 1344, 1, 3, 46, true, false));</span>
+<span class="fc" id="L86">        vm(new VideoMode(75, 261, 1792, 96, 216, 352, 1344, 1, 3, 69, true, false));</span>
+<span class="fc" id="L87">        vm(new VideoMode(60, 218.3, 1856, 96, 224, 352, 1392, 1, 3, 43, true, false));</span>
+<span class="fc" id="L88">        vm(new VideoMode(75, 288, 1856, 128, 224, 352, 1392, 1, 3, 104, true, false));</span>
+<span class="fc" id="L89">        vm(new VideoMode(60, 148.5, 1920, 88, 44, 148, 1080, 4, 4, 37, true, true));</span>
+<span class="fc" id="L90">        vm(new VideoMode(60, 193.16, 1920, 128, 208, 336, 1200, 1, 3, 38, true, false));</span>
+<span class="fc" id="L91">        vm(new VideoMode(60, 234, 1920, 128, 208, 344, 1440, 1, 3, 56, true, false));</span>
+<span class="fc" id="L92">        vm(new VideoMode(75, 297, 1920, 144, 224, 352, 1440, 1, 3, 56, true, false));</span>
+    }
+
+    private static void vm(VideoMode videoMode) {
+<span class="fc" id="L96">        MODES.put(videoMode.id(), videoMode);</span>
+<span class="fc" id="L97">    }</span>
+
+    /**
+     * The terminal description
+     */
+<span class="fc" id="L102">    public static final ElementTypeDescription DESCRIPTION</span>
+            = new ElementTypeDescription(VGA.class,
+<span class="fc" id="L104">            input(&quot;R&quot;),</span>
+<span class="fc" id="L105">            input(&quot;G&quot;),</span>
+<span class="fc" id="L106">            input(&quot;B&quot;),</span>
+<span class="fc" id="L107">            input(&quot;H&quot;),</span>
+<span class="fc" id="L108">            input(&quot;V&quot;),</span>
+<span class="fc" id="L109">            input(&quot;C&quot;).setClock())</span>
+<span class="fc" id="L110">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L111">            .addAttribute(Keys.LABEL);</span>
+
+    private ObservableValue r;
+    private ObservableValue g;
+    private ObservableValue b;
+    private ObservableValue hSync;
+    private ObservableValue vSync;
+    private ObservableValue clock;
+    private boolean lastClock;
+    private int xPos;
+    private int yPos;
+    private int lineCount;
+    private int lineLen;
+    private int lineLenStable;
+    private int lineCountStable;
+    private long maxCol;
+    private BufferedImage image;
+    private VideoMode mode;
+<span class="fc" id="L129">    private SyncDetector hSyncDetection = new SyncDetector();</span>
+<span class="fc" id="L130">    private SyncDetector vSyncDetection = new SyncDetector();</span>
+    private VGADialog graphicDialog;
+    private String label;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the attributes
+     */
+<span class="fc" id="L139">    public VGA(ElementAttributes attr) {</span>
+<span class="fc" id="L140">        label = attr.getLabel();</span>
+<span class="fc" id="L141">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L145">        r = inputs.get(0);</span>
+<span class="fc" id="L146">        int bits = r.getBits();</span>
+<span class="fc" id="L147">        maxCol = Bits.up(1, bits) - 1;</span>
+<span class="fc" id="L148">        g = inputs.get(1).checkBits(bits, this);</span>
+<span class="fc" id="L149">        b = inputs.get(2).checkBits(bits, this);</span>
+<span class="fc" id="L150">        hSync = inputs.get(3).checkBits(1, this);</span>
+<span class="fc" id="L151">        vSync = inputs.get(4).checkBits(1, this);</span>
+<span class="fc" id="L152">        clock = inputs.get(5).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L153">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L157">        boolean actClock = clock.getBool();</span>
+<span class="pc bpc" id="L158" title="3 of 4 branches missed.">        if (actClock &amp;&amp; !lastClock) {</span>
+<span class="nc" id="L159">            xPos++;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (hSyncDetection.add(hSync.getBool())) {</span>
+<span class="nc" id="L161">                setLineLen(xPos);</span>
+<span class="nc" id="L162">                xPos = 0;</span>
+<span class="nc" id="L163">                yPos++;</span>
+            }
+
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (vSyncDetection.add(vSync.getBool())) {</span>
+<span class="nc" id="L167">                setLineCount(yPos);</span>
+<span class="nc" id="L168">                yPos = 0;</span>
+            }
+
+<span class="nc bnc" id="L171" title="All 4 branches missed.">            if (lineCountStable &gt; 2 &amp;&amp; lineLenStable &gt; 100) {</span>
+<span class="nc" id="L172">                setPixel(xPos, yPos,</span>
+                        new Color(
+<span class="nc" id="L174">                                col(r.getValue()),</span>
+<span class="nc" id="L175">                                col(g.getValue()),</span>
+<span class="nc" id="L176">                                col(b.getValue())));</span>
+            }
+        }
+<span class="fc" id="L179">        lastClock = actClock;</span>
+<span class="fc" id="L180">    }</span>
+
+    private void setPixel(int xPos, int yPos, Color color) {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (mode == null) {</span>
+<span class="nc" id="L184">            VideoId id = new VideoId(</span>
+<span class="nc" id="L185">                    lineLen, hSyncDetection.syncPulse(), hSyncDetection.isNegPolarity(),</span>
+<span class="nc" id="L186">                    lineCount, (vSyncDetection.syncPulse() + lineLen / 2) / lineLen, vSyncDetection.isNegPolarity());</span>
+
+<span class="nc" id="L188">            mode = MODES.get(id);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (mode == null)</span>
+<span class="nc" id="L190">                throw new RuntimeException(Lang.get(&quot;err_vgaModeNotDetected_N&quot;, id));</span>
+<span class="nc" id="L191">            image = mode.createImage();</span>
+        }
+<span class="nc" id="L193">        mode.set(image, xPos, yPos, color);</span>
+<span class="nc" id="L194">        updateGraphic();</span>
+<span class="nc" id="L195">    }</span>
+
+    private int col(long value) {
+<span class="nc" id="L198">        return (int) (value * 255 / maxCol);</span>
+    }
+
+    private void setLineCount(int lc) {
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        if (lc == lineCount) {</span>
+<span class="nc" id="L203">            lineCountStable++;</span>
+        } else {
+<span class="nc" id="L205">            lineCountStable = 0;</span>
+        }
+<span class="nc" id="L207">        lineCount = lc;</span>
+<span class="nc" id="L208">    }</span>
+
+    private void setLineLen(int ll) {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (ll == lineLen) {</span>
+<span class="nc" id="L212">            lineLenStable++;</span>
+        } else {
+<span class="nc" id="L214">            lineLenStable = 0;</span>
+        }
+<span class="nc" id="L216">        lineLen = ll;</span>
+<span class="nc" id="L217">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L221">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L225">        return ObservableValues.EMPTY_LIST;</span>
+    }
+
+    @Override
+    public void init(Model model) {
+<span class="fc" id="L230">    }</span>
+
+<span class="fc" id="L232">    private final AtomicBoolean paintPending = new AtomicBoolean();</span>
+
+    private void updateGraphic() {
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (paintPending.compareAndSet(false, true)) {</span>
+<span class="nc" id="L236">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">                if (graphicDialog == null || !graphicDialog.isVisible()) {</span>
+<span class="nc" id="L238">                    graphicDialog = new VGADialog(getModel().getWindowPosManager().getMainFrame(), mode.toString(), image);</span>
+<span class="nc" id="L239">                    getModel().getWindowPosManager().register(&quot;VGA_&quot; + label, graphicDialog);</span>
+                }
+<span class="nc" id="L241">                paintPending.set(false);</span>
+<span class="nc" id="L242">                graphicDialog.updateGraphic();</span>
+<span class="nc" id="L243">            });</span>
+        }
+<span class="nc" id="L245">    }</span>
+
+<span class="fc" id="L247">    static class SyncDetector {</span>
+        private boolean lastS;
+        private int high;
+        private int highLen;
+        private int low;
+        private int lowLen;
+
+        boolean add(boolean s) {
+<span class="fc bfc" id="L255" title="All 2 branches covered.">            if (s) {</span>
+<span class="fc" id="L256">                high++;</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                if (!lastS) {</span>
+<span class="fc" id="L258">                    lowLen = low;</span>
+<span class="fc" id="L259">                    low = 0;</span>
+                }
+            } else {
+<span class="fc" id="L262">                low++;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">                if (lastS) {</span>
+<span class="fc" id="L264">                    highLen = high;</span>
+<span class="fc" id="L265">                    high = 0;</span>
+                }
+            }
+
+<span class="fc" id="L269">            boolean result = false;</span>
+<span class="pc bpc" id="L270" title="1 of 4 branches missed.">            if (lowLen &gt; 0 &amp;&amp; highLen &gt; 0) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">                if (lowLen &gt; highLen) {</span>
+                    //positive;
+<span class="fc bfc" id="L273" title="All 2 branches covered.">                    result = lastS &amp; !s;</span>
+                } else {
+                    //negative
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                    result = !lastS &amp; s;</span>
+                }
+            }
+<span class="fc" id="L279">            lastS = s;</span>
+<span class="fc" id="L280">            return result;</span>
+        }
+
+        boolean isNegPolarity() {
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            return lowLen &lt; highLen;</span>
+        }
+
+        int syncPulse() {
+<span class="fc bfc" id="L288" title="All 2 branches covered.">            if (isNegPolarity())</span>
+<span class="fc" id="L289">                return lowLen;</span>
+            else
+<span class="fc" id="L291">                return highLen;</span>
+        }
+
+    }
+
+    private static final class VideoMode {
+        private final int refresh;
+        private final double pixClock;
+        private final int hDisplay;
+        private final int hFrontPorch;
+        private final int hSync;
+        private final int hBackPorch;
+        private final int vDisplay;
+        private final int vFrontPorch;
+        private final int vSync;
+        private final int vBackPorch;
+        private final boolean hNegative;
+        private final boolean vNegative;
+
+        //CHECKSTYLE.OFF: ParameterNumber
+        private VideoMode(int refresh, double pixClock,
+                          int hDisplay, int hFrontPorch, int hSync, int hBackPorch,
+                          int vDisplay, int vFrontPorch, int vSync, int vBackPorch,
+<span class="fc" id="L314">                          boolean hNegative, boolean vNegative) {</span>
+<span class="fc" id="L315">            this.refresh = refresh;</span>
+<span class="fc" id="L316">            this.pixClock = pixClock;</span>
+<span class="fc" id="L317">            this.hDisplay = hDisplay;</span>
+<span class="fc" id="L318">            this.hFrontPorch = hFrontPorch;</span>
+<span class="fc" id="L319">            this.hSync = hSync;</span>
+<span class="fc" id="L320">            this.hBackPorch = hBackPorch;</span>
+<span class="fc" id="L321">            this.vDisplay = vDisplay;</span>
+<span class="fc" id="L322">            this.vFrontPorch = vFrontPorch;</span>
+<span class="fc" id="L323">            this.vSync = vSync;</span>
+<span class="fc" id="L324">            this.vBackPorch = vBackPorch;</span>
+<span class="fc" id="L325">            this.hNegative = hNegative;</span>
+<span class="fc" id="L326">            this.vNegative = vNegative;</span>
+<span class="fc" id="L327">        }</span>
+        //CHECKSTYLE.ON: ParameterNumber
+
+        @Override
+        public String toString() {
+<span class="nc" id="L332">            return hDisplay + &quot;x&quot; + vDisplay + &quot;x&quot; + refresh + &quot;Hz, &quot; + pixClock + &quot;MHz&quot;;</span>
+        }
+
+        public VideoId id() {
+<span class="fc" id="L336">            return new VideoId(</span>
+                    hDisplay + hFrontPorch + hSync + hBackPorch, hSync, hNegative,
+                    vDisplay + vFrontPorch + vSync + vBackPorch, vSync, vNegative);
+        }
+
+        private BufferedImage createImage() {
+<span class="nc" id="L342">            return new BufferedImage(hDisplay, vDisplay, BufferedImage.TYPE_INT_RGB);</span>
+        }
+
+        private void set(BufferedImage image, int xPos, int yPos, Color color) {
+<span class="nc" id="L346">            xPos -= hBackPorch;</span>
+<span class="nc" id="L347">            yPos -= vBackPorch;</span>
+<span class="nc bnc" id="L348" title="All 8 branches missed.">            if (xPos &gt;= 0 &amp;&amp; xPos &lt; hDisplay &amp;&amp; yPos &gt;= 0 &amp;&amp; yPos &lt; vDisplay)</span>
+<span class="nc" id="L349">                image.setRGB(xPos, yPos, color.getRGB());</span>
+<span class="nc" id="L350">        }</span>
+
+    }
+
+    private static final class VideoId {
+        private final int width;
+        private final int hSync;
+        private final boolean hNegative;
+        private final int height;
+        private final int vSync;
+        private final boolean vNegative;
+
+<span class="fc" id="L362">        private VideoId(int width, int hSync, boolean hNegative, int height, int vSync, boolean vNegative) {</span>
+<span class="fc" id="L363">            this.width = width;</span>
+<span class="fc" id="L364">            this.hSync = hSync;</span>
+<span class="fc" id="L365">            this.hNegative = hNegative;</span>
+<span class="fc" id="L366">            this.height = height;</span>
+<span class="fc" id="L367">            this.vSync = vSync;</span>
+<span class="fc" id="L368">            this.vNegative = vNegative;</span>
+<span class="fc" id="L369">        }</span>
+
+        @Override
+        public boolean equals(Object o) {
+<span class="nc bnc" id="L373" title="All 2 branches missed.">            if (this == o) return true;</span>
+<span class="nc bnc" id="L374" title="All 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="nc" id="L375">            VideoId videoId = (VideoId) o;</span>
+<span class="nc bnc" id="L376" title="All 12 branches missed.">            return width == videoId.width</span>
+                    &amp;&amp; hSync == videoId.hSync
+                    &amp;&amp; hNegative == videoId.hNegative
+                    &amp;&amp; height == videoId.height
+                    &amp;&amp; vSync == videoId.vSync
+                    &amp;&amp; vNegative == videoId.vNegative;
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L386">            return Objects.hash(width, hSync, hNegative, height, vSync, vNegative);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="nc" id="L391">            return &quot;line len=&quot; + width</span>
+                    + &quot;, hSync len=&quot; + hSync
+                    + &quot;, hNegative=&quot; + hNegative
+                    + &quot;, line count=&quot; + height
+                    + &quot;, vSync len=&quot; + vSync
+                    + &quot;, vNegative=&quot; + vNegative;
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

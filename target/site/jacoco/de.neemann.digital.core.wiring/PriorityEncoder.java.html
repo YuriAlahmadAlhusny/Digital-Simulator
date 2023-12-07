@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriorityEncoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring</a> &gt; <span class="el_source">PriorityEncoder.java</span></div><h1>PriorityEncoder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring;
+
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.stats.Countable;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The PriorityEncoder
+ */
+public class PriorityEncoder extends Node implements Element, Countable {
+
+    /**
+     * The PriorityEncoder description
+     */
+<span class="fc" id="L27">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(PriorityEncoder.class) {</span>
+        @Override
+        public PinDescriptions getInputDescription(ElementAttributes elementAttributes) {
+<span class="fc" id="L30">            int inputs = 1 &lt;&lt; elementAttributes.get(Keys.SELECTOR_BITS);</span>
+<span class="fc" id="L31">            PinDescription[] names = new PinDescription[inputs];</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">            for (int i = 0; i &lt; inputs; i++)</span>
+<span class="fc" id="L33">                names[i] = input(&quot;in&quot; + i, Lang.get(&quot;elem_PriorityEncoder_input&quot;, i));</span>
+<span class="fc" id="L34">            return new PinDescriptions(names);</span>
+        }
+    }
+<span class="fc" id="L37">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.SELECTOR_BITS)</span>
+<span class="fc" id="L40">            .supportsHDL();</span>
+
+
+    private final ObservableValue selOut;
+    private final ObservableValue anyOut;
+    private final int inputCount;
+    private ObservableValues inputs;
+    private long sel;
+    private boolean any;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+<span class="fc" id="L55">    public PriorityEncoder(ElementAttributes attributes) {</span>
+<span class="fc" id="L56">        final int outBits = attributes.get(Keys.SELECTOR_BITS);</span>
+<span class="fc" id="L57">        this.inputCount = 1 &lt;&lt; outBits;</span>
+<span class="fc" id="L58">        selOut = new ObservableValue(&quot;num&quot;, outBits).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L59">        anyOut = new ObservableValue(&quot;any&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L60">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L64">        sel = 0;</span>
+<span class="fc" id="L65">        any = false;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; inputCount; i++)</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (inputs.get(i).getBool()) {</span>
+<span class="fc" id="L68">                sel = i;</span>
+<span class="fc" id="L69">                any = true;</span>
+            }
+<span class="fc" id="L71">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L75">        selOut.setValue(sel);</span>
+<span class="fc" id="L76">        anyOut.setBool(any);</span>
+<span class="fc" id="L77">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L81">        this.inputs = inputs;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; inputCount; i++)</span>
+<span class="fc" id="L83">            inputs.get(i).addObserverToValue(this).checkBits(1, this, i);</span>
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() throws PinException {
+<span class="fc" id="L88">        return new ObservableValues(selOut, anyOut);</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L93">        return 1;</span>
+    }
+
+    @Override
+    public int getInputsCount() {
+<span class="nc" id="L98">        return inputCount;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">ModelCreator.java</span></div><h1>ModelCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.memory.rom.ROMManger;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.library.CustomElement;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.LibraryInterface;
+import de.neemann.digital.draw.library.ResolveGenerics;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.gui.components.CircuitModifier;
+import de.neemann.digital.lang.Lang;
+
+import java.util.*;
+
+
+/**
+ * Creates a {@link Model} from the given {@link Circuit} instance.
+ */
+public class ModelCreator implements Iterable&lt;ModelEntry&gt; {
+
+    private final Circuit circuit;
+    private final NetList netList;
+    private final ArrayList&lt;ModelEntry&gt; entries;
+    private final HashMap&lt;String, Pin&gt; ioMap;
+
+    /**
+     * Creates the ModelDescription.
+     * If created, the NetList is complete. So all pins which are connected together are registered
+     * to the Net instances in the NetList. Every group of connected pins is represented
+     * by a Net instance in the NetList.
+     *
+     * @param circuit the circuit
+     * @param library the library used to create the Element instances
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public ModelCreator(Circuit circuit, LibraryInterface library) throws PinException, NodeException, ElementNotFoundException {
+<span class="fc" id="L53">        this(fixGenerics(circuit, library), library, false);</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Creates a concrete circuit from a generic on.
+     * Uses the included generic init code.
+     *
+     * @param circuit the generic circuit
+     * @param library the element library
+     * @return the concrete circuit
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public static Circuit fixGenerics(Circuit circuit, LibraryInterface library) throws NodeException, ElementNotFoundException {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (circuit.getAttributes().get(Keys.IS_GENERIC))</span>
+<span class="fc" id="L68">            return new ResolveGenerics(circuit, library).resolveCircuit(null).getCircuit();</span>
+        else
+<span class="fc" id="L70">            return circuit;</span>
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit      the circuit to use
+     * @param library      the library to use
+     * @param readAsCustom if true the model is created for use as nested element
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public ModelCreator(Circuit circuit, LibraryInterface library, boolean readAsCustom) throws PinException, NodeException, ElementNotFoundException {
+<span class="fc" id="L84">        this(circuit, library, readAsCustom, new NetList(circuit), &quot;&quot;, 0, null);</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit                 the circuit to use
+     * @param library                 the library to use
+     * @param isNestedCircuit         if true the model is created for use as nested element
+     * @param netList                 the NetList of the model. If known it is not necessary to create it.
+     * @param subName                 name of the circuit, used to name unique elements
+     * @param depth                   recursion depth, used to detect a circuit which contains itself
+     * @param containingVisualElement the topmost containing visual element
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+<span class="fc" id="L101">    public ModelCreator(Circuit circuit, LibraryInterface library, boolean isNestedCircuit, NetList netList, String subName, int depth, VisualElement containingVisualElement) throws PinException, NodeException, ElementNotFoundException {</span>
+<span class="fc" id="L102">        this.circuit = circuit;</span>
+<span class="fc" id="L103">        this.netList = netList;</span>
+<span class="fc" id="L104">        entries = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (isNestedCircuit)</span>
+<span class="fc" id="L106">            ioMap = new HashMap&lt;&gt;();</span>
+        else
+<span class="fc" id="L108">            ioMap = null;</span>
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (!isNestedCircuit)</span>
+<span class="fc" id="L111">            checkWiresForSplitterConnection(circuit);</span>
+
+        try {
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            for (VisualElement ve : circuit.getElements()) {</span>
+<span class="fc" id="L115">                VisualElement cve = ve;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                if (containingVisualElement != null)</span>
+<span class="fc" id="L117">                    cve = containingVisualElement;</span>
+
+<span class="fc" id="L119">                ElementAttributes attr = ve.getElementAttributes();</span>
+<span class="fc" id="L120">                ElementTypeDescription elementType = library.getElementType(ve.getElementName(), attr);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                if (attr.getLabel().contains(&quot;*&quot;)</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                        &amp;&amp; !ve.equalsDescription(In.DESCRIPTION)</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">                        &amp;&amp; !ve.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="fc" id="L124">                    attr = new ElementAttributes(attr);</span>
+<span class="fc" id="L125">                    attr.set(Keys.LABEL, attr.getLabel().replace(&quot;*&quot;, subName));</span>
+                }
+<span class="fc" id="L127">                Element element = elementType.createElement(attr);</span>
+<span class="fc" id="L128">                ve.setElement(element);</span>
+<span class="fc" id="L129">                Pins pins = ve.getPins();</span>
+<span class="fc" id="L130">                pins.bindOutputsToOutputPins(element.getOutputs());</span>
+
+                // sets the nodes origin to create better error messages
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                if (element instanceof Node)</span>
+<span class="fc" id="L134">                    ((Node) element).setOrigin(circuit.getOrigin());</span>
+
+                // if handled as nested element, don't put pins in EntryList, but put the pins in a
+                // separate map to connect them with the parent!
+<span class="fc" id="L138">                boolean isNotAIO = true;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (isNestedCircuit) {</span>
+<span class="fc bfc" id="L140" title="All 6 branches covered.">                    if (elementType == In.DESCRIPTION || elementType == Out.DESCRIPTION || elementType == Clock.DESCRIPTION) {</span>
+<span class="fc" id="L141">                        String label = ve.getElementAttributes().getLabel();</span>
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">                        if (label == null || label.length() == 0)</span>
+<span class="nc" id="L143">                            throw new PinException(Lang.get(&quot;err_pinWithoutName&quot;, circuit.getOrigin()), cve);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">                        if (pins.size() != 1)</span>
+<span class="nc" id="L145">                            throw new PinException(Lang.get(&quot;err_N_isNotInputOrOutput&quot;, label, circuit.getOrigin()), cve);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                        if (ioMap.containsKey(label))</span>
+<span class="fc" id="L147">                            throw new PinException(Lang.get(&quot;err_duplicatePinLabel&quot;, label, circuit.getOrigin()), cve);</span>
+
+<span class="fc" id="L149">                        ioMap.put(label, pins.get(0));</span>
+<span class="fc" id="L150">                        isNotAIO = false;</span>
+                    }
+                }
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                if (isNotAIO)</span>
+<span class="fc" id="L155">                    entries.add(new ModelEntry(element, pins, ve, elementType.getInputDescription(ve.getElementAttributes()), isNestedCircuit, circuit.getOrigin(), cve));</span>
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                for (Pin p : pins)</span>
+<span class="fc" id="L158">                    netList.add(p);</span>
+<span class="fc" id="L159">            }</span>
+
+            // connect all custom elements to the parents net
+<span class="fc" id="L162">            ArrayList&lt;ModelCreator&gt; modelCreators = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L163">            Iterator&lt;ModelEntry&gt; it = entries.iterator();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L165">                ModelEntry me = it.next();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                if (me.getElement() instanceof CustomElement) {        // at first look for custom elements</span>
+
+<span class="fc" id="L168">                    CustomElement ce = (CustomElement) me.getElement();</span>
+<span class="fc" id="L169">                    ModelCreator child = ce.getModelCreator(</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">                            combineNames(subName, me.getVisualElement().getElementAttributes().getLabel()),</span>
+                            depth + 1,
+<span class="fc" id="L172">                            containingVisualElement != null ? containingVisualElement : me.getVisualElement(),</span>
+<span class="fc" id="L173">                            me.getVisualElement());</span>
+<span class="fc" id="L174">                    modelCreators.add(child);</span>
+
+<span class="fc" id="L176">                    HashMap&lt;Net, Net&gt; netMatch = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">                    for (Pin p : me.getPins()) {                     // connect the custom elements to the parents net</span>
+<span class="fc" id="L179">                        Net childNet = child.getNetOfIOAndRemove(p);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                        if (childNet != null) {</span>
+<span class="fc" id="L181">                            Net otherParentNet = netMatch.get(childNet);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">                            if (otherParentNet != null) {</span>
+                                // direct connection!
+                                // two nets in the parent are connected directly by the nested circuit
+                                // merge the nets in the parent!
+
+                                // remove the children's inner pin which is already added to the other net
+<span class="fc" id="L188">                                Pin insertedPin = child.getPinOfIO(p.getName());</span>
+<span class="fc" id="L189">                                otherParentNet.removePin(insertedPin);</span>
+
+<span class="fc" id="L191">                                Net parentNet = netList.getNetOfPin(p);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                                if (parentNet != null) {</span>
+                                    // Disconnect the parents net from the pin
+<span class="fc" id="L194">                                    parentNet.removePin(p);</span>
+
+                                    // connect the two parent nets if they are not already the same
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                                    if (otherParentNet != parentNet) {</span>
+<span class="fc" id="L198">                                        otherParentNet.addNet(parentNet);</span>
+<span class="fc" id="L199">                                        netList.remove(parentNet);</span>
+                                    }
+                                }
+<span class="fc" id="L202">                            } else {</span>
+<span class="fc" id="L203">                                Net parentNet = netList.getNetOfPin(p);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                                if (parentNet != null) {</span>
+                                    // Disconnect the parents net from the pin
+<span class="fc" id="L206">                                    parentNet.removePin(p);</span>
+                                    // and connect it to the nested inner net!
+<span class="fc" id="L208">                                    parentNet.addAll(childNet.getPins());</span>
+
+                                    // store net connection
+<span class="fc" id="L211">                                    netMatch.put(childNet, parentNet);</span>
+                                }
+                            }
+                        }
+<span class="fc" id="L215">                    }</span>
+
+                    // remove connected nets form child
+<span class="fc bfc" id="L218" title="All 2 branches covered.">                    for (Net childNet : netMatch.keySet())</span>
+<span class="fc" id="L219">                        child.remove(childNet);</span>
+
+<span class="fc" id="L221">                    it.remove();</span>
+                }
+<span class="fc" id="L223">            }</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            for (ModelCreator md : modelCreators) {       // put the elements of the custom element to the parent</span>
+<span class="fc" id="L225">                entries.addAll(md.entries);</span>
+<span class="fc" id="L226">                netList.add(md.netList);</span>
+<span class="fc" id="L227">            }</span>
+<span class="fc" id="L228">        } catch (PinException | NodeException e) {</span>
+<span class="fc" id="L229">            e.setOrigin(circuit.getOrigin());</span>
+<span class="fc" id="L230">            e.setVisualElement(containingVisualElement);</span>
+<span class="fc" id="L231">            throw e;</span>
+<span class="fc" id="L232">        }</span>
+<span class="fc" id="L233">    }</span>
+
+    private void checkWiresForSplitterConnection(Circuit circuit) {
+<span class="fc" id="L236">        HashSet&lt;Vector&gt; posSet = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (VisualElement e : circuit.getElements())</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            if (e.equalsDescription(Splitter.DESCRIPTION))</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                for (Pin p : e.getPins())</span>
+<span class="fc" id="L240">                    posSet.add(p.getPos());</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        for (Wire w : circuit.getWires())</span>
+<span class="fc bfc" id="L242" title="All 4 branches covered.">            w.setIsConnectedToSplitter(posSet.contains(w.p1) || posSet.contains(w.p2));</span>
+<span class="fc" id="L243">    }</span>
+
+    private String combineNames(String s1, String s2) {
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (s1.length() &gt; 0) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            if (s2.length() &gt; 0) {</span>
+<span class="fc" id="L248">                return s1 + &quot;-&quot; + s2;</span>
+            } else
+<span class="fc" id="L250">                return s1;</span>
+        } else {
+<span class="fc" id="L252">            return s2;</span>
+        }
+    }
+
+    private void remove(Net childNet) {
+<span class="fc" id="L257">        netList.remove(childNet);</span>
+<span class="fc" id="L258">    }</span>
+
+    private Pin getPinOfIO(String name) throws PinException {
+<span class="fc" id="L261">        Pin pin = ioMap.get(name);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (pin == null)</span>
+<span class="nc" id="L263">            throw new PinException(Lang.get(&quot;err_pin_N_notFound&quot;, name));</span>
+<span class="fc" id="L264">        return pin;</span>
+    }
+
+    private Net getNetOfIOAndRemove(Pin p) throws PinException {
+<span class="fc" id="L268">        Pin pin = getPinOfIO(p.getName());</span>
+<span class="fc" id="L269">        Net netOfPin = netList.getNetOfPin(pin);</span>
+
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (netOfPin == null) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">            if (p.getDirection() == PinDescription.Direction.input)</span>
+<span class="fc" id="L273">                return null;</span>
+            else
+<span class="fc" id="L275">                throw new PinException(Lang.get(&quot;err_netOfPin_N_notFound&quot;, p.getName()));</span>
+        }
+
+<span class="fc" id="L278">        netOfPin.removePin(pin);</span>
+
+<span class="fc" id="L280">        return netOfPin;</span>
+    }
+
+    /**
+     * Creates the model.
+     *
+     * @param attachWires if true the wires are attached to the values
+     * @return the model
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    public Model createModel(boolean attachWires) throws PinException, NodeException {
+<span class="fc" id="L292">        Model m = new Model()</span>
+<span class="fc" id="L293">                .setRootPath(circuit.getOrigin())</span>
+<span class="fc" id="L294">                .setAllowGlobalValues(attachWires)</span>
+<span class="fc" id="L295">                .setOscillationDetectionCounter(circuit.getAttributes().get(Keys.OSCILLATION_DETECTION_COUNTER));</span>
+
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        for (Net n : netList)</span>
+<span class="fc" id="L298">            n.interconnect(m, attachWires);</span>
+
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        for (ModelEntry e : entries)</span>
+<span class="fc" id="L301">            e.applyInputs();</span>
+
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (ModelEntry e : entries)</span>
+<span class="fc" id="L304">            e.getElement().registerNodes(m);</span>
+
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        for (ModelEntry e : entries) {</span>
+<span class="fc" id="L307">            e.getElement().init(m);</span>
+<span class="fc" id="L308">            e.getVisualElement().getShape().registerModel(this, m, e);</span>
+<span class="fc" id="L309">        }</span>
+
+<span class="fc" id="L311">        ROMManger romManager = circuit.getAttributes().get(Keys.ROMMANAGER);</span>
+<span class="fc" id="L312">        romManager.applyTo(m);</span>
+
+<span class="fc" id="L314">        return m;</span>
+    }
+
+    /**
+     * Needs to be called after createModel is called!
+     * Connects the gui to the model
+     *
+     * @param circuitModifier used to modify the circuit by the running model
+     */
+    public void connectToGui(CircuitModifier circuitModifier) {
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        for (ModelEntry e : entries)</span>
+<span class="fc" id="L325">            e.connectToGui(circuitModifier);</span>
+<span class="fc" id="L326">    }</span>
+
+    /**
+     * Adds all the VisualElements, witch have generated one of the given nodes to the collection
+     * of Drawables.
+     *
+     * @param nodes       The collection of nodes
+     * @param highLighted the list of drawables to add the VisualElements to
+     */
+    public void addNodeElementsTo(Collection&lt;Node&gt; nodes, Collection&lt;Drawable&gt; highLighted) {
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (nodes == null) return;</span>
+
+<span class="nc" id="L338">        HashSet&lt;Node&gt; nodeSet = new HashSet&lt;&gt;(nodes);</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        for (ModelEntry me : entries) {</span>
+<span class="nc" id="L340">            Element element = me.getElement();</span>
+<span class="nc bnc" id="L341" title="All 4 branches missed.">            if (element instanceof Node &amp;&amp; nodeSet.contains(element))</span>
+<span class="nc" id="L342">                highLighted.add(me.getContainingVisualElement());</span>
+<span class="nc" id="L343">        }</span>
+<span class="nc" id="L344">    }</span>
+
+    @Override
+    public Iterator&lt;ModelEntry&gt; iterator() {
+<span class="nc" id="L348">        return entries.iterator();</span>
+    }
+
+    /**
+     * Returns a list of all ModelEntries which contain an element of the given name
+     *
+     * @param elementName the name of the element
+     * @return the list
+     */
+    public List&lt;ModelEntry&gt; getEntries(String elementName) {
+<span class="fc" id="L358">        List&lt;ModelEntry&gt; entry = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (ModelEntry me : entries)</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            if (me.getVisualElement().getElementName().endsWith(elementName))</span>
+<span class="fc" id="L361">                entry.add(me);</span>
+<span class="fc" id="L362">        return entry;</span>
+    }
+
+    /**
+     * @return the circuit which was used to create this model description
+     */
+    public Circuit getCircuit() {
+<span class="fc" id="L369">        return circuit;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Movable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">Movable.java</span></div><h1>Movable.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+import de.neemann.digital.draw.graphics.VectorFloat;
+
+/**
+ * A movable element.
+ *
+ * @param &lt;A&gt; the type of the implementing class
+ */
+public class Movable&lt;A extends Movable&lt;?&gt;&gt; implements MouseMovable {
+
+<span class="fc" id="L17">    enum Property {POS, REMOVED, CONDITION, NAME, NUMBER, MOUSEPOS, VALUES, INITIAL, ADDED, INITIAL_ANGLE}</span>
+
+    private static final float MASS = 50f;
+    private static final float FRICTION = 0.8f;
+    private static final float MAX_FORCE = 100000f;
+<span class="fc" id="L22">    private static final float MAX_FORCE_CHECK = (float) (MAX_FORCE / Math.sqrt(2));</span>
+
+<span class="fc" id="L24">    private String values = &quot;&quot;;</span>
+    private VectorFloat position;
+    private transient VectorFloat speed;
+    private transient VectorFloat force;
+    private transient FSM fsm;
+    private transient Property lastPosProp;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L34">    public Movable() {</span>
+<span class="fc" id="L35">        force = new VectorFloat(0, 0);</span>
+<span class="fc" id="L36">        speed = new VectorFloat(0, 0);</span>
+<span class="fc" id="L37">        position = new VectorFloat(0, 0);</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Sets the position by mouse movement
+     *
+     * @param position the position
+     */
+    public void setPosDragging(VectorFloat position) {
+<span class="nc" id="L46">        setPos(position, Property.MOUSEPOS);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Sets the position
+     *
+     * @param position the position
+     */
+    public void setPos(VectorFloat position) {
+<span class="fc" id="L55">        setPos(position, Property.POS);</span>
+<span class="fc" id="L56">    }</span>
+
+    private void setPos(VectorFloat position, Property prop) {
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">        if (!this.position.equals(position) || lastPosProp != prop) {</span>
+<span class="fc" id="L60">            this.position = position;</span>
+<span class="fc" id="L61">            lastPosProp = prop;</span>
+<span class="fc" id="L62">            wasModified(prop);</span>
+        }
+<span class="fc" id="L64">    }</span>
+
+    void wasModified(Property prop) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (fsm != null)</span>
+<span class="fc" id="L68">            fsm.wasModified(this, prop);</span>
+<span class="fc" id="L69">    }</span>
+
+    /**
+     * Adds the given value to the force
+     *
+     * @param df the force to add
+     */
+    void addToForce(VectorFloat df) {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (force == null)</span>
+<span class="nc" id="L78">            force = df;</span>
+        else
+<span class="fc" id="L80">            force = force.add(df);</span>
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Applies a repulsive force which decreases with the square of the distance.
+     *
+     * @param pos   the position of the causer of the force
+     * @param reach the reach of the force
+     */
+    void addRepulsive(VectorFloat pos, float reach) {
+<span class="fc" id="L90">        final VectorFloat dif = position.sub(pos);</span>
+<span class="fc" id="L91">        float dist = dif.len();</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (dist == 0) {</span>
+<span class="nc" id="L93">            addToForce(new VectorFloat((float) Math.random() - 0.5f, (float) Math.random() - 0.5f).mul(2));</span>
+        } else {
+<span class="fc" id="L95">            float f = reach * reach / (dist * dist) / 2;</span>
+<span class="fc" id="L96">            addToForce(dif.norm().mul(f));</span>
+        }
+<span class="fc" id="L98">    }</span>
+
+    /**
+     * Applies a repulsive force which decreases linear with the the distance.
+     *
+     * @param pos   the position of the causer of the force
+     * @param reach the reach of the force
+     */
+    public void addRepulsiveInv(VectorFloat pos, float reach) {
+<span class="nc" id="L107">        final VectorFloat dif = position.sub(pos);</span>
+<span class="nc" id="L108">        float dist = dif.len();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (dist == 0) {</span>
+<span class="nc" id="L110">            addToForce(new VectorFloat((float) Math.random() - 0.5f, (float) Math.random() - 0.5f).mul(2));</span>
+        } else {
+<span class="nc" id="L112">            float f = reach / dist / 2;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (f &gt; 100)</span>
+<span class="nc" id="L114">                f = 100;</span>
+<span class="nc" id="L115">            addToForce(dif.norm().mul(f));</span>
+        }
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * Adds an attractive force
+     *
+     * @param target the targe
+     * @param scale  a scaling factor
+     */
+    void addAttractiveTo(VectorFloat target, float scale) {
+<span class="fc" id="L126">        addToForce(target.sub(position).mul(scale));</span>
+<span class="fc" id="L127">    }</span>
+
+    /**
+     * @return the force
+     */
+    VectorFloat getForce() {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (force == null)</span>
+<span class="nc" id="L134">            resetForce();</span>
+<span class="fc" id="L135">        return force;</span>
+    }
+
+    /**
+     * Sets the force to zero
+     */
+    void resetForce() {
+<span class="fc" id="L142">        this.force = new VectorFloat(0, 0);</span>
+<span class="fc" id="L143">    }</span>
+
+    /**
+     * @return the position
+     */
+    public VectorFloat getPos() {
+<span class="fc" id="L149">        return position;</span>
+    }
+
+    /**
+     * Moves the element
+     *
+     * @param dt the time step in ms
+     */
+    public void move(int dt) {
+<span class="nc bnc" id="L158" title="All 4 branches missed.">        if (Math.abs(force.getXFloat()) &gt; MAX_FORCE_CHECK || Math.abs(force.getYFloat()) &gt; MAX_FORCE_CHECK) {</span>
+<span class="nc" id="L159">            double len = force.len();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (len &gt; MAX_FORCE)</span>
+<span class="nc" id="L161">                force = force.norm().mul(MAX_FORCE);</span>
+        }
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (speed == null)</span>
+<span class="nc" id="L164">            speed = force.mul(dt / MASS);</span>
+        else
+<span class="nc" id="L166">            speed = speed.add(force.mul(dt / MASS));</span>
+<span class="nc" id="L167">        setPos(position.add(speed.mul(dt / 1000f)));</span>
+<span class="nc" id="L168">        speed = speed.mul(FRICTION);</span>
+<span class="nc" id="L169">    }</span>
+
+    void setFSM(FSM fsm) {
+<span class="fc" id="L172">        this.fsm = fsm;</span>
+<span class="fc" id="L173">    }</span>
+
+    FSM getFsm() {
+<span class="fc" id="L176">        return fsm;</span>
+    }
+
+    /**
+     * Sets the values to define as a comma separated string with assignments: 'A=0,B=1'
+     *
+     * @param values the assignments
+     * @return this for chained calls
+     */
+    public A setValues(String values) {
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (!this.values.equals(values)) {</span>
+<span class="fc" id="L187">            this.values = values;</span>
+<span class="fc" id="L188">            wasModified(Property.VALUES);</span>
+        }
+<span class="fc" id="L190">        return (A) this;</span>
+    }
+
+    /**
+     * @return the state value map
+     */
+    public String getValues() {
+<span class="fc" id="L197">        return values;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

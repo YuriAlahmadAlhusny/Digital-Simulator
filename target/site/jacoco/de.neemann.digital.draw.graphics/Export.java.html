@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Export.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">Export.java</span></div><h1>Export.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.graphics.linemerger.GraphicLineCollector;
+import de.neemann.digital.draw.graphics.linemerger.GraphicSkipLines;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * Helper to export graphics files.
+ * Sets the bounding box of the graphic and collects single lines to a long stroke
+ */
+public class Export {
+
+    private final Circuit circuit;
+    private final ExportFactory factory;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit the circuit to export
+     * @param factory the factory to create the graphics instance
+     */
+<span class="fc" id="L33">    public Export(Circuit circuit, ExportFactory factory) {</span>
+<span class="fc" id="L34">        this.circuit = circuit;</span>
+<span class="fc" id="L35">        this.factory = factory;</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Export the file
+     *
+     * @param file filename used to write the file to
+     * @throws IOException IOException
+     */
+    public void export(File file) throws IOException {
+        try {
+<span class="nc" id="L46">            try (OutputStream out = new FileOutputStream(file)) {</span>
+<span class="nc" id="L47">                export(out);</span>
+            }
+<span class="nc" id="L49">        } catch (IOException e) {</span>
+<span class="nc" id="L50">            file.delete();</span>
+<span class="nc" id="L51">            throw new IOException(Lang.get(&quot;err_errorWritingFile_N&quot;, file), e);</span>
+<span class="nc" id="L52">        }</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Export the file
+     *
+     * @param out stream to write the file to
+     * @throws IOException IOException
+     */
+    public void export(OutputStream out) throws IOException {
+<span class="fc" id="L62">        try (Graphic gr = factory.create(out)) {</span>
+<span class="fc" id="L63">            GraphicMinMax minMax = new GraphicMinMax(gr);</span>
+<span class="fc" id="L64">            circuit.drawTo(minMax);</span>
+
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            if (minMax.isValid()) {</span>
+<span class="fc" id="L67">                gr.setBoundingBox(minMax.getMin(), minMax.getMax());</span>
+
+<span class="fc" id="L69">                GraphicLineCollector glc = new GraphicLineCollector();</span>
+<span class="fc" id="L70">                circuit.drawTo(glc);</span>
+<span class="fc" id="L71">                glc.drawTo(gr);</span>
+
+<span class="fc" id="L73">                circuit.drawTo(new GraphicSkipLines(gr));</span>
+<span class="fc" id="L74">            } else</span>
+<span class="nc" id="L75">                throw new IOException(Lang.get(&quot;err_circuitContainsNoComponents&quot;));</span>
+        }
+<span class="fc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

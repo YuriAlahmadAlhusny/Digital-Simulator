@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Resources.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui.language</a> &gt; <span class="el_source">Resources.java</span></div><h1>Resources.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui.language;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.Converter;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.XStreamValid;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+/**
+ * Used to store the language keys.
+ */
+public class Resources {
+
+    private static XStream getxStream() {
+<span class="fc" id="L30">        XStream xStream = new XStreamValid();</span>
+<span class="fc" id="L31">        xStream.alias(&quot;resources&quot;, Map.class);</span>
+<span class="fc" id="L32">        xStream.registerConverter(new MapEntryConverter(&quot;string&quot;));</span>
+<span class="fc" id="L33">        return xStream;</span>
+    }
+
+    private final Map&lt;String, String&gt; resourceMap;
+
+    Resources() {
+<span class="fc" id="L39">        this(new HashMap&lt;&gt;());</span>
+<span class="fc" id="L40">    }</span>
+
+<span class="fc" id="L42">    private Resources(Map&lt;String, String&gt; map) {</span>
+<span class="fc" id="L43">        resourceMap = map;</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Reads the resources from the given stream
+     *
+     * @param in the input stream
+     */
+    public Resources(InputStream in) {
+<span class="fc" id="L52">        this(loadMap(in));</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Reads the resources from the given file
+     *
+     * @param file the file to read
+     * @throws FileNotFoundException FileNotFoundException
+     */
+    public Resources(File file) throws FileNotFoundException {
+<span class="fc" id="L62">        this(loadMap(new FileInputStream(file)));</span>
+<span class="fc" id="L63">    }</span>
+
+    private static Map&lt;String, String&gt; loadMap(InputStream in) {
+<span class="fc" id="L66">        XStream xStream = getxStream();</span>
+<span class="fc" id="L67">        return (Map&lt;String, String&gt;) xStream.fromXML(in);</span>
+    }
+
+    void save(OutputStream out) throws IOException {
+<span class="fc" id="L71">        XStream xStream = getxStream();</span>
+<span class="fc" id="L72">        try (Writer w = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L73">            w.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="fc" id="L74">            xStream.marshal(resourceMap, new PrettyPrintWriter(w));</span>
+        }
+<span class="fc" id="L76">    }</span>
+
+    void put(String key, String value) {
+<span class="fc" id="L79">        resourceMap.put(key, value);</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Returns a entry by the given key
+     *
+     * @param key the key
+     * @return the entry
+     */
+    public String get(String key) {
+<span class="fc" id="L89">        return resourceMap.get(key);</span>
+    }
+
+    /**
+     * @return a set containing all keys
+     */
+    public Set&lt;String&gt; getKeys() {
+<span class="fc" id="L96">        return resourceMap.keySet();</span>
+    }
+
+    /**
+     * Simplified map converter
+     */
+    public static class MapEntryConverter implements Converter {
+
+        private String keyName;
+
+        /**
+         * Creates a new Instance
+         *
+         * @param keyName the name of the xml entity
+         */
+<span class="fc" id="L111">        public MapEntryConverter(String keyName) {</span>
+<span class="fc" id="L112">            this.keyName = keyName;</span>
+<span class="fc" id="L113">        }</span>
+
+        /**
+         * Returns true if the given class can be converted by this converter.
+         *
+         * @param clazz the class to test.
+         * @return true if the given class can be converted by this converter.
+         */
+        public boolean canConvert(Class clazz) {
+<span class="fc" id="L122">            return Map.class.isAssignableFrom(clazz);</span>
+        }
+
+        /**
+         * Marshals the given object
+         *
+         * @param value   the value to matshal
+         * @param writer  the writer to write the xml to
+         * @param context the context of the marshaler
+         */
+        public void marshal(Object value, HierarchicalStreamWriter writer, MarshallingContext context) {
+<span class="fc" id="L133">            Map map = (Map) value;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            for (Object obj : map.entrySet()) {</span>
+<span class="fc" id="L135">                Map.Entry entry = (Map.Entry) obj;</span>
+<span class="fc" id="L136">                writer.startNode(keyName);</span>
+<span class="fc" id="L137">                writer.addAttribute(&quot;name&quot;, entry.getKey().toString());</span>
+<span class="fc" id="L138">                writer.setValue(entry.getValue().toString());</span>
+<span class="fc" id="L139">                writer.endNode();</span>
+<span class="fc" id="L140">            }</span>
+<span class="fc" id="L141">        }</span>
+
+        /**
+         * Unmarshals a object
+         *
+         * @param reader  the reader to read the xml from
+         * @param context the context of the unmarshaler
+         * @return the read object
+         */
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+<span class="fc" id="L151">            Map&lt;String, String&gt; map = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            while (reader.hasMoreChildren()) {</span>
+<span class="fc" id="L153">                reader.moveDown();</span>
+<span class="fc" id="L154">                String key = reader.getAttribute(&quot;name&quot;);</span>
+<span class="fc" id="L155">                String value = reader.getValue().trim();</span>
+<span class="fc" id="L156">                map.put(key, value);</span>
+<span class="fc" id="L157">                reader.moveUp();</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc" id="L159">            return map;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

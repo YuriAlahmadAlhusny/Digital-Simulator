@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RelayShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">RelayShape.java</span></div><h1>RelayShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.switching.Relay;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The relay shape
+ */
+public class RelayShape implements Shape {
+
+    private final PinDescriptions inputs;
+    private final PinDescriptions outputs;
+    private final String label;
+    private final int poles;
+    private Relay relay;
+    private boolean relayIsClosed;
+    private Pins pins;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     * @param inputs     the inputs
+     * @param outputs    the outputs
+     */
+<span class="fc" id="L40">    public RelayShape(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L41">        this.inputs = inputs;</span>
+<span class="fc" id="L42">        this.outputs = outputs;</span>
+<span class="fc" id="L43">        relayIsClosed = attributes.get(Keys.RELAY_NORMALLY_CLOSED);</span>
+<span class="fc" id="L44">        label = attributes.getLabel();</span>
+<span class="fc" id="L45">        poles = attributes.get(Keys.POLES);</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (pins == null) {</span>
+<span class="fc" id="L51">            pins = new Pins()</span>
+<span class="fc" id="L52">                    .add(new Pin(new Vector(0, -SIZE * 2), inputs.get(0)))</span>
+<span class="fc" id="L53">                    .add(new Pin(new Vector(SIZE * 2, -SIZE * 2), inputs.get(1)));</span>
+<span class="fc" id="L54">            final int relayStepY = 2 * SIZE;</span>
+<span class="fc" id="L55">            int relayBaseY = 0;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (int p = 0; p &lt; poles; p++) {</span>
+<span class="fc" id="L57">                pins</span>
+<span class="fc" id="L58">                        .add(new Pin(new Vector(0, relayBaseY), outputs.get(p * 2)))</span>
+<span class="fc" id="L59">                        .add(new Pin(new Vector(SIZE * 2, relayBaseY), outputs.get(p * 2 + 1)));</span>
+<span class="fc" id="L60">                relayBaseY += relayStepY;</span>
+            }
+        }
+<span class="fc" id="L63">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L68">        relay = (Relay) ioState.getElement();</span>
+<span class="nc" id="L69">        return null;</span>
+    }
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (relay != null)</span>
+<span class="nc" id="L75">            relayIsClosed = relay.isClosed();</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+        final int relayTipY;
+        final int relayTipX;
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (relayIsClosed) {</span>
+<span class="nc" id="L83">            relayTipX = SIZE * 2;</span>
+<span class="nc" id="L84">            relayTipY = 0;</span>
+        } else {
+<span class="fc" id="L86">            relayTipX = (SIZE * 2) - 4;</span>
+<span class="fc" id="L87">            relayTipY = SIZE2;</span>
+        }
+
+<span class="fc" id="L90">        final int relayStepY = 2 * SIZE;</span>
+<span class="fc" id="L91">        int relayBaseY = 0;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int p = 0; p &lt; poles; p++) {</span>
+<span class="fc" id="L93">            graphic.drawLine(new Vector(0, relayBaseY), new Vector(relayTipX, relayBaseY - relayTipY), Style.NORMAL);</span>
+<span class="fc" id="L94">            relayBaseY += relayStepY;</span>
+        }
+
+<span class="fc" id="L97">        final int yOffs = (SIZE / 4) + (relayTipY / 2);</span>
+<span class="fc" id="L98">        graphic.drawLine(new Vector(SIZE, (poles - 1) * SIZE * 2 - yOffs), new Vector(SIZE, 1 - SIZE), Style.DASH);</span>
+
+
+        // the coil
+<span class="fc" id="L102">        graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L103">                .add(SIZE2, -SIZE)</span>
+<span class="fc" id="L104">                .add(SIZE2, -SIZE * 3)</span>
+<span class="fc" id="L105">                .add(SIZE + SIZE2, -SIZE * 3)</span>
+<span class="fc" id="L106">                .add(SIZE + SIZE2, -SIZE), Style.NORMAL);</span>
+
+<span class="fc" id="L108">        graphic.drawLine(new Vector(SIZE2, -SIZE - SIZE2), new Vector(SIZE + SIZE2, -SIZE * 2 - SIZE2), Style.THIN);</span>
+
+<span class="fc" id="L110">        graphic.drawLine(new Vector(SIZE2, -SIZE * 2), new Vector(0, -SIZE * 2), Style.NORMAL);</span>
+<span class="fc" id="L111">        graphic.drawLine(new Vector(SIZE + SIZE2, -SIZE * 2), new Vector(SIZE * 2, -SIZE * 2), Style.NORMAL);</span>
+
+<span class="pc bpc" id="L113" title="2 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="nc" id="L114">            graphic.drawText(new Vector(SIZE, -SIZE * 3 - 4), label, Orientation.CENTERBOTTOM, Style.SHAPE_PIN);</span>
+<span class="fc" id="L115">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionListenerCSVCondensed.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">ExpressionListenerCSVCondensed.java</span></div><h1>ExpressionListenerCSVCondensed.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2021 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+
+/**
+ * Exports a CSV table containing only the prime implicants
+ */
+public class ExpressionListenerCSVCondensed implements ExpressionListener {
+    private final ArrayList&lt;Result&gt; results;
+    private final HashSet&lt;String&gt; names;
+    private final VariableVisitor variables;
+    private StringBuilder str;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L27">    public ExpressionListenerCSVCondensed() {</span>
+<span class="fc" id="L28">        results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L29">        names = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L30">        variables = new VariableVisitor();</span>
+<span class="fc" id="L31">    }</span>
+
+    @Override
+    public void resultFound(String name, Expression expression) throws FormatterException, ExpressionException {
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (!names.contains(name)) {</span>
+<span class="fc" id="L36">            names.add(name);</span>
+<span class="fc" id="L37">            results.add(new Result(name, expression, results.size()));</span>
+<span class="fc" id="L38">            expression.traverse(variables);</span>
+        }
+<span class="fc" id="L40">    }</span>
+
+    @Override
+    public void close() throws FormatterException, ExpressionException {
+<span class="fc" id="L44">        str = new StringBuilder();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (Variable var : variables.getVariables())</span>
+<span class="fc" id="L46">            str.append(var.getIdentifier()).append(&quot;,&quot;);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (Result r : results)</span>
+<span class="fc" id="L48">            str.append(&quot;,&quot;).append(r.name);</span>
+<span class="fc" id="L49">        str.append(&quot;\n&quot;);</span>
+
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (Result r : results)</span>
+<span class="fc" id="L52">            r.createString(str, variables.getVariables(), results.size());</span>
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L57">        return str.toString();</span>
+    }
+
+    private static final class Result {
+        private final String name;
+        private final Expression expression;
+        private final int number;
+
+<span class="fc" id="L65">        private Result(String name, Expression expression, int number) {</span>
+<span class="fc" id="L66">            this.name = name;</span>
+<span class="fc" id="L67">            this.expression = expression;</span>
+<span class="fc" id="L68">            this.number = number;</span>
+<span class="fc" id="L69">        }</span>
+
+        public void createString(StringBuilder sb, Collection&lt;Variable&gt; variables, int results) throws ExpressionException {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (expression instanceof Operation.Or) {</span>
+<span class="fc" id="L73">                ArrayList&lt;Expression&gt; o = ((Operation.Or) expression).getExpressions();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                for (Expression e : o)</span>
+<span class="fc" id="L75">                    addPrime(sb, e, variables, results);</span>
+<span class="fc" id="L76">            } else</span>
+<span class="fc" id="L77">                addPrime(sb, expression, variables, results);</span>
+<span class="fc" id="L78">        }</span>
+
+        private void addPrime(StringBuilder sb, Expression and, Collection&lt;Variable&gt; variables, int results) throws ExpressionException {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (and instanceof Operation.And)</span>
+<span class="fc" id="L82">                addAnd(sb, and, variables, results);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            else if (and instanceof Variable)</span>
+<span class="fc" id="L84">                addVar(sb, ((Variable) and).getIdentifier(), variables, results, false);</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">            else if (and instanceof Not &amp;&amp; ((Not) and).getExpression() instanceof Variable)</span>
+<span class="fc" id="L86">                addVar(sb, ((Variable) (((Not) and).getExpression())).getIdentifier(), variables, results, true);</span>
+            else
+<span class="nc" id="L88">                throw new ExpressionException(&quot;invalid expression&quot;);</span>
+<span class="fc" id="L89">        }</span>
+
+        private void addVar(StringBuilder sb, String identifier, Collection&lt;Variable&gt; variables, int results, boolean invert) {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (Variable var : variables) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (var.getIdentifier().endsWith(identifier)) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                    if (invert)</span>
+<span class="fc" id="L95">                        sb.append(&quot;0,&quot;);</span>
+                    else
+<span class="fc" id="L97">                        sb.append(&quot;1,&quot;);</span>
+                } else
+<span class="fc" id="L99">                    sb.append(&quot;X,&quot;);</span>
+<span class="fc" id="L100">            }</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (int i = 0; i &lt; results; i++) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if (i == number)</span>
+<span class="fc" id="L104">                    sb.append(&quot;,1&quot;);</span>
+                else
+<span class="fc" id="L106">                    sb.append(&quot;,0&quot;);</span>
+            }
+<span class="fc" id="L108">            sb.append('\n');</span>
+<span class="fc" id="L109">        }</span>
+
+        private void addAnd(StringBuilder sb, Expression and, Collection&lt;Variable&gt; variables, int results) throws ExpressionException {
+<span class="fc" id="L112">            HashSet&lt;String&gt; v = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L113">            HashSet&lt;String&gt; nv = new HashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            if (and instanceof Operation.And) {</span>
+<span class="fc" id="L115">                Operation.And a = (Operation.And) and;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                for (Expression va : a.getExpressions()) {</span>
+<span class="fc" id="L117">                    Expression var = va;</span>
+<span class="fc" id="L118">                    HashSet&lt;String&gt; map = v;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (var instanceof Not) {</span>
+<span class="fc" id="L120">                        map = nv;</span>
+<span class="fc" id="L121">                        var = ((Not) var).getExpression();</span>
+                    }
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">                    if (var instanceof Variable)</span>
+<span class="fc" id="L124">                        map.add(((Variable) var).getIdentifier());</span>
+                    else
+<span class="nc" id="L126">                        throw new ExpressionException(&quot;invalid expression&quot;);</span>
+<span class="fc" id="L127">                }</span>
+<span class="fc" id="L128">            } else</span>
+<span class="nc" id="L129">                throw new ExpressionException(&quot;invalid expression&quot;);</span>
+
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            for (Variable var : variables) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                if (v.contains(var.getIdentifier()))</span>
+<span class="fc" id="L133">                    sb.append(&quot;1,&quot;);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                else if (nv.contains(var.getIdentifier()))</span>
+<span class="fc" id="L135">                    sb.append(&quot;0,&quot;);</span>
+                else
+<span class="fc" id="L137">                    sb.append(&quot;X,&quot;);</span>
+<span class="fc" id="L138">            }</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (int i = 0; i &lt; results; i++) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                if (i == number)</span>
+<span class="fc" id="L142">                    sb.append(&quot;,1&quot;);</span>
+                else
+<span class="fc" id="L144">                    sb.append(&quot;,0&quot;);</span>
+            }
+<span class="fc" id="L146">            sb.append('\n');</span>
+<span class="fc" id="L147">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

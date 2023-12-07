@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Counter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">Counter.java</span></div><h1>Counter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+
+import static de.neemann.digital.core.ObservableValues.ovs;
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A simple counter.
+ */
+public class Counter extends Node implements Element, ProgramCounter {
+
+    /**
+     * The counters {@link ElementTypeDescription}
+     */
+<span class="fc" id="L22">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L23">            = new ElementTypeDescription(Counter.class, input(&quot;en&quot;), input(&quot;C&quot;).setClock(), input(&quot;clr&quot;))</span>
+<span class="fc" id="L24">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L25">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L26">            .addAttribute(Keys.INVERTER_CONFIG)</span>
+<span class="fc" id="L27">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L28">            .addAttribute(Keys.VALUE_IS_PROBE)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.IS_PROGRAM_COUNTER)</span>
+<span class="fc" id="L30">            .supportsHDL();</span>
+
+    private final ObservableValue out;
+    private final ObservableValue ovf;
+    private final long maxValue;
+    private final boolean probe;
+    private final String label;
+    private final boolean isProgramCounter;
+    private ObservableValue clockIn;
+    private ObservableValue clrIn;
+    private ObservableValue enable;
+    private boolean lastClock;
+    private long counter;
+<span class="fc" id="L43">    private boolean ovfOut = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the elements attributes
+     */
+    public Counter(ElementAttributes attributes) {
+<span class="fc" id="L51">        super(true);</span>
+<span class="fc" id="L52">        int bits = attributes.getBits();</span>
+<span class="fc" id="L53">        this.out = new ObservableValue(&quot;out&quot;, bits).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L54">        this.ovf = new ObservableValue(&quot;ovf&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L55">        maxValue = Bits.mask(bits);</span>
+<span class="fc" id="L56">        probe = attributes.get(Keys.VALUE_IS_PROBE);</span>
+<span class="fc" id="L57">        label = attributes.getLabel();</span>
+<span class="fc" id="L58">        isProgramCounter = attributes.get(Keys.IS_PROGRAM_COUNTER);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L63">        boolean clock = clockIn.getBool();</span>
+<span class="fc" id="L64">        boolean enable = this.enable.getBool();</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">        if (clock &amp;&amp; !lastClock) {</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            if (enable) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                if (counter == maxValue)</span>
+<span class="fc" id="L68">                    counter = 0;</span>
+                else
+<span class="fc" id="L70">                    counter++;</span>
+            }
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (clrIn.getBool())</span>
+<span class="fc" id="L73">                counter = 0;</span>
+        }
+
+<span class="fc" id="L76">        lastClock = clock;</span>
+
+<span class="fc bfc" id="L78" title="All 4 branches covered.">        ovfOut = (counter == maxValue) &amp;&amp; enable;</span>
+<span class="fc" id="L79">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L83">        ovf.setBool(ovfOut);</span>
+<span class="fc" id="L84">        out.setValue(counter);</span>
+<span class="fc" id="L85">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws BitsException {
+<span class="fc" id="L89">        enable = inputs.get(0).addObserverToValue(this).checkBits(1, this, 0);</span>
+<span class="fc" id="L90">        clockIn = inputs.get(1).addObserverToValue(this).checkBits(1, this, 1);</span>
+<span class="fc" id="L91">        clrIn = inputs.get(2).checkBits(1, this, 2);</span>
+<span class="fc" id="L92">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L96">        return ovs(out, ovf);</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L101">        super.registerNodes(model);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (probe)</span>
+<span class="fc" id="L103">            model.addSignal(new Signal(label, out, (v, z) -&gt; {</span>
+<span class="nc" id="L104">                counter = v;</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">                boolean o = (counter == maxValue) &amp;&amp; enable.getBool();</span>
+<span class="nc" id="L106">                out.setValue(counter);</span>
+<span class="nc" id="L107">                ovf.setBool(o);</span>
+<span class="pc" id="L108">            }).setTestOutput());</span>
+<span class="fc" id="L109">    }</span>
+
+    @Override
+    public boolean isProgramCounter() {
+<span class="nc" id="L113">        return isProgramCounter;</span>
+    }
+
+    @Override
+    public long getProgramCounter() {
+<span class="nc" id="L118">        return counter;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

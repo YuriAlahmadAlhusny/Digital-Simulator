@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RAMDualAccess.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">RAMDualAccess.java</span></div><h1>RAMDualAccess.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * RAM module with different ports to read and write the data
+ * and an additional read port. Used to implement graphic card memory.
+ */
+public class RAMDualAccess extends Node implements Element, RAMInterface {
+
+    /**
+     * The RAMs {@link ElementTypeDescription}
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(RAMDualAccess.class,</span>
+<span class="fc" id="L26">            input(&quot;str&quot;),</span>
+<span class="fc" id="L27">            input(&quot;C&quot;).setClock(),</span>
+<span class="fc" id="L28">            input(&quot;ld&quot;),</span>
+<span class="fc" id="L29">            input(&quot;1A&quot;),</span>
+<span class="fc" id="L30">            input(&quot;1Din&quot;),</span>
+<span class="fc" id="L31">            input(&quot;2A&quot;))</span>
+<span class="fc" id="L32">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L33">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L34">            .addAttribute(Keys.ADDR_BITS)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.IS_PROGRAM_MEMORY)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L37">            .supportsHDL();</span>
+
+    private final DataField memory;
+    private final ObservableValue out1;
+    private final ObservableValue out2;
+    private final int addrBits;
+    private final int bits;
+    private final String label;
+    private final int size;
+    private final boolean isProgramMemory;
+    private ObservableValue addr1In;
+    private ObservableValue data1In;
+    private ObservableValue str1In;
+    private ObservableValue clk1In;
+    private ObservableValue ld1In;
+    private ObservableValue addr2In;
+    private int addr1;
+    private int addr2;
+<span class="fc" id="L55">    private boolean lastClk = false;</span>
+    private boolean ld;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elemets attributes
+     */
+    public RAMDualAccess(ElementAttributes attr) {
+<span class="fc" id="L64">        super(true);</span>
+<span class="fc" id="L65">        bits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L66">        out1 = new ObservableValue(&quot;1D&quot;, bits)</span>
+<span class="fc" id="L67">                .setToHighZ()</span>
+<span class="fc" id="L68">                .setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L69">        out2 = new ObservableValue(&quot;2D&quot;, bits)</span>
+<span class="fc" id="L70">                .setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L71">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L72">        size = 1 &lt;&lt; addrBits;</span>
+<span class="fc" id="L73">        memory = new DataField(size);</span>
+<span class="fc" id="L74">        label = attr.getLabel();</span>
+<span class="fc" id="L75">        isProgramMemory = attr.isProgramMemory();</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L80">        this.str1In = inputs.get(0).checkBits(1, this);</span>
+<span class="fc" id="L81">        this.clk1In = inputs.get(1).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L82">        this.ld1In = inputs.get(2).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L83">        this.addr1In = inputs.get(3).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L84">        this.data1In = inputs.get(4).checkBits(bits, this);</span>
+<span class="fc" id="L85">        this.addr2In = inputs.get(5).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L86">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L90">        return new ObservableValues(out1, out2);</span>
+    }
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L95">        long data = 0;</span>
+<span class="fc" id="L96">        boolean clk = clk1In.getBool();</span>
+        boolean str;
+<span class="fc bfc" id="L98" title="All 4 branches covered.">        if (!lastClk &amp;&amp; clk) {</span>
+<span class="fc" id="L99">            str = str1In.getBool();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">            if (str)</span>
+<span class="fc" id="L101">                data = data1In.getValue();</span>
+        } else
+<span class="fc" id="L103">            str = false;</span>
+<span class="fc" id="L104">        ld = ld1In.getBool();</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        if (ld || str)</span>
+<span class="fc" id="L106">            addr1 = (int) addr1In.getValue();</span>
+
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (str)</span>
+<span class="fc" id="L109">            memory.setData(addr1, data);</span>
+
+<span class="fc" id="L111">        addr2 = (int) addr2In.getValue();</span>
+
+<span class="fc" id="L113">        lastClk = clk;</span>
+<span class="fc" id="L114">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (ld) {</span>
+<span class="fc" id="L119">            out1.setValue(memory.getDataWord(addr1));</span>
+        } else {
+<span class="fc" id="L121">            out1.setToHighZ();</span>
+        }
+<span class="fc" id="L123">        out2.setValue(memory.getDataWord(addr2));</span>
+<span class="fc" id="L124">    }</span>
+
+    @Override
+    public DataField getMemory() {
+<span class="nc" id="L128">        return memory;</span>
+    }
+
+    @Override
+    public String getLabel() {
+<span class="nc" id="L133">        return label;</span>
+    }
+
+    @Override
+    public int getSize() {
+<span class="nc" id="L138">        return size;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L143">        return bits;</span>
+    }
+
+    @Override
+    public int getAddrBits() {
+<span class="nc" id="L148">        return addrBits;</span>
+    }
+
+    @Override
+    public boolean isProgramMemory() {
+<span class="nc" id="L153">        return isProgramMemory;</span>
+    }
+
+    @Override
+    public void setProgramMemory(DataField dataField) {
+<span class="nc" id="L158">        memory.setDataFrom(dataField);</span>
+<span class="nc" id="L159">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

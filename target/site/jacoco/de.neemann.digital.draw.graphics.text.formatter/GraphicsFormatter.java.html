@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphicsFormatter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics.text.formatter</a> &gt; <span class="el_source">GraphicsFormatter.java</span></div><h1>GraphicsFormatter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics.text.formatter;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.draw.graphics.text.text.ExpressionToText;
+import de.neemann.digital.draw.graphics.text.ParseException;
+import de.neemann.digital.draw.graphics.text.Parser;
+import de.neemann.digital.draw.graphics.text.text.Character;
+import de.neemann.digital.draw.graphics.text.text.*;
+
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+
+/**
+ * Formatter to draw a text on a {@link Graphics2D} instance.
+ */
+public final class GraphicsFormatter {
+
+    private GraphicsFormatter() {
+    }
+
+    /**
+     * Creates the text fragments
+     *
+     * @param gr   the {@link Graphics2D} instance
+     * @param text the text
+     * @return the text fragment
+     */
+    public static Fragment createFragment(Graphics2D gr, String text) {
+<span class="fc" id="L35">        return createFragment((fragment, font, str) -&gt; {</span>
+<span class="fc" id="L36">            final FontMetrics metrics = gr.getFontMetrics(font);</span>
+<span class="fc" id="L37">            Rectangle2D rec = metrics.getStringBounds(str, gr);</span>
+<span class="fc" id="L38">            fragment.set((int) rec.getWidth(), (int) rec.getHeight(), metrics.getDescent());</span>
+<span class="fc" id="L39">        }, gr.getFont(), text);</span>
+    }
+
+    /**
+     * Creates the text fragments
+     *
+     * @param gr         the {@link Graphics2D} instance
+     * @param expression the expression
+     * @return the text fragment
+     * @throws FormatterException FormatterException
+     */
+    public static Fragment createFragment(Graphics2D gr, Expression expression) throws FormatterException {
+<span class="nc" id="L51">        return createFragment((fragment, font, str) -&gt; {</span>
+<span class="nc" id="L52">            final FontMetrics metrics = gr.getFontMetrics(font);</span>
+<span class="nc" id="L53">            Rectangle2D rec = metrics.getStringBounds(str, gr);</span>
+<span class="nc" id="L54">            fragment.set((int) rec.getWidth(), (int) rec.getHeight(), metrics.getDescent());</span>
+<span class="nc" id="L55">        }, gr.getFont(), new ExpressionToText().createText(expression));</span>
+    }
+
+    /**
+     * Creates the text fragments
+     *
+     * @param sizer the sizer instance
+     * @param font  the font
+     * @param text  the text
+     * @return the fragment
+     */
+    public static Fragment createFragment(FontSizer sizer, Font font, String text) {
+        Fragment fragment;
+        try {
+<span class="fc" id="L69">            Text t = new Parser(text).parse();</span>
+<span class="fc" id="L70">            fragment = createFragment(sizer, font, t);</span>
+<span class="nc" id="L71">        } catch (ParseException | FormatterException e) {</span>
+            // if there was an exception, return the complete raw text as a fragment
+<span class="nc" id="L73">            fragment = new TextFragment(sizer, font, text);</span>
+<span class="fc" id="L74">        }</span>
+<span class="fc" id="L75">        return fragment;</span>
+    }
+
+    /**
+     * Creates the text fragments
+     *
+     * @param sizer the sizer instance
+     * @param font  the font
+     * @param text  the text
+     * @return the fragment
+     * @throws FormatterException FormatterException
+     */
+    private static Fragment createFragment(FontSizer sizer, Font font, Text text) throws FormatterException {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (text instanceof Simple) {</span>
+<span class="fc" id="L89">            return new TextFragment(sizer, font, ((Simple) text).getText());</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        } else if (text instanceof Character) {</span>
+<span class="fc" id="L91">            return new TextFragment(sizer, font, &quot;&quot; + ((Character) text).getChar());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        } else if (text instanceof Sentence) {</span>
+<span class="fc" id="L93">            Sentence s = (Sentence) text;</span>
+<span class="fc" id="L94">            SentenceFragment sf = new SentenceFragment();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            for (Text t : s)</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                if (t instanceof Blank)</span>
+<span class="fc" id="L97">                    sf.pad(font.getSize() / 2);</span>
+                else {
+<span class="fc" id="L99">                    final Fragment f = createFragment(sizer, font, t);</span>
+<span class="fc" id="L100">                    sf.add(f);</span>
+                }
+<span class="fc" id="L102">            return sf.setUp();</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        } else if (text instanceof Index) {</span>
+<span class="fc" id="L104">            Index i = (Index) text;</span>
+<span class="fc" id="L105">            Fragment var = createFragment(sizer, font, i.getVar());</span>
+<span class="fc" id="L106">            Font f = font.deriveFont(font.getSize() / 1.4f);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            Fragment superScript = i.getSuperScript() == null ? null : createFragment(sizer, f, i.getSuperScript());</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            Fragment subScript = i.getSubScript() == null ? null : createFragment(sizer, f, i.getSubScript());</span>
+<span class="fc" id="L109">            return new IndexFragment(var, superScript, subScript);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        } else if (text instanceof Decorate) {</span>
+<span class="fc" id="L111">            Decorate d = (Decorate) text;</span>
+<span class="pc bpc" id="L112" title="2 of 3 branches missed.">            switch (d.getStyle()) {</span>
+                case MATH:
+<span class="nc" id="L114">                    return createFragment(sizer, font.deriveFont(Font.ITALIC), d.getContent());</span>
+                case OVERLINE:
+<span class="fc" id="L116">                    return new OverlineFragment(createFragment(sizer, font, d.getContent()), font);</span>
+                default:
+<span class="nc" id="L118">                    return createFragment(sizer, font, d.getContent());</span>
+            }
+        } else
+<span class="nc" id="L121">            throw new FormatterException(&quot;unknown text element &quot; + text.getClass().getSimpleName() + &quot;, &quot; + text);</span>
+    }
+
+    /**
+     * Exception which indicates a formatter exception
+     */
+    public static final class FormatterException extends Exception {
+        FormatterException(String message) {
+<span class="nc" id="L129">            super(message);</span>
+<span class="nc" id="L130">        }</span>
+    }
+
+    /**
+     * The base class of all text fragments.
+     */
+    public static abstract class Fragment {
+        //CHECKSTYLE.OFF: VisibilityModifier
+        protected int x;
+        protected int y;
+        protected int dx;
+        protected int dy;
+        protected int base;
+        //CHECKSTYLE.ON: VisibilityModifier
+
+        private Fragment() {
+        }
+
+        /**
+         * Sets the size of this fragment
+         *
+         * @param dx   width
+         * @param dy   height
+         * @param base base line
+         */
+        public void set(int dx, int dy, int base) {
+<span class="fc" id="L156">            this.dx = dx;</span>
+<span class="fc" id="L157">            this.dy = dy;</span>
+<span class="fc" id="L158">            this.base = base;</span>
+<span class="fc" id="L159">        }</span>
+
+        void drawDirect(Graphics2D gr, int xOfs, int yOfs) {
+//            gr.setStroke(new BasicStroke());
+//            gr.drawRect(xOfs + x, yOfs + y + base - dy, dx, dy);
+//            gr.drawLine(xOfs + x, yOfs + y, xOfs + x + dx, yOfs + y);
+<span class="fc" id="L165">        }</span>
+
+        /**
+         * Draws the given text.
+         *
+         * @param gr the {@link Graphics2D} instance
+         * @param x  the x position
+         * @param y  the y position
+         */
+        public void draw(Graphics2D gr, int x, int y) {
+<span class="fc" id="L175">            Font font = gr.getFont();</span>
+<span class="fc" id="L176">            Stroke stroke = gr.getStroke();</span>
+<span class="fc" id="L177">            drawDirect(gr, x, y);</span>
+<span class="fc" id="L178">            gr.setFont(font);</span>
+<span class="fc" id="L179">            gr.setStroke(stroke);</span>
+<span class="fc" id="L180">        }</span>
+
+        /**
+         * @return the width of this fragment
+         */
+        public int getWidth() {
+<span class="fc" id="L186">            return dx;</span>
+        }
+
+        /**
+         * @return the height of this fragment
+         */
+        public int getHeight() {
+<span class="fc" id="L193">            return dy;</span>
+        }
+    }
+
+    final static class TextFragment extends Fragment {
+        private final String text;
+        private final Font font;
+
+<span class="fc" id="L201">        private TextFragment(FontSizer sizer, Font font, String text) {</span>
+<span class="fc" id="L202">            this.font = font;</span>
+<span class="fc" id="L203">            this.text = text;</span>
+<span class="fc" id="L204">            sizer.setSizeTo(this, font, text);</span>
+<span class="fc" id="L205">        }</span>
+
+        @Override
+        void drawDirect(Graphics2D gr, int xOfs, int yOfs) {
+<span class="fc" id="L209">            super.drawDirect(gr, xOfs, yOfs);</span>
+<span class="fc" id="L210">            gr.setFont(font);</span>
+<span class="fc" id="L211">            gr.drawString(text, x + xOfs, y + yOfs);</span>
+<span class="fc" id="L212">        }</span>
+    }
+
+    private static final class SentenceFragment extends Fragment {
+
+        private ArrayList&lt;Fragment&gt; fragments;
+
+<span class="fc" id="L219">        private SentenceFragment() {</span>
+<span class="fc" id="L220">            this.fragments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L221">        }</span>
+
+        private void add(Fragment fragment) {
+<span class="fc" id="L224">            fragments.add(fragment);</span>
+<span class="fc" id="L225">            fragment.x = dx;</span>
+<span class="fc" id="L226">            dx += fragment.dx;</span>
+<span class="fc" id="L227">        }</span>
+
+        private void pad(int p) {
+<span class="fc" id="L230">            dx += p;</span>
+<span class="fc" id="L231">        }</span>
+
+        @Override
+        void drawDirect(Graphics2D gr, int xOfs, int yOfs) {
+<span class="fc" id="L235">            super.drawDirect(gr, xOfs, yOfs);</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">            for (Fragment f : fragments)</span>
+<span class="fc" id="L237">                f.drawDirect(gr, x + xOfs, y + yOfs);</span>
+<span class="fc" id="L238">        }</span>
+
+        public Fragment setUp() {
+<span class="fc" id="L241">            int maxBase = 0;</span>
+<span class="fc" id="L242">            int maxAscent = 0;</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            for (Fragment f : fragments) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (maxBase &lt; f.base)</span>
+<span class="fc" id="L245">                    maxBase = f.base;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">                if (maxAscent &lt; f.dy - f.base)</span>
+<span class="fc" id="L247">                    maxAscent = f.dy - f.base;</span>
+<span class="fc" id="L248">            }</span>
+<span class="fc" id="L249">            dy = maxBase + maxAscent;</span>
+<span class="fc" id="L250">            base = maxBase;</span>
+<span class="fc" id="L251">            return this;</span>
+        }
+    }
+
+    private final static class IndexFragment extends Fragment {
+        private final Fragment var;
+        private final Fragment superScript;
+        private final Fragment subScript;
+
+<span class="fc" id="L260">        private IndexFragment(Fragment var, Fragment superScript, Fragment subScript) {</span>
+<span class="fc" id="L261">            this.var = var;</span>
+<span class="fc" id="L262">            this.superScript = superScript;</span>
+<span class="fc" id="L263">            this.subScript = subScript;</span>
+
+<span class="pc bpc" id="L265" title="2 of 4 branches missed.">            if (subScript != null &amp;&amp; superScript != null)</span>
+<span class="nc" id="L266">                dx = var.dx + Math.max(subScript.dx, superScript.dx);</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">            else if (subScript != null)</span>
+<span class="fc" id="L268">                dx = var.dx + subScript.dx;</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            else if (superScript != null)</span>
+<span class="nc" id="L270">                dx = var.dx + superScript.dx;</span>
+            else
+<span class="nc" id="L272">                dx = var.dx;</span>
+
+<span class="fc" id="L274">            dy = var.dy;</span>
+
+<span class="fc" id="L276">            int delta = var.dy / 3;</span>
+<span class="fc" id="L277">            int ofs = var.dy / 8;</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">            if (superScript != null) {</span>
+<span class="nc" id="L279">                superScript.x = var.dx;</span>
+<span class="nc" id="L280">                superScript.y = -delta - ofs;</span>
+
+<span class="nc" id="L282">                int h = -superScript.y + superScript.dy - superScript.base;</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">                if (h &gt; var.dy - var.base)</span>
+<span class="nc" id="L284">                    dy += h - (var.dy - var.base);</span>
+            }
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">            if (subScript != null) {</span>
+<span class="fc" id="L287">                subScript.x = var.dx;</span>
+<span class="fc" id="L288">                subScript.y = +delta - ofs;</span>
+
+<span class="fc" id="L290">                int b = subScript.y + subScript.base;</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">                if (b &gt; var.base) {</span>
+<span class="fc" id="L292">                    base = b;</span>
+<span class="fc" id="L293">                    dy += b - var.base;</span>
+                } else
+<span class="nc" id="L295">                    base = var.base;</span>
+            }
+<span class="fc" id="L297">        }</span>
+
+        @Override
+        void drawDirect(Graphics2D gr, int xOfs, int yOfs) {
+<span class="fc" id="L301">            super.drawDirect(gr, xOfs, yOfs);</span>
+<span class="fc" id="L302">            var.drawDirect(gr, xOfs + x, yOfs + y);</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">            if (superScript != null)</span>
+<span class="nc" id="L304">                superScript.drawDirect(gr, xOfs + x, yOfs + y);</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">            if (subScript != null)</span>
+<span class="fc" id="L306">                subScript.drawDirect(gr, xOfs + x, yOfs + y);</span>
+<span class="fc" id="L307">        }</span>
+    }
+
+    private final static class OverlineFragment extends Fragment {
+        private final Fragment fragment;
+        private final float fontSize;
+        private final int border;
+        private int dx1;
+        private int dx2;
+
+<span class="fc" id="L317">        private OverlineFragment(Fragment fragment, Font font) {</span>
+<span class="fc" id="L318">            this.fragment = fragment;</span>
+<span class="fc" id="L319">            this.fontSize = font.getSize();</span>
+<span class="fc" id="L320">            this.dx = fragment.dx;</span>
+<span class="fc" id="L321">            border = (int) (fontSize / 5);</span>
+<span class="fc" id="L322">            this.dy = fragment.dy + border;</span>
+<span class="fc" id="L323">            this.base = fragment.base;</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">            int indent = dx &lt; fontSize / 2 ? 0 : (int) fontSize / 10;</span>
+<span class="fc" id="L325">            dx1 = indent;</span>
+<span class="fc" id="L326">            dx2 = indent / 2;</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">            if (font.getStyle() == Font.ITALIC) {</span>
+<span class="nc" id="L328">                dx1 += fontSize / 15;</span>
+<span class="nc" id="L329">                dx2 -= fontSize / 15;</span>
+            }
+<span class="fc" id="L331">        }</span>
+
+        @Override
+        void drawDirect(Graphics2D gr, int xOfs, int yOfs) {
+<span class="fc" id="L335">            super.drawDirect(gr, xOfs, yOfs);</span>
+<span class="fc" id="L336">            fragment.drawDirect(gr, xOfs + x, yOfs + y);</span>
+<span class="fc" id="L337">            int yy = yOfs + y - dy + base + border;</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">            if (fontSize &lt; 15) yy -= 1;</span>
+<span class="fc" id="L339">            gr.setStroke(new BasicStroke(fontSize / 10f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL));</span>
+<span class="fc" id="L340">            gr.drawLine(xOfs + x + dx1, yy, xOfs + x + dx - dx2, yy);</span>
+<span class="fc" id="L341">        }</span>
+    }
+
+    /**
+     * Used to determine the size of a string
+     */
+    public interface FontSizer {
+        /**
+         * Must set the size of the given fragment by calling the {@link Fragment#set(int, int, int)} method.
+         *
+         * @param fragment fragment which size is requested
+         * @param font     the used font
+         * @param str      the string to measure
+         */
+        void setSizeTo(Fragment fragment, Font font, String str);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

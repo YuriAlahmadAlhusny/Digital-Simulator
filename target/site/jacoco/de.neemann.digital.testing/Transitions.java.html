@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Transitions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing</a> &gt; <span class="el_source">Transitions.java</span></div><h1>Transitions.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing;
+
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.testing.parser.Context;
+import de.neemann.digital.testing.parser.Parser;
+import de.neemann.digital.testing.parser.ParserException;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+/**
+ * Helper to create all possible transitions between states.
+ */
+public class Transitions {
+
+    private final String text;
+    private final ArrayList&lt;TestRow&gt; uniqueLines;
+    private final ArrayList&lt;Integer&gt; inVarNum;
+
+    /**
+     * Creates a new instance
+     *
+     * @param text   the test data
+     * @param inputs the used inputs
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+<span class="fc" id="L35">    public Transitions(String text, PinDescription[] inputs) throws IOException, ParserException {</span>
+<span class="fc" id="L36">        this.text = text;</span>
+<span class="fc" id="L37">        uniqueLines = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L39">        Parser p = new Parser(text).parse();</span>
+<span class="fc" id="L40">        inVarNum = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L41">        ArrayList&lt;String&gt; testNames = p.getNames();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (int i = 0; i &lt; testNames.size(); i++) {</span>
+<span class="fc" id="L43">            String in = testNames.get(i);</span>
+<span class="fc" id="L44">            boolean found = false;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            for (PinDescription pin : inputs) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">                if (pin.getName().equals(in)) {</span>
+<span class="fc" id="L47">                    found = true;</span>
+<span class="fc" id="L48">                    break;</span>
+                }
+            }
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            if (found)</span>
+<span class="fc" id="L52">                inVarNum.add(i);</span>
+        }
+
+<span class="fc" id="L55">        p.getLines().emitLines(line -&gt; {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            if (isNormal(line)) {</span>
+<span class="fc" id="L57">                boolean found = false;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                for (TestRow u : uniqueLines) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                    if (isInputEqual(line, u)) {</span>
+<span class="fc" id="L60">                        found = true;</span>
+<span class="fc" id="L61">                        break;</span>
+                    }
+<span class="fc" id="L63">                }</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">                if (!found)</span>
+<span class="fc" id="L65">                    uniqueLines.add(line);</span>
+            }
+<span class="fc" id="L67">        }, new Context());</span>
+<span class="fc" id="L68">    }</span>
+
+    private boolean isInputEqual(TestRow l1, TestRow l2) {
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (l1.getValues().length != l2.getValues().length) return false;</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i : inVarNum)</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            if (!l1.getValues()[i].isEqualTo(l2.getValues()[i]))</span>
+<span class="fc" id="L75">                return false;</span>
+
+<span class="fc" id="L77">        return true;</span>
+    }
+
+    private boolean isNormal(TestRow line) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (Value v : line.getValues())</span>
+<span class="pc bpc" id="L82" title="2 of 4 branches missed.">            if (v.getType().equals(Value.Type.CLOCK) || v.getType().equals(Value.Type.DONTCARE))</span>
+<span class="nc" id="L83">                return false;</span>
+
+<span class="fc" id="L85">        return true;</span>
+    }
+
+    /**
+     * @return the extended test case
+     */
+    public String getCompletedText() {
+<span class="fc" id="L92">        return text + &quot;\n\n\n# transitions\n&quot; + getTransitionTests();</span>
+    }
+
+    /**
+     * @return is there data to add;
+     */
+    public boolean isNew() {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        return uniqueLines.size() &gt; 1;</span>
+    }
+
+    private String getTransitionTests() {
+<span class="fc" id="L103">        ArrayList&lt;Trans&gt; trans = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (TestRow a : uniqueLines)</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            for (TestRow b : uniqueLines)</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                if (!isInputEqual(a, b))</span>
+<span class="fc" id="L107">                    trans.add(new Trans(a, b));</span>
+
+<span class="fc" id="L109">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L110">        TestRow last = null;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        while (!trans.isEmpty()) {</span>
+<span class="fc" id="L112">            Trans found = null;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (last != null) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                for (Trans t : trans)</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                    if (isInputEqual(t.a, last)) {</span>
+<span class="fc" id="L116">                        found = t;</span>
+<span class="fc" id="L117">                        break;</span>
+                    }
+            }
+
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (found == null) {</span>
+<span class="fc" id="L122">                Trans t = trans.remove(0);</span>
+<span class="fc" id="L123">                toString(sb, t.a.getValues());</span>
+<span class="fc" id="L124">                sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L125">                toString(sb, t.b.getValues());</span>
+<span class="fc" id="L126">                sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L127">                last = t.b;</span>
+<span class="fc" id="L128">            } else {</span>
+<span class="fc" id="L129">                toString(sb, found.b.getValues());</span>
+<span class="fc" id="L130">                sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L131">                last = found.b;</span>
+<span class="fc" id="L132">                trans.remove(found);</span>
+            }
+<span class="fc" id="L134">        }</span>
+<span class="fc" id="L135">        return sb.toString();</span>
+    }
+
+    private void toString(StringBuilder sb, Value[] a) {
+<span class="fc" id="L139">        boolean first = true;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (Value v : a) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (first)</span>
+<span class="fc" id="L142">                first = false;</span>
+            else
+<span class="fc" id="L144">                sb.append(&quot; &quot;);</span>
+<span class="fc" id="L145">            sb.append(v.toString());</span>
+        }
+<span class="fc" id="L147">    }</span>
+
+    private static final class Trans {
+        private final TestRow a;
+        private final TestRow b;
+
+<span class="fc" id="L153">        private Trans(TestRow a, TestRow b) {</span>
+<span class="fc" id="L154">            this.a = a;</span>
+<span class="fc" id="L155">            this.b = b;</span>
+<span class="fc" id="L156">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

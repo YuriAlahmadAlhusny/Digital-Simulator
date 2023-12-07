@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Permute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">Permute.java</span></div><h1>Permute.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+
+import java.util.Arrays;
+import java.util.LinkedList;
+
+/**
+ * Used to create permutations
+ */
+public final class Permute {
+
+    private Permute() {
+    }
+
+    /**
+     * Creates all permutations of the numbers 0-(size-1).
+     *
+     * @param size     the size
+     * @param listener listener to provide the permutations to
+     * @throws PermListenerException PermListenerException
+     */
+    static void permute(int size, PermListener listener) throws PermListenerException {
+<span class="fc" id="L28">        permute(size, size, listener);</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * Creates all permutations of size numbers aut of the given range.
+     *
+     * @param size     the size
+     * @param range    the range
+     * @param listener listener to provide the permutations to
+     * @throws PermListenerException PermListenerException
+     */
+    static void permute(int size, int range, PermListener listener) throws PermListenerException {
+<span class="fc" id="L40">        int[] perms = new int[range];</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; range; i++)</span>
+<span class="fc" id="L42">            perms[i] = i;</span>
+<span class="fc" id="L43">        permute(perms, 0, size, listener);</span>
+<span class="fc" id="L44">    }</span>
+
+    private static void permute(int[] perms, int fixed, int size, PermListener listener) throws PermListenerException {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (fixed == size) {</span>
+<span class="fc" id="L48">            listener.perm(perms);</span>
+<span class="fc" id="L49">            return;</span>
+        }
+
+<span class="fc" id="L52">        permute(perms, fixed + 1, size, listener);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = fixed + 1; i &lt; perms.length; i++) {</span>
+<span class="fc" id="L54">            swap(perms, fixed, i);</span>
+<span class="fc" id="L55">            permute(perms, fixed + 1, size, listener);</span>
+<span class="fc" id="L56">            swap(perms, fixed, i);</span>
+        }
+<span class="fc" id="L58">    }</span>
+
+    private static void swap(int[] perms, int n0, int n1) {
+<span class="fc" id="L61">        int t = perms[n0];</span>
+<span class="fc" id="L62">        perms[n0] = perms[n1];</span>
+<span class="fc" id="L63">        perms[n1] = t;</span>
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * Interface to provide the permutations
+     */
+    public interface PermListener {
+        /**
+         * Called for all permutations
+         *
+         * @param perm the permutation
+         * @throws PermListenerException PermListenerException
+         */
+        void perm(int[] perm) throws PermListenerException;
+    }
+
+    /**
+     * Used to use only a part of the permutations
+     */
+    public static class Divider implements PermListener {
+
+        private final PermListener parent;
+        private final int div;
+        private int count;
+
+        /**
+         * Creates a new devider
+         *
+         * @param parent the parent PermListener
+         * @param div    the divider
+         */
+<span class="nc" id="L94">        public Divider(PermListener parent, int div) {</span>
+<span class="nc" id="L95">            this.parent = parent;</span>
+<span class="nc" id="L96">            this.div = div;</span>
+<span class="nc" id="L97">        }</span>
+
+        @Override
+        public void perm(int[] perm) throws PermListenerException {
+<span class="nc" id="L101">            count++;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (count &gt;= div) {</span>
+<span class="nc" id="L103">                count = 0;</span>
+<span class="nc" id="L104">                parent.perm(perm);</span>
+            }
+<span class="nc" id="L106">        }</span>
+    }
+
+    /**
+     * Exception cause by the perm listener
+     */
+    public static class PermListenerException extends Exception {
+        /**
+         * Creates a new instance
+         *
+         * @param message message
+         */
+        public PermListenerException(String message) {
+<span class="nc" id="L119">            super(message);</span>
+<span class="nc" id="L120">        }</span>
+
+        /**
+         * Creates a new instance
+         *
+         * @param cause cause
+         */
+        public PermListenerException(Exception cause) {
+<span class="nc" id="L128">            super(cause);</span>
+<span class="nc" id="L129">        }</span>
+    }
+
+    /**
+     * Used to pull permutations
+     */
+    public static final class PermPull {
+        private static final int MAXSIZE = 50;
+        private final LinkedList&lt;int[]&gt; queue;
+<span class="fc" id="L138">        private boolean running = true;</span>
+
+        /**
+         * Creates a new instance
+         *
+         * @param size the size of the permutation
+         */
+        public PermPull(int size) {
+<span class="nc" id="L146">            this(size, size);</span>
+<span class="nc" id="L147">        }</span>
+
+        /**
+         * Creates a new instance
+         *
+         * @param size  the size of the permutation
+         * @param range the range
+         */
+<span class="fc" id="L155">        public PermPull(int size, int range) {</span>
+<span class="fc" id="L156">            queue = new LinkedList&lt;&gt;();</span>
+
+<span class="fc" id="L158">            Thread thread = new Thread(() -&gt; {</span>
+                try {
+<span class="fc" id="L160">                    permute(size, range, perm -&gt; {</span>
+<span class="fc" id="L161">                        synchronized (queue) {</span>
+                            try {
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                                while (queue.size() &gt;= MAXSIZE) {</span>
+<span class="fc" id="L165">                                    queue.wait();</span>
+                                }
+
+<span class="fc" id="L168">                                queue.add(Arrays.copyOf(perm, perm.length));</span>
+
+<span class="fc" id="L170">                                queue.notify();</span>
+<span class="nc" id="L171">                            } catch (InterruptedException e) {</span>
+<span class="nc" id="L172">                                e.printStackTrace();</span>
+<span class="fc" id="L173">                            }</span>
+
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">                            if (!running)</span>
+<span class="nc" id="L176">                                throw new PermListenerException(&quot;terminated&quot;);</span>
+<span class="fc" id="L177">                        }</span>
+
+<span class="fc" id="L179">                    });</span>
+<span class="nc" id="L180">                } catch (PermListenerException e) {</span>
+<span class="nc" id="L181">                    e.printStackTrace();</span>
+<span class="fc" id="L182">                }</span>
+<span class="fc" id="L183">                synchronized (queue) {</span>
+<span class="fc" id="L184">                    running = false;</span>
+<span class="fc" id="L185">                    queue.notifyAll();</span>
+<span class="fc" id="L186">                }</span>
+<span class="fc" id="L187">            });</span>
+
+<span class="fc" id="L189">            thread.start();</span>
+<span class="fc" id="L190">        }</span>
+
+        /**
+         * Stop creating new permutations
+         */
+        public void stop() {
+<span class="fc" id="L196">            synchronized (queue) {</span>
+<span class="fc" id="L197">                running = false;</span>
+<span class="fc" id="L198">                queue.notifyAll();</span>
+<span class="fc" id="L199">            }</span>
+<span class="fc" id="L200">        }</span>
+
+        /**
+         * Get the next permutation
+         *
+         * @return the next permutation
+         */
+        public int[] next() {
+<span class="fc" id="L208">            synchronized (queue) {</span>
+
+                try {
+<span class="fc bfc" id="L211" title="All 4 branches covered.">                    while (queue.isEmpty() &amp;&amp; running)</span>
+<span class="fc" id="L212">                        queue.wait();</span>
+<span class="nc" id="L213">                } catch (InterruptedException e) {</span>
+<span class="nc" id="L214">                    e.printStackTrace();</span>
+<span class="fc" id="L215">                }</span>
+
+<span class="fc" id="L217">                queue.notifyAll();</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">                if (!queue.isEmpty())</span>
+<span class="fc" id="L219">                    return queue.remove(0);</span>
+                else
+<span class="fc" id="L221">                    return null;</span>
+            }
+        }
+
+        /**
+         * Wait until all permutations are read
+         */
+        public void waitFor() {
+<span class="fc" id="L229">            synchronized (queue) {</span>
+                try {
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                    while (running)</span>
+<span class="fc" id="L232">                        queue.wait();</span>
+<span class="nc" id="L233">                } catch (InterruptedException e) {</span>
+<span class="nc" id="L234">                    e.printStackTrace();</span>
+<span class="fc" id="L235">                }</span>
+<span class="fc" id="L236">            }</span>
+<span class="fc" id="L237">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

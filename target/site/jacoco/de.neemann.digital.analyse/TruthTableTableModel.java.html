@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TruthTableTableModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">TruthTableTableModel.java</span></div><h1>TruthTableTableModel.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.analyse.quinemc.BoolTable;
+import de.neemann.digital.undo.ModifyException;
+import de.neemann.digital.undo.UndoManager;
+
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
+import java.util.ArrayList;
+
+import static javax.swing.event.TableModelEvent.HEADER_ROW;
+
+/**
+ * Used to visualize a truthTable instance in a JTable
+ */
+public class TruthTableTableModel implements TableModel {
+    /**
+     * String representation of the states
+     */
+<span class="nc" id="L26">    public static final String[] STATENAMES = new String[]{&quot;0&quot;, &quot;1&quot;, &quot;x&quot;};</span>
+
+<span class="nc" id="L28">    private final ArrayList&lt;TableModelListener&gt; listeners = new ArrayList&lt;&gt;();</span>
+    private final UndoManager&lt;TruthTable&gt; undoManager;
+
+    /**
+     * Creates a new instance
+     *
+     * @param undoManager the undoManager
+     */
+<span class="nc" id="L36">    public TruthTableTableModel(UndoManager&lt;TruthTable&gt; undoManager) {</span>
+<span class="nc" id="L37">        this.undoManager = undoManager;</span>
+<span class="nc" id="L38">    }</span>
+
+    @Override
+    public int getRowCount() {
+<span class="nc" id="L42">        return undoManager.getActual().getRows();</span>
+    }
+
+    @Override
+    public int getColumnCount() {
+<span class="nc" id="L47">        return undoManager.getActual().getCols();</span>
+    }
+
+    @Override
+    public String getColumnName(int columnIndex) {
+<span class="nc" id="L52">        return undoManager.getActual().getColumnName(columnIndex);</span>
+    }
+
+    @Override
+    public Class&lt;?&gt; getColumnClass(int columnIndex) {
+<span class="nc" id="L57">        return Integer.class;</span>
+    }
+
+    @Override
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+<span class="nc" id="L62">        return undoManager.getActual().isEditable(columnIndex);</span>
+    }
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+<span class="nc" id="L67">        return undoManager.getActual().getValue(rowIndex, columnIndex);</span>
+    }
+
+    @Override
+    public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (aValue instanceof Integer)</span>
+<span class="nc" id="L73">            setValue(rowIndex, columnIndex, (Integer) aValue);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (aValue instanceof String) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (aValue.toString().equals(&quot;0&quot;))</span>
+<span class="nc" id="L76">                setValue(rowIndex, columnIndex, 0);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            else if (aValue.toString().equals(&quot;1&quot;))</span>
+<span class="nc" id="L78">                setValue(rowIndex, columnIndex, 1);</span>
+            else
+<span class="nc" id="L80">                setValue(rowIndex, columnIndex, 2);</span>
+        }
+<span class="nc" id="L82">    }</span>
+
+    private void setValue(int rowIndex, int columnIndex, int val) {
+<span class="nc" id="L85">        int actVal = undoManager.getActual().getValue(rowIndex, columnIndex);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (actVal != val) {</span>
+            try {
+<span class="nc" id="L88">                undoManager.apply(truthTable -&gt; truthTable.setValue(rowIndex, columnIndex, val));</span>
+<span class="nc" id="L89">            } catch (ModifyException e) {</span>
+<span class="nc" id="L90">                e.printStackTrace();</span>
+<span class="nc" id="L91">            }</span>
+<span class="nc" id="L92">            fireModelEvent(rowIndex);</span>
+        }
+<span class="nc" id="L94">    }</span>
+
+    private void fireModelEvent(int rowIndex) {
+<span class="nc" id="L97">        TableModelEvent e = new TableModelEvent(this, rowIndex);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        for (TableModelListener l : listeners)</span>
+<span class="nc" id="L99">            l.tableChanged(e);</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * Fires a structural table change
+     */
+    public void fireTableChanged() {
+<span class="nc" id="L106">        TableModelEvent e = new TableModelEvent(this, HEADER_ROW);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (TableModelListener l : listeners)</span>
+<span class="nc" id="L108">            l.tableChanged(e);</span>
+<span class="nc" id="L109">    }</span>
+
+    @Override
+    public void addTableModelListener(TableModelListener l) {
+<span class="nc" id="L113">        listeners.add(l);</span>
+<span class="nc" id="L114">    }</span>
+
+    @Override
+    public void removeTableModelListener(TableModelListener l) {
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * Sets the column name
+     *
+     * @param columnIndex the column
+     * @param name        the new name
+     */
+    public void setColumnName(int columnIndex, String name) {
+        try {
+<span class="nc" id="L128">            undoManager.apply(truthTable -&gt; truthTable.setColumnName(columnIndex, name));</span>
+<span class="nc" id="L129">        } catch (ModifyException e) {</span>
+<span class="nc" id="L130">            e.printStackTrace();</span>
+<span class="nc" id="L131">        }</span>
+<span class="nc" id="L132">        fireModelEvent(HEADER_ROW);</span>
+<span class="nc" id="L133">    }</span>
+
+    /**
+     * Changes the value in the given row in the given bool table.
+     *
+     * @param boolTable the table to modify
+     * @param row       the row to modify
+     */
+    public void incValue(BoolTable boolTable, int row) {
+<span class="nc" id="L142">        int col = -1;</span>
+<span class="nc" id="L143">        TruthTable tt = undoManager.getActual();</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        for (int i = 0; i &lt; tt.getResultCount(); i++) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (tt.getResult(i) == boolTable) {</span>
+<span class="nc" id="L146">                col = i;</span>
+<span class="nc" id="L147">                break;</span>
+            }
+        }
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (col &gt;= 0) {</span>
+<span class="nc" id="L151">            col += tt.getVars().size();</span>
+<span class="nc" id="L152">            int value = tt.getValue(row, col);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (value == 2) value = 0;</span>
+<span class="nc" id="L154">            else value++;</span>
+<span class="nc" id="L155">            setValueAt(value, row, col);</span>
+        }
+<span class="nc" id="L157">    }</span>
+
+    /**
+     * @return the truth table shown
+     */
+    public TruthTable getTable() {
+<span class="nc" id="L163">        return undoManager.getActual();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

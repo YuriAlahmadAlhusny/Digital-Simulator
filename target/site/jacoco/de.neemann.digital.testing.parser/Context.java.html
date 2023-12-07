@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Context.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing.parser</a> &gt; <span class="el_source">Context.java</span></div><h1>Context.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing.parser;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Signal;
+import de.neemann.digital.lang.Lang;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * The context of the calculations.
+ */
+public class Context {
+    private final Context parent;
+    private HashMap&lt;String, Long&gt; map;
+    private Model model;
+
+    /**
+     * Creates an empty context
+     */
+    public Context() {
+<span class="fc" id="L27">        this(null);</span>
+<span class="fc" id="L28">    }</span>
+
+    /**
+     * Creates an empty context
+     *
+     * @param parent the parents context
+     */
+<span class="fc" id="L35">    public Context(Context parent) {</span>
+<span class="fc" id="L36">        this.parent = parent;</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Returns the value of a variable
+     *
+     * @param name the name of the variable
+     * @return the value
+     * @throws ParserException if the variable does not exist
+     */
+    public long getVar(String name) throws ParserException {
+<span class="fc bfc" id="L47" title="All 4 branches covered.">        if (map == null || !map.containsKey(name)) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (parent == null) {</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">                if (model != null) {</span>
+                    // inputs are not supported because there are cases where values
+                    // are evaluated and model inputs are not set!
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">                    for (Signal s : model.getTestOutputs())</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                        if (s.getName().equals(name))</span>
+<span class="fc" id="L54">                            return s.getValue().getValue();</span>
+                }
+<span class="fc" id="L56">                throw new ParserException(Lang.get(&quot;err_variable_N0_notFound&quot;, name));</span>
+            }
+<span class="fc" id="L58">            return parent.getVar(name);</span>
+        } else
+<span class="fc" id="L60">            return map.get(name);</span>
+    }
+
+    /**
+     * Sets a variable in this context
+     *
+     * @param varName the variables name
+     * @param value   the value
+     * @return this for chained calls
+     */
+    public Context setVar(String varName, long value) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (map == null)</span>
+<span class="fc" id="L72">            map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L73">        map.put(varName, value);</span>
+<span class="fc" id="L74">        return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="pc bpc" id="L79" title="1 of 4 branches missed.">        if (map == null &amp;&amp; parent == null)</span>
+<span class="fc" id="L80">            return &quot;&quot;;</span>
+
+<span class="fc" id="L82">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L83">        fillString(sb);</span>
+<span class="fc" id="L84">        return sb.toString();</span>
+    }
+
+    private void fillString(StringBuilder sb) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (parent != null)</span>
+<span class="fc" id="L89">            parent.fillString(sb);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (map != null)</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            for (Map.Entry&lt;String, Long&gt; e : map.entrySet()) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                if (sb.length() &gt; 0)</span>
+<span class="fc" id="L93">                    sb.append(&quot;;&quot;);</span>
+<span class="fc" id="L94">                sb.append(e.getKey()).append(&quot;=&quot;).append(e.getValue());</span>
+<span class="fc" id="L95">            }</span>
+<span class="fc" id="L96">    }</span>
+
+    /**
+     * Sets the model where tis context is used with.
+     *
+     * @param model the model
+     * @return this for chained calls
+     */
+    public Context setModel(Model model) {
+<span class="fc" id="L105">        this.model = model;</span>
+<span class="fc" id="L106">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

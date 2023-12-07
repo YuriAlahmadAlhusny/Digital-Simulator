@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:36 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="9.6mm"
+   height="6.2mm"
+   viewBox="-4 -27 48 31">
+<g stroke-linecap="square">
+<line x1="0.0" y1="0.0" x2="36.0" y2="-10.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="20.0" y1="-5.0" x2="20.0" y2="-25.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<line x1="10.0" y1="-25.0" x2="30.0" y2="-25.0" stroke="#000000" stroke-linecap="square" stroke-width="2.0" />
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+<circle cx="40.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+</g>
+</svg>

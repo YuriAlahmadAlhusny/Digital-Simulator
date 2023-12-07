@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLTestBenchCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.vhdl2</a> &gt; <span class="el_source">VHDLTestBenchCreator.java</span></div><h1>VHDLTestBenchCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.vhdl2;
+
+import de.neemann.digital.data.Value;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.hdl.model2.HDLCircuit;
+import de.neemann.digital.hdl.model2.HDLException;
+import de.neemann.digital.hdl.model2.HDLModel;
+import de.neemann.digital.hdl.model2.HDLPort;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.TestingDataException;
+import de.neemann.digital.testing.parser.Context;
+import de.neemann.digital.testing.parser.LineListener;
+import de.neemann.digital.testing.parser.ParserException;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Creates a test bench for a model.
+ * The needed test data is taken from the test cases in the circuit
+ */
+public class VHDLTestBenchCreator {
+    private final List&lt;Circuit.TestCase&gt; testCases;
+    private final HDLCircuit main;
+    private final HDLModel.Renaming renaming;
+    private ArrayList&lt;File&gt; testFileWritten;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit the circuit
+     * @param model   the model
+     */
+<span class="fc" id="L44">    VHDLTestBenchCreator(Circuit circuit, HDLModel model) {</span>
+<span class="fc" id="L45">        this.main = model.getMain();</span>
+<span class="fc" id="L46">        this.renaming = model.getRenaming();</span>
+<span class="fc" id="L47">        testCases = circuit.getTestCases();</span>
+<span class="fc" id="L48">        testFileWritten = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Writes the test benches
+     *
+     * @param file the original vhdl file
+     * @return this for chained calls
+     * @throws IOException  IOException
+     * @throws HDLException HDLException
+     */
+    public VHDLTestBenchCreator write(File file) throws IOException, HDLException {
+<span class="fc" id="L60">        String filename = file.getName();</span>
+<span class="fc" id="L61">        int p = filename.indexOf('.');</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (p &gt; 0)</span>
+<span class="fc" id="L63">            filename = filename.substring(0, p);</span>
+
+<span class="fc" id="L65">        VHDLRenaming renaming = new VHDLRenaming();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (Circuit.TestCase tc : testCases) {</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            if (tc.hasGenericCode())</span>
+<span class="nc" id="L68">                throw new HDLException(Lang.get(&quot;err_hdlTestCaseHasGenericCode&quot;));</span>
+
+<span class="fc" id="L70">            String testName = tc.getLabel();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            if (testName.length() &gt; 0) {</span>
+<span class="nc" id="L72">                testName = filename + &quot;_&quot; + renaming.checkName(testName) + &quot;_tb&quot;;</span>
+            } else
+<span class="fc" id="L74">                testName = filename + &quot;_tb&quot;;</span>
+
+<span class="fc" id="L76">            File f = new File(file.getParentFile(), testName + &quot;.vhdl&quot;);</span>
+<span class="fc" id="L77">            testFileWritten.add(f);</span>
+<span class="fc" id="L78">            try (CodePrinter out = new CodePrinter(f)) {</span>
+                try {
+<span class="fc" id="L80">                    writeTestBench(out, testName, tc);</span>
+<span class="nc" id="L81">                } catch (TestingDataException | ParserException | RuntimeException e) {</span>
+<span class="nc" id="L82">                    throw new HDLException(Lang.get(&quot;err_vhdlErrorWritingTestBench&quot;), e);</span>
+<span class="fc" id="L83">                }</span>
+            }
+<span class="fc" id="L85">        }</span>
+<span class="fc" id="L86">        return this;</span>
+    }
+
+    /**
+     * @return returns the files which are written
+     */
+    public ArrayList&lt;File&gt; getTestFileWritten() {
+<span class="fc" id="L93">        return testFileWritten;</span>
+    }
+
+    private void writeTestBench(CodePrinter out, String testName, Circuit.TestCase tc) throws IOException, TestingDataException, ParserException {
+<span class="fc" id="L97">        out.print(&quot;--  A testbench for &quot;).println(testName);</span>
+<span class="fc" id="L98">        out.println(&quot;LIBRARY ieee;&quot;);</span>
+<span class="fc" id="L99">        out.println(&quot;USE ieee.std_logic_1164.all;&quot;);</span>
+<span class="fc" id="L100">        out.println(&quot;USE ieee.numeric_std.all;&quot;);</span>
+<span class="fc" id="L101">        out.println();</span>
+<span class="fc" id="L102">        out.print(&quot;entity &quot;).print(testName).println(&quot; is&quot;);</span>
+<span class="fc" id="L103">        out.print(&quot;end &quot;).print(testName).println(&quot;;&quot;);</span>
+<span class="fc" id="L104">        out.println();</span>
+<span class="fc" id="L105">        out.print(&quot;architecture behav of &quot;).print(testName).println(&quot; is&quot;).inc();</span>
+<span class="fc" id="L106">        out.println(&quot;component main&quot;).inc();</span>
+<span class="fc" id="L107">        VHDLCreator.writePorts(out, main);</span>
+<span class="fc" id="L108">        out.dec().println(&quot;end component;&quot;);</span>
+<span class="fc" id="L109">        out.println();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (HDLPort p : main.getInputs())</span>
+<span class="fc" id="L111">            out.print(&quot;signal &quot;).print(p.getName()).print(&quot; : &quot;).print(VHDLCreator.getType(p.getBits())).println(&quot;;&quot;);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (HDLPort p : main.getOutputs())</span>
+<span class="fc" id="L113">            out.print(&quot;signal &quot;).print(p.getName()).print(&quot; : &quot;).print(VHDLCreator.getType(p.getBits())).println(&quot;;&quot;);</span>
+
+<span class="fc" id="L115">        out.print(&quot;function to_string ( a: std_logic_vector) return string is\n&quot;</span>
+                + &quot;    variable b : string (1 to a'length) := (others =&gt; NUL);\n&quot;
+                + &quot;    variable stri : integer := 1; \n&quot;
+                + &quot;begin\n&quot;
+                + &quot;    for i in a'range loop\n&quot;
+                + &quot;        b(stri) := std_logic'image(a((i)))(2);\n&quot;
+                + &quot;    stri := stri+1;\n&quot;
+                + &quot;    end loop;\n&quot;
+                + &quot;    return b;\n&quot;
+                + &quot;end function;\n&quot;);
+<span class="fc" id="L125">        out.dec().println(&quot;begin&quot;).inc();</span>
+
+<span class="fc" id="L127">        out.println(&quot;main_0 : main port map (&quot;).inc();</span>
+<span class="fc" id="L128">        Separator comma = new Separator(out, &quot;,\n&quot;);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (HDLPort p : main.getInputs()) {</span>
+<span class="fc" id="L130">            comma.check();</span>
+<span class="fc" id="L131">            out.print(p.getName() + &quot; =&gt; &quot; + p.getName());</span>
+<span class="fc" id="L132">        }</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (HDLPort p : main.getOutputs()) {</span>
+<span class="fc" id="L134">            comma.check();</span>
+<span class="fc" id="L135">            out.print(p.getName() + &quot; =&gt; &quot; + p.getName());</span>
+<span class="fc" id="L136">        }</span>
+<span class="fc" id="L137">        out.println(&quot; );&quot;).dec();</span>
+
+<span class="fc" id="L139">        out.println(&quot;process&quot;).inc();</span>
+
+<span class="fc" id="L141">        TestCaseDescription testdata = tc.getTestCaseDescription();</span>
+
+<span class="fc" id="L143">        ArrayList&lt;HDLPort&gt; dataOrder = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L144">        out.println(&quot;type pattern_type is record&quot;).inc();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (String name : testdata.getNames()) {</span>
+<span class="fc" id="L146">            String saveName = renaming.checkName(name);</span>
+<span class="fc" id="L147">            boolean found = false;</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">            for (HDLPort p : main.getPorts()) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (p.getName().equals(saveName)) {</span>
+<span class="fc" id="L150">                    out.print(p.getName()).print(&quot; : &quot;).print(VHDLCreator.getType(p.getBits())).println(&quot;;&quot;);</span>
+<span class="fc" id="L151">                    dataOrder.add(p);</span>
+<span class="fc" id="L152">                    found = true;</span>
+<span class="fc" id="L153">                    break;</span>
+                }
+<span class="fc" id="L155">            }</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">            if (!found)</span>
+<span class="nc" id="L157">                throw new TestingDataException(Lang.get(&quot;err_testSignal_N_notFound&quot;, name));</span>
+<span class="fc" id="L158">        }</span>
+<span class="fc" id="L159">        out.dec().println(&quot;end record;&quot;);</span>
+
+<span class="fc" id="L161">        out.println(&quot;type pattern_array is array (natural range &lt;&gt;) of pattern_type;&quot;);</span>
+<span class="fc" id="L162">        out.println(&quot;constant patterns : pattern_array := (&quot;).inc();</span>
+
+<span class="fc" id="L164">        LineListener parent = new LineListenerVHDL(out, dataOrder);</span>
+<span class="fc" id="L165">        testdata.getLines().emitLines(parent, new Context());</span>
+
+<span class="fc" id="L167">        out.println(&quot;);&quot;).dec();</span>
+
+
+<span class="fc" id="L170">        String loopVar = &quot;i&quot;;</span>
+<span class="fc" id="L171">        int lv = 0;</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        while (loopVarExists(loopVar, main.getPorts()))</span>
+<span class="nc" id="L173">            loopVar = &quot;i&quot; + (lv++);</span>
+
+<span class="fc" id="L175">        out.dec().println(&quot;begin&quot;).inc();</span>
+<span class="fc" id="L176">        out.print(&quot;for &quot;).print(loopVar).println(&quot; in patterns'range loop&quot;).inc();</span>
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (HDLPort p : main.getInputs())</span>
+<span class="fc" id="L179">            out.print(p.getName()).print(&quot; &lt;= patterns(&quot;).print(loopVar).print(&quot;).&quot;).print(p.getName()).println(&quot;;&quot;);</span>
+<span class="fc" id="L180">        out.println(&quot;wait for 10 ns;&quot;);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (HDLPort p : main.getOutputs()) {</span>
+<span class="fc" id="L182">            out.print(&quot;assert std_match(&quot;).print(p.getName()).print(&quot;, patterns(&quot;).print(loopVar).print(&quot;).&quot;).print(p.getName()).print(&quot;)&quot;);</span>
+<span class="fc" id="L183">            out.print(&quot; OR (&quot;)</span>
+<span class="fc" id="L184">                    .print(p.getName())</span>
+<span class="fc" id="L185">                    .print(&quot; = &quot;)</span>
+<span class="fc" id="L186">                    .print(getSimpleValue(p.getBits(), 'Z'))</span>
+<span class="fc" id="L187">                    .print(&quot; AND patterns(&quot;).print(loopVar).print(&quot;).&quot;).print(p.getName()).print(&quot; = &quot;)</span>
+<span class="fc" id="L188">                    .print(getSimpleValue(p.getBits(), 'Z'))</span>
+<span class="fc" id="L189">                    .print(&quot;)&quot;).eol();</span>
+<span class="fc" id="L190">            out.inc().print(&quot;report \&quot;wrong value for &quot;).print(p.getName()).print(&quot;, &quot;).print(loopVar).print(&quot;=\&quot; &amp; integer'image(&quot;).print(loopVar).println(&quot;)&quot;)</span>
+<span class="fc" id="L191">                    .print(&quot; &amp; \&quot;, expected \&quot;&quot;)</span>
+<span class="fc" id="L192">                    .print(&quot; &amp; &quot;).print(convertFunc(p)).print(&quot;(patterns(&quot;).print(loopVar).print(&quot;).&quot;).print(p.getName()).print(&quot;)&quot;)</span>
+<span class="fc" id="L193">                    .print(&quot; &amp; \&quot;, found \&quot;&quot;)</span>
+<span class="fc" id="L194">                    .print(&quot; &amp; &quot;).print(convertFunc(p)).print(&quot;(&quot;).print(p.getName()).print(&quot;)&quot;)</span>
+<span class="fc" id="L195">                    .print(&quot; severity error;&quot;).dec();</span>
+<span class="fc" id="L196">        }</span>
+
+<span class="fc" id="L198">        out.dec().println(&quot;end loop;&quot;);</span>
+<span class="fc" id="L199">        out.println(&quot;wait;&quot;);</span>
+<span class="fc" id="L200">        out.dec().println(&quot;end process;&quot;);</span>
+<span class="fc" id="L201">        out.dec().println(&quot;end behav;&quot;);</span>
+<span class="fc" id="L202">    }</span>
+
+    private String convertFunc(HDLPort p) {
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (p.getBits() &gt; 1)</span>
+<span class="fc" id="L206">            return &quot;to_string&quot;;</span>
+<span class="fc" id="L207">        return &quot;std_logic'image&quot;;</span>
+    }
+
+    private boolean loopVarExists(String loopVar, ArrayList&lt;HDLPort&gt; ports) {
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        for (HDLPort p : ports)</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            if (p.getName().equalsIgnoreCase(loopVar))</span>
+<span class="nc" id="L213">                return true;</span>
+<span class="fc" id="L214">        return false;</span>
+    }
+
+    private static String getSimpleValue(int bits, char c) {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (bits == 1)</span>
+<span class="fc" id="L219">            return &quot;'&quot; + c + &quot;'&quot;;</span>
+
+<span class="fc" id="L221">        StringBuilder sb = new StringBuilder(&quot;\&quot;&quot;);</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (int i = 0; i &lt; bits; i++)</span>
+<span class="fc" id="L223">            sb.append(c);</span>
+
+<span class="fc" id="L225">        return sb.append('&quot;').toString();</span>
+    }
+
+    /*
+    private static void writeCharValue(CodePrinter out, char c, int bits) throws IOException {
+        if (bits &gt; 1) {
+            out.print(&quot;\&quot;&quot;);
+            for (int i = 0; i &lt; bits; i++)
+                out.print(c);
+            out.print(&quot;\&quot;&quot;);
+        } else
+            out.print(&quot;'&quot;).print(c).print(&quot;'&quot;);
+    }*/
+
+    private static final class LineListenerVHDL implements LineListener {
+        private final CodePrinter out;
+        private final ArrayList&lt;HDLPort&gt; dataOrder;
+        private final Separator lineSep;
+<span class="fc" id="L243">        private int line = 0;</span>
+
+<span class="fc" id="L245">        private LineListenerVHDL(CodePrinter out, ArrayList&lt;HDLPort&gt; dataOrder) {</span>
+<span class="fc" id="L246">            this.out = out;</span>
+<span class="fc" id="L247">            this.dataOrder = dataOrder;</span>
+<span class="fc" id="L248">            lineSep = new Separator(out, &quot;&quot;) {</span>
+                @Override
+                public void printSeparator(CodePrinter out) throws IOException {
+<span class="fc" id="L251">                    out.print(&quot;, -- i=&quot;).print((line++)).print(&quot;\n&quot;);</span>
+<span class="fc" id="L252">                }</span>
+            };
+<span class="fc" id="L254">        }</span>
+
+        @Override
+        public void add(TestRow testRow) {
+            try {
+<span class="fc" id="L259">                boolean containsClock = false;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">                for (Value v : testRow.getValues())</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">                    if (v.getType() == Value.Type.CLOCK)</span>
+<span class="fc" id="L262">                        containsClock = true;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">                if (containsClock) {</span>
+<span class="fc" id="L264">                    lineSep.check();</span>
+<span class="fc" id="L265">                    writeValues(testRow.getValues(), true, 0);</span>
+<span class="fc" id="L266">                    lineSep.check();</span>
+<span class="fc" id="L267">                    writeValues(testRow.getValues(), true, 1);</span>
+                }
+<span class="fc" id="L269">                lineSep.check();</span>
+<span class="fc" id="L270">                writeValues(testRow.getValues(), false, 0);</span>
+<span class="nc" id="L271">            } catch (IOException e) {</span>
+<span class="nc" id="L272">                throw new RuntimeException(e);</span>
+<span class="fc" id="L273">            }</span>
+<span class="fc" id="L274">        }</span>
+
+        private void writeValues(Value[] values, boolean isClock, int clock) throws IOException {
+<span class="fc" id="L277">            out.print(&quot;(&quot;);</span>
+<span class="fc" id="L278">            Separator sep = new Separator(out, &quot;, &quot;);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            for (int i = 0; i &lt; values.length; i++) {</span>
+<span class="fc" id="L280">                sep.check();</span>
+<span class="fc" id="L281">                Value val = values[i];</span>
+<span class="fc" id="L282">                int bits = dataOrder.get(i).getBits();</span>
+<span class="pc bpc" id="L283" title="2 of 5 branches missed.">                switch (val.getType()) {</span>
+                    case NORMAL:
+<span class="fc bfc" id="L285" title="All 4 branches covered.">                        if (isClock &amp;&amp; dataOrder.get(i).getDirection() == HDLPort.Direction.IN)</span>
+<span class="fc" id="L286">                            out.print(getSimpleValue(bits, '-'));</span>
+                        else
+<span class="fc" id="L288">                            out.print(VHDLCreator.value(val.getValue(), bits));</span>
+<span class="fc" id="L289">                        break;</span>
+                    case DONTCARE:
+<span class="fc" id="L291">                        out.print(getSimpleValue(bits, '-'));</span>
+<span class="fc" id="L292">                        break;</span>
+                    case HIGHZ:
+<span class="nc" id="L294">                        out.print(getSimpleValue(bits, 'Z'));</span>
+<span class="nc" id="L295">                        break;</span>
+                    case CLOCK:
+<span class="fc" id="L297">                        out.print(&quot;'&quot;).print(clock).print(&quot;'&quot;);</span>
+<span class="fc" id="L298">                        break;</span>
+                    default:
+<span class="nc" id="L300">                        throw new RuntimeException(Lang.get(&quot;err_vhdlValuesOfType_N_notAllowed&quot;, val.getType()));</span>
+                }
+            }
+<span class="fc" id="L303">            out.print(&quot;)&quot;);</span>
+<span class="fc" id="L304">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

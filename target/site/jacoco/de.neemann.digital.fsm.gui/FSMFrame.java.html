@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FSMFrame.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm.gui</a> &gt; <span class="el_source">FSMFrame.java</span></div><h1>FSMFrame.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm.gui;
+
+import de.neemann.digital.FileLocator;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.fsm.*;
+import de.neemann.digital.gui.*;
+import de.neemann.digital.gui.components.table.ShowStringDialog;
+import de.neemann.digital.gui.components.table.TableDialog;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.*;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.prefs.Preferences;
+
+/**
+ * The dialog to show the FSM
+ */
+public class FSMFrame extends JFrame implements ClosingWindowListener.ConfirmSave, FSM.ModifiedListener, FileHistory.OpenInterface {
+<span class="nc" id="L40">    private static final Preferences PREFS = Preferences.userRoot().node(&quot;dig&quot;).node(&quot;fsm&quot;);</span>
+    private static final String PREF_FOLDER = &quot;folder&quot;;
+<span class="nc" id="L42">    private static final Icon ICON_NEW = IconCreator.create(&quot;document-new.png&quot;);</span>
+<span class="nc" id="L43">    private static final Icon ICON_OPEN = IconCreator.create(&quot;document-open.png&quot;);</span>
+<span class="nc" id="L44">    private static final Icon ICON_SAVE = IconCreator.create(&quot;document-save.png&quot;);</span>
+<span class="nc" id="L45">    private static final Icon ICON_SAVE_AS = IconCreator.create(&quot;document-save-as.png&quot;);</span>
+<span class="nc" id="L46">    private static final Icon ICON_EXPAND = IconCreator.create(&quot;View-zoom-fit.png&quot;);</span>
+<span class="nc" id="L47">    private static final Icon ICON_ZOOM_IN = IconCreator.create(&quot;View-zoom-in.png&quot;);</span>
+<span class="nc" id="L48">    private static final Icon ICON_ZOOM_OUT = IconCreator.create(&quot;View-zoom-out.png&quot;);</span>
+<span class="nc" id="L49">    private static final Icon ICON_HELP = IconCreator.create(&quot;help.png&quot;);</span>
+
+    private final FileHistory fileHistory;
+    private final FSMComponent fsmComponent;
+    private final Timer timer;
+    private final JComboBox&lt;String&gt; moveControl;
+    private FSM fsm;
+    private ToolTipAction save;
+    private File filename;
+    private File baseFilename;
+    private boolean lastModified;
+    private String probeLabelName;
+<span class="nc" id="L61">    private final GlobalValues.GlobalValueListener stateListener = new StateListener();</span>
+
+    /**
+     * Opens the given file in a new frame
+     *
+     * @param file the file to open
+     */
+    public static void openFile(File file) {
+<span class="nc" id="L69">        ElementLibrary library = new ElementLibrary();</span>
+<span class="nc" id="L70">        new ShapeFactory(library);</span>
+<span class="nc" id="L71">        SwingUtilities.invokeLater(() -&gt; new FSMFrame(null, library, file).setVisible(true));</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent  the parents frame
+     * @param library the library used to show the table
+     */
+    public FSMFrame(JFrame parent, ElementLibrary library) {
+<span class="nc" id="L81">        this(parent, library, null);</span>
+<span class="nc" id="L82">    }</span>
+
+    private FSMFrame(JFrame parent, ElementLibrary library, File filename) {
+<span class="nc" id="L85">        super(Lang.get(&quot;fsm_title&quot;));</span>
+<span class="nc" id="L86">        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);</span>
+<span class="nc" id="L87">        setIconImages(IconCreator.createImages(&quot;icon32.png&quot;, &quot;icon64.png&quot;, &quot;icon128.png&quot;));</span>
+
+<span class="nc" id="L89">        fileHistory = new FileHistory(this, PREFS.node(&quot;hist&quot;));</span>
+
+<span class="nc" id="L91">        fsmComponent = new FSMComponent();</span>
+<span class="nc" id="L92">        getContentPane().add(fsmComponent, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L94">        timer = new Timer(100, new AbstractAction() {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">                if (fsm.getMovingState() == FSM.MovingState.STOP)</span>
+<span class="nc" id="L98">                    timer.stop();</span>
+                else {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                    for (int i = 0; i &lt; 100; i++)</span>
+<span class="nc" id="L101">                        fsm.move(10, fsmComponent.getElementMoved());</span>
+<span class="nc" id="L102">                    repaint();</span>
+                }
+<span class="nc" id="L104">            }</span>
+        });
+
+<span class="nc" id="L107">        GlobalValues.getInstance().addListener(stateListener);</span>
+<span class="nc" id="L108">        addWindowListener(new ClosingWindowListener(this, this));</span>
+<span class="nc" id="L109">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosed(WindowEvent windowEvent) {
+<span class="nc" id="L112">                timer.stop();</span>
+<span class="nc" id="L113">                GlobalValues.getInstance().removeListener(stateListener);</span>
+<span class="nc" id="L114">            }</span>
+        });
+
+<span class="nc" id="L117">        JMenuBar bar = new JMenuBar();</span>
+<span class="nc" id="L118">        JToolBar toolBar = new JToolBar();</span>
+
+<span class="nc" id="L120">        createFileMenu(bar, toolBar);</span>
+<span class="nc" id="L121">        toolBar.addSeparator();</span>
+<span class="nc" id="L122">        createViewMenu(bar, toolBar);</span>
+<span class="nc" id="L123">        toolBar.addSeparator();</span>
+<span class="nc" id="L124">        createCreateMenu(bar, library);</span>
+
+<span class="nc" id="L126">        bar.add(WindowManager.getInstance().registerAndCreateMenu(this));</span>
+
+<span class="nc" id="L128">        createHelpMenu(bar, toolBar);</span>
+<span class="nc" id="L129">        toolBar.addSeparator();</span>
+
+<span class="nc" id="L131">        moveControl = new JComboBox&lt;&gt;(new String[]{</span>
+<span class="nc" id="L132">                Lang.get(&quot;fsm_noMove&quot;), Lang.get(&quot;fsm_moveTrans&quot;), Lang.get(&quot;fsm_moveStates&quot;)});</span>
+<span class="nc" id="L133">        moveControl.setSelectedIndex(0);</span>
+<span class="nc" id="L134">        moveControl.addActionListener(new AbstractAction() {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L137" title="All 4 branches missed.">                switch (moveControl.getSelectedIndex()) {</span>
+                    case 0:
+<span class="nc" id="L139">                        fsm.setMovingState(FSM.MovingState.STOP);</span>
+<span class="nc" id="L140">                        fsmComponent.repaint();</span>
+<span class="nc" id="L141">                        break;</span>
+                    case 1:
+<span class="nc" id="L143">                        fsm.setMovingState(FSM.MovingState.TRANSITIONS);</span>
+<span class="nc" id="L144">                        timer.start();</span>
+<span class="nc" id="L145">                        break;</span>
+                    case 2:
+<span class="nc" id="L147">                        fsm.setMovingState(FSM.MovingState.BOTH);</span>
+<span class="nc" id="L148">                        timer.start();</span>
+                        break;
+                }
+<span class="nc" id="L151">            }</span>
+        });
+<span class="nc" id="L153">        JPanel movePanel = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L154">        movePanel.add(moveControl, BorderLayout.WEST);</span>
+<span class="nc" id="L155">        toolBar.add(movePanel);</span>
+<span class="nc" id="L156">        getContentPane().add(toolBar, BorderLayout.PAGE_START);</span>
+
+<span class="nc" id="L158">        setJMenuBar(bar);</span>
+
+<span class="nc" id="L160">        pack();</span>
+<span class="nc" id="L161">        new WindowSizeStorage(&quot;fsm&quot;).setDefaultSize(600, 600).restore(this);</span>
+
+<span class="nc" id="L163">        setFSM(new FSM());</span>
+
+<span class="nc" id="L165">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (filename != null)</span>
+<span class="nc" id="L167">                loadFile(filename);</span>
+            else {
+<span class="nc" id="L169">                File f = new FileLocator(probeLabelName)</span>
+<span class="nc" id="L170">                        .setBaseFile(baseFilename)</span>
+<span class="nc" id="L171">                        .setHistory(fileHistory)</span>
+<span class="nc" id="L172">                        .setLibrary(library)</span>
+<span class="nc" id="L173">                        .locate();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                if (f != null)</span>
+<span class="nc" id="L175">                    loadFile(f);</span>
+            }
+<span class="nc" id="L177">        });</span>
+
+<span class="nc" id="L179">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L180">    }</span>
+
+    private void createFileMenu(JMenuBar bar, JToolBar toolBar) {
+<span class="nc" id="L183">        ToolTipAction newFile = new ToolTipAction(Lang.get(&quot;menu_new&quot;), ICON_NEW) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                if (ClosingWindowListener.checkForSave(FSMFrame.this, FSMFrame.this)) {</span>
+<span class="nc" id="L187">                    setFSM(new FSM());</span>
+<span class="nc" id="L188">                    setFilename(null);</span>
+                }
+<span class="nc" id="L190">            }</span>
+<span class="nc" id="L191">        }.setAcceleratorCTRLplus('N').setToolTip(Lang.get(&quot;menu_new_tt&quot;));</span>
+
+<span class="nc" id="L193">        ToolTipAction open = new ToolTipAction(Lang.get(&quot;menu_open&quot;), ICON_OPEN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                if (ClosingWindowListener.checkForSave(FSMFrame.this, FSMFrame.this)) {</span>
+<span class="nc" id="L197">                    JFileChooser fc = getJFileChooser(filename);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">                    if (fc.showOpenDialog(FSMFrame.this) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L199">                        loadFile(SaveAsHelper.checkSuffix(fc.getSelectedFile(), &quot;fsm&quot;));</span>
+                    }
+                }
+<span class="nc" id="L202">            }</span>
+<span class="nc" id="L203">        }.setAcceleratorCTRLplus('O');</span>
+
+<span class="nc" id="L205">        JMenu openRecent = new JMenu(Lang.get(&quot;menu_openRecent&quot;));</span>
+<span class="nc" id="L206">        fileHistory.setMenu(openRecent, null);</span>
+
+<span class="nc" id="L208">        ToolTipAction saveAs = new ToolTipAction(Lang.get(&quot;menu_saveAs&quot;), ICON_SAVE_AS) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L211">                JFileChooser fc = getJFileChooser(filename);</span>
+<span class="nc" id="L212">                final SaveAsHelper saveAsHelper = new SaveAsHelper(FSMFrame.this, fc, &quot;fsm&quot;);</span>
+<span class="nc" id="L213">                saveAsHelper.checkOverwrite(file -&gt; saveFile(file));</span>
+<span class="nc" id="L214">            }</span>
+        };
+
+<span class="nc" id="L217">        save = new ToolTipAction(Lang.get(&quot;menu_save&quot;), ICON_SAVE) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                if (filename == null)</span>
+<span class="nc" id="L221">                    saveAs.actionPerformed(e);</span>
+                else
+<span class="nc" id="L223">                    saveFile(filename);</span>
+<span class="nc" id="L224">            }</span>
+<span class="nc" id="L225">        }.setAcceleratorCTRLplus('S').setEnabledChain(false);</span>
+
+<span class="nc" id="L227">        JMenu export = new JMenu(Lang.get(&quot;menu_export&quot;));</span>
+<span class="nc" id="L228">        export.add(new ExportAction(Lang.get(&quot;menu_exportSVG&quot;), &quot;svg&quot;, GraphicSVG::new));</span>
+
+
+<span class="nc" id="L231">        JMenu file = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+<span class="nc" id="L232">        bar.add(file);</span>
+<span class="nc" id="L233">        file.add(newFile.createJMenuItem());</span>
+<span class="nc" id="L234">        file.add(open.createJMenuItem());</span>
+<span class="nc" id="L235">        file.add(openRecent);</span>
+<span class="nc" id="L236">        file.add(save.createJMenuItem());</span>
+<span class="nc" id="L237">        file.add(saveAs.createJMenuItem());</span>
+<span class="nc" id="L238">        file.add(export);</span>
+
+<span class="nc" id="L240">        toolBar.add(newFile.createJButtonNoText());</span>
+<span class="nc" id="L241">        toolBar.add(open.createJButtonNoText());</span>
+<span class="nc" id="L242">        toolBar.add(save.createJButtonNoText());</span>
+<span class="nc" id="L243">    }</span>
+
+    private void setFSM(FSM fsm) {
+<span class="nc" id="L246">        this.fsm = fsm;</span>
+<span class="nc" id="L247">        fsmComponent.setFSM(fsm);</span>
+<span class="nc" id="L248">        fsm.setModifiedListener(this);</span>
+<span class="nc" id="L249">    }</span>
+
+    private JFileChooser getJFileChooser(File filename) {
+<span class="nc" id="L252">        File folder = null;</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (filename != null)</span>
+<span class="nc" id="L254">            folder = filename.getParentFile();</span>
+
+<span class="nc bnc" id="L256" title="All 4 branches missed.">        if (folder == null &amp;&amp; baseFilename != null)</span>
+<span class="nc" id="L257">            folder = baseFilename.getParentFile();</span>
+
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (folder == null) {</span>
+<span class="nc" id="L260">            String folderStr = PREFS.get(PREF_FOLDER, null);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">            if (folderStr != null)</span>
+<span class="nc" id="L262">                folder = new File(folderStr);</span>
+        }
+
+<span class="nc" id="L265">        JFileChooser fileChooser = new MyFileChooser(folder);</span>
+<span class="nc" id="L266">        fileChooser.setFileFilter(new FileNameExtensionFilter(&quot;FSM&quot;, &quot;fsm&quot;));</span>
+<span class="nc" id="L267">        return fileChooser;</span>
+    }
+
+    private void setFilename(File filename) {
+        String fsmTitle;
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (filename == null)</span>
+<span class="nc" id="L273">            fsmTitle = Lang.get(&quot;fsm_title&quot;);</span>
+        else
+<span class="nc" id="L275">            fsmTitle = filename.toString() + &quot; - &quot; + Lang.get(&quot;fsm_title&quot;);</span>
+
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (fsm.isModified())</span>
+<span class="nc" id="L278">            fsmTitle = &quot;*&quot; + fsmTitle;</span>
+<span class="nc" id="L279">        setTitle(fsmTitle);</span>
+
+<span class="nc" id="L281">        this.filename = filename;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (filename != null)</span>
+<span class="nc" id="L283">            fileHistory.add(filename);</span>
+<span class="nc" id="L284">    }</span>
+
+    @Override
+    public boolean isStateChanged() {
+<span class="nc" id="L288">        return fsm.isModified();</span>
+    }
+
+    @Override
+    public void saveChanges() {
+<span class="nc" id="L293">        save.actionPerformed(null);</span>
+<span class="nc" id="L294">    }</span>
+
+    @Override
+    public void modifiedChanged(boolean modified) {
+<span class="nc bnc" id="L298" title="All 2 branches missed.">        if (lastModified != modified) {</span>
+<span class="nc" id="L299">            lastModified = modified;</span>
+<span class="nc" id="L300">            setFilename(filename);</span>
+<span class="nc" id="L301">            save.setEnabled(modified);</span>
+        }
+<span class="nc" id="L303">    }</span>
+
+    /**
+     * Loads a file.
+     *
+     * @param file the file to load
+     */
+    public void loadFile(File file) {
+        try {
+<span class="nc" id="L312">            moveControl.setSelectedIndex(0);</span>
+<span class="nc" id="L313">            setFSM(FSM.loadFSM(file));</span>
+<span class="nc" id="L314">            setFilename(file);</span>
+<span class="nc" id="L315">            lastModified = fsm.isModified();</span>
+<span class="nc" id="L316">            PREFS.put(PREF_FOLDER, file.getParent());</span>
+<span class="nc" id="L317">        } catch (IOException e) {</span>
+<span class="nc" id="L318">            new ErrorMessage(Lang.get(&quot;msg_fsm_errorLoadingFile&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L319">        }</span>
+<span class="nc" id="L320">    }</span>
+
+    private void saveFile(File file) {
+        try {
+<span class="nc" id="L324">            moveControl.setSelectedIndex(0);</span>
+<span class="nc" id="L325">            fsm.save(file);</span>
+<span class="nc" id="L326">            setFilename(file);</span>
+<span class="nc" id="L327">            save.setEnabled(false);</span>
+<span class="nc" id="L328">            lastModified = fsm.isModified();</span>
+<span class="nc" id="L329">            PREFS.put(PREF_FOLDER, file.getParent());</span>
+<span class="nc" id="L330">        } catch (IOException e) {</span>
+<span class="nc" id="L331">            new ErrorMessage(Lang.get(&quot;msg_fsm_errorStoringFile&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L332">        }</span>
+<span class="nc" id="L333">    }</span>
+
+    @Override
+    public void open(File file, boolean newWindow) {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (ClosingWindowListener.checkForSave(FSMFrame.this, FSMFrame.this))</span>
+<span class="nc" id="L338">            loadFile(file);</span>
+<span class="nc" id="L339">    }</span>
+
+    private void createViewMenu(JMenuBar menuBar, JToolBar toolBar) {
+<span class="nc" id="L342">        ToolTipAction maximize = new ToolTipAction(Lang.get(&quot;menu_maximize&quot;), ICON_EXPAND) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L345">                fsmComponent.fitFSM();</span>
+<span class="nc" id="L346">            }</span>
+<span class="nc" id="L347">        }.setAccelerator(&quot;F1&quot;);</span>
+<span class="nc" id="L348">        ToolTipAction zoomIn = new ToolTipAction(Lang.get(&quot;menu_zoomIn&quot;), ICON_ZOOM_IN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L351">                fsmComponent.scaleCircuit(1 / 0.9);</span>
+<span class="nc" id="L352">            }</span>
+<span class="nc" id="L353">        }.setAcceleratorCTRLplus(&quot;PLUS&quot;);</span>
+        // enable [+] which is SHIFT+[=] on english keyboard layout
+<span class="nc" id="L355">        fsmComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, KeyEvent.CTRL_DOWN_MASK, false), zoomIn);</span>
+<span class="nc" id="L356">        fsmComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD, KeyEvent.CTRL_DOWN_MASK, false), zoomIn);</span>
+<span class="nc" id="L357">        fsmComponent.getActionMap().put(zoomIn, zoomIn);</span>
+
+<span class="nc" id="L359">        ToolTipAction zoomOut = new ToolTipAction(Lang.get(&quot;menu_zoomOut&quot;), ICON_ZOOM_OUT) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L362">                fsmComponent.scaleCircuit(0.9);</span>
+<span class="nc" id="L363">            }</span>
+<span class="nc" id="L364">        }.setAcceleratorCTRLplus(&quot;MINUS&quot;);</span>
+        // enable [+] which is SHIFT+[=] on english keyboard layout
+<span class="nc" id="L366">        fsmComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, KeyEvent.CTRL_DOWN_MASK, false), zoomOut);</span>
+<span class="nc" id="L367">        fsmComponent.getActionMap().put(zoomOut, zoomOut);</span>
+
+<span class="nc" id="L369">        toolBar.add(zoomIn.createJButtonNoText());</span>
+<span class="nc" id="L370">        toolBar.add(zoomOut.createJButtonNoText());</span>
+<span class="nc" id="L371">        toolBar.add(maximize.createJButtonNoText());</span>
+
+<span class="nc" id="L373">        JMenu view = new JMenu(Lang.get(&quot;menu_view&quot;));</span>
+<span class="nc" id="L374">        menuBar.add(view);</span>
+<span class="nc" id="L375">        view.add(maximize.createJMenuItem());</span>
+<span class="nc" id="L376">        view.add(zoomOut.createJMenuItem());</span>
+<span class="nc" id="L377">        view.add(zoomIn.createJMenuItem());</span>
+<span class="nc" id="L378">    }</span>
+
+    private void createCreateMenu(JMenuBar bar, ElementLibrary library) {
+<span class="nc" id="L381">        JMenu create = new JMenu(Lang.get(&quot;menu_fsm_create&quot;));</span>
+<span class="nc" id="L382">        bar.add(create);</span>
+<span class="nc" id="L383">        create.add(new ToolTipAction(Lang.get(&quot;menu_fsm_create_table&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L387">                    new TableDialog(FSMFrame.this, fsm.createTruthTable(getStateSignalName()), library, filename).setVisible(true);</span>
+<span class="nc" id="L388">                } catch (Exception e) {</span>
+<span class="nc" id="L389">                    new ErrorMessage(Lang.get(&quot;msg_fsmCantCreateTable&quot;)).addCause(e).show(FSMFrame.this);</span>
+<span class="nc" id="L390">                }</span>
+<span class="nc" id="L391">            }</span>
+<span class="nc" id="L392">        }.createJMenuItem());</span>
+
+<span class="nc" id="L394">        JMenu counter = new JMenu(Lang.get(&quot;menu_fsm_create_counter&quot;));</span>
+<span class="nc" id="L395">        create.add(counter);</span>
+<span class="nc" id="L396">        int[] counterValues = new int[]{4, 5, 6, 7, 8, 10, 16};</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">        for (int n : counterValues) {</span>
+<span class="nc" id="L398">            counter.add(new ToolTipAction(Lang.get(&quot;menu_fsm_create_counter_N&quot;, n)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L401" title="All 2 branches missed.">                    if (ClosingWindowListener.checkForSave(FSMFrame.this, FSMFrame.this)) {</span>
+<span class="nc" id="L402">                        setFSM(FSMDemos.counter(n).circle().setModified(false));</span>
+<span class="nc" id="L403">                        setFilename(null);</span>
+                    }
+<span class="nc" id="L405">                }</span>
+            });
+        }
+
+<span class="nc bnc" id="L409" title="All 2 branches missed.">        if (Main.isExperimentalMode())</span>
+<span class="nc" id="L410">            create.add(new ToolTipAction(Lang.get(&quot;menu_fsm_optimize_state_numbers&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+                    try {
+<span class="nc" id="L414">                        new OptimizerDialog(FSMFrame.this).setVisible(true);</span>
+<span class="nc" id="L415">                    } catch (FiniteStateMachineException | FormatterException | ExpressionException e) {</span>
+<span class="nc" id="L416">                        new ErrorMessage(Lang.get(&quot;menu_fsm_optimize_state_numbers_err&quot;)).addCause(e).show(FSMFrame.this);</span>
+                    } finally {
+<span class="nc" id="L418">                        fsmComponent.repaint();</span>
+                    }
+<span class="nc" id="L420">                }</span>
+<span class="nc" id="L421">            }.setToolTip(Lang.get(&quot;menu_fsm_optimize_state_numbers_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L422">    }</span>
+
+    /**
+     * Sets a base file name which is used to determine a target directory
+     * if no other name is available.
+     *
+     * @param filename the filename
+     * @return this for chained calls
+     */
+    public FSMFrame setBaseFileName(File filename) {
+<span class="nc" id="L432">        baseFilename = filename;</span>
+<span class="nc" id="L433">        return this;</span>
+    }
+
+    /**
+     * Sets the fsm name used in the circuit probe label which has opened
+     * this window.
+     *
+     * @param probeLabelName the fsm name contained in the circuit
+     * @return this for chained calls
+     */
+    public FSMFrame setProbeLabelName(String probeLabelName) {
+<span class="nc" id="L444">        this.probeLabelName = probeLabelName;</span>
+<span class="nc" id="L445">        return this;</span>
+    }
+
+    private void createHelpMenu(JMenuBar bar, JToolBar toolBar) {
+<span class="nc" id="L449">        JMenu helpMenu = new JMenu(Lang.get(&quot;menu_help&quot;));</span>
+
+<span class="nc" id="L451">        ToolTipAction viewHelp = new ToolTipAction(Lang.get(&quot;menu_help&quot;), ICON_HELP) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L454">                new ShowStringDialog(</span>
+                        FSMFrame.this,
+<span class="nc" id="L456">                        Lang.get(&quot;msg_fsmHelpTitle&quot;),</span>
+<span class="nc" id="L457">                        Lang.get(&quot;msg_fsmHelp&quot;), true)</span>
+<span class="nc" id="L458">                        .setVisible(true);</span>
+
+<span class="nc" id="L460">            }</span>
+<span class="nc" id="L461">        }.setToolTip(Lang.get(&quot;menu_fsm_Help_tt&quot;));</span>
+
+<span class="nc" id="L463">        helpMenu.add(viewHelp.createJMenuItem());</span>
+<span class="nc" id="L464">        helpMenu.add(InfoDialog.getInstance().createMenuItem(this, Lang.get(&quot;message&quot;)));</span>
+<span class="nc" id="L465">        bar.add(helpMenu);</span>
+<span class="nc" id="L466">        toolBar.add(viewHelp);</span>
+<span class="nc" id="L467">    }</span>
+
+
+<span class="nc" id="L470">    private class StateListener implements GlobalValues.GlobalValueListener {</span>
+        @Override
+        public void valueCreated(String name, ObservableValue value, Model model) {
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            if (name.equals(getStateSignalName())) {</span>
+<span class="nc" id="L474">                value.addObserverToValue(() -&gt; setActiveState(value.getValue()));</span>
+<span class="nc" id="L475">                setActiveState(value.getValue());</span>
+<span class="nc" id="L476">                model.addObserver(event -&gt; {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">                            if (event == ModelEvent.CLOSED)</span>
+<span class="nc" id="L478">                                setActiveState(-1);</span>
+<span class="nc" id="L479">                        }, ModelEventType.CLOSED</span>
+                );
+            }
+<span class="nc" id="L482">        }</span>
+    }
+
+    private String getStateSignalName() {
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        if (filename != null)</span>
+<span class="nc" id="L487">            return filename.getName();</span>
+        else
+<span class="nc" id="L489">            return &quot;state&quot;;</span>
+    }
+
+    private void setActiveState(long value) {
+<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (fsm.setActiveState((int) value))</span>
+<span class="nc" id="L494">            SwingUtilities.invokeLater(fsmComponent::repaint);</span>
+<span class="nc" id="L495">    }</span>
+
+    /**
+     * @return the current fsm
+     */
+    public FSM getFSM() {
+<span class="nc" id="L501">        return fsm;</span>
+    }
+
+    private class ExportAction extends ToolTipAction {
+        private final String name;
+        private final String suffix;
+        private final ExportFactory exportFactory;
+
+<span class="nc" id="L509">        ExportAction(String name, String suffix, ExportFactory exportFactory) {</span>
+<span class="nc" id="L510">            super(name);</span>
+<span class="nc" id="L511">            this.name = name;</span>
+<span class="nc" id="L512">            this.suffix = suffix;</span>
+<span class="nc" id="L513">            this.exportFactory = exportFactory;</span>
+<span class="nc" id="L514">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L518">            JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">            if (filename != null)</span>
+<span class="nc" id="L520">                fc.setSelectedFile(SaveAsHelper.checkSuffix(filename, suffix));</span>
+
+<span class="nc" id="L522">            ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L523">            File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">            if (exportDir != null)</span>
+<span class="nc" id="L525">                fc.setCurrentDirectory(exportDir);</span>
+
+<span class="nc" id="L527">            fc.addChoosableFileFilter(new FileNameExtensionFilter(name, suffix));</span>
+<span class="nc" id="L528">            new SaveAsHelper(FSMFrame.this, fc, suffix).checkOverwrite(</span>
+                    file -&gt; {
+<span class="nc" id="L530">                        settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L531">                        try (OutputStream out = new FileOutputStream(file)) {</span>
+<span class="nc" id="L532">                            try (Graphic gr = exportFactory.create(out)) {</span>
+<span class="nc" id="L533">                                GraphicMinMax minMax = new GraphicMinMax(gr);</span>
+<span class="nc" id="L534">                                fsm.drawTo(minMax);</span>
+
+<span class="nc" id="L536">                                gr.setBoundingBox(minMax.getMin(), minMax.getMax());</span>
+<span class="nc" id="L537">                                fsm.drawTo(gr);</span>
+                            }
+                        }
+<span class="nc" id="L540">                    }</span>
+            );
+<span class="nc" id="L542">        }</span>
+
+    }
+
+    /**
+     * A simple test method
+     *
+     * @param args the programs arguments
+     */
+    public static void main(String[] args) {
+<span class="nc" id="L552">        ElementLibrary library = new ElementLibrary();</span>
+<span class="nc" id="L553">        new ShapeFactory(library);</span>
+
+<span class="nc" id="L555">        File f = null;</span>
+<span class="nc bnc" id="L556" title="All 2 branches missed.">        if (args.length == 1)</span>
+<span class="nc" id="L557">            f = new File(args[0]);</span>
+
+<span class="nc" id="L559">        new FSMFrame(null, library, f).setVisible(true);</span>
+<span class="nc" id="L560">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

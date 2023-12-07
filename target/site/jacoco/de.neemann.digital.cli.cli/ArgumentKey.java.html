@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArgumentKey.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.cli.cli</a> &gt; <span class="el_source">ArgumentKey.java</span></div><h1>ArgumentKey.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.cli.cli;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+
+/**
+ * A cli argument based on a Key instance.
+ *
+ * @param &lt;T&gt; the type of the argument.
+ */
+public class ArgumentKey&lt;T&gt; extends ArgumentBase&lt;T&gt; {
+
+    private final Key&lt;T&gt; key;
+    private final ElementAttributes attr;
+    private final String name;
+
+    /**
+     * Creates a new instance
+     *
+     * @param key  the key
+     * @param attr the attribute to store the values
+     */
+    public ArgumentKey(Key&lt;T&gt; key, ElementAttributes attr) {
+<span class="nc" id="L29">        this(key, attr, 0);</span>
+<span class="nc" id="L30">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param key          the key
+     * @param attr         the attribute to store the values
+     * @param stripFromKey number of characters to strip from the key name
+     */
+<span class="fc" id="L39">    public ArgumentKey(Key&lt;T&gt; key, ElementAttributes attr, int stripFromKey) {</span>
+<span class="fc" id="L40">        this.key = key;</span>
+<span class="fc" id="L41">        this.attr = attr;</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (stripFromKey &gt; 0)</span>
+<span class="fc" id="L43">            name = this.key.getKey().substring(stripFromKey);</span>
+        else
+<span class="nc" id="L45">            name = this.key.getKey();</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L50">        return name;</span>
+    }
+
+    @Override
+    public boolean isOptional() {
+<span class="fc" id="L55">        return true;</span>
+    }
+
+    @Override
+    public void setString(String val) throws CLIException {
+<span class="nc" id="L60">        attr.set(key, (T) Argument.fromString(val, key.getDefault()));</span>
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public boolean isSet() {
+<span class="nc" id="L65">        return attr.contains(key);</span>
+    }
+
+    @Override
+    public String getDescription(String command) {
+<span class="fc" id="L70">        return key.getDescription();</span>
+    }
+
+    @Override
+    public T get() {
+<span class="fc" id="L75">        return attr.get(key);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

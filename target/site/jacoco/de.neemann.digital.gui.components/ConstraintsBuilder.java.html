@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConstraintsBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">ConstraintsBuilder.java</span></div><h1>ConstraintsBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import java.awt.*;
+
+/**
+ * More simple to use GridBagConstraints
+ */
+public class ConstraintsBuilder extends GridBagConstraints {
+
+    /**
+     * Creates a new instance.
+     * Position is set to (0,0)
+     */
+<span class="nc" id="L19">    public ConstraintsBuilder() {</span>
+<span class="nc" id="L20">        gridx = 0;</span>
+<span class="nc" id="L21">        gridy = 0;</span>
+<span class="nc" id="L22">    }</span>
+
+<span class="nc" id="L24">    private ConstraintsBuilder(ConstraintsBuilder original) {</span>
+<span class="nc" id="L25">        gridx = original.gridx;</span>
+<span class="nc" id="L26">        gridy = original.gridy;</span>
+<span class="nc" id="L27">        gridwidth = original.gridwidth;</span>
+<span class="nc" id="L28">        gridheight = original.gridheight;</span>
+<span class="nc" id="L29">        weightx = original.weightx;</span>
+<span class="nc" id="L30">        weighty = original.weighty;</span>
+<span class="nc" id="L31">        ipadx = original.ipadx;</span>
+<span class="nc" id="L32">        ipady = original.ipady;</span>
+<span class="nc" id="L33">        fill = original.fill;</span>
+<span class="nc" id="L34">        insets = original.insets;</span>
+<span class="nc" id="L35">    }</span>
+
+    /**
+     * Sets the position
+     *
+     * @param x x position
+     * @param y y position
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder pos(int x, int y) {
+<span class="nc" id="L45">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L46">        c.gridx = x;</span>
+<span class="nc" id="L47">        c.gridy = y;</span>
+<span class="nc" id="L48">        return c;</span>
+    }
+
+    /**
+     * Sets the position
+     *
+     * @param x x position
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder x(int x) {
+<span class="nc" id="L58">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L59">        c.gridx = x;</span>
+<span class="nc" id="L60">        return c;</span>
+    }
+
+    /**
+     * Sets the width
+     *
+     * @param x width
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder width(int x) {
+<span class="nc" id="L70">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L71">        c.gridwidth = x;</span>
+<span class="nc" id="L72">        return c;</span>
+    }
+
+    /**
+     * Sets a dynamic height
+     *
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder dynamicHeight() {
+<span class="nc" id="L81">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L82">        c.weighty = 1;</span>
+<span class="nc" id="L83">        return c;</span>
+    }
+
+    /**
+     * Sets a dynamic width
+     *
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder dynamicWidth() {
+<span class="nc" id="L92">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L93">        c.weightx = 1;</span>
+<span class="nc" id="L94">        return c;</span>
+    }
+
+
+    /**
+     * Sets the padding
+     *
+     * @param x x padding
+     * @param y y padding
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder pad(int x, int y) {
+<span class="nc" id="L106">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L107">        c.ipadx = x;</span>
+<span class="nc" id="L108">        c.ipady = y;</span>
+<span class="nc" id="L109">        return c;</span>
+    }
+
+    /**
+     * Sets the fill attribute to BOTH
+     *
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder fill() {
+<span class="nc" id="L118">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L119">        c.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L120">        return c;</span>
+    }
+
+    /**
+     * Sets insets to a border of width b
+     *
+     * @param b border width
+     * @return the new created ConstraintsBuilder instance
+     */
+    public ConstraintsBuilder inset(int b) {
+<span class="nc" id="L130">        ConstraintsBuilder c = new ConstraintsBuilder(this);</span>
+<span class="nc" id="L131">        c.insets = new Insets(b, b, b, b);</span>
+<span class="nc" id="L132">        return c;</span>
+    }
+
+    /**
+     * Increases the row.
+     * Does not create a new instance!
+     *
+     * @return this for chained calls
+     */
+    public ConstraintsBuilder nextRow() {
+<span class="nc" id="L142">        gridx = 0;</span>
+<span class="nc" id="L143">        gridy++;</span>
+<span class="nc" id="L144">        return this;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

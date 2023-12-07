@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Style.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">Style.java</span></div><h1>Style.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import de.neemann.digital.core.Value;
+
+import java.awt.*;
+
+/**
+ * Defines the styles (color, line thickness, font size and style) which are used to draw the circuit.
+ */
+public final class Style {
+    /**
+     * maximal line thickness
+     */
+    public static final int MAXLINETHICK = 4;
+    /**
+     * thickness of thin lines
+     */
+    private static final int LINETHIN = MAXLINETHICK / 2;
+
+    private static final int WIRETHICK = MAXLINETHICK;
+    private static final int LINETHICK = MAXLINETHICK;
+    private static final int LINEDASH = 1;
+
+    /**
+     * used for all lines to draw the shapes itself
+     */
+<span class="fc" id="L32">    public static final Style NORMAL = new Builder().build();</span>
+    /**
+     * used for all disabled elements
+     */
+<span class="fc" id="L36">    public static final Style DISABLED = new Builder().setColor(ColorKey.DISABLED).build();</span>
+    /**
+     * used for input and output labels
+     */
+<span class="fc" id="L40">    public static final Style INOUT = new Builder(NORMAL).setFontStyle(Font.ITALIC).build();</span>
+    /**
+     * used to draw the failed state lines in the measurement graph
+     */
+<span class="fc" id="L44">    public static final Style FAILED = new Builder(NORMAL).setColor(ColorKey.ERROR).build();</span>
+    /**
+     * used to draw the passed state lines in the measurement graph
+     */
+<span class="fc" id="L48">    public static final Style PASS = new Builder(NORMAL).setColor(ColorKey.PASSED).build();</span>
+    /**
+     * Used for text which is integral part of the shape.
+     * Text which uses this style is always included in sizing!
+     * Used for text only elements.
+     */
+<span class="fc" id="L54">    public static final Style NORMAL_TEXT = new Builder(NORMAL).setMattersForSize(true).build();</span>
+    /**
+     * thin line used for the graphic in the clock or delay shape
+     */
+<span class="fc" id="L58">    public static final Style THIN = new Builder(NORMAL).setThickness(LINETHIN).build();</span>
+    /**
+     * thin filled
+     */
+<span class="fc" id="L62">    public static final Style THIN_FILLED = new Builder(NORMAL).setThickness(LINETHIN).setFilled(true).build();</span>
+    /**
+     * thick line used for the ground line
+     */
+<span class="fc" id="L66">    public static final Style THICK = new Builder(NORMAL).setThickness(LINETHICK + LINETHIN).build();</span>
+    /**
+     * Used for wires in editing mode
+     */
+<span class="fc" id="L70">    public static final Style WIRE = new Builder()</span>
+<span class="fc" id="L71">            .setThickness(WIRETHICK)</span>
+<span class="fc" id="L72">            .setFilled(true)</span>
+<span class="fc" id="L73">            .setColor(ColorKey.WIRE)</span>
+<span class="fc" id="L74">            .setEndCap(BasicStroke.CAP_ROUND)</span>
+<span class="fc" id="L75">            .build();</span>
+    /**
+     * Used for low wires in running mode
+     */
+<span class="fc" id="L79">    public static final Style WIRE_LOW = new Builder(WIRE).setColor(ColorKey.WIRE_LOW).build();</span>
+    /**
+     * Used for high wires in running mode
+     */
+<span class="fc" id="L83">    public static final Style WIRE_HIGH = new Builder(WIRE).setColor(ColorKey.WIRE_HIGH).build();</span>
+    /**
+     * Used for wires in high Z state
+     */
+<span class="fc" id="L87">    public static final Style WIRE_HIGHZ = new Builder(WIRE).setColor(ColorKey.WIRE_Z).build();</span>
+    /**
+     * used to draw the output dots
+     */
+<span class="fc" id="L91">    public static final Style WIRE_OUT = new Builder(WIRE).setColor(ColorKey.WIRE_OUT).build();</span>
+
+    /**
+     * Filled style used to fill the splitter or the dark LEDs
+     */
+<span class="fc" id="L96">    public static final Style FILLED = new Builder().setFilled(true).build();</span>
+    /**
+     * Used to draw the grid in the graph
+     */
+<span class="fc" id="L100">    public static final Style DASH = new Builder()</span>
+<span class="fc" id="L101">            .setThickness(LINEDASH)</span>
+<span class="fc" id="L102">            .setDash(new float[]{4, 4})</span>
+<span class="fc" id="L103">            .build();</span>
+    /**
+     * Used to draw the pin description text
+     */
+<span class="fc" id="L107">    public static final Style SHAPE_PIN = new Builder()</span>
+<span class="fc" id="L108">            .setThickness(LINETHIN)</span>
+<span class="fc" id="L109">            .setColor(ColorKey.PINS)</span>
+<span class="fc" id="L110">            .setFontSize(18)</span>
+<span class="fc" id="L111">            .build();</span>
+    /**
+     * Used to draw the pin description text for splitters
+     */
+<span class="fc" id="L115">    public static final Style SHAPE_SPLITTER = new Builder(SHAPE_PIN).setFontSize(12).build();</span>
+    /**
+     * Used to draw the pin description text
+     */
+<span class="fc" id="L119">    public static final Style WIRE_VALUE = new Builder(SHAPE_SPLITTER)</span>
+<span class="fc" id="L120">            .setColor(ColorKey.WIRE_VALUE)</span>
+<span class="fc" id="L121">            .build();</span>
+    /**
+     * Used to draw the wire bit number
+     */
+<span class="fc" id="L125">    public static final Style WIRE_BITS = new Builder(SHAPE_SPLITTER)</span>
+<span class="fc" id="L126">            .setColor(ColorKey.WIRE)</span>
+<span class="fc" id="L127">            .build();</span>
+    /**
+     * highlight color used for the circles to mark an element
+     */
+<span class="fc" id="L131">    public static final Style HIGHLIGHT = new Builder(NORMAL)</span>
+<span class="fc" id="L132">            .setColor(ColorKey.HIGHLIGHT)</span>
+<span class="fc" id="L133">            .setEndCap(BasicStroke.CAP_ROUND)</span>
+<span class="fc" id="L134">            .build();</span>
+
+    /**
+     * error color used for the circles to mark an element
+     */
+<span class="fc" id="L139">    public static final Style ERROR = new Builder(NORMAL)</span>
+<span class="fc" id="L140">            .setColor(ColorKey.ERROR)</span>
+<span class="fc" id="L141">            .setEndCap(BasicStroke.CAP_ROUND)</span>
+<span class="fc" id="L142">            .build();</span>
+
+    private final int thickness;
+    private final boolean filled;
+    private final Color color;
+    private final ColorKey colorKey;
+    private final int fontSize;
+    private final float[] dash;
+    private final BasicStroke stroke;
+    private final Font font;
+    private final boolean mattersForSize;
+    private final int fontStyle;
+
+    /**
+     * Creates a new style
+     *
+     * @param builder the builder
+     */
+<span class="fc" id="L160">    private Style(Builder builder) {</span>
+<span class="fc" id="L161">        this.thickness = builder.thickness;</span>
+<span class="fc" id="L162">        this.filled = builder.filled;</span>
+<span class="fc" id="L163">        this.colorKey = builder.colorKey;</span>
+<span class="fc" id="L164">        this.color = builder.color;</span>
+<span class="fc" id="L165">        this.fontSize = builder.fontSize;</span>
+<span class="fc" id="L166">        this.fontStyle = builder.fontStyle;</span>
+<span class="fc" id="L167">        this.dash = builder.dash;</span>
+<span class="fc" id="L168">        this.mattersForSize = builder.mattersForSize;</span>
+
+<span class="fc" id="L170">        stroke = new BasicStroke(thickness, builder.endCap, BasicStroke.JOIN_MITER, 10f, dash, 0f);</span>
+<span class="fc" id="L171">        font = new Font(null, fontStyle, fontSize);</span>
+<span class="fc" id="L172">    }</span>
+
+    /**
+     * @return the lines thickness
+     */
+    public int getThickness() {
+<span class="fc" id="L178">        return thickness;</span>
+    }
+
+    /**
+     * @return true if polygons and circles are filled
+     */
+    boolean isFilled() {
+<span class="fc" id="L185">        return filled;</span>
+    }
+
+    /**
+     * @return the color
+     */
+    public Color getColor() {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (colorKey != null)</span>
+<span class="fc" id="L193">            return ColorScheme.getSelected().getColor(colorKey);</span>
+        else
+<span class="fc" id="L195">            return color;</span>
+    }
+
+    /**
+     * @return the Swing stroke which represents this style
+     */
+    public Stroke getStroke() {
+<span class="fc" id="L202">        return stroke;</span>
+    }
+
+    /**
+     * @return the font size
+     */
+    public int getFontSize() {
+<span class="fc" id="L209">        return fontSize;</span>
+    }
+
+    /**
+     * @return the font style
+     */
+    public int getFontStyle() {
+<span class="fc" id="L216">        return fontStyle;</span>
+    }
+
+    /**
+     * @return the font to use
+     */
+    public Font getFont() {
+<span class="fc" id="L223">        return font;</span>
+    }
+
+    /**
+     * @return the dash style
+     */
+    float[] getDash() {
+<span class="fc" id="L230">        return dash;</span>
+    }
+
+    /**
+     * Returns the wire style depending on the given value
+     *
+     * @param value the value to represent
+     * @return the style
+     */
+    public static Style getWireStyle(Value value) {
+<span class="pc bpc" id="L240" title="3 of 4 branches missed.">        if (value == null || value.getBits() &gt; 1) return WIRE;</span>
+
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        if (value.isHighZ()) return WIRE_HIGHZ;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (value.getValue() == 1) return WIRE_HIGH;</span>
+<span class="nc" id="L244">        else return WIRE_LOW;</span>
+    }
+
+    /**
+     * If this flag is set, the text is always to include in size estimation.
+     *
+     * @return the mattersForSize flag
+     */
+    boolean mattersAlwaysForSize() {
+<span class="fc" id="L253">        return mattersForSize;</span>
+    }
+
+    /**
+     * Creates a new style, based on this style.
+     *
+     * @param fontSize       the new font size
+     * @param mattersForSize the mattersForSize flag
+     * @return Style the derived style with the given font size and mattersForSize flag.
+     */
+    public Style deriveFontStyle(int fontSize, boolean mattersForSize) {
+<span class="fc" id="L264">        return new Builder(this)</span>
+<span class="fc" id="L265">                .setFontSize(fontSize)</span>
+<span class="fc" id="L266">                .setMattersForSize(mattersForSize)</span>
+<span class="fc" id="L267">                .build();</span>
+    }
+
+    /**
+     * Creates a new style, based on this style.
+     *
+     * @param color the new color
+     * @return Style the derived style with the given color set.
+     */
+    public Style deriveColor(Color color) {
+<span class="fc" id="L277">        return new Builder(this)</span>
+<span class="fc" id="L278">                .setColor(color)</span>
+<span class="fc" id="L279">                .build();</span>
+    }
+
+    /**
+     * Creates a new style, based on this style.
+     *
+     * @param colorKey the new color
+     * @return Style the derived style with the given color set.
+     */
+    public Style deriveColor(ColorKey colorKey) {
+<span class="fc" id="L289">        return new Builder(this)</span>
+<span class="fc" id="L290">                .setColor(colorKey)</span>
+<span class="fc" id="L291">                .build();</span>
+    }
+
+    /**
+     * Creates a new style, based on this style.
+     *
+     * @param thickness the line thickness
+     * @param filled    filled flag for polygons
+     * @param color     the color
+     * @return the new style
+     */
+    public Style deriveStyle(int thickness, boolean filled, Color color) {
+<span class="fc" id="L303">        return new Builder(this)</span>
+<span class="fc" id="L304">                .setThickness(thickness)</span>
+<span class="fc" id="L305">                .setFilled(filled)</span>
+<span class="fc" id="L306">                .setColor(color)</span>
+<span class="fc" id="L307">                .build();</span>
+    }
+
+    /**
+     * Creates a new style suited for filling polygons, based on this style.
+     *
+     * @param color the fill color
+     * @return the nes style
+     */
+    public Style deriveFillStyle(Color color) {
+<span class="fc" id="L317">        return new Builder(this)</span>
+<span class="fc" id="L318">                .setThickness(0)</span>
+<span class="fc" id="L319">                .setFilled(true)</span>
+<span class="fc" id="L320">                .setColor(color)</span>
+<span class="fc" id="L321">                .build();</span>
+    }
+
+    /**
+     * Creates a new style suited for filling polygons, based on this style.
+     *
+     * @param colorKey the fill color key
+     * @return the nes style
+     */
+    public Style deriveFillStyle(ColorKey colorKey) {
+<span class="fc" id="L331">        return new Builder(this)</span>
+<span class="fc" id="L332">                .setThickness(0)</span>
+<span class="fc" id="L333">                .setFilled(true)</span>
+<span class="fc" id="L334">                .setColor(colorKey)</span>
+<span class="fc" id="L335">                .build();</span>
+    }
+
+    private static final class Builder {
+<span class="fc" id="L339">        private int thickness = LINETHICK;</span>
+<span class="fc" id="L340">        private boolean filled = false;</span>
+<span class="fc" id="L341">        private ColorKey colorKey = ColorKey.MAIN;</span>
+        private Color color;
+<span class="fc" id="L343">        private int fontSize = 24;</span>
+<span class="fc" id="L344">        private float[] dash = null;</span>
+<span class="fc" id="L345">        private boolean mattersForSize = false;</span>
+<span class="fc" id="L346">        private int endCap = BasicStroke.CAP_SQUARE;</span>
+<span class="fc" id="L347">        private int fontStyle = Font.PLAIN;</span>
+
+<span class="fc" id="L349">        private Builder() {</span>
+<span class="fc" id="L350">        }</span>
+
+<span class="fc" id="L352">        private Builder(Style style) {</span>
+<span class="fc" id="L353">            thickness = style.thickness;</span>
+<span class="fc" id="L354">            filled = style.filled;</span>
+<span class="fc" id="L355">            colorKey = style.colorKey;</span>
+<span class="fc" id="L356">            color = style.color;</span>
+<span class="fc" id="L357">            fontSize = style.fontSize;</span>
+<span class="fc" id="L358">            dash = style.getDash();</span>
+<span class="fc" id="L359">            mattersForSize = style.mattersForSize;</span>
+<span class="fc" id="L360">            endCap = style.stroke.getEndCap();</span>
+<span class="fc" id="L361">        }</span>
+
+        private Builder setThickness(int thickness) {
+<span class="fc" id="L364">            this.thickness = thickness;</span>
+<span class="fc" id="L365">            return this;</span>
+        }
+
+        private Builder setFilled(boolean filled) {
+<span class="fc" id="L369">            this.filled = filled;</span>
+<span class="fc" id="L370">            return this;</span>
+        }
+
+        private Builder setColor(ColorKey key) {
+<span class="fc" id="L374">            this.colorKey = key;</span>
+<span class="fc" id="L375">            this.color = null;</span>
+<span class="fc" id="L376">            return this;</span>
+        }
+
+        private Builder setColor(Color color) {
+<span class="fc" id="L380">            this.colorKey = null;</span>
+<span class="fc" id="L381">            this.color = color;</span>
+<span class="fc" id="L382">            return this;</span>
+        }
+
+        private Builder setFontSize(int fontSize) {
+<span class="fc" id="L386">            this.fontSize = fontSize;</span>
+<span class="fc" id="L387">            return this;</span>
+        }
+
+        private Builder setFontStyle(int fontStyle) {
+<span class="fc" id="L391">            this.fontStyle = fontStyle;</span>
+<span class="fc" id="L392">            return this;</span>
+        }
+
+        private Builder setDash(float[] dash) {
+<span class="fc" id="L396">            this.dash = dash;</span>
+<span class="fc" id="L397">            return this;</span>
+        }
+
+        private Builder setMattersForSize(boolean mattersForSize) {
+<span class="fc" id="L401">            this.mattersForSize = mattersForSize;</span>
+<span class="fc" id="L402">            return this;</span>
+        }
+
+        private Builder setEndCap(int endCap) {
+<span class="fc" id="L406">            this.endCap = endCap;</span>
+<span class="fc" id="L407">            return this;</span>
+        }
+
+        private Style build() {
+<span class="fc" id="L411">            return new Style(this);</span>
+        }
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

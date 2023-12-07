@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.data</a> &gt; <span class="el_source">GraphDialog.java</span></div><h1>GraphDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.data;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.data.ValueTable;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.gui.components.OrderMerger;
+import de.neemann.digital.gui.components.table.ShowStringDialog;
+import de.neemann.digital.gui.components.testing.ValueTableDialog;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.IconCreator;
+import de.neemann.gui.MyFileChooser;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * The Dialog which shows the data to plot.
+ */
+public class GraphDialog extends JDialog implements Observer {
+    private final GraphComponent graphComponent;
+    private final ToolTipAction showTable;
+
+<span class="nc" id="L40">    private static final Icon ICON_EXPAND = IconCreator.create(&quot;View-zoom-fit.png&quot;);</span>
+<span class="nc" id="L41">    private static final Icon ICON_ZOOM_IN = IconCreator.create(&quot;View-zoom-in.png&quot;);</span>
+<span class="nc" id="L42">    private static final Icon ICON_ZOOM_OUT = IconCreator.create(&quot;View-zoom-out.png&quot;);</span>
+
+    private ValueTable.ColumnInfo[] columnInfo;
+
+    /**
+     * Creates a instance prepared for &quot;live logging&quot;
+     *
+     * @param owner      the parent frame
+     * @param model      the model
+     * @param microStep  stepping mode
+     * @param ordering   the ordering to use
+     * @param sampleSize the number of samples
+     * @return the created instance
+     */
+    public static GraphDialog createLiveDialog(JFrame owner, Model model, boolean microStep, List&lt;String&gt; ordering, int sampleSize) {
+        String title;
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (microStep)</span>
+<span class="nc" id="L59">            title = Lang.get(&quot;win_measures_microstep&quot;);</span>
+        else
+<span class="nc" id="L61">            title = Lang.get(&quot;win_measures_fullstep&quot;);</span>
+
+<span class="nc" id="L63">        ArrayList&lt;Signal&gt; signals = model.getSignalsCopy();</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        signals.removeIf(signal -&gt; !signal.isShowInGraph());</span>
+<span class="nc" id="L65">        new OrderMerger&lt;String, Signal&gt;(ordering) {</span>
+            @Override
+            public boolean equals(Signal a, String b) {
+<span class="nc" id="L68">                return a.getName().equals(b);</span>
+            }
+<span class="nc" id="L70">        }.order(signals);</span>
+
+
+<span class="nc" id="L73">        ValueTableObserver valueTableObserver = new ValueTableObserver(microStep, signals, sampleSize);</span>
+
+<span class="nc" id="L75">        GraphDialog graphDialog = new GraphDialog(owner, title, valueTableObserver.getLogData(), model, true)</span>
+<span class="nc" id="L76">                .setColumnInfo(createColumnsInfo(signals));</span>
+
+<span class="nc" id="L78">        graphDialog.addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowOpened(WindowEvent e) {
+<span class="nc" id="L81">                model.addObserver(valueTableObserver);</span>
+<span class="nc" id="L82">            }</span>
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+<span class="nc" id="L86">                model.removeObserver(valueTableObserver);</span>
+<span class="nc" id="L87">            }</span>
+        });
+
+<span class="nc" id="L90">        return graphDialog;</span>
+    }
+
+    static ValueTable.ColumnInfo[] createColumnsInfo(ArrayList&lt;Signal&gt; signals) {
+<span class="nc" id="L94">        ValueTable.ColumnInfo[] info = new ValueTable.ColumnInfo[signals.size()];</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        for (int i = 0; i &lt; signals.size(); i++) {</span>
+<span class="nc" id="L96">            Signal s = signals.get(i);</span>
+<span class="nc" id="L97">            info[i] = new ValueTable.ColumnInfo(s.getFormat(), s.getValue().getBits());</span>
+        }
+<span class="nc" id="L99">        return info;</span>
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param owner   the parent frame
+     * @param title   the frame title
+     * @param logData the data to visualize
+     */
+    public GraphDialog(Window owner, String title, ValueTable logData) {
+<span class="nc" id="L110">        this(owner, title, logData, SyncAccess.NOSYNC, true);</span>
+<span class="nc" id="L111">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param owner     the parent frame
+     * @param title     the frame title
+     * @param logData   the data to visualize
+     * @param modelSync used to access the running model
+     * @param showHelp  shows the help menu item
+     */
+    GraphDialog(Window owner, String title, ValueTable logData, SyncAccess modelSync, boolean showHelp) {
+<span class="nc" id="L123">        super(owner, title, ModalityType.MODELESS);</span>
+<span class="nc" id="L124">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L126">        graphComponent = new GraphComponent(logData, modelSync);</span>
+<span class="nc" id="L127">        getContentPane().add(graphComponent);</span>
+
+<span class="nc" id="L129">        final JScrollBar horizontalScrollBar = new JScrollBar(JScrollBar.HORIZONTAL);</span>
+<span class="nc" id="L130">        getContentPane().add(horizontalScrollBar, BorderLayout.SOUTH);</span>
+<span class="nc" id="L131">        graphComponent.setHorizontalScrollBar(horizontalScrollBar);</span>
+
+<span class="nc" id="L133">        final JScrollBar verticalScrollBar = new JScrollBar(JScrollBar.VERTICAL);</span>
+<span class="nc" id="L134">        getContentPane().add(verticalScrollBar, BorderLayout.EAST);</span>
+<span class="nc" id="L135">        graphComponent.setVerticalScrollBar(verticalScrollBar);</span>
+
+<span class="nc" id="L137">        logData.addObserver(this);</span>
+
+<span class="nc" id="L139">        JToolBar toolBar = new JToolBar();</span>
+<span class="nc" id="L140">        ToolTipAction maximize = new ToolTipAction(Lang.get(&quot;menu_maximize&quot;), ICON_EXPAND) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L143">                graphComponent.fitData();</span>
+<span class="nc" id="L144">            }</span>
+<span class="nc" id="L145">        }.setAccelerator(&quot;F1&quot;);</span>
+<span class="nc" id="L146">        ToolTipAction zoomIn = new ToolTipAction(Lang.get(&quot;menu_zoomIn&quot;), ICON_ZOOM_IN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L149">                graphComponent.scale(1.25f, getWidth() / 2);</span>
+<span class="nc" id="L150">            }</span>
+<span class="nc" id="L151">        }.setAcceleratorCTRLplus(&quot;PLUS&quot;);</span>
+<span class="nc" id="L152">        ToolTipAction zoomOut = new ToolTipAction(Lang.get(&quot;menu_zoomOut&quot;), ICON_ZOOM_OUT) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L155">                graphComponent.scale(0.8f, getWidth() / 2);</span>
+<span class="nc" id="L156">            }</span>
+<span class="nc" id="L157">        }.setAcceleratorCTRLplus(&quot;MINUS&quot;);</span>
+
+<span class="nc" id="L159">        showTable = new ToolTipAction(Lang.get(&quot;menu_showDataAsTable&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L162">                new ValueTableDialog(GraphDialog.this, title) // ToDo pass modelSync to ValueTableDialog</span>
+<span class="nc" id="L163">                        .addValueTable(Lang.get(&quot;win_data&quot;), logData)</span>
+<span class="nc" id="L164">                        .disableGraph()</span>
+<span class="nc" id="L165">                        .setVisible(true);</span>
+<span class="nc" id="L166">            }</span>
+<span class="nc" id="L167">        }.setToolTip(Lang.get(&quot;menu_showDataAsTable_tt&quot;));</span>
+
+<span class="nc" id="L169">        toolBar.add(zoomIn.createJButtonNoText());</span>
+<span class="nc" id="L170">        toolBar.add(zoomOut.createJButtonNoText());</span>
+<span class="nc" id="L171">        toolBar.add(maximize.createJButtonNoText());</span>
+
+<span class="nc" id="L173">        getContentPane().add(toolBar, BorderLayout.NORTH);</span>
+<span class="nc" id="L174">        pack();</span>
+
+<span class="nc" id="L176">        JMenuBar bar = new JMenuBar();</span>
+<span class="nc" id="L177">        JMenu file = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+<span class="nc" id="L178">        bar.add(file);</span>
+<span class="nc" id="L179">        file.add(new ToolTipAction(Lang.get(&quot;menu_saveData&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L182">                JFileChooser fileChooser = new MyFileChooser();</span>
+<span class="nc" id="L183">                fileChooser.setFileFilter(new FileNameExtensionFilter(&quot;Comma Separated Values&quot;, &quot;csv&quot;));</span>
+<span class="nc" id="L184">                new SaveAsHelper(GraphDialog.this, fileChooser, &quot;csv&quot;)</span>
+<span class="nc" id="L185">                        .checkOverwrite(file -&gt; logData.saveCSV(file, columnInfo));</span>
+<span class="nc" id="L186">            }</span>
+<span class="nc" id="L187">        }.setToolTip(Lang.get(&quot;menu_saveData_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L188">        file.add(new ExportAction(Lang.get(&quot;menu_exportSVG&quot;), GraphicSVG::new).createJMenuItem());</span>
+
+<span class="nc" id="L190">        JMenu view = new JMenu(Lang.get(&quot;menu_view&quot;));</span>
+<span class="nc" id="L191">        bar.add(view);</span>
+<span class="nc" id="L192">        view.add(maximize.createJMenuItem());</span>
+<span class="nc" id="L193">        view.add(zoomOut.createJMenuItem());</span>
+<span class="nc" id="L194">        view.add(zoomIn.createJMenuItem());</span>
+<span class="nc" id="L195">        view.addSeparator();</span>
+<span class="nc" id="L196">        view.add(showTable.createJMenuItem());</span>
+
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (showHelp) {</span>
+<span class="nc" id="L199">            JMenu help = new JMenu(Lang.get(&quot;menu_help&quot;));</span>
+<span class="nc" id="L200">            bar.add(help);</span>
+<span class="nc" id="L201">            help.add(new ToolTipAction(Lang.get(&quot;btn_help&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L204">                    new ShowStringDialog(</span>
+                            GraphDialog.this,
+<span class="nc" id="L206">                            Lang.get(&quot;msg_graphHelpTitle&quot;),</span>
+<span class="nc" id="L207">                            Lang.get(&quot;msg_graphHelp&quot;), true)</span>
+<span class="nc" id="L208">                            .setVisible(true);</span>
+<span class="nc" id="L209">                }</span>
+<span class="nc" id="L210">            }.createJMenuItem());</span>
+        }
+
+<span class="nc" id="L213">        setJMenuBar(bar);</span>
+<span class="nc" id="L214">        pack();</span>
+<span class="nc" id="L215">        setLocationRelativeTo(owner);</span>
+<span class="nc" id="L216">    }</span>
+
+    GraphDialog setColumnInfo(ValueTable.ColumnInfo[] columnInfo) {
+<span class="nc" id="L219">        this.columnInfo = columnInfo;</span>
+<span class="nc" id="L220">        return this;</span>
+    }
+
+<span class="nc" id="L223">    private final AtomicBoolean paintPending = new AtomicBoolean();</span>
+
+    @Override
+    public void hasChanged() {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (paintPending.compareAndSet(false, true)) {</span>
+<span class="nc" id="L228">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L229">                graphComponent.revalidate();</span>
+<span class="nc" id="L230">                graphComponent.repaint();</span>
+<span class="nc" id="L231">                paintPending.set(false);</span>
+<span class="nc" id="L232">            });</span>
+        }
+<span class="nc" id="L234">    }</span>
+
+    /**
+     * Disable the show as table function
+     *
+     * @return this for chained calls
+     */
+    public GraphDialog disableTable() {
+<span class="nc" id="L242">        showTable.setEnabled(false);</span>
+<span class="nc" id="L243">        return this;</span>
+    }
+
+    private final class ExportAction extends ToolTipAction {
+        private final ExportFactory factory;
+
+<span class="nc" id="L249">        private ExportAction(String title, ExportFactory factory) {</span>
+<span class="nc" id="L250">            super(title);</span>
+<span class="nc" id="L251">            this.factory = factory;</span>
+<span class="nc" id="L252">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L256">            JFileChooser fileChooser = new MyFileChooser();</span>
+
+<span class="nc" id="L258">            ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L259">            File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            if (exportDir != null)</span>
+<span class="nc" id="L261">                fileChooser.setCurrentDirectory(exportDir);</span>
+
+
+<span class="nc" id="L264">            fileChooser.setFileFilter(new FileNameExtensionFilter(&quot;SVG&quot;, &quot;svg&quot;));</span>
+<span class="nc" id="L265">            new SaveAsHelper(GraphDialog.this, fileChooser, &quot;svg&quot;)</span>
+<span class="nc" id="L266">                    .checkOverwrite(file -&gt; {</span>
+<span class="nc" id="L267">                        settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L268">                        try (Graphic gr = factory.create(new FileOutputStream(file))) {</span>
+<span class="nc" id="L269">                            GraphicMinMax minMax = new GraphicMinMax();</span>
+<span class="nc" id="L270">                            graphComponent.getPlotter().drawTo(minMax, null);</span>
+<span class="nc" id="L271">                            gr.setBoundingBox(minMax.getMin(), minMax.getMax());</span>
+<span class="nc" id="L272">                            graphComponent.getPlotter().drawTo(gr, null);</span>
+                        }
+<span class="nc" id="L274">                    });</span>
+<span class="nc" id="L275">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

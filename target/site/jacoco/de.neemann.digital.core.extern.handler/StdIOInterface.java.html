@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StdIOInterface.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern.handler</a> &gt; <span class="el_source">StdIOInterface.java</span></div><h1>StdIOInterface.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern.handler;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.LinkedList;
+
+/**
+ * Communicates with an external process by sending values and receiving results via the stdio.
+ * All bits of all values are send as a stream of '0', '1' or 'Z'. The lsb is send first.
+ * The last bit is followed by an end of line character.
+ * &lt;p&gt;
+ * If the application wants to send values back, a new line needs to start with the string &quot;Digital:&quot;.
+ * After that all bit of all values needs to be send. The lsb needs to be send first.
+ * The last bit needs to be followed by an end of line character.
+ */
+public class StdIOInterface implements ProcessInterface {
+<span class="nc" id="L27">    private static final Logger LOGGER = LoggerFactory.getLogger(StdIOInterface.class);</span>
+    private static final String PREFIX = &quot;Digital:&quot;;
+    private static final int MAX_CONSOLE_LINES = 30;
+    private static final long TIMEOUT = 5000;
+    private final Process process;
+    private BufferedWriter writer;
+    private Thread thread;
+    private LinkedList&lt;String&gt; consoleOut;
+
+<span class="nc" id="L36">    private final Object lock = new Object();</span>
+    private String dataFound;
+<span class="nc" id="L38">    private boolean terminated = false;</span>
+
+
+    /**
+     * Set the already started process
+     *
+     * @param process the process to use
+     */
+<span class="nc" id="L46">    public StdIOInterface(Process process) {</span>
+<span class="nc" id="L47">        this.process = process;</span>
+<span class="nc" id="L48">        setInputOutputStream(process.getInputStream(), process.getOutputStream());</span>
+
+<span class="nc" id="L50">    }</span>
+
+    /**
+     * Sets the reader and writer
+     *
+     * @param in  the input stream
+     * @param out the output stream
+     */
+    private void setInputOutputStream(InputStream in, OutputStream out) {
+<span class="nc" id="L59">        setReaderWriter(</span>
+                new BufferedReader(new InputStreamReader(in)),
+                new BufferedWriter(new OutputStreamWriter(out)));
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Sets the reader and writer
+     *
+     * @param reader the reader
+     * @param writer the writer
+     */
+    private void setReaderWriter(BufferedReader reader, BufferedWriter writer) {
+<span class="nc" id="L71">        this.writer = writer;</span>
+<span class="nc" id="L72">        consoleOut = new LinkedList&lt;&gt;();</span>
+<span class="nc" id="L73">        terminated = false;</span>
+<span class="nc" id="L74">        thread = new Thread(() -&gt; {</span>
+<span class="nc" id="L75">            LOGGER.debug(&quot;reader-thread started&quot;);</span>
+            try {
+                String line;
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                while ((line = reader.readLine()) != null) {</span>
+<span class="nc" id="L79">                    consoleOut.add(line);</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                    while (consoleOut.size() &gt; MAX_CONSOLE_LINES)</span>
+<span class="nc" id="L81">                        consoleOut.removeFirst();</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                    if (line.startsWith(PREFIX)) {</span>
+<span class="nc" id="L83">                        synchronized (lock) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                            while (dataFound != null)</span>
+<span class="nc" id="L85">                                lock.wait();</span>
+<span class="nc" id="L86">                            dataFound = line;</span>
+<span class="nc" id="L87">                            lock.notify();</span>
+<span class="nc" id="L88">                        }</span>
+                    }
+                }
+<span class="nc" id="L91">            } catch (IOException | InterruptedException e) {</span>
+<span class="nc" id="L92">                e.printStackTrace();</span>
+<span class="nc" id="L93">            }</span>
+<span class="nc" id="L94">            synchronized (lock) {</span>
+<span class="nc" id="L95">                terminated = true;</span>
+<span class="nc" id="L96">                lock.notify();</span>
+<span class="nc" id="L97">            }</span>
+<span class="nc" id="L98">            LOGGER.debug(&quot;reader-thread terminated&quot;);</span>
+<span class="nc" id="L99">        });</span>
+<span class="nc" id="L100">        thread.setDaemon(true);</span>
+<span class="nc" id="L101">        thread.start();</span>
+<span class="nc" id="L102">    }</span>
+
+    private String readLine() throws IOException {
+<span class="nc" id="L105">        synchronized (lock) {</span>
+            try {
+<span class="nc" id="L107">                long startTime = System.currentTimeMillis();</span>
+<span class="nc" id="L108">                long time = 0;</span>
+<span class="nc bnc" id="L109" title="All 6 branches missed.">                while (dataFound == null &amp;&amp; !terminated &amp;&amp; (time - startTime) &lt; TIMEOUT) {</span>
+<span class="nc" id="L110">                    lock.wait(1000);</span>
+<span class="nc" id="L111">                    time = System.currentTimeMillis();</span>
+                }
+
+<span class="nc bnc" id="L114" title="All 2 branches missed.">                if (!((time - startTime) &lt; TIMEOUT))</span>
+<span class="nc" id="L115">                    throw new IOException(Lang.get(&quot;err_timeoutReadingData_O&quot;, getConsoleOut()));</span>
+
+<span class="nc" id="L117">                String line = dataFound;</span>
+<span class="nc" id="L118">                dataFound = null;</span>
+<span class="nc" id="L119">                lock.notify();</span>
+
+<span class="nc" id="L121">                return line;</span>
+<span class="nc" id="L122">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L123">                return null;</span>
+            }
+        }
+    }
+
+    @Override
+    public void writeValues(ObservableValues values) throws IOException {
+        try {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            for (ObservableValue v : values) {</span>
+<span class="nc" id="L132">                final int bits = v.getBits();</span>
+<span class="nc" id="L133">                final long value = v.getValue();</span>
+<span class="nc" id="L134">                final long highZ = v.getHighZ();</span>
+<span class="nc" id="L135">                long mask = 1;</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                for (int i = 0; i &lt; bits; i++) {</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                    if ((highZ &amp; mask) != 0)</span>
+<span class="nc" id="L138">                        writer.write('Z');</span>
+                    else {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                        if ((value &amp; mask) != 0)</span>
+<span class="nc" id="L141">                            writer.write('1');</span>
+                        else
+<span class="nc" id="L143">                            writer.write('0');</span>
+                    }
+<span class="nc" id="L145">                    mask &lt;&lt;= 1;</span>
+                }
+<span class="nc" id="L147">            }</span>
+<span class="nc" id="L148">            writer.write(&quot;\n&quot;);</span>
+<span class="nc" id="L149">            writer.flush();</span>
+<span class="nc" id="L150">        } catch (IOException e) {</span>
+<span class="nc" id="L151">            throw new IOException(Lang.get(&quot;err_writingToStdOut_O&quot;, getConsoleOut()), e);</span>
+<span class="nc" id="L152">        }</span>
+<span class="nc" id="L153">    }</span>
+
+    @Override
+    public void readValues(ObservableValues values) throws IOException {
+<span class="nc" id="L157">        String line = readLine();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (line != null) {</span>
+<span class="nc" id="L159">            int pos = PREFIX.length();</span>
+<span class="nc" id="L160">            int len = line.length();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            for (ObservableValue v : values) {</span>
+<span class="nc" id="L162">                final int bits = v.getBits();</span>
+
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                if (pos + bits &gt; len)</span>
+<span class="nc" id="L165">                    throw new IOException(Lang.get(&quot;err_notEnoughDataReceived_O&quot;, getConsoleOut()));</span>
+
+<span class="nc" id="L167">                long value = 0;</span>
+<span class="nc" id="L168">                long highZ = 0;</span>
+<span class="nc" id="L169">                long mask = 1;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                for (int i = 0; i &lt; bits; i++) {</span>
+<span class="nc" id="L171">                    char c = line.charAt(pos);</span>
+<span class="nc bnc" id="L172" title="All 4 branches missed.">                    switch (c) {</span>
+                        case 'Z':
+                        case 'z':
+<span class="nc" id="L175">                            highZ |= mask;</span>
+<span class="nc" id="L176">                            break;</span>
+                        case 'H':
+                        case '1':
+<span class="nc" id="L179">                            value |= mask;</span>
+<span class="nc" id="L180">                            break;</span>
+                        case 'W':
+                        case 'X':
+                        case 'x':
+                        case 'U':
+                        case 'L':
+                        case '0':
+<span class="nc" id="L187">                            break;</span>
+                        default:
+<span class="nc" id="L189">                            throw new IOException(Lang.get(&quot;err_invalidCharacterReceived_N_O&quot;, &quot;&quot; + c, getConsoleOut()));</span>
+                    }
+<span class="nc" id="L191">                    mask &lt;&lt;= 1;</span>
+<span class="nc" id="L192">                    pos++;</span>
+                }
+<span class="nc" id="L194">                v.set(value, highZ);</span>
+<span class="nc" id="L195">            }</span>
+<span class="nc" id="L196">        } else</span>
+<span class="nc" id="L197">            throw new IOException(Lang.get(&quot;err_processTerminatedUnexpected_O&quot;, getConsoleOutNoWarn(consoleOut)));</span>
+<span class="nc" id="L198">    }</span>
+
+    /**
+     * Returns the console out without warnings.
+     * Used to remove not needed content which obfuscates the real error cause.
+     *
+     * @param consoleOut the console out
+     * @return the clean error message
+     */
+    public String getConsoleOutNoWarn(LinkedList&lt;String&gt; consoleOut) {
+<span class="nc" id="L208">        return getConsoleOut();</span>
+    }
+
+    private String getConsoleOut() {
+<span class="nc" id="L212">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        for (String s : consoleOut)</span>
+<span class="nc" id="L214">            sb.append(s).append(&quot;\n&quot;);</span>
+<span class="nc" id="L215">        return sb.toString();</span>
+    }
+
+    @Override
+    public void close() throws IOException {
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (process != null)</span>
+<span class="nc" id="L221">            process.destroy();</span>
+
+<span class="nc bnc" id="L223" title="All 4 branches missed.">        if (thread != null &amp;&amp; thread.isAlive()) {</span>
+<span class="nc" id="L224">            thread.interrupt();</span>
+
+            try {
+<span class="nc" id="L227">                thread.join(1000);</span>
+<span class="nc" id="L228">            } catch (InterruptedException e) {</span>
+                // its ok, I just want to terminate the process!
+<span class="nc" id="L230">            }</span>
+
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (thread.isAlive())</span>
+<span class="nc" id="L233">                throw new IOException(Lang.get(&quot;err_couldNotTerminateProcess&quot;));</span>
+        }
+<span class="nc" id="L235">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

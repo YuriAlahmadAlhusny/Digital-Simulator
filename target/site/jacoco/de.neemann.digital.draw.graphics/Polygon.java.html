@@ -1,0 +1,619 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Polygon.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">Polygon.java</span></div><h1>Polygon.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import java.awt.geom.Path2D;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * A polygon representation used by the {@link Graphic} interface.
+ */
+public class Polygon implements Iterable&lt;Polygon.PathElement&gt; {
+
+    private final ArrayList&lt;PathElement&gt; path;
+    private boolean closed;
+<span class="fc" id="L19">    private boolean hasSpecialElements = false;</span>
+    private boolean evenOdd;
+
+    /**
+     * Creates e new closed polygon
+     */
+    public Polygon() {
+<span class="fc" id="L26">        this(new ArrayList&lt;&gt;(), true);</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Creates e new instance
+     *
+     * @param closed true if polygon is closed
+     */
+    public Polygon(boolean closed) {
+<span class="fc" id="L35">        this(new ArrayList&lt;&gt;(), closed);</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Creates e new instance
+     *
+     * @param points the polygons points
+     * @param closed true if polygon is closed
+     */
+<span class="fc" id="L44">    public Polygon(ArrayList&lt;VectorInterface&gt; points, boolean closed) {</span>
+<span class="fc" id="L45">        this.closed = closed;</span>
+<span class="fc" id="L46">        this.path = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        for (VectorInterface p : points)</span>
+<span class="nc" id="L48">            add(p);</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * @return true if polygon is closed
+     */
+    public boolean isClosed() {
+<span class="fc" id="L55">        return closed;</span>
+    }
+
+    /**
+     * Adds a point to the polygon
+     *
+     * @param x x coordinate
+     * @param y y coordinate
+     * @return this for chained calls
+     */
+    public Polygon add(int x, int y) {
+<span class="fc" id="L66">        return add(new Vector(x, y));</span>
+    }
+
+    /**
+     * Adds a new point to the polygon.
+     *
+     * @param p the point to add
+     * @return this for chained calls
+     */
+    public Polygon add(VectorInterface p) {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (path.isEmpty())</span>
+<span class="fc" id="L77">            add(new MoveTo(p));</span>
+        else
+<span class="fc" id="L79">            add(new LineTo(p));</span>
+<span class="fc" id="L80">        return this;</span>
+    }
+
+    private void add(PathElement pe) {
+<span class="fc" id="L84">        path.add(pe);</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Adds a new cubic bezier curve to the polygon.
+     *
+     * @param c1 the first control point to add
+     * @param c2 the second control point to add
+     * @param p  the end point to add
+     * @return this for chained calls
+     */
+    public Polygon add(VectorInterface c1, VectorInterface c2, VectorInterface p) {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (path.size() == 0)</span>
+<span class="nc" id="L97">            throw new RuntimeException(&quot;cubic bezier curve is not allowed to be the first path element&quot;);</span>
+<span class="fc" id="L98">        add(new CurveTo(c1, c2, p));</span>
+<span class="fc" id="L99">        hasSpecialElements = true;</span>
+<span class="fc" id="L100">        return this;</span>
+    }
+
+    /**
+     * Adds a new quadratic bezier curve to the polygon.
+     *
+     * @param c the control point to add
+     * @param p the end point to add
+     * @return this for chained calls
+     */
+    public Polygon add(VectorInterface c, VectorInterface p) {
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (path.size() == 0)</span>
+<span class="nc" id="L112">            throw new RuntimeException(&quot;quadratic bezier curve is not allowed to be the first path element&quot;);</span>
+<span class="fc" id="L113">        add(new QuadTo(c, p));</span>
+<span class="fc" id="L114">        hasSpecialElements = true;</span>
+<span class="fc" id="L115">        return this;</span>
+    }
+
+    /**
+     * Closes the actual path
+     */
+    public void addClosePath() {
+<span class="fc" id="L122">        add(new ClosePath());</span>
+<span class="fc" id="L123">    }</span>
+
+    /**
+     * Adds a moveto to the path
+     *
+     * @param p the point to move to
+     */
+    public void addMoveTo(VectorFloat p) {
+<span class="fc" id="L131">        add(new MoveTo(p));</span>
+<span class="fc" id="L132">    }</span>
+
+    /**
+     * @return true if filled in even odd mode
+     */
+    public boolean getEvenOdd() {
+<span class="fc" id="L138">        return evenOdd;</span>
+    }
+
+    /**
+     * Sets the even odd mode used to fill the polygon
+     *
+     * @param evenOdd true is even odd mode is needed
+     * @return this for chained calls
+     */
+    public Polygon setEvenOdd(boolean evenOdd) {
+<span class="fc" id="L148">        this.evenOdd = evenOdd;</span>
+<span class="fc" id="L149">        return this;</span>
+    }
+
+    /**
+     * Try's to add the given line to the polygon.
+     * Its possible to add a line if one of the points matches the first or the last
+     * point of the polygon. In that case the other point is added and true is returned.
+     * If it is not possible to add the line a false is returned
+     *
+     * @param p1 first point of the line
+     * @param p2 second point of the line
+     * @return true if line was added
+     */
+    public boolean addLine(VectorInterface p1, VectorInterface p2) {
+<span class="fc bfc" id="L163" title="All 4 branches covered.">        return check(p1, p2) || check(p2, p1);</span>
+    }
+
+    private boolean check(VectorInterface p1, VectorInterface p2) {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (closed)</span>
+<span class="fc" id="L168">            return false;</span>
+
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (p1.equals(getFirst())) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            if (p2.equals(getLast()))</span>
+<span class="fc" id="L172">                closed = true;</span>
+            else {
+<span class="fc" id="L174">                removeInitialMoveTo();</span>
+<span class="fc" id="L175">                path.add(0, new MoveTo(p2));</span>
+            }
+<span class="fc" id="L177">            return true;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        } else if (p1.equals(getLast())) {</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (p2.equals(getFirst()))</span>
+<span class="nc" id="L180">                closed = true;</span>
+            else
+<span class="fc" id="L182">                path.add(new LineTo(p2));</span>
+<span class="fc" id="L183">            return true;</span>
+        } else
+<span class="fc" id="L185">            return false;</span>
+    }
+
+    private void removeInitialMoveTo() {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (!(path.get(0) instanceof MoveTo))</span>
+<span class="nc" id="L190">            throw new RuntimeException(&quot;initial path element is not a MoveTo!&quot;);</span>
+<span class="fc" id="L191">        path.set(0, new LineTo(path.get(0)));</span>
+<span class="fc" id="L192">    }</span>
+
+    /**
+     * @return the first point of the polygon
+     */
+    public VectorInterface getFirst() {
+<span class="fc" id="L198">        return path.get(0).getPoint();</span>
+    }
+
+    /**
+     * @return the last point of the polygon
+     */
+    public VectorInterface getLast() {
+<span class="fc" id="L205">        return path.get(path.size() - 1).getPoint();</span>
+    }
+
+    /**
+     * Append the given polygon to this polygon
+     *
+     * @param p2 the polygon to append
+     * @return this for chained calls
+     */
+    public Polygon append(Polygon p2) {
+<span class="pc bpc" id="L215" title="2 of 4 branches missed.">        if (hasSpecialElements || p2.hasSpecialElements)</span>
+<span class="nc" id="L216">            throw new RuntimeException(&quot;append of bezier not supported&quot;);</span>
+
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (p2.getLast().equals(getFirst())) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            for (int i = 1; i &lt; p2.path.size() - 1; i++)</span>
+<span class="fc" id="L220">                add(p2.path.get(i).getPoint());</span>
+<span class="fc" id="L221">            closed = true;</span>
+        } else {
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            for (int i = 1; i &lt; p2.path.size(); i++)</span>
+<span class="fc" id="L224">                add(p2.path.get(i).getPoint());</span>
+        }
+<span class="fc" id="L226">        return this;</span>
+    }
+
+    /**
+     * Returns a new polygon with reverse point order.
+     *
+     * @return returns this polygon with reverse order of points
+     */
+    public Polygon reverse() {
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (hasSpecialElements)</span>
+<span class="nc" id="L236">            throw new RuntimeException(&quot;append of bezier not supported&quot;);</span>
+<span class="fc" id="L237">        Polygon p = new Polygon(closed);</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = path.size() - 1; i &gt;= 0; i--)</span>
+<span class="fc" id="L239">            p.add(path.get(i).getPoint());</span>
+<span class="fc" id="L240">        return p;</span>
+    }
+
+    /**
+     * Transforms this polygon
+     *
+     * @param transform the transformation
+     * @return the transformed polygon
+     */
+    public Polygon transform(Transform transform) {
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (transform == Transform.IDENTITY)</span>
+<span class="fc" id="L251">            return this;</span>
+
+<span class="fc" id="L253">        Polygon p = new Polygon(closed).setEvenOdd(evenOdd);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (PathElement pe : path)</span>
+<span class="fc" id="L255">            p.add(pe.transform(transform));</span>
+<span class="fc" id="L256">        return p;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L261">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (PathElement pe : path) {</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (sb.length() &gt; 0)</span>
+<span class="fc" id="L264">                sb.append(' ');</span>
+<span class="fc" id="L265">            sb.append(pe.toString());</span>
+<span class="fc" id="L266">        }</span>
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        if (closed)</span>
+<span class="fc" id="L269">            sb.append(&quot; Z&quot;);</span>
+<span class="fc" id="L270">        return sb.toString();</span>
+    }
+
+    /**
+     * Creates a polygon from a SVG path
+     *
+     * @param path the svg path
+     * @return the polygon or null if there was an error
+     */
+    public static Polygon createFromPath(String path) {
+        try {
+<span class="fc" id="L281">            return new PolygonParser(path).create();</span>
+<span class="nc" id="L282">        } catch (PolygonParser.ParserException e) {</span>
+<span class="nc" id="L283">            return null;</span>
+        }
+    }
+
+    void setClosed(boolean closed) {
+<span class="fc" id="L288">        this.closed = closed;</span>
+<span class="fc" id="L289">    }</span>
+
+    @Override
+    public Iterator&lt;PathElement&gt; iterator() {
+<span class="nc" id="L293">        return path.iterator();</span>
+    }
+
+    /**
+     * Draw this polygon to a {@link Path2D} instance.
+     *
+     * @param path2d the Path2d instance.
+     */
+    public void drawTo(Path2D path2d) {
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        for (PathElement pe : path)</span>
+<span class="fc" id="L303">            pe.drawTo(path2d);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        if (closed)</span>
+<span class="fc" id="L305">            path2d.closePath();</span>
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">        if (evenOdd)</span>
+<span class="nc" id="L307">            path2d.setWindingRule(Path2D.WIND_EVEN_ODD);</span>
+<span class="fc" id="L308">    }</span>
+
+    /**
+     * Traverses all points
+     *
+     * @param v the visitor to use
+     */
+    public void traverse(PointVisitor v) {
+<span class="fc" id="L316">        VectorInterface start = null;</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        for (PathElement pe : path)</span>
+<span class="fc" id="L318">            start = pe.traverse(start, v);</span>
+<span class="fc" id="L319">    }</span>
+
+    /**
+     * Creates a new polygon with rounded edges
+     *
+     * @param rad the radius of the rounding
+     * @return the new polygon
+     */
+    public Polygon roundEdges(int rad) {
+<span class="fc" id="L328">        Polygon newPoly = new Polygon(closed);</span>
+<span class="fc" id="L329">        int len = path.size();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (!closed) len--;</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="fc" id="L332">            VectorInterface p0 = path.get(i).getPoint();</span>
+<span class="fc" id="L333">            VectorInterface p1 = path.get(wrapIndex(i + 1)).getPoint();</span>
+<span class="fc" id="L334">            VectorInterface p2 = path.get(wrapIndex(i + 2)).getPoint();</span>
+
+<span class="fc" id="L336">            VectorInterface d0 = p1.sub(p0);</span>
+<span class="fc" id="L337">            float l0 = d0.len();</span>
+<span class="fc" id="L338">            VectorInterface d1 = p2.sub(p1);</span>
+<span class="fc" id="L339">            float l1 = d1.len();</span>
+
+<span class="fc" id="L341">            VectorInterface n0 = p0.add(d0.mul(rad / l0));</span>
+<span class="fc" id="L342">            VectorInterface n1 = p0.add(d0.mul((l0 - rad) / l0));</span>
+<span class="fc" id="L343">            VectorInterface n2 = p1.add(d1.mul(rad / l1));</span>
+
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">                if (closed)</span>
+<span class="fc" id="L347">                    newPoly.add(n0);</span>
+                else
+<span class="nc" id="L349">                    newPoly.add(p0);</span>
+            }
+
+<span class="pc bpc" id="L352" title="3 of 4 branches missed.">            if (!closed &amp;&amp; i == len - 1) {</span>
+<span class="nc" id="L353">                newPoly.add(p1);</span>
+            } else {
+<span class="fc" id="L355">                newPoly.add(n1);</span>
+<span class="fc" id="L356">                newPoly.add(p1, n2);</span>
+            }
+        }
+
+<span class="fc" id="L360">        return newPoly;</span>
+    }
+
+    private int wrapIndex(int i) {
+<span class="fc bfc" id="L364" title="All 2 branches covered.">        if (i &gt;= path.size())</span>
+<span class="fc" id="L365">            return i - path.size();</span>
+        else
+<span class="fc" id="L367">            return i;</span>
+    }
+
+    /**
+     * Visitor used to traverse all points
+     */
+    public interface PointVisitor {
+        /**
+         * Called with every point
+         *
+         * @param p the point
+         */
+        void visit(VectorInterface p);
+    }
+
+    /**
+     * A element of the path
+     */
+    public interface PathElement {
+        /**
+         * @return the coordinate of this path element
+         */
+        VectorInterface getPoint();
+
+        /**
+         * Returns the transformed path element
+         *
+         * @param transform the transformation
+         * @return the transormated path element
+         */
+        PathElement transform(Transform transform);
+
+        /**
+         * Draws this path element to a Path2D instance.
+         *
+         * @param path2d the a Path2D instance
+         */
+        void drawTo(Path2D path2d);
+
+        /**
+         * Traverses all points
+         *
+         * @param start the start point
+         * @param v     the visitor to use
+         * @return the end point
+         */
+        VectorInterface traverse(VectorInterface start, PointVisitor v);
+    }
+
+    private static String str(float f) {
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        if (f == Math.round(f))</span>
+<span class="fc" id="L418">            return Integer.toString(Math.round(f));</span>
+        else
+<span class="fc" id="L420">            return Float.toString(f);</span>
+    }
+
+    private static String str(VectorInterface p) {
+<span class="fc" id="L424">        return str(p.getXFloat()) + &quot;,&quot; + str(p.getYFloat());</span>
+    }
+
+    //LineTo can not be final because its overridden. Maybe checkstyle has a bug?
+    //CHECKSTYLE.OFF: FinalClass
+    private static class LineTo implements PathElement {
+        protected final VectorInterface p;
+
+<span class="fc" id="L432">        private LineTo(VectorInterface p) {</span>
+<span class="fc" id="L433">            this.p = p;</span>
+<span class="fc" id="L434">        }</span>
+
+        private LineTo(PathElement pathElement) {
+<span class="fc" id="L437">            this(pathElement.getPoint());</span>
+<span class="fc" id="L438">        }</span>
+
+        @Override
+        public VectorInterface getPoint() {
+<span class="fc" id="L442">            return p;</span>
+        }
+
+        @Override
+        public PathElement transform(Transform transform) {
+<span class="fc" id="L447">            return new LineTo(p.transform(transform));</span>
+        }
+
+        @Override
+        public void drawTo(Path2D path2d) {
+<span class="fc" id="L452">            path2d.lineTo(p.getXFloat(), p.getYFloat());</span>
+<span class="fc" id="L453">        }</span>
+
+        @Override
+        public String toString() {
+<span class="fc" id="L457">            return &quot;L &quot; + str(p);</span>
+        }
+
+        @Override
+        public VectorInterface traverse(VectorInterface start, PointVisitor v) {
+<span class="fc" id="L462">            v.visit(p);</span>
+<span class="fc" id="L463">            return p;</span>
+        }
+    }
+    //CHECKSTYLE.ON: FinalClass
+
+    private static final class MoveTo extends LineTo {
+        private MoveTo(VectorInterface p) {
+<span class="fc" id="L470">            super(p);</span>
+<span class="fc" id="L471">        }</span>
+
+        @Override
+        public String toString() {
+<span class="fc" id="L475">            return &quot;M &quot; + str(p);</span>
+        }
+
+        @Override
+        public void drawTo(Path2D path2d) {
+<span class="fc" id="L480">            path2d.moveTo(p.getXFloat(), p.getYFloat());</span>
+<span class="fc" id="L481">        }</span>
+
+        @Override
+        public PathElement transform(Transform transform) {
+<span class="fc" id="L485">            return new MoveTo(p.transform(transform));</span>
+        }
+    }
+
+    private static final class CurveTo implements PathElement {
+        private final VectorInterface c1;
+        private final VectorInterface c2;
+        private final VectorInterface p;
+
+<span class="fc" id="L494">        private CurveTo(VectorInterface c1, VectorInterface c2, VectorInterface p) {</span>
+<span class="fc" id="L495">            this.c1 = c1;</span>
+<span class="fc" id="L496">            this.c2 = c2;</span>
+<span class="fc" id="L497">            this.p = p;</span>
+<span class="fc" id="L498">        }</span>
+
+        @Override
+        public VectorInterface getPoint() {
+<span class="nc" id="L502">            return p;</span>
+        }
+
+        @Override
+        public PathElement transform(Transform transform) {
+<span class="fc" id="L507">            return new CurveTo(</span>
+<span class="fc" id="L508">                    c1.transform(transform),</span>
+<span class="fc" id="L509">                    c2.transform(transform),</span>
+<span class="fc" id="L510">                    p.transform(transform)</span>
+            );
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L516">            return &quot;C &quot; + str(c1) + &quot; &quot; + str(c2) + &quot; &quot; + str(p);</span>
+        }
+
+        @Override
+        public void drawTo(Path2D path2d) {
+<span class="fc" id="L521">            path2d.curveTo(c1.getXFloat(), c1.getYFloat(),</span>
+<span class="fc" id="L522">                    c2.getXFloat(), c2.getYFloat(),</span>
+<span class="fc" id="L523">                    p.getXFloat(), p.getYFloat());</span>
+<span class="fc" id="L524">        }</span>
+
+        private VectorInterface getPos(VectorInterface start, float t) {
+<span class="fc" id="L527">            float omt = 1 - t;</span>
+<span class="fc" id="L528">            return start.mul(omt * omt * omt)</span>
+<span class="fc" id="L529">                    .add(c1.mul(3 * t * omt * omt))</span>
+<span class="fc" id="L530">                    .add(c2.mul(3 * t * t * omt))</span>
+<span class="fc" id="L531">                    .add(p.mul(t * t * t));</span>
+        }
+
+        @Override
+        public VectorInterface traverse(VectorInterface start, PointVisitor v) {
+<span class="fc" id="L536">            v.visit(getPos(start, 0.25f));</span>
+<span class="fc" id="L537">            v.visit(getPos(start, 0.5f));</span>
+<span class="fc" id="L538">            v.visit(getPos(start, 0.75f));</span>
+<span class="fc" id="L539">            v.visit(p);</span>
+<span class="fc" id="L540">            return p;</span>
+        }
+    }
+
+    private static final class QuadTo implements PathElement {
+        private final VectorInterface c;
+        private final VectorInterface p;
+
+<span class="fc" id="L548">        private QuadTo(VectorInterface c, VectorInterface p) {</span>
+<span class="fc" id="L549">            this.c = c;</span>
+<span class="fc" id="L550">            this.p = p;</span>
+<span class="fc" id="L551">        }</span>
+
+        @Override
+        public VectorInterface getPoint() {
+<span class="nc" id="L555">            return p;</span>
+        }
+
+        @Override
+        public PathElement transform(Transform transform) {
+<span class="fc" id="L560">            return new QuadTo(</span>
+<span class="fc" id="L561">                    c.transform(transform),</span>
+<span class="fc" id="L562">                    p.transform(transform)</span>
+            );
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L568">            return &quot;Q &quot; + str(c) + &quot; &quot; + str(p);</span>
+        }
+
+        @Override
+        public void drawTo(Path2D path2d) {
+<span class="nc" id="L573">            path2d.quadTo(c.getXFloat(), c.getYFloat(),</span>
+<span class="nc" id="L574">                    p.getXFloat(), p.getYFloat());</span>
+<span class="nc" id="L575">        }</span>
+
+        private VectorInterface getPos(VectorInterface start, float t) {
+<span class="fc" id="L578">            float omt = 1 - t;</span>
+<span class="fc" id="L579">            return start.mul(omt * omt).add(c.mul(2 * t * omt)).add(p.mul(t * t));</span>
+        }
+
+        @Override
+        public VectorInterface traverse(VectorInterface start, PointVisitor v) {
+<span class="fc" id="L584">            v.visit(getPos(start, 0.4f));</span>
+<span class="fc" id="L585">            v.visit(getPos(start, 0.5f));</span>
+<span class="fc" id="L586">            v.visit(getPos(start, 0.6f));</span>
+<span class="fc" id="L587">            v.visit(p);</span>
+<span class="fc" id="L588">            return p;</span>
+        }
+    }
+
+    private static final class ClosePath implements PathElement {
+        @Override
+        public VectorInterface getPoint() {
+<span class="nc" id="L595">            return null;</span>
+        }
+
+        @Override
+        public PathElement transform(Transform transform) {
+<span class="nc" id="L600">            return this;</span>
+        }
+
+        @Override
+        public void drawTo(Path2D path2d) {
+<span class="nc" id="L605">            path2d.closePath();</span>
+<span class="nc" id="L606">        }</span>
+
+        @Override
+        public String toString() {
+<span class="fc" id="L610">            return &quot;Z&quot;;</span>
+        }
+
+        @Override
+        public VectorInterface traverse(VectorInterface start, PointVisitor v) {
+<span class="fc" id="L615">            return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

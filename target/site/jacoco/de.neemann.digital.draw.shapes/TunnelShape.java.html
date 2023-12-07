@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TunnelShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">TunnelShape.java</span></div><h1>TunnelShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.Value;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The Tunnel shape
+ */
+public class TunnelShape implements Shape {
+
+    private static final int HEIGHT = SIZE2 - 2;
+<span class="fc" id="L27">    private static final int WIDTH = (int) Math.round(HEIGHT * Math.sqrt(3));</span>
+<span class="fc" id="L28">    private static final Polygon POLYGON = new Polygon(true)</span>
+<span class="fc" id="L29">            .add(0, 0)</span>
+<span class="fc" id="L30">            .add(WIDTH, HEIGHT)</span>
+<span class="fc" id="L31">            .add(WIDTH, -HEIGHT);</span>
+
+    private final PinDescription input;
+    private final String label;
+    private ObservableValue inputValueObserver;
+    private Value inputValue;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L45">    public TunnelShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L46">        input = inputs.get(0);</span>
+<span class="fc" id="L47">        label = attr.get(Keys.NETNAME);</span>
+<span class="fc" id="L48">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L52">        return new Pins().add(new Pin(new Vector(0, 0), input));</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L57">        inputValueObserver = ioState.getInput(0);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (inputValueObserver.getBits() &gt; 1)</span>
+<span class="nc" id="L59">            inputValueObserver = null;</span>
+<span class="nc" id="L60">        return null;</span>
+    }
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (inputValueObserver != null)</span>
+<span class="nc" id="L66">            inputValue = inputValueObserver.getCopy();</span>
+<span class="fc" id="L67">    }</span>
+
+    @Override
+    public void drawTo(Graphic gr, Style highLight) {
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (inputValue != null)</span>
+<span class="nc" id="L72">            gr.drawPolygon(POLYGON, Style.getWireStyle(inputValue));</span>
+
+<span class="fc" id="L74">        gr.drawPolygon(POLYGON, Style.NORMAL);</span>
+<span class="fc" id="L75">        Vector pos = new Vector(WIDTH + SIZE2 / 2, 0);</span>
+<span class="fc" id="L76">        gr.drawText(pos, label, Orientation.LEFTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

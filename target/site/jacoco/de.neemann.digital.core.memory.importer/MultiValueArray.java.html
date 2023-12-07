@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultiValueArray.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory.importer</a> &gt; <span class="el_source">MultiValueArray.java</span></div><h1>MultiValueArray.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory.importer;
+
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+
+/**
+ * Used to load a file to multiple RAM/ROM components
+ */
+public final class MultiValueArray implements ValueArray {
+    private final ValueArray[] valueArrays;
+    private final int bytes;
+    private final int memCount;
+
+<span class="fc" id="L21">    private MultiValueArray(ValueArray... valueArrays) {</span>
+<span class="fc" id="L22">        this.valueArrays = valueArrays;</span>
+<span class="fc" id="L23">        memCount = valueArrays.length;</span>
+<span class="fc" id="L24">        bytes = valueArrays[0].getBytesPerValue();</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public void set(int index, long value) {
+<span class="fc" id="L29">        int a = index / memCount;</span>
+<span class="fc" id="L30">        int b = index % memCount;</span>
+<span class="fc" id="L31">        valueArrays[b].set(a, value);</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    public long get(int index) {
+<span class="fc" id="L36">        int a = index / memCount;</span>
+<span class="fc" id="L37">        int b = index % memCount;</span>
+<span class="fc" id="L38">        return valueArrays[b].get(a);</span>
+    }
+
+    @Override
+    public int getBytesPerValue() {
+<span class="fc" id="L43">        return bytes;</span>
+    }
+
+    /**
+     * Builder to build the {@link MultiValueArray}
+     */
+    public static class Builder {
+        private ArrayList&lt;ValueArray&gt; valueArrays;
+        private int bytes;
+
+        /**
+         * Creates a new builder
+         */
+<span class="fc" id="L56">        public Builder() {</span>
+<span class="fc" id="L57">            valueArrays = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L58">        }</span>
+
+        /**
+         * Adds a data field to the builder
+         *
+         * @param dataField the data field
+         * @param bits      the bits used in the data field
+         * @return this for chained calls
+         * @throws ValueArrayException ValueArrayException
+         */
+        public Builder add(DataField dataField, int bits) throws ValueArrayException {
+<span class="fc" id="L69">            return add(new DataFieldValueArray(dataField, bits));</span>
+        }
+
+        /**
+         * Adds a value array to the builder
+         *
+         * @param valueArray the value array to add
+         * @return this for chained calls
+         * @throws ValueArrayException ValueArrayException
+         */
+        public Builder add(ValueArray valueArray) throws ValueArrayException {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            if (valueArrays.isEmpty())</span>
+<span class="fc" id="L81">                bytes = valueArray.getBytesPerValue();</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (valueArray.getBytesPerValue() != bytes)</span>
+<span class="fc" id="L84">                throw new ValueArrayException(Lang.get(&quot;err_allMemoriesNeedToHaveTheSameByteWidth&quot;));</span>
+
+<span class="fc" id="L86">            valueArrays.add(valueArray);</span>
+<span class="fc" id="L87">            return this;</span>
+        }
+
+        /**
+         * Builds the {@link MultiValueArray}
+         *
+         * @return the {@link ValueArray}
+         * @throws ValueArrayException ValueArrayException
+         */
+        public ValueArray build() throws ValueArrayException {
+<span class="pc bpc" id="L97" title="1 of 3 branches missed.">            switch (valueArrays.size()) {</span>
+                case 0:
+<span class="nc" id="L99">                    throw new ValueArrayException(Lang.get(&quot;err_noRomFound&quot;));</span>
+                case 1:
+<span class="fc" id="L101">                    return valueArrays.get(0);</span>
+                default:
+<span class="fc" id="L103">                    return new MultiValueArray(valueArrays.toArray(new ValueArray[0]));</span>
+            }
+        }
+    }
+
+    /**
+     * Error building the {@link MultiValueArray}
+     */
+    public static class ValueArrayException extends Exception {
+        /**
+         * Creates a new instance
+         *
+         * @param message the message
+         */
+        public ValueArrayException(String message) {
+<span class="fc" id="L118">            super(message);</span>
+<span class="fc" id="L119">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

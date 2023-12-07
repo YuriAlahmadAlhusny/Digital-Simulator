@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UnitTester.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing</a> &gt; <span class="el_source">UnitTester.java</span></div><h1>UnitTester.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.ProgramMemory;
+import de.neemann.digital.core.memory.RAMInterface;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Helper to test circuits
+ */
+public class UnitTester {
+    private final Model model;
+<span class="fc" id="L30">    private boolean initCalled = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param file the file to load
+     * @throws IOException              IOException
+     * @throws ElementNotFoundException ElementNotFoundException
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     */
+<span class="fc" id="L41">    public UnitTester(File file) throws IOException, ElementNotFoundException, PinException, NodeException {</span>
+<span class="fc" id="L42">        ElementLibrary library = new ElementLibrary();</span>
+<span class="fc" id="L43">        library.setRootFilePath(file.getAbsoluteFile().getParentFile());</span>
+<span class="fc" id="L44">        initLibrary(library);</span>
+<span class="fc" id="L45">        ShapeFactory shapeFactory = new ShapeFactory(library);</span>
+<span class="fc" id="L46">        Circuit circuit = Circuit.loadCircuit(file, shapeFactory);</span>
+<span class="fc" id="L47">        model = new ModelCreator(circuit, library).createModel(false);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Overload this method if you have to modify the library.
+     *
+     * @param library the used library
+     */
+    protected void initLibrary(ElementLibrary library) {
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Write data to a memory component
+     *
+     * @param filter the filter to identify the memory component
+     * @param data   the data to write
+     * @return this for chained calls
+     * @throws TestException TestException
+     */
+    public UnitTester writeDataTo(MemoryFilter filter, DataField data) throws TestException {
+<span class="fc" id="L67">        getMemory(filter).setProgramMemory(data);</span>
+<span class="fc" id="L68">        return this;</span>
+    }
+
+    /**
+     * Returns the memory identified by the filter
+     *
+     * @param filter the filter to identify the memory component
+     * @return the memory component
+     * @throws TestException TestException
+     */
+    public ProgramMemory getMemory(MemoryFilter filter) throws TestException {
+<span class="fc bfc" id="L79" title="All 4 branches covered.">        Node node = getNode(n -&gt; n instanceof ProgramMemory &amp;&amp; filter.accept((ProgramMemory) n));</span>
+<span class="fc" id="L80">        return (ProgramMemory) node;</span>
+    }
+
+    /**
+     * Used to get the RAM if there is only on in the circuit
+     *
+     * @return the RSM component
+     * @throws TestException TestException
+     */
+    public RAMInterface getRAM() throws TestException {
+<span class="nc" id="L90">        return getRAM(pm -&gt; true);</span>
+    }
+
+    /**
+     * Used to get a RAM component from the circuit
+     *
+     * @param filter the filter to identify the memory component
+     * @return the memory component
+     * @throws TestException TestException
+     */
+    public RAMInterface getRAM(MemoryFilter filter) throws TestException {
+<span class="fc bfc" id="L101" title="All 4 branches covered.">        Node node = getNode(n -&gt; n instanceof RAMInterface &amp;&amp; filter.accept((RAMInterface) n));</span>
+<span class="fc" id="L102">        return (RAMInterface) node;</span>
+    }
+
+    /**
+     * Used to find a specific node in the circuit.
+     *
+     * @param filter the filter io identify the node.
+     * @return the node
+     * @throws TestException TestException
+     */
+    public Node getNode(Model.NodeFilter&lt;Node&gt; filter) throws TestException {
+<span class="fc" id="L113">        List&lt;Node&gt; list = model.findNode(filter);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (list.size() == 0)</span>
+<span class="nc" id="L115">            throw new TestException(&quot;no node found&quot;);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        else if (list.size() &gt; 1)</span>
+<span class="nc" id="L117">            throw new TestException(&quot;multiple nodes found&quot;);</span>
+        else {
+<span class="fc" id="L119">            return list.get(0);</span>
+        }
+    }
+
+    /**
+     * Runs the simulation until a break signal is detected
+     *
+     * @return this for chained calls
+     * @throws TestException TestException
+     * @throws NodeException NodeException
+     */
+    public UnitTester runToBreak() throws TestException, NodeException {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (!model.isRunToBreakAllowed())</span>
+<span class="nc" id="L132">            throw new TestException(&quot;model has no break or no clock element&quot;);</span>
+
+<span class="fc" id="L134">        getModel().runToBreak();</span>
+<span class="fc" id="L135">        return this;</span>
+    }
+
+    /**
+     * @return the model
+     * @throws NodeException NodeException
+     */
+    public Model getModel() throws NodeException {
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (!initCalled) {</span>
+<span class="fc" id="L144">            model.init();</span>
+<span class="fc" id="L145">            initCalled = true;</span>
+        }
+<span class="fc" id="L147">        return model;</span>
+    }
+
+    /**
+     * Exception according to this test
+     */
+    public static final class TestException extends Exception {
+        private TestException(String message) {
+<span class="nc" id="L155">            super(message);</span>
+<span class="nc" id="L156">        }</span>
+    }
+
+    /**
+     * Filter to identify a memory component.
+     */
+    public interface MemoryFilter {
+        /**
+         * Used to identify the component
+         *
+         * @param pm the memory component
+         * @return true if this component is to use
+         */
+        boolean accept(ProgramMemory pm);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

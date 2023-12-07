@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:11 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="14.6mm"
+   height="21.8mm"
+   viewBox="11 3 73 109">
+<g stroke-linecap="square">
+<text text-anchor="end" x="30.0" y="31.0" fill="#000000" style="font-size:24px">A</text>
+<line x1="32.0" y1="5.0" x2="82.0" y2="5.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<text text-anchor="end" x="30.0" y="66.0" fill="#000000" style="font-size:24px">B</text>
+<line x1="32.0" y1="40.0" x2="82.0" y2="40.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<text text-anchor="end" x="30.0" y="101.0" fill="#000000" style="font-size:24px">C</text>
+<line x1="32.0" y1="75.0" x2="82.0" y2="75.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<line x1="32.0" y1="110.0" x2="82.0" y2="110.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<line x1="32.0" y1="5.0" x2="32.0" y2="110.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<line x1="32.0" y1="35.0" x2="57.0" y2="35.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="32.0" y1="70.0" x2="57.0" y2="70.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="32.0" y1="105.0" x2="57.0" y2="105.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="57.0" y1="5.0" x2="57.0" y2="110.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+<line x1="57.0" y1="35.0" x2="82.0" y2="35.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="57.0" y1="45.0" x2="82.0" y2="45.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="57.0" y1="70.0" x2="57.0" y2="45.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="57.0" y1="105.0" x2="82.0" y2="105.0" stroke="#000000" stroke-linecap="square" stroke-width="4.0" />
+<line x1="82.0" y1="5.0" x2="82.0" y2="110.0" stroke="#000000" stroke-linecap="square" stroke-width="1.0" stroke-dasharray="4.0,4.0" />
+</g>
+</svg>

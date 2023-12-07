@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>External.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">External.java</span></div><h1>External.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.extern.handler.ProcessInterface;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+
+import javax.swing.*;
+import java.io.IOException;
+
+/**
+ * The external component
+ */
+public class External extends Node implements Element {
+
+    /**
+     * The external component description
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(External.class) {</span>
+        @Override
+        public PinDescriptions getInputDescription(ElementAttributes elementAttributes) {
+<span class="fc" id="L28">            return new PortDefinition(elementAttributes.get(Keys.EXTERNAL_INPUTS)).getPinDescriptions(PinDescription.Direction.input);</span>
+        }
+
+        @Override
+        public PinDescriptions getOutputDescriptions(ElementAttributes elementAttributes) {
+<span class="fc" id="L33">            return new PortDefinition(elementAttributes.get(Keys.EXTERNAL_OUTPUTS)).getPinDescriptions(PinDescription.Direction.output);</span>
+        }
+
+    }
+<span class="fc" id="L37">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.WIDTH)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.EXTERNAL_INPUTS)</span>
+<span class="fc" id="L40">            .addAttribute(Keys.EXTERNAL_OUTPUTS)</span>
+<span class="fc" id="L41">            .addAttribute(Keys.EXTERNAL_CODE)</span>
+<span class="fc" id="L42">            .addAttribute(Keys.APPLICATION_TYPE)</span>
+<span class="fc" id="L43">            .addAttribute(Keys.GHDL_OPTIONS)</span>
+<span class="fc" id="L44">            .addAttribute(Keys.IVERILOG_OPTIONS)</span>
+<span class="fc" id="L45">            .supportsHDL();</span>
+
+    private final Application.Type type;
+    private final PortDefinition ins;
+    private final PortDefinition outs;
+    private final ElementAttributes attr;
+    private final ObservableValues outputs;
+    private final String label;
+    private String code;
+    private ObservableValues inputs;
+    private ProcessInterface processInterface;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+    public External(ElementAttributes attr) {
+<span class="fc" id="L63">        super(true);</span>
+<span class="fc" id="L64">        this.attr = attr;</span>
+<span class="fc" id="L65">        ins = new PortDefinition(attr.get(Keys.EXTERNAL_INPUTS));</span>
+<span class="fc" id="L66">        outs = new PortDefinition(attr.get(Keys.EXTERNAL_OUTPUTS));</span>
+<span class="fc" id="L67">        outputs = outs.createOutputs();</span>
+<span class="fc" id="L68">        label = attr.getLabel();</span>
+<span class="fc" id="L69">        type = attr.get(Keys.APPLICATION_TYPE);</span>
+<span class="fc" id="L70">        code = attr.get(Keys.EXTERNAL_CODE);</span>
+<span class="fc" id="L71">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="nc" id="L75">        this.inputs = inputs;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (int i = 0; i &lt; inputs.size(); i++)</span>
+<span class="nc" id="L77">            inputs.get(i).checkBits(ins.getPort(i).getBits(), this, i).addObserverToValue(this);</span>
+<span class="nc" id="L78">    }</span>
+
+
+    @Override
+    public void readInputs() throws NodeException {
+        try {
+<span class="nc" id="L84">            processInterface.writeValues(inputs);</span>
+<span class="nc" id="L85">        } catch (IOException e) {</span>
+<span class="nc" id="L86">            throw new NodeException(Lang.get(&quot;err_errorWritingDataToProcess&quot;), this, -1, inputs, e);</span>
+<span class="nc" id="L87">        }</span>
+<span class="nc" id="L88">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+        try {
+<span class="nc" id="L93">            processInterface.readValues(outputs);</span>
+<span class="nc" id="L94">        } catch (IOException e) {</span>
+<span class="nc" id="L95">            throw new NodeException(Lang.get(&quot;err_errorReadingDataFromProcess&quot;), this, -1, outputs, e);</span>
+<span class="nc" id="L96">        }</span>
+<span class="nc" id="L97">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="nc" id="L101">        return outputs;</span>
+    }
+
+    @Override
+    public void init(Model model) throws NodeException {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (label.isEmpty())</span>
+<span class="nc" id="L107">            throw new NodeException(Lang.get(&quot;err_emptyLabelIsNotAllowed&quot;));</span>
+
+        try {
+<span class="nc" id="L110">            Application app = Application.create(type, attr);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (app == null)</span>
+<span class="nc" id="L112">                throw new NodeException(Lang.get(&quot;err_errorCreatingProcess&quot;), this, -1, null);</span>
+
+<span class="nc" id="L114">            processInterface = app.start(label, code, ins, outs, model.getRootPath());</span>
+<span class="nc" id="L115">        } catch (IOException e) {</span>
+<span class="nc" id="L116">            throw new NodeException(Lang.get(&quot;err_errorCreatingProcess&quot;), this, -1, null, e);</span>
+<span class="nc" id="L117">        }</span>
+
+<span class="nc" id="L119">        model.addObserver(event -&gt; {</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            if (event.getType().equals(ModelEventType.CLOSED)) {</span>
+                try {
+<span class="nc" id="L122">                    processInterface.close();</span>
+<span class="nc" id="L123">                } catch (IOException e) {</span>
+<span class="nc" id="L124">                    SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorClosingExternalProcess&quot;)).addCause(e));</span>
+<span class="nc" id="L125">                }</span>
+            }
+<span class="nc" id="L127">        }, ModelEventType.CLOSED);</span>
+<span class="nc" id="L128">    }</span>
+
+    /**
+     * Sets the code to use.
+     *
+     * @param code the code
+     */
+    public void setCode(String code) {
+<span class="nc" id="L136">        this.code = code;</span>
+<span class="nc" id="L137">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

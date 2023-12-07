@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:44 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="4.4mm"
+   height="5.6mm"
+   viewBox="-18 -14 22 28">
+<g stroke-linecap="square">
+<text text-anchor="end" x="-3.0" y="9.0" fill="#000000" style="font-size:24px">1</text>
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+</g>
+</svg>

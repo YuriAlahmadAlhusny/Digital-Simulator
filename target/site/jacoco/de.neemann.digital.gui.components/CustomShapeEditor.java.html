@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomShapeEditor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">CustomShapeEditor.java</span></div><h1>CustomShapeEditor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.shapes.custom.CustomShapeDescription;
+import de.neemann.digital.draw.shapes.custom.svg.SvgException;
+import de.neemann.digital.draw.shapes.custom.svg.SvgImporter;
+import de.neemann.digital.draw.shapes.custom.svg.SvgTemplate;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.MyFileChooser;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
+
+/**
+ * Editor used to define a custom shape.
+ * The actual implementation is only able to create a simple dummy shape.
+ */
+public class CustomShapeEditor extends EditorFactory.LabelEditor&lt;CustomShapeDescription&gt; {
+    private CustomShapeDescription customShapeDescription;
+    private ToolTipAction clear;
+    private ToolTipAction load;
+    private ToolTipAction template;
+    private static File lastSVGFile;
+
+    /**
+     * Creates a new instance
+     *
+     * @param customShapeDescription the shape to edit
+     * @param key                    the used key
+     */
+<span class="nc" id="L45">    public CustomShapeEditor(CustomShapeDescription customShapeDescription, Key&lt;CustomShapeDescription&gt; key) {</span>
+<span class="nc" id="L46">        this.customShapeDescription = customShapeDescription;</span>
+<span class="nc" id="L47">    }</span>
+
+    @Override
+    public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L51">        JPanel panel = new JPanel(new GridLayout(1, 2));</span>
+<span class="nc" id="L52">        clear = new ToolTipAction(Lang.get(&quot;btn_clearData&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L55">                customShapeDescription = new CustomShapeDescription.Builder().build();</span>
+<span class="nc" id="L56">            }</span>
+        };
+<span class="nc" id="L58">        panel.add(clear.createJButton());</span>
+<span class="nc" id="L59">        load = new ToolTipAction(Lang.get(&quot;btn_loadSvg&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L62">                JFileChooser fc = getjFileChooser();</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (fc.showOpenDialog(getAttributeDialog()) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L64">                    lastSVGFile = fc.getSelectedFile();</span>
+                    try {
+<span class="nc" id="L66">                        CustomShapeDescription csd = new SvgImporter(fc.getSelectedFile()).create();</span>
+<span class="nc" id="L67">                        final Main main = getAttributeDialog().getMain();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                        if (main != null) {</span>
+<span class="nc" id="L69">                            csd.checkCompatibility(main.getCircuitComponent().getCircuit());</span>
+<span class="nc" id="L70">                            customShapeDescription = csd;</span>
+                        }
+<span class="nc" id="L72">                    } catch (IOException | SvgException | PinException e1) {</span>
+<span class="nc" id="L73">                        new ErrorMessage(Lang.get(&quot;msg_errorImportingSvg&quot;)).addCause(e1).show(getAttributeDialog());</span>
+<span class="nc" id="L74">                    }</span>
+                }
+<span class="nc" id="L76">            }</span>
+<span class="nc" id="L77">        }.setToolTip(Lang.get(&quot;btn_loadSvg_tt&quot;));</span>
+<span class="nc" id="L78">        panel.add(load.createJButton());</span>
+<span class="nc" id="L79">        template = new ToolTipAction(Lang.get(&quot;btn_saveTemplate&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L82">                JFileChooser fc = getjFileChooser();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                if (fc.showSaveDialog(getAttributeDialog()) == JFileChooser.APPROVE_OPTION) {</span>
+                    try {
+<span class="nc" id="L85">                        final Main main = getAttributeDialog().getMain();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                        if (main != null) {</span>
+<span class="nc" id="L87">                            File file = SaveAsHelper.checkSuffix(fc.getSelectedFile(), &quot;svg&quot;);</span>
+<span class="nc" id="L88">                            lastSVGFile = file;</span>
+<span class="nc" id="L89">                            try (SvgTemplate tc = new SvgTemplate(file, main.getCircuitComponent().getCircuit())) {</span>
+<span class="nc" id="L90">                                tc.create();</span>
+                            }
+                        }
+<span class="nc" id="L93">                    } catch (Exception e1) {</span>
+<span class="nc" id="L94">                        new ErrorMessage(Lang.get(&quot;msg_errorCreatingSvgTemplate&quot;)).addCause(e1).show(getAttributeDialog());</span>
+<span class="nc" id="L95">                    }</span>
+                }
+<span class="nc" id="L97">            }</span>
+<span class="nc" id="L98">        }.setToolTip(Lang.get(&quot;btn_saveTemplate_tt&quot;));</span>
+<span class="nc" id="L99">        panel.add(template.createJButton());</span>
+<span class="nc" id="L100">        return panel;</span>
+    }
+
+    private JFileChooser getjFileChooser() {
+<span class="nc" id="L104">        File path = null;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (lastSVGFile == null)</span>
+<span class="nc" id="L106">            lastSVGFile = SaveAsHelper.checkSuffix(getAttributeDialog().getMain().getBaseFileName(), &quot;svg&quot;);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (lastSVGFile != null)</span>
+<span class="nc" id="L108">            path = lastSVGFile.getParentFile();</span>
+
+<span class="nc" id="L110">        JFileChooser fc = new MyFileChooser(path);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (lastSVGFile != null)</span>
+<span class="nc" id="L112">            fc.setSelectedFile(lastSVGFile);</span>
+<span class="nc" id="L113">        return fc;</span>
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+<span class="nc" id="L118">        super.setEnabled(enabled);</span>
+<span class="nc" id="L119">        load.setEnabled(enabled);</span>
+<span class="nc" id="L120">        clear.setEnabled(enabled);</span>
+<span class="nc" id="L121">        template.setEnabled(enabled);</span>
+<span class="nc" id="L122">    }</span>
+
+    @Override
+    public CustomShapeDescription getValue() {
+<span class="nc" id="L126">        return customShapeDescription;</span>
+    }
+
+    @Override
+    public void setValue(CustomShapeDescription value) {
+<span class="nc" id="L131">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CircuitScrollPanel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">CircuitScrollPanel.java</span></div><h1>CircuitScrollPanel.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.draw.graphics.GraphicMinMax;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * A scroll panel used by the circuit component
+ */
+public class CircuitScrollPanel extends JPanel {
+    private static final int BORDER = SIZE * 10;
+    private final CircuitComponent circuitComponent;
+    private final JScrollBar horizontal;
+    private final JScrollBar vertical;
+    private GraphicMinMax graphicMinMax;
+    private AffineTransform transform;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuitComponent the circuit component to use
+     */
+    public CircuitScrollPanel(CircuitComponent circuitComponent) {
+<span class="nc" id="L37">        super(new BorderLayout());</span>
+<span class="nc" id="L38">        horizontal = new JScrollBar(JScrollBar.HORIZONTAL);</span>
+<span class="nc" id="L39">        vertical = new JScrollBar(JScrollBar.VERTICAL);</span>
+
+<span class="nc" id="L41">        this.circuitComponent = circuitComponent;</span>
+<span class="nc" id="L42">        add(circuitComponent, BorderLayout.CENTER);</span>
+<span class="nc" id="L43">        add(horizontal, BorderLayout.SOUTH);</span>
+<span class="nc" id="L44">        add(vertical, BorderLayout.EAST);</span>
+
+<span class="nc" id="L46">        horizontal.addAdjustmentListener(adjustmentEvent -&gt; {</span>
+<span class="nc bnc" id="L47" title="All 4 branches missed.">            if (adjustmentEvent.getValueIsAdjusting() &amp;&amp; transform != null)</span>
+<span class="nc" id="L48">                circuitComponent.translateCircuitToX(-adjustmentEvent.getValue() * transform.getScaleX());</span>
+<span class="nc" id="L49">        });</span>
+<span class="nc" id="L50">        vertical.addAdjustmentListener(adjustmentEvent -&gt; {</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">            if (adjustmentEvent.getValueIsAdjusting() &amp;&amp; transform != null)</span>
+<span class="nc" id="L52">                circuitComponent.translateCircuitToY(-adjustmentEvent.getValue() * transform.getScaleY());</span>
+<span class="nc" id="L53">        });</span>
+
+<span class="nc" id="L55">        addComponentListener(new ComponentAdapter() {</span>
+            @Override
+            public void componentResized(ComponentEvent componentEvent) {
+<span class="nc bnc" id="L58" title="All 2 branches missed.">                if (transform != null)</span>
+<span class="nc" id="L59">                    updateBars();</span>
+<span class="nc" id="L60">            }</span>
+        });
+
+<span class="nc" id="L63">        circuitComponent.setCircuitScrollPanel(this);</span>
+<span class="nc" id="L64">    }</span>
+
+    private GraphicMinMax getCircuitSize() {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (graphicMinMax == null) {</span>
+<span class="nc" id="L68">            graphicMinMax = new GraphicMinMax();</span>
+<span class="nc" id="L69">            circuitComponent.getCircuit().drawTo(graphicMinMax);</span>
+        }
+<span class="nc" id="L71">        return graphicMinMax;</span>
+    }
+
+    void sizeChanged() {
+<span class="nc" id="L75">        graphicMinMax = null;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (transform != null)</span>
+<span class="nc" id="L77">            updateBars();</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Updates the transformation
+     *
+     * @param transform the transform
+     */
+    void transformChanged(AffineTransform transform) {
+<span class="nc" id="L86">        this.transform = transform;</span>
+<span class="nc" id="L87">        updateBars();</span>
+<span class="nc" id="L88">    }</span>
+
+    private void updateBars() {
+<span class="nc" id="L91">        GraphicMinMax gr = getCircuitSize();</span>
+
+<span class="nc bnc" id="L93" title="All 6 branches missed.">        if (gr.getMin() == null || gr.getMax() == null || !circuitComponent.isManualScale()) {</span>
+<span class="nc" id="L94">            horizontal.setVisible(false);</span>
+<span class="nc" id="L95">            vertical.setVisible(false);</span>
+        } else {
+<span class="nc" id="L97">            Point2D min = new Point2D.Float();</span>
+<span class="nc" id="L98">            Point2D max = new Point2D.Float();</span>
+            try {
+<span class="nc" id="L100">                transform.inverseTransform(new Point2D.Float(0, 0), min);</span>
+<span class="nc" id="L101">                transform.inverseTransform(new Point2D.Float(getWidth(), getHeight()), max);</span>
+<span class="nc" id="L102">                setValues(horizontal, min.getX(), max.getX(), gr.getMin().x, gr.getMax().x);</span>
+<span class="nc" id="L103">                setValues(vertical, min.getY(), max.getY(), gr.getMin().y, gr.getMax().y);</span>
+<span class="nc" id="L104">            } catch (NoninvertibleTransformException e) {</span>
+                // can not happen! Scaling is never zero!
+<span class="nc" id="L106">                e.printStackTrace();</span>
+<span class="nc" id="L107">            }</span>
+        }
+<span class="nc" id="L109">    }</span>
+
+    private void setValues(JScrollBar bar, double viewMin, double viewMax, int circuitMin, int circuitMax) {
+<span class="nc" id="L112">        int border = Math.max(BORDER, (circuitMax - circuitMin) / 10);</span>
+<span class="nc" id="L113">        circuitMin -= border;</span>
+<span class="nc" id="L114">        circuitMax += border;</span>
+<span class="nc" id="L115">        int extent = (int) (viewMax - viewMin);</span>
+<span class="nc" id="L116">        bar.setValues((int) viewMin, extent, circuitMin, circuitMax);</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">        bar.setVisible(viewMin &gt; circuitMin || viewMax &lt; circuitMax);</span>
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * @return the width of the bars
+     */
+    int getBarWidth() {
+<span class="nc" id="L124">        return vertical.getPreferredSize().width;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Value.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core</a> &gt; <span class="el_source">Value.java</span></div><h1>Value.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core;
+
+import de.neemann.digital.core.io.InValue;
+
+import static de.neemann.digital.core.ObservableValue.zMaskString;
+
+/**
+ * Represents a copy of a value.
+ * Call {@link ObservableValue#getCopy()} to obtain a value.
+ */
+public class Value {
+    private final long value;
+    private final long highZ;
+    private final int bits;
+    private final long mask;
+
+    /**
+     * Creates a new high z Value
+     *
+     * @param bits the number of high z bits
+     */
+<span class="fc" id="L27">    public Value(int bits) {</span>
+<span class="fc" id="L28">        this.bits = bits;</span>
+<span class="fc" id="L29">        this.mask = Bits.mask(bits);</span>
+<span class="fc" id="L30">        this.value = 0;</span>
+<span class="fc" id="L31">        this.highZ = mask;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Creates a new Value
+     *
+     * @param value the value
+     * @param bits  the number of bits
+     */
+<span class="fc" id="L40">    public Value(long value, int bits) {</span>
+<span class="fc" id="L41">        this.bits = bits;</span>
+<span class="fc" id="L42">        this.mask = Bits.mask(bits);</span>
+<span class="fc" id="L43">        this.value = value &amp; mask;</span>
+<span class="fc" id="L44">        this.highZ = 0;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Creates a new Value
+     *
+     * @param value the value
+     * @param bits  the number of bits
+     */
+<span class="fc" id="L53">    public Value(InValue value, int bits) {</span>
+<span class="fc" id="L54">        this.bits = bits;</span>
+<span class="fc" id="L55">        this.mask = Bits.mask(bits);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (value.isHighZ()) {</span>
+<span class="fc" id="L57">            this.value = 0;</span>
+<span class="fc" id="L58">            this.highZ = mask;</span>
+        } else {
+<span class="fc" id="L60">            this.value = value.getValue() &amp; mask;</span>
+<span class="fc" id="L61">            this.highZ = 0;</span>
+        }
+<span class="fc" id="L63">    }</span>
+
+<span class="nc" id="L65">    Value(ObservableValue observableValue) {</span>
+<span class="nc" id="L66">        value = observableValue.getValue();</span>
+<span class="nc" id="L67">        highZ = observableValue.getHighZ();</span>
+<span class="nc" id="L68">        bits = observableValue.getBits();</span>
+<span class="nc" id="L69">        this.mask = Bits.mask(bits);</span>
+<span class="nc" id="L70">    }</span>
+
+    /**
+     * @return true if one of the bits is in high z state
+     */
+    public boolean isHighZ() {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        return highZ != 0;</span>
+    }
+
+    /**
+     * @return the signals value
+     */
+    public long getValue() {
+<span class="fc" id="L83">        return value;</span>
+    }
+
+    /**
+     * @return the signals value
+     */
+    public long getValueSigned() {
+<span class="fc" id="L90">        return Bits.signExtend(value, bits);</span>
+    }
+
+    /**
+     * @return a bool value
+     */
+    public boolean getBool() {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        return value != 0;</span>
+    }
+
+    /**
+     * @return the number of bits
+     */
+    public int getBits() {
+<span class="fc" id="L104">        return bits;</span>
+    }
+
+    /**
+     * returns the actual value as a string
+     *
+     * @return the value as string
+     */
+    @Override
+    public String toString() {
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (highZ != 0)</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (highZ == mask)</span>
+<span class="fc" id="L116">                return &quot;Z&quot;;</span>
+            else {
+<span class="nc" id="L118">                return zMaskString(value, highZ, bits);</span>
+            }
+        else {
+<span class="fc" id="L121">            return IntFormat.toShortHex(value);</span>
+        }
+    }
+
+    /**
+     * Compares two values
+     *
+     * @param other the other value
+     * @return true if equal
+     */
+    public boolean isEqual(Value other) {
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (highZ != other.highZ)</span>
+<span class="nc" id="L133">            return false;</span>
+
+<span class="fc" id="L135">        long m = ~highZ;</span>
+
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        return (value &amp; m) == (other.value &amp; m);</span>
+    }
+
+    /**
+     * Applies the value to the oObservable
+     *
+     * @param val the observable value
+     */
+    public void applyTo(ObservableValue val) {
+<span class="nc" id="L146">        val.set(value, highZ);</span>
+<span class="nc" id="L147">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Telnet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io.telnet</a> &gt; <span class="el_source">Telnet.java</span></div><h1>Telnet.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2021 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io.telnet;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import java.io.IOException;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The telnet node
+ */
+public class Telnet extends Node implements Element {
+
+    /**
+     * The telnet server description
+     */
+<span class="fc" id="L28">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(Telnet.class,</span>
+<span class="fc" id="L29">            input(&quot;in&quot;), input(&quot;C&quot;).setClock(), input(&quot;wr&quot;), input(&quot;rd&quot;))</span>
+<span class="fc" id="L30">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L32">            .addAttribute(Keys.TELNET_ESCAPE)</span>
+<span class="fc" id="L33">            .addAttribute(Keys.PORT);</span>
+
+    private final ObservableValue dataOut;
+    private final ObservableValue dataAvail;
+    private final int port;
+    private final boolean telnetEscape;
+    private ObservableValue dataIn;
+    private ObservableValue clockValue;
+    private ObservableValue writeEnable;
+    private ObservableValue readEnableValue;
+    private Server server;
+    private boolean lastClock;
+    private boolean readEnable;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes The components attributes
+     */
+<span class="fc" id="L52">    public Telnet(ElementAttributes attributes) {</span>
+<span class="fc" id="L53">        dataOut = new ObservableValue(&quot;out&quot;, 8)</span>
+<span class="fc" id="L54">                .setToHighZ()</span>
+<span class="fc" id="L55">                .setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L56">        dataAvail = new ObservableValue(&quot;av&quot;, 1)</span>
+<span class="fc" id="L57">                .setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L58">        port = attributes.get(Keys.PORT);</span>
+<span class="fc" id="L59">        telnetEscape = attributes.get(Keys.TELNET_ESCAPE);</span>
+<span class="fc" id="L60">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L64">        dataIn = inputs.get(0).checkBits(8, this, 0);</span>
+<span class="fc" id="L65">        clockValue = inputs.get(1).checkBits(1, this, 1).addObserverToValue(this);</span>
+<span class="fc" id="L66">        writeEnable = inputs.get(2).checkBits(1, this, 2);</span>
+<span class="fc" id="L67">        readEnableValue = inputs.get(3).checkBits(1, this, 3).addObserverToValue(this);</span>
+<span class="fc" id="L68">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L72">        boolean clock = clockValue.getBool();</span>
+<span class="fc" id="L73">        readEnable = readEnableValue.getBool();</span>
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">        if (clock &amp; !lastClock) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (writeEnable.getBool())</span>
+<span class="nc" id="L76">                server.send((int) dataIn.getValue());</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (readEnable)</span>
+<span class="nc" id="L78">                server.deleteOldest();</span>
+        }
+<span class="fc" id="L80">        lastClock = clock;</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (readEnable)</span>
+<span class="nc" id="L86">            dataOut.setValue(server.getData());</span>
+        else
+<span class="fc" id="L88">            dataOut.setToHighZ();</span>
+
+<span class="fc" id="L90">        dataAvail.setBool(server.hasData());</span>
+<span class="fc" id="L91">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() throws PinException {
+<span class="fc" id="L95">        return new ObservableValues(dataOut, dataAvail);</span>
+    }
+
+    @Override
+    public void init(Model model) throws NodeException {
+        try {
+<span class="fc" id="L101">            server = ServerHolder.INSTANCE.getServer(port);</span>
+<span class="nc" id="L102">        } catch (IOException e) {</span>
+<span class="nc" id="L103">            throw new NodeException(Lang.get(&quot;err_couldNotCreateServer&quot;), e);</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">        server.setTelnetEscape(telnetEscape);</span>
+<span class="fc" id="L106">        server.setTelnetNode(this, model);</span>
+<span class="fc" id="L107">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

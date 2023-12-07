@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TT2Exporter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.tt2</a> &gt; <span class="el_source">TT2Exporter.java</span></div><h1>TT2Exporter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.tt2;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.builder.*;
+import de.neemann.digital.builder.jedec.FuseMapFillerException;
+import de.neemann.digital.lang.Lang;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+/**
+ * Exporter for the tt2 format needed by the ATF15xx fitters from ATMEL.
+ */
+public class TT2Exporter implements ExpressionExporter&lt;TT2Exporter&gt; {
+    private final BuilderCollector builder;
+    private final CleanNameBuilder cleanNameBuilder;
+    private final PinMap pinMap;
+    private String projectName;
+    private String device;
+    private OutputStreamWriter writer;
+    private HashMap&lt;String, Integer&gt; varIndexMap;
+    private HashMap&lt;String, Integer&gt; outIndexMap;
+    private TreeMap&lt;ProdInput, StateSet&gt; termMap;
+    private ArrayList&lt;String&gt; inputs;
+    private ArrayList&lt;String&gt; outputs;
+    private StateSet constants;
+<span class="fc" id="L35">    private boolean constantsUsed = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param projectName project name
+     */
+<span class="fc" id="L42">    public TT2Exporter(String projectName) {</span>
+        // if simple aliases are filtered out, a direct input to output connection isn't possible anymore
+<span class="fc" id="L44">        builder = new BuilderCollector();</span>
+<span class="fc" id="L45">        cleanNameBuilder = new CleanNameBuilder(builder);</span>
+<span class="fc" id="L46">        pinMap = cleanNameBuilder.createPinMap().setClockPin(43);</span>
+<span class="fc" id="L47">        device = &quot;f1502ispplcc44&quot;;</span>
+<span class="fc" id="L48">        this.projectName = projectName;</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public BuilderInterface getBuilder() {
+<span class="fc" id="L53">        return cleanNameBuilder;</span>
+    }
+
+    /**
+     * Sets the device name used
+     *
+     * @param device the device name
+     * @return this for chained calls
+     */
+    public TT2Exporter setDevice(String device) {
+<span class="nc" id="L63">        this.device = device;</span>
+<span class="nc" id="L64">        return this;</span>
+    }
+
+    @Override
+    public PinMap getPinMapping() {
+<span class="fc" id="L69">        return pinMap;</span>
+    }
+
+    @Override
+    public void writeTo(OutputStream out) throws FuseMapFillerException, IOException, PinMapException {
+<span class="fc" id="L74">        writeTo(new OutputStreamWriter(out, StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L75">    }</span>
+
+    private void writeTo(OutputStreamWriter writer) throws IOException, FuseMapFillerException, PinMapException {
+<span class="fc" id="L78">        createProductTerms();</span>
+
+<span class="fc" id="L80">        this.writer = writer;</span>
+<span class="fc" id="L81">        line(&quot;#$ TOOL CUPL&quot;);</span>
+<span class="fc" id="L82">        line(&quot;# Berkeley PLA format generated using Digital&quot;);</span>
+<span class="fc" id="L83">        line(&quot;#$ TITLE  &quot; + projectName);</span>
+<span class="fc" id="L84">        line(&quot;#$ DEVICE  &quot; + device);</span>
+<span class="fc" id="L85">        assignPinsAndNodes();</span>
+        //line(&quot;#$ PINS &quot; + getPins());
+<span class="fc" id="L87">        line(&quot;.i &quot; + inputs.size());</span>
+<span class="fc" id="L88">        line(&quot;.o &quot; + outputs.size());</span>
+<span class="fc" id="L89">        line(&quot;.type f&quot;);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (inputs.size() &gt; 0)</span>
+<span class="fc" id="L91">            line(&quot;.ilb &quot; + strList(inputs));</span>
+<span class="fc" id="L92">        line(&quot;.ob &quot; + strList(outputs));</span>
+<span class="fc" id="L93">        line(&quot;.phase &quot; + getPhase());</span>
+
+<span class="fc" id="L95">        line(&quot;.p &quot; + termMap.size());</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (Map.Entry&lt;ProdInput, StateSet&gt; e : termMap.entrySet())</span>
+<span class="fc" id="L97">            line(e.getKey() + &quot; &quot; + e.getValue());</span>
+
+<span class="fc" id="L99">        line(&quot;.e&quot;);</span>
+<span class="fc" id="L100">        writer.close();</span>
+<span class="fc" id="L101">    }</span>
+
+    private void createProductTerms() throws FuseMapFillerException {
+<span class="fc" id="L104">        inputs = builder.getInputs();</span>
+<span class="fc" id="L105">        varIndexMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L106">        int i = 0;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (String name : inputs) {</span>
+<span class="fc" id="L108">            checkName(name);</span>
+<span class="fc" id="L109">            varIndexMap.put(name, i);</span>
+<span class="fc" id="L110">            i++;</span>
+<span class="fc" id="L111">        }</span>
+
+<span class="fc" id="L113">        ProdInput clkIn = null;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (!builder.getRegistered().isEmpty()) {</span>
+<span class="fc" id="L115">            int clk = inputs.size();</span>
+<span class="fc" id="L116">            inputs.add(&quot;CLK&quot;);</span>
+<span class="fc" id="L117">            varIndexMap.put(&quot;CLK&quot;, i);</span>
+<span class="fc" id="L118">            i++;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            for (String reg : builder.getRegistered().keySet()) {</span>
+<span class="fc" id="L120">                inputs.add(reg + &quot;.Q&quot;);</span>
+<span class="fc" id="L121">                varIndexMap.put(reg, i);</span>
+<span class="fc" id="L122">                i++;</span>
+<span class="fc" id="L123">            }</span>
+
+<span class="fc" id="L125">            clkIn = new ProdInput(inputs.size());</span>
+<span class="fc" id="L126">            clkIn.set(clk, 1);</span>
+        }
+
+<span class="fc" id="L129">        ArrayList&lt;Integer&gt; clkInList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L130">        outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L131">        outIndexMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L132">        i = 0;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (String name : builder.getOutputs()) {</span>
+<span class="fc" id="L134">            checkName(name);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (builder.getRegistered().containsKey(name)) {</span>
+<span class="fc" id="L136">                outIndexMap.put(name + &quot;.REG&quot;, i++);</span>
+<span class="fc" id="L137">                outputs.add(name + &quot;.REG&quot;);</span>
+<span class="fc" id="L138">                outIndexMap.put(name + &quot;.AR&quot;, i++);</span>
+<span class="fc" id="L139">                outputs.add(name + &quot;.AR&quot;);</span>
+<span class="fc" id="L140">                clkInList.add(i);</span>
+<span class="fc" id="L141">                outIndexMap.put(name + &quot;.C&quot;, i++);</span>
+<span class="fc" id="L142">                outputs.add(name + &quot;.C&quot;);</span>
+            } else {
+<span class="fc" id="L144">                outIndexMap.put(name, i++);</span>
+<span class="fc" id="L145">                outputs.add(name);</span>
+            }
+<span class="fc" id="L147">        }</span>
+
+<span class="fc" id="L149">        termMap = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        if (!builder.getRegistered().isEmpty()) { // connect clock and ar</span>
+<span class="fc" id="L151">            StateSet clk = new StateSet(outputs.size());</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            for (int c : clkInList)</span>
+<span class="fc" id="L153">                clk.set(c, 1);</span>
+<span class="fc" id="L154">            termMap.put(clkIn, clk);</span>
+<span class="fc" id="L155">            constantsUsed = true;</span>
+        }
+
+<span class="fc" id="L158">        constants = new StateSet(outputs.size());</span>
+<span class="fc" id="L159">        final ProdInput constProdInput = new ProdInput(inputs.size());</span>
+<span class="fc" id="L160">        termMap.put(constProdInput, constants);</span>
+
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (Map.Entry&lt;String, Expression&gt; e : builder.getCombinatorial().entrySet())</span>
+<span class="fc" id="L163">            addExpression(e.getKey(), e.getValue());</span>
+
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (Map.Entry&lt;String, Expression&gt; e : builder.getRegistered().entrySet())</span>
+<span class="fc" id="L166">            addExpression(e.getKey() + &quot;.REG&quot;, e.getValue());</span>
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (!constantsUsed)</span>
+<span class="fc" id="L169">            termMap.remove(constProdInput);</span>
+<span class="fc" id="L170">    }</span>
+
+    static void checkName(String name) throws FuseMapFillerException {
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (name.length() == 0)</span>
+<span class="nc" id="L174">            throw new FuseMapFillerException(Lang.get(&quot;err_invalidPinName_N&quot;, name));</span>
+
+<span class="fc" id="L176">        char first = name.charAt(0);</span>
+<span class="fc bfc" id="L177" title="All 4 branches covered.">        if (first &gt;= '0' &amp;&amp; first &lt;= '9')</span>
+<span class="fc" id="L178">            throw new FuseMapFillerException(Lang.get(&quot;err_invalidPinName_N&quot;, name));</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 0; i &lt; name.length(); i++) {</span>
+<span class="fc" id="L181">            char c = name.charAt(i);</span>
+<span class="pc bpc" id="L182" title="1 of 14 branches missed.">            if (!(c &gt;= '0' &amp;&amp; c &lt;= '9'</span>
+                    || (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+                    || (c &gt;= 'A' &amp;&amp; c &lt;= 'Z')
+                    || (c == '_'))) {
+<span class="fc" id="L186">                throw new FuseMapFillerException(Lang.get(&quot;err_invalidPinName_N&quot;, name));</span>
+            }
+        }
+<span class="fc" id="L189">    }</span>
+
+    private void addExpression(String name, Expression expression) throws FuseMapFillerException {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (expression instanceof Operation.Or) {</span>
+<span class="fc" id="L193">            Operation.Or or = (Operation.Or) expression;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            for (Expression e : or.getExpressions())</span>
+<span class="fc" id="L195">                addProdFor(name, e);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        } else if (expression instanceof Constant) {</span>
+<span class="fc" id="L197">            constantsUsed = true;</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (expression == Constant.ONE)</span>
+<span class="fc" id="L199">                constants.set(getOutNum(name));</span>
+        } else
+<span class="fc" id="L201">            addProdFor(name, expression);</span>
+<span class="fc" id="L202">    }</span>
+
+    private void addProdFor(String name, Expression e) throws FuseMapFillerException {
+<span class="fc" id="L205">        ProdInput pt = new ProdInput(getInputCount());</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (e instanceof Operation.And) {</span>
+<span class="fc" id="L207">            Operation.And and = (Operation.And) e;</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            for (Expression z : and.getExpressions())</span>
+<span class="fc" id="L209">                pt.add(z);</span>
+<span class="fc" id="L210">        } else</span>
+<span class="fc" id="L211">            pt.add(e);</span>
+
+<span class="fc" id="L213">        StateSet o = termMap.computeIfAbsent(pt, k -&gt; new StateSet(getOutputCount()));</span>
+<span class="fc" id="L214">        o.set(getOutNum(name));</span>
+<span class="fc" id="L215">    }</span>
+
+    private String strList(ArrayList&lt;String&gt; pins) {
+<span class="fc" id="L218">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (String p : pins) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (sb.length() &gt; 0)</span>
+<span class="fc" id="L221">                sb.append(&quot; &quot;);</span>
+<span class="fc" id="L222">            sb.append(p);</span>
+<span class="fc" id="L223">        }</span>
+<span class="fc" id="L224">        return sb.toString();</span>
+    }
+
+    private void line(String s) throws IOException {
+<span class="fc" id="L228">        writer.write(s);</span>
+<span class="fc" id="L229">        writer.write(&quot;\r\n&quot;);</span>
+<span class="fc" id="L230">    }</span>
+
+    private int getInputCount() {
+<span class="fc" id="L233">        return varIndexMap.size();</span>
+    }
+
+    private int getVarNum(String identifier) throws FuseMapFillerException {
+<span class="fc" id="L237">        final Integer i = varIndexMap.get(identifier);</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if (i == null)</span>
+<span class="nc" id="L239">            throw new FuseMapFillerException(&quot;ident &quot; + identifier + &quot; not found!&quot;);</span>
+<span class="fc" id="L240">        return i;</span>
+    }
+
+    private int getOutputCount() {
+<span class="fc" id="L244">        return outIndexMap.size();</span>
+    }
+
+    private int getOutNum(String identifier) {
+<span class="fc" id="L248">        return outIndexMap.get(identifier);</span>
+    }
+
+    private String getPhase() {
+<span class="fc" id="L252">        StringBuilder sb = new StringBuilder(getOutputCount());</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        for (int i = 0; i &lt; getOutputCount(); i++)</span>
+<span class="fc" id="L254">            sb.append(&quot;1&quot;);</span>
+<span class="fc" id="L255">        return sb.toString();</span>
+    }
+
+    private void assignPinsAndNodes() throws IOException, PinMapException {
+<span class="fc" id="L259">        int pinNum = 0;</span>
+<span class="fc" id="L260">        StringBuilder pin = new StringBuilder();</span>
+<span class="fc" id="L261">        int nodeNum = 0;</span>
+<span class="fc" id="L262">        StringBuilder node = new StringBuilder();</span>
+
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        for (String i : builder.getInputs()) {</span>
+<span class="fc" id="L265">            int p = pinMap.getInputFor(i);</span>
+<span class="fc" id="L266">            pin.append(&quot; &quot;).append(i).append(&quot;+:&quot;).append(p);</span>
+<span class="fc" id="L267">            pinNum++;</span>
+<span class="fc" id="L268">        }</span>
+
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (!builder.getRegistered().isEmpty()) {</span>
+<span class="fc" id="L271">            pin.append(&quot; CLK+:&quot;).append(pinMap.getClockPin());</span>
+<span class="fc" id="L272">            pinNum++;</span>
+        }
+
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        for (String o : builder.getOutputs()) {</span>
+<span class="fc" id="L276">            int p = pinMap.isOutputAssigned(o);</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">            if (p &gt;= 0) {</span>
+<span class="fc" id="L278">                pin.append(&quot; &quot;).append(o).append(&quot;+:&quot;).append(p);</span>
+<span class="fc" id="L279">                pinNum++;</span>
+            } else {
+<span class="nc" id="L281">                node.append(&quot; &quot;).append(o);</span>
+<span class="nc" id="L282">                nodeNum++;</span>
+            }
+<span class="fc" id="L284">        }</span>
+
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">        if (pinNum &gt; 0)</span>
+<span class="fc" id="L287">            line(&quot;#$ PINS &quot; + pinNum + pin.toString());</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (nodeNum &gt; 0)</span>
+<span class="nc" id="L289">            line(&quot;#$ NODES &quot; + nodeNum + node.toString());</span>
+<span class="fc" id="L290">    }</span>
+
+    //StateSet can not be final because its overridden. Maybe checkstyle has a bug?
+    //CHECKSTYLE.OFF: FinalClass
+    private static class StateSet implements Comparable&lt;StateSet&gt; {
+        private final int[] state;
+
+<span class="fc" id="L297">        private StateSet(int outputCount) {</span>
+<span class="fc" id="L298">            state = new int[outputCount];</span>
+<span class="fc" id="L299">        }</span>
+
+        void setAllToUnused() {
+<span class="fc" id="L302">            Arrays.fill(state, 2);</span>
+<span class="fc" id="L303">        }</span>
+
+        private void set(int i) {
+<span class="fc" id="L306">            set(i, 1);</span>
+<span class="fc" id="L307">        }</span>
+
+        void set(int i, int value) {
+<span class="fc" id="L310">            state[i] = value;</span>
+<span class="fc" id="L311">        }</span>
+
+        @Override
+        public int compareTo(StateSet stateSet) {
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (int i = 0; i &lt; state.length; i++) {</span>
+<span class="fc" id="L316">                int c = Integer.compare(state[i], stateSet.state[i]);</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                if (c != 0)</span>
+<span class="fc" id="L318">                    return c;</span>
+            }
+<span class="fc" id="L320">            return 0;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="nc bnc" id="L325" title="All 2 branches missed.">            if (this == o) return true;</span>
+<span class="nc bnc" id="L326" title="All 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="nc" id="L328">            StateSet stateSet = (StateSet) o;</span>
+
+<span class="nc" id="L330">            return Arrays.equals(state, stateSet.state);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L335">            return Arrays.hashCode(state);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L340">            StringBuilder sb = new StringBuilder(state.length);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            for (int i : state)</span>
+<span class="fc bfc" id="L342" title="All 3 branches covered.">                switch (i) {</span>
+                    case 0:
+<span class="fc" id="L344">                        sb.append(&quot;0&quot;);</span>
+<span class="fc" id="L345">                        break;</span>
+                    case 1:
+<span class="fc" id="L347">                        sb.append(&quot;1&quot;);</span>
+<span class="fc" id="L348">                        break;</span>
+                    default:
+<span class="fc" id="L350">                        sb.append(&quot;-&quot;);</span>
+                }
+<span class="fc" id="L352">            return sb.toString();</span>
+        }
+    }
+    //CHECKSTYLE.ON: FinalClass
+
+    private final class ProdInput extends StateSet {
+<span class="fc" id="L358">        private ProdInput(int inputCount) {</span>
+<span class="fc" id="L359">            super(inputCount);</span>
+<span class="fc" id="L360">            setAllToUnused();</span>
+<span class="fc" id="L361">        }</span>
+
+        public void add(Expression z) throws FuseMapFillerException {
+<span class="fc bfc" id="L364" title="All 2 branches covered.">            if (z instanceof Not)</span>
+<span class="fc" id="L365">                add(((Not) z).getExpression(), true);</span>
+            else
+<span class="fc" id="L367">                add(z, false);</span>
+<span class="fc" id="L368">        }</span>
+
+        private void add(Expression var, boolean invers) throws FuseMapFillerException {
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">            if (var instanceof Variable) {</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                set(getVarNum(((Variable) var).getIdentifier()), invers ? 0 : 1);</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">            } else if (var instanceof Constant) {</span>
+<span class="nc" id="L374">                throw new FuseMapFillerException(Lang.get(&quot;err_constantsNotAllowed&quot;));</span>
+            } else
+<span class="nc" id="L376">                throw new FuseMapFillerException(&quot;invalid expression&quot;);</span>
+<span class="fc" id="L377">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

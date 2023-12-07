@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExprNot.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.expression</a> &gt; <span class="el_source">ExprNot.java</span></div><h1>ExprNot.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.expression;
+
+
+import de.neemann.digital.hdl.model2.HDLNet;
+import de.neemann.digital.hdl.printer.CodePrinter;
+
+import java.io.IOException;
+
+/**
+ * Represents a NOT operation
+ */
+public class ExprNot implements Expression {
+
+    private Expression expr;
+
+    /**
+     * Creates a new NOT expression
+     *
+     * @param expr the enxpression to invert
+     */
+<span class="fc" id="L26">    public ExprNot(Expression expr) {</span>
+<span class="fc" id="L27">        this.expr = expr;</span>
+<span class="fc" id="L28">    }</span>
+
+    /**
+     * @return the expression
+     */
+    public Expression getExpression() {
+<span class="fc" id="L34">        return expr;</span>
+    }
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L39">        out.print(&quot;NOT &quot;);</span>
+<span class="fc" id="L40">        expr.print(out);</span>
+<span class="fc" id="L41">    }</span>
+
+    @Override
+    public void replace(HDLNet net, Expression expression) {
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (Expression.isVar(expr, net))</span>
+<span class="fc" id="L46">            expr = expression;</span>
+        else
+<span class="fc" id="L48">            expr.replace(net, expression);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public void traverse(Visitor visitor) {
+<span class="fc" id="L53">        visitor.visit(this);</span>
+<span class="fc" id="L54">        expr.traverse(visitor);</span>
+<span class="fc" id="L55">    }</span>
+
+    @Override
+    public void optimize(ExpressionOptimizer eo) {
+<span class="nc" id="L59">        expr = eo.optimize(expr);</span>
+<span class="nc" id="L60">        expr.optimize(eo);</span>
+<span class="nc" id="L61">    }</span>
+
+    /**
+     * Optimizes not(not a) expressions to a
+     */
+<span class="fc" id="L66">    public static class OptimizeNotNot implements ExpressionOptimizer {</span>
+        @Override
+        public Expression optimize(Expression expression) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (expression instanceof ExprNot) {</span>
+<span class="fc" id="L70">                ExprNot not = (ExprNot) expression;</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                if (not.expr instanceof ExprNot)</span>
+<span class="nc" id="L72">                    return optimize(((ExprNot) not.expr).expr);</span>
+            }
+<span class="fc" id="L74">            return expression;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

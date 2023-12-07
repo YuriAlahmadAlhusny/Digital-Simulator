@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:19 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="5.6mm"
+   height="2.8mm"
+   viewBox="-4 -7 28 14">
+<g stroke-linecap="square">
+<path d="M 0,0 C 0,-3 2,-5 5,-5 C 8,-5 10,-2 10,0 C 10,3 12,5 15,5 C 18,5 20,2 20,0" stroke="#000000" stroke-width="2.0" fill="none"/>
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+<circle cx="20.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+</g>
+</svg>

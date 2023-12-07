@@ -1,0 +1,1003 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Keys.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.element</a> &gt; <span class="el_source">Keys.java</span></div><h1>Keys.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.element;
+
+import de.neemann.digital.analyse.expression.format.FormatToExpression;
+import de.neemann.digital.core.IntFormat;
+import de.neemann.digital.core.arithmetic.BarrelShifterMode;
+import de.neemann.digital.core.arithmetic.LeftRightFormat;
+import de.neemann.digital.core.extern.Application;
+import de.neemann.digital.core.io.CommonConnectionType;
+import de.neemann.digital.core.io.InValue;
+import de.neemann.digital.core.io.ProbeMode;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.rom.ROMManger;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.model.InverterConfig;
+import de.neemann.digital.draw.shapes.CustomCircuitShapeType;
+import de.neemann.digital.draw.shapes.custom.CustomShapeDescription;
+import de.neemann.digital.gui.components.data.ScopeTrigger;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.gui.Screen;
+import de.neemann.gui.language.Language;
+
+import java.awt.*;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Locale;
+
+/**
+ * Collection of key constants
+ */
+public final class Keys {
+
+    private static final class InstanceHolder {
+<span class="fc" id="L42">        private static final HashMap&lt;String, Key&gt; INSTANCE = createMap();</span>
+
+        private static HashMap&lt;String, Key&gt; createMap() {
+<span class="fc" id="L45">            HashMap&lt;String, Key&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            for (Field k : Keys.class.getDeclaredFields()) {</span>
+<span class="pc bpc" id="L47" title="1 of 4 branches missed.">                if (Modifier.isStatic(k.getModifiers()) &amp;&amp; Key.class.isAssignableFrom(k.getType())) {</span>
+                    try {
+<span class="fc" id="L49">                        Key key = (Key) k.get(null);</span>
+<span class="fc" id="L50">                        String keyName = key.getKey();</span>
+                        // Generic code generation can cause problems, if
+                        // two keys are equal and don't use the same default value!
+<span class="pc bpc" id="L53" title="1 of 4 branches missed.">                        if (map.containsKey(keyName) &amp;&amp; !map.get(keyName).getDefault().equals(key.getDefault()))</span>
+<span class="nc" id="L54">                            throw new RuntimeException(&quot;duplicate key with different default: &quot; + keyName);</span>
+<span class="fc" id="L55">                        map.put(keyName, key);</span>
+<span class="nc" id="L56">                    } catch (IllegalAccessException e) {</span>
+<span class="nc" id="L57">                        throw new RuntimeException(&quot;error accessing the Keys&quot;);</span>
+<span class="fc" id="L58">                    }</span>
+                }
+            }
+<span class="fc" id="L61">            return map;</span>
+        }
+    }
+
+    /**
+     * Returns the key of the given name.
+     * If key does not exist, null is returned.
+     *
+     * @param name the name of the key
+     * @return the key or null
+     */
+    public static Key getKeyByName(String name) {
+<span class="fc" id="L73">        return InstanceHolder.INSTANCE.get(name);</span>
+    }
+
+    /**
+     * @return all available keys
+     */
+    public static Iterable&lt;Key&gt; getKeys() {
+<span class="fc" id="L80">        return InstanceHolder.INSTANCE.values();</span>
+    }
+
+
+    private Keys() {
+    }
+
+    /**
+     * number of bits in simple gates like And and Or
+     */
+<span class="fc" id="L90">    public static final Key.KeyBits BITS</span>
+<span class="fc" id="L91">            = new Key.KeyBits(&quot;Bits&quot;, 1);</span>
+
+    /**
+     * input bits of sign extender
+     */
+<span class="fc" id="L96">    public static final Key.KeyBits INPUT_BITS</span>
+<span class="fc" id="L97">            = new Key.KeyBits(&quot;inputBits&quot;, 8);</span>
+
+    /**
+     * output bits of sign extender
+     */
+<span class="fc" id="L102">    public static final Key.KeyBits OUTPUT_BITS</span>
+<span class="fc" id="L103">            = new Key.KeyBits(&quot;outputBits&quot;, 16);</span>
+
+    /**
+     * number of inputs in simple gates like And and Or
+     */
+<span class="fc" id="L108">    public static final Key.KeyInteger INPUT_COUNT  // needs to have the same default value as ADDR_BITS!!!  see de.neemann.digital.gui.components.EditorFactory#DataFieldEditor</span>
+<span class="fc" id="L109">            = new Key.KeyInteger(&quot;Inputs&quot;, 2)</span>
+<span class="fc" id="L110">            .setComboBoxValues(2, 3, 4, 5)</span>
+<span class="fc" id="L111">            .setMin(2);</span>
+
+    /**
+     * number of inputs in the LUT
+     */
+<span class="fc" id="L116">    public static final Key.KeyInteger LUT_INPUT_COUNT</span>
+<span class="fc" id="L117">            = new Key.KeyInteger(&quot;Inputs&quot;, 2)</span>
+<span class="fc" id="L118">            .setComboBoxValues(2, 3, 4, 5, 6)</span>
+<span class="fc" id="L119">            .setMax(20)</span>
+<span class="fc" id="L120">            .setMin(2);</span>
+
+    /**
+     * The counter max value
+     */
+<span class="fc" id="L125">    public static final Key.KeyInteger MAX_VALUE</span>
+<span class="fc" id="L126">            = new Key.KeyInteger(&quot;maxValue&quot;, 0)</span>
+<span class="fc" id="L127">            .setMin(0);</span>
+
+
+    /**
+     * the delay time used by the delay component
+     */
+<span class="fc" id="L133">    public static final Key.KeyInteger DELAY_TIME</span>
+<span class="fc" id="L134">            = new Key.KeyInteger(&quot;delayTime&quot;, 1)</span>
+<span class="fc" id="L135">            .setComboBoxValues(1, 2, 3, 4, 5)</span>
+<span class="fc" id="L136">            .setMin(1)</span>
+<span class="fc" id="L137">            .setMax(20);</span>
+
+    /**
+     * the timer delay time
+     */
+<span class="fc" id="L142">    public static final Key.KeyInteger MONOFLOP_DELAY</span>
+<span class="fc" id="L143">            = new Key.KeyInteger(&quot;timerDelay&quot;, 1)</span>
+<span class="fc" id="L144">            .setMin(1);</span>
+
+    /**
+     * The elements label
+     */
+<span class="fc" id="L149">    public static final Key&lt;String&gt; LABEL</span>
+            = new Key&lt;&gt;(&quot;Label&quot;, &quot;&quot;);
+
+
+    /**
+     * The font size
+     */
+<span class="fc" id="L156">    public static final Key&lt;Integer&gt; FONT_SIZE =</span>
+<span class="fc" id="L157">            new Key.KeyInteger(&quot;textFontSize&quot;, Style.NORMAL.getFontSize())</span>
+<span class="fc" id="L158">                    .setComboBoxValues(14, 17, 20, 24, 36, 48, 60)</span>
+<span class="fc" id="L159">                    .setMin(10)</span>
+<span class="fc" id="L160">                    .setMax(70);</span>
+
+    /**
+     * text orientation
+     */
+<span class="fc" id="L165">    public static final Key&lt;Orientation&gt; TEXT_ORIENTATION</span>
+<span class="fc" id="L166">            = new Key.KeyEnum&lt;&gt;(&quot;textOrientation&quot;, Orientation.LEFTTOP, Orientation.values()).setSecondary();</span>
+
+
+    /**
+     * The size of a LED
+     */
+<span class="fc" id="L172">    public static final Key&lt;Integer&gt; LED_SIZE</span>
+<span class="fc" id="L173">            = new Key.KeyInteger(&quot;Size&quot;, 1)</span>
+<span class="fc" id="L174">            .setComboBoxValues(0, 1, 2, 3, 4, 5)</span>
+<span class="fc" id="L175">            .setMin(0)</span>
+<span class="fc" id="L176">            .allowGroupEdit()</span>
+<span class="fc" id="L177">            .setSecondary();</span>
+
+    /**
+     * The size of a seven seg display
+     */
+<span class="fc" id="L182">    public static final Key&lt;Integer&gt; SEVEN_SEG_SIZE</span>
+<span class="fc" id="L183">            = new Key.KeyInteger(&quot;segSize&quot;, 2)</span>
+<span class="fc" id="L184">            .setComboBoxValues(0, 1, 2, 3, 4, 5)</span>
+<span class="fc" id="L185">            .setMin(0)</span>
+<span class="fc" id="L186">            .allowGroupEdit()</span>
+<span class="fc" id="L187">            .useTranslationOf(LED_SIZE);</span>
+
+    /**
+     * The value of constants
+     */
+<span class="fc" id="L192">    public static final Key&lt;Long&gt; VALUE</span>
+<span class="fc" id="L193">            = new Key&lt;&gt;(&quot;Value&quot;, 1L).setAdaptiveIntFormat().allowGroupEdit();</span>
+
+    /**
+     * The default value of elements
+     */
+<span class="fc" id="L198">    public static final Key&lt;Long&gt; DEFAULT</span>
+<span class="fc" id="L199">            = new Key&lt;&gt;(&quot;Default&quot;, 0L).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * The default value of inputs
+     */
+<span class="fc" id="L204">    public static final Key&lt;InValue&gt; INPUT_DEFAULT</span>
+<span class="fc" id="L205">            = new Key&lt;&gt;(&quot;InDefault&quot;, new InValue(0)).setAdaptiveIntFormat().allowGroupEdit().setSecondary();</span>
+
+    /**
+     * The default value of the dip switch
+     */
+<span class="fc" id="L210">    public static final Key&lt;Boolean&gt; DIP_DEFAULT</span>
+<span class="fc" id="L211">            = new Key&lt;&gt;(&quot;dipDefault&quot;, false).allowGroupEdit().setSecondary();</span>
+
+
+    /**
+     * Color of LEDs
+     */
+<span class="fc" id="L217">    public static final Key&lt;java.awt.Color&gt; COLOR</span>
+<span class="fc" id="L218">            = new Key&lt;&gt;(&quot;Color&quot;, java.awt.Color.RED).allowGroupEdit();</span>
+
+    /**
+     * The input splitting of a splitter
+     */
+<span class="fc" id="L223">    public static final Key&lt;String&gt; INPUT_SPLIT</span>
+            = new Key&lt;&gt;(&quot;Input Splitting&quot;, &quot;4,4&quot;);
+
+    /**
+     * The output splitting of a splitter
+     */
+<span class="fc" id="L229">    public static final Key&lt;String&gt; OUTPUT_SPLIT</span>
+            = new Key&lt;&gt;(&quot;Output Splitting&quot;, &quot;8&quot;);
+
+    /**
+     * The splitter spreading
+     */
+<span class="fc" id="L235">    public static final Key&lt;Integer&gt; SPLITTER_SPREADING</span>
+<span class="fc" id="L236">            = new Key.KeyInteger(&quot;splitterSpreading&quot;, 1)</span>
+<span class="fc" id="L237">            .setComboBoxValues(1, 2, 3, 4)</span>
+<span class="fc" id="L238">            .setMin(1)</span>
+<span class="fc" id="L239">            .setMax(20)</span>
+<span class="fc" id="L240">            .setSecondary();</span>
+
+    /**
+     * flag to select small inputs and outputs
+     */
+<span class="fc" id="L245">    public static final Key&lt;Boolean&gt; IN_OUT_SMALL</span>
+<span class="fc" id="L246">            = new Key&lt;&gt;(&quot;small&quot;, false).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * flag to enable realtime mode at a clock
+     */
+<span class="fc" id="L251">    public static final Key&lt;Boolean&gt; RUN_AT_REAL_TIME</span>
+<span class="fc" id="L252">            = new Key&lt;&gt;(&quot;runRealTime&quot;, false);</span>
+
+    /**
+     * inverts the output of a gate
+     */
+<span class="fc" id="L257">    public static final Key&lt;Boolean&gt; INVERT_OUTPUT</span>
+<span class="fc" id="L258">            = new Key&lt;&gt;(&quot;invertOutput&quot;, true);</span>
+
+    /**
+     * The real time frequency of the clock
+     */
+<span class="fc" id="L263">    public static final Key&lt;Integer&gt; FREQUENCY</span>
+<span class="fc" id="L264">            = new Key.KeyInteger(&quot;Frequency&quot;, 1)</span>
+<span class="fc" id="L265">            .setComboBoxValues(1, 2, 5, 10, 20, 50, 100, 200, 500, 5000, 50000, Integer.MAX_VALUE)</span>
+<span class="fc" id="L266">            .setMin(1)</span>
+<span class="fc" id="L267">            .setDependsOn(RUN_AT_REAL_TIME);</span>
+
+    /**
+     * the bit count of a muxer or decoder
+     */
+<span class="fc" id="L272">    public static final Key&lt;Integer&gt; SELECTOR_BITS</span>
+<span class="fc" id="L273">            = new Key.KeyBits(&quot;Selector Bits&quot;, 1).setMax(8);</span>
+
+    /**
+     * number of address bits of memory
+     */
+<span class="fc" id="L278">    public static final Key&lt;Integer&gt; ADDR_BITS</span>
+<span class="fc" id="L279">            = new Key.KeyBits(&quot;AddrBits&quot;, 2).setMax(24); // needs to have the same default value as INPUT_COUNT!!!  see de.neemann.digital.gui.components.EditorFactory#DataFieldEditor</span>
+
+    /**
+     * indicates a diode as blown fuse or as programmed
+     */
+<span class="fc" id="L284">    public static final Key&lt;Boolean&gt; BLOWN</span>
+<span class="fc" id="L285">            = new Key&lt;&gt;(&quot;Blown&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * indicates a switch as closed or not
+     */
+<span class="fc" id="L290">    public static final Key&lt;Boolean&gt; CLOSED</span>
+<span class="fc" id="L291">            = new Key&lt;&gt;(&quot;Closed&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * signed flag for comparator element
+     */
+<span class="fc" id="L296">    public static final Key&lt;Boolean&gt; SIGNED</span>
+<span class="fc" id="L297">            = new Key&lt;&gt;(&quot;Signed&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * Selects if the reminder of the division is always positive
+     */
+<span class="fc" id="L302">    public static final Key&lt;Boolean&gt; REMAINDER_POSITIVE</span>
+<span class="fc" id="L303">            = new Key&lt;&gt;(&quot;remainderPositive&quot;, true).setDependsOn(SIGNED);</span>
+
+    /**
+     * the data key for memory
+     */
+<span class="fc" id="L308">    public static final Key&lt;DataField&gt; DATA</span>
+            = new Key&lt;&gt;(&quot;Data&quot;, DataField::new);
+
+    /**
+     * flag for flipping selector pos in muxers, decoders and drivers
+     */
+<span class="fc" id="L314">    public static final Key&lt;Boolean&gt; FLIP_SEL_POSITON</span>
+<span class="fc" id="L315">            = new Key&lt;&gt;(&quot;flipSelPos&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * the rotation of the elements
+     */
+<span class="fc" id="L320">    public static final Key&lt;Rotation&gt; ROTATE</span>
+<span class="fc" id="L321">            = new Key&lt;&gt;(&quot;rotation&quot;, new Rotation(0)).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * the width of an element if it is included as nested element
+     */
+<span class="fc" id="L326">    public static final Key.KeyInteger WIDTH</span>
+<span class="fc" id="L327">            = new Key.KeyInteger(&quot;Width&quot;, 3)</span>
+<span class="fc" id="L328">            .setMin(2);</span>
+
+    /**
+     * defines the shape type of the custom circuit
+     */
+<span class="fc" id="L333">    public static final Key&lt;CustomCircuitShapeType&gt; SHAPE_TYPE</span>
+<span class="fc" id="L334">            = new Key.KeyEnum&lt;&gt;(&quot;shapeType&quot;, CustomCircuitShapeType.DEFAULT, CustomCircuitShapeType.values()).setSecondary();</span>
+
+    /**
+     * Defines the distance to the previous pin. Used by the layout shape type
+     */
+<span class="fc" id="L339">    public static final Key.KeyInteger LAYOUT_SHAPE_DELTA</span>
+<span class="fc" id="L340">            = new Key.KeyInteger(&quot;layoutShapeDelta&quot;, 0)</span>
+<span class="fc" id="L341">            .setMin(0);</span>
+
+    /**
+     * the width of an element if it is included as nested element
+     */
+<span class="fc" id="L346">    public static final Key&lt;Integer&gt; HEIGHT</span>
+<span class="fc" id="L347">            = new Key.KeyInteger(&quot;Height&quot;, 3)</span>
+<span class="fc" id="L348">            .setMin(2)</span>
+<span class="fc" id="L349">            .setSecondary()</span>
+<span class="pc" id="L350">            .setDependsOn(SHAPE_TYPE, cst -&gt; cst.equals(CustomCircuitShapeType.LAYOUT));</span>
+
+    /**
+     * width of the terminal
+     */
+<span class="fc" id="L355">    public static final Key.KeyInteger TERM_WIDTH</span>
+<span class="fc" id="L356">            = new Key.KeyInteger(&quot;termWidth&quot;, 50)</span>
+<span class="fc" id="L357">            .setMin(10);</span>
+
+    /**
+     * height of the terminal
+     */
+<span class="fc" id="L362">    public static final Key.KeyInteger TERM_HEIGHT</span>
+<span class="fc" id="L363">            = new Key.KeyInteger(&quot;termHeight&quot;, 25)</span>
+<span class="fc" id="L364">            .setMin(5);</span>
+
+    /**
+     * break timeout cycles
+     */
+<span class="fc" id="L369">    public static final Key.KeyInteger CYCLES</span>
+<span class="fc" id="L370">            = new Key.KeyInteger(&quot;Cycles&quot;, 100000)</span>
+<span class="fc" id="L371">            .setComboBoxValues(1000, 10000, 100000, 1000000);</span>
+
+    /**
+     * break enabled
+     */
+<span class="fc" id="L376">    public static final Key&lt;Boolean&gt; ENABLED</span>
+<span class="fc" id="L377">            = new Key&lt;&gt;(&quot;enabled&quot;, true)</span>
+<span class="fc" id="L378">            .allowGroupEdit();</span>
+
+    /**
+     * flag to make a value a probe
+     */
+<span class="fc" id="L383">    public static final Key&lt;Boolean&gt; VALUE_IS_PROBE</span>
+<span class="fc" id="L384">            = new Key&lt;&gt;(&quot;valueIsProbe&quot;, false).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * flag to set a ROM as program memory
+     */
+<span class="fc" id="L389">    public static final Key&lt;Boolean&gt; IS_PROGRAM_MEMORY</span>
+<span class="fc" id="L390">            = new Key&lt;&gt;(&quot;isProgramMemory&quot;, false).setSecondary();</span>
+
+    /**
+     * flag to set a ROM as program memory
+     */
+<span class="fc" id="L395">    public static final Key&lt;Boolean&gt; IS_PROGRAM_COUNTER</span>
+<span class="fc" id="L396">            = new Key&lt;&gt;(&quot;isProgramCounter&quot;, false).setSecondary();</span>
+
+    /**
+     * flag to enable the ROMs auto load function
+     */
+<span class="fc" id="L401">    public static final Key&lt;Boolean&gt; AUTO_RELOAD_ROM</span>
+<span class="fc" id="L402">            = new Key&lt;&gt;(&quot;autoReload&quot;, false).setSecondary();</span>
+
+    /**
+     * The last used ROM data file
+     */
+<span class="fc" id="L407">    public static final Key&lt;File&gt; LAST_DATA_FILE</span>
+<span class="fc" id="L408">            = new Key.KeyFile(&quot;lastDataFile&quot;, new File(&quot;&quot;)).setDependsOn(AUTO_RELOAD_ROM).setSecondary();</span>
+
+    /**
+     * flag to show the data table window
+     */
+<span class="fc" id="L413">    public static final Key&lt;Boolean&gt; SHOW_DATA_TABLE</span>
+<span class="fc" id="L414">            = new Key&lt;&gt;(&quot;showDataTable&quot;, false).setSecondary();</span>
+
+    /**
+     * flag to show the data graph window
+     */
+<span class="fc" id="L419">    public static final Key&lt;Boolean&gt; SHOW_DATA_GRAPH</span>
+<span class="fc" id="L420">            = new Key&lt;&gt;(&quot;showDataGraph&quot;, false).setSecondary();</span>
+
+    /**
+     * flag to show the data graph window in single gate mode
+     */
+<span class="fc" id="L425">    public static final Key&lt;Boolean&gt; SHOW_DATA_GRAPH_MICRO</span>
+<span class="fc" id="L426">            = new Key&lt;&gt;(&quot;showDataGraphMicro&quot;, false).setSecondary();</span>
+
+    /**
+     * Used to add the value to the measurement graph
+     */
+<span class="fc" id="L431">    public static final Key&lt;Boolean&gt; ADD_VALUE_TO_GRAPH</span>
+<span class="fc" id="L432">            = new Key&lt;&gt;(&quot;addValueToGraph&quot;, true).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * flag to enable the single gate mode in the embedded data view
+     */
+<span class="fc" id="L437">    public static final Key&lt;Boolean&gt; MICRO_STEP</span>
+<span class="fc" id="L438">            = new Key&lt;&gt;(&quot;microStep&quot;, false);</span>
+
+    /**
+     * the max number of samples in the embedded data view
+     */
+<span class="fc" id="L443">    public static final Key.KeyInteger MAX_STEP_COUNT</span>
+<span class="fc" id="L444">            = new Key.KeyInteger(&quot;maxStepCount&quot;, 25)</span>
+<span class="fc" id="L445">            .setMin(5);</span>
+
+    /**
+     * the max number of samples in the default data view
+     */
+<span class="fc" id="L450">    public static final Key&lt;Integer&gt; SETTINGS_MAX_STEP_COUNT</span>
+<span class="fc" id="L451">            = new Key.KeyInteger(&quot;settingsMaxStepCount&quot;, 1000)</span>
+<span class="fc" id="L452">            .setComboBoxValues(500, 1000, 5000, 10000)</span>
+<span class="fc" id="L453">            .setMin(500)</span>
+<span class="fc" id="L454">            .setSecondary()</span>
+<span class="fc" id="L455">            .useTranslationOf(MAX_STEP_COUNT);</span>
+
+    /**
+     * flag to enable high z mode at an input
+     */
+<span class="fc" id="L460">    public static final Key&lt;Boolean&gt; IS_HIGH_Z</span>
+<span class="fc" id="L461">            = new Key&lt;&gt;(&quot;isHighZ&quot;, false).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * flag to avoid active low at an input
+     */
+<span class="fc" id="L466">    public static final Key&lt;Boolean&gt; AVOID_ACTIVE_LOW</span>
+<span class="fc" id="L467">            = new Key&lt;&gt;(&quot;avoidActiveLow&quot;, false)</span>
+<span class="fc" id="L468">            .setDependsOn(IS_HIGH_Z)</span>
+<span class="fc" id="L469">            .allowGroupEdit()</span>
+<span class="fc" id="L470">            .setSecondary();</span>
+
+    /**
+     * the description of an element
+     */
+<span class="fc" id="L475">    public static final Key.LongString DESCRIPTION</span>
+            = new Key.LongString(&quot;Description&quot;);
+
+    /**
+     * A net name
+     */
+<span class="fc" id="L481">    public static final Key&lt;String&gt; NETNAME</span>
+            = new Key&lt;&gt;(&quot;NetName&quot;, &quot;&quot;);
+
+    /**
+     * shape setting
+     */
+<span class="fc" id="L487">    public static final Key&lt;Boolean&gt; SETTINGS_IEEE_SHAPES</span>
+<span class="pc bpc" id="L488" title="1 of 2 branches missed.">            = new Key&lt;&gt;(&quot;IEEEShapes&quot;, !Locale.getDefault().getLanguage().equals(Locale.GERMAN.getLanguage())).setRequiresRestart();</span>
+
+    /**
+     * The GUI Language
+     */
+<span class="fc" id="L493">    public static final Key&lt;Language&gt; SETTINGS_LANGUAGE</span>
+<span class="fc" id="L494">            = new Key&lt;&gt;(&quot;Language&quot;, new Language()).setRequiresRestart();</span>
+
+
+    /**
+     * Default state of the tree view
+     */
+<span class="fc" id="L500">    public static final Key&lt;Boolean&gt; SETTINGS_DEFAULT_TREESELECT</span>
+<span class="fc" id="L501">            = new Key&lt;&gt;(&quot;defTreeSelect&quot;, false);</span>
+
+    /**
+     * The GUI expression string representation
+     */
+<span class="fc" id="L506">    public static final Key.KeyEnum&lt;FormatToExpression&gt; SETTINGS_EXPRESSION_FORMAT</span>
+<span class="fc" id="L507">            = new Key.KeyEnum&lt;&gt;(&quot;ExpressionFormat&quot;, FormatToExpression.UNICODE, FormatToExpression.values(), true);</span>
+
+    /**
+     * enables the grid
+     */
+<span class="fc" id="L512">    public static final Key&lt;Boolean&gt; SETTINGS_GRID</span>
+<span class="fc" id="L513">            = new Key&lt;&gt;(&quot;grid&quot;, true).setRequiresRepaint();</span>
+
+    /**
+     * enables the wire bits view
+     */
+<span class="fc" id="L518">    public static final Key&lt;Boolean&gt; SETTINGS_SHOW_WIRE_BITS</span>
+<span class="fc" id="L519">            = new Key&lt;&gt;(&quot;showWireBits&quot;, false);</span>
+
+    /**
+     * enables the MAC mouse mode
+     */
+<span class="fc" id="L524">    public static final Key&lt;Boolean&gt; SETTINGS_MAC_MOUSE</span>
+<span class="fc" id="L525">            = new Key&lt;&gt;(&quot;macMouse&quot;, false).setRequiresRestart().setSecondary();</span>
+
+    /**
+     * enables tunnel rename dialog
+     */
+<span class="fc" id="L530">    public static final Key&lt;Boolean&gt; SETTINGS_SHOW_TUNNEL_RENAME_DIALOG</span>
+<span class="fc" id="L531">            = new Key&lt;&gt;(&quot;tunnelRenameDialog&quot;, true).setSecondary();</span>
+
+    /**
+     * Counter used to detect oscillations
+     */
+<span class="fc" id="L536">    public static final Key&lt;Integer&gt; OSCILLATION_DETECTION_COUNTER =</span>
+<span class="fc" id="L537">            new Key.KeyInteger(&quot;oscillationDetectionCounter&quot;, 1000)</span>
+<span class="fc" id="L538">                    .setComboBoxValues(1000, 5000, 10000)</span>
+<span class="fc" id="L539">                    .setMin(1000)</span>
+<span class="fc" id="L540">                    .setMax(100000);</span>
+
+    /**
+     * output format for numbers
+     */
+<span class="fc" id="L545">    public static final Key&lt;IntFormat&gt; INT_FORMAT</span>
+<span class="fc" id="L546">            = new Key.KeyEnum&lt;&gt;(&quot;intFormat&quot;, IntFormat.def, IntFormat.values()).setSecondary();</span>
+
+    /**
+     * output format for numbers
+     */
+<span class="fc" id="L551">    public static final Key&lt;ProbeMode&gt; PROBE_MODE</span>
+<span class="fc" id="L552">            = new Key.KeyEnum&lt;&gt;(&quot;probeMode&quot;, ProbeMode.VALUE, ProbeMode.values());</span>
+    /**
+     * fixed point fractional binary digits
+     */
+<span class="fc" id="L556">    public static final Key&lt;Integer&gt; FIXED_POINT</span>
+<span class="fc" id="L557">            = new Key.KeyInteger(&quot;fixedPoint&quot;, 4)</span>
+<span class="fc" id="L558">            .setMin(1)</span>
+<span class="fc" id="L559">            .setMax(64)</span>
+<span class="pc bnc" id="L560" title="All 4 branches missed.">            .setDependsOn(INT_FORMAT, intFormat -&gt; intFormat.equals(IntFormat.fixed) || intFormat.equals(IntFormat.fixedSigned))</span>
+<span class="fc" id="L561">            .allowGroupEdit()</span>
+<span class="fc" id="L562">            .setSecondary();</span>
+
+    /**
+     * width of the terminal
+     */
+<span class="fc" id="L567">    public static final Key.KeyInteger GRAPHIC_WIDTH</span>
+<span class="fc" id="L568">            = new Key.KeyInteger(&quot;graphicWidth&quot;, 160)</span>
+<span class="fc" id="L569">            .setMin(4);</span>
+
+    /**
+     * height of the terminal
+     */
+<span class="fc" id="L574">    public static final Key.KeyInteger GRAPHIC_HEIGHT</span>
+<span class="fc" id="L575">            = new Key.KeyInteger(&quot;graphicHeight&quot;, 100)</span>
+<span class="fc" id="L576">            .setMin(4);</span>
+
+    /**
+     * flag used by a relay to indicate if it is normally open or normally closed.
+     */
+<span class="fc" id="L581">    public static final Key&lt;Boolean&gt; RELAY_NORMALLY_CLOSED</span>
+<span class="fc" id="L582">            = new Key&lt;&gt;(&quot;relayNormallyClosed&quot;, false).allowGroupEdit();</span>
+
+
+    /**
+     * Number of poles in the double throw relay
+     */
+<span class="fc" id="L588">    public static final Key&lt;Integer&gt; POLES</span>
+<span class="fc" id="L589">            = new Key.KeyInteger(&quot;poles&quot;, 1)</span>
+<span class="fc" id="L590">            .setComboBoxValues(1, 2, 3, 4)</span>
+<span class="fc" id="L591">            .setMin(1).allowGroupEdit();</span>
+
+
+    /**
+     * flag used by a barrel shifter to select the shift mode
+     */
+<span class="fc" id="L597">    public static final Key&lt;BarrelShifterMode&gt; BARREL_SHIFTER_MODE</span>
+<span class="fc" id="L598">            = new Key.KeyEnum&lt;&gt;(&quot;barrelShifterMode&quot;, BarrelShifterMode.logical, BarrelShifterMode.values());</span>
+
+    /**
+     * flag used by a barrel shifter to indicate shift direction
+     */
+<span class="fc" id="L603">    public static final Key&lt;LeftRightFormat&gt; DIRECTION</span>
+<span class="fc" id="L604">            = new Key.KeyEnum&lt;&gt;(&quot;direction&quot;, LeftRightFormat.left, LeftRightFormat.values());</span>
+
+    /**
+     * flag used by a barrel shifter to indicate if shift value is signed
+     */
+<span class="fc" id="L609">    public static final Key&lt;Boolean&gt; BARREL_SIGNED</span>
+<span class="fc" id="L610">            = new Key&lt;&gt;(&quot;barrelSigned&quot;, false);</span>
+
+    /**
+     * Used to indicate if the 7-seg display has a common cathode output
+     */
+<span class="fc" id="L615">    public static final Key&lt;Boolean&gt; COMMON_CONNECTION</span>
+<span class="fc" id="L616">            = new Key&lt;&gt;(&quot;commonCathode&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * Used to define the common connection type
+     */
+<span class="fc" id="L621">    public static final Key&lt;CommonConnectionType&gt; COMMON_CONNECTION_TYPE</span>
+<span class="fc" id="L622">            = new Key.KeyEnum&lt;&gt;(&quot;commonConnectionType&quot;, CommonConnectionType.cathode, CommonConnectionType.values()).setDependsOn(COMMON_CONNECTION).allowGroupEdit();</span>
+
+    /**
+     * Used to enable the storage of the last state in the Seven Seg display.
+     */
+<span class="fc" id="L627">    public static final Key&lt;Boolean&gt; LED_PERSISTENCE</span>
+<span class="fc" id="L628">            = new Key&lt;&gt;(&quot;ledPersistence&quot;, false).allowGroupEdit().setDependsOn(COMMON_CONNECTION);</span>
+
+    /**
+     * Used to enable the storage of the last state in the Seven Seg display.
+     */
+<span class="fc" id="L633">    public static final Key&lt;Integer&gt; LED_PERSIST_TIME</span>
+<span class="fc" id="L634">            = new Key.KeyInteger(&quot;persistTime&quot;, 0)</span>
+<span class="fc" id="L635">            .setMin(0)</span>
+<span class="fc" id="L636">            .allowGroupEdit();</span>
+
+    /**
+     * Fitter for the atf15xx
+     */
+<span class="fc" id="L641">    public static final Key&lt;File&gt; SETTINGS_ATF1502_FITTER</span>
+<span class="fc" id="L642">            = new Key.KeyFile(&quot;atf1502Fitter&quot;, new File(&quot;c:/Wincupl/WinCupl/Fitters&quot;)).setDirectoryOnly(true).setSecondary();</span>
+
+    /**
+     * Flash software for the atf15xx
+     */
+<span class="fc" id="L647">    public static final Key&lt;File&gt; SETTINGS_ATMISP</span>
+<span class="fc" id="L648">            = new Key.KeyFile(&quot;ATMISP&quot;, getATMISPPath()).setSecondary();</span>
+
+    private static File getATMISPPath() {
+<span class="fc" id="L651">        File f = new File(&quot;c:/Tools/ATMISP7/ATMISP.exe&quot;);</span>
+<span class="pc bpc" id="L652" title="1 of 2 branches missed.">        if (f.exists())</span>
+<span class="nc" id="L653">            return f;</span>
+<span class="fc" id="L654">        return new File(&quot;c:/ATMISP7/ATMISP.exe&quot;);</span>
+    }
+
+    /**
+     * row bits in led matrix
+     */
+<span class="fc" id="L660">    public static final Key.KeyBits ROW_DATA_BITS</span>
+<span class="fc" id="L661">            = new Key.KeyBits(&quot;rowDataBits&quot;, 8);</span>
+
+    /**
+     * column address bits in led matrix
+     */
+<span class="fc" id="L666">    public static final Key.KeyBits COL_ADDR_BITS</span>
+<span class="fc" id="L667">            = new Key.KeyBits(&quot;colAddrBits&quot;, 3);</span>
+
+    /**
+     * In locked mode the circuit can not be modified
+     */
+<span class="fc" id="L672">    public static final Key&lt;Boolean&gt; LOCKED_MODE</span>
+<span class="fc" id="L673">            = new Key&lt;&gt;(&quot;lockedMode&quot;, false);</span>
+
+    /**
+     * the pin number
+     */
+<span class="fc" id="L678">    public static final Key&lt;String&gt; PINNUMBER =</span>
+<span class="fc" id="L679">            new Key&lt;&gt;(&quot;pinNumber&quot;, &quot;&quot;).setSecondary();</span>
+
+    /**
+     * the pin count
+     */
+<span class="fc" id="L684">    public static final Key&lt;Integer&gt; PINCOUNT =</span>
+<span class="fc" id="L685">            new Key.KeyInteger(&quot;pinCount&quot;, 0)</span>
+<span class="fc" id="L686">                    .setMin(0)</span>
+<span class="fc" id="L687">                    .setSecondary()</span>
+<span class="pc" id="L688">                    .setDependsOn(SHAPE_TYPE, st -&gt; st.equals(CustomCircuitShapeType.DIL));</span>
+
+
+    /**
+     * contains the input inverter config
+     */
+<span class="fc" id="L694">    public static final Key&lt;InverterConfig&gt; INVERTER_CONFIG</span>
+<span class="fc" id="L695">            = new Key&lt;&gt;(&quot;inverterConfig&quot;, new InverterConfig.Builder().build());</span>
+
+    /**
+     * Background Color of nested circuits
+     */
+<span class="fc" id="L700">    public static final Key&lt;java.awt.Color&gt; BACKGROUND_COLOR</span>
+            = new Key&lt;&gt;(&quot;backgroundColor&quot;, new Color(255, 255, 180, 200));
+
+    /**
+     * the screen resolution
+     */
+<span class="fc" id="L706">    public static final Key&lt;Integer&gt; SETTINGS_FONT_SCALING =</span>
+<span class="fc" id="L707">            new Key.KeyInteger(&quot;fontSize&quot;, Screen.getDefaultFontScaling())</span>
+<span class="fc" id="L708">                    .setComboBoxValues(100, 120, 150, 180, 200, 250, 300)</span>
+<span class="fc" id="L709">                    .setMin(50)</span>
+<span class="fc" id="L710">                    .setMax(400)</span>
+<span class="fc" id="L711">                    .setRequiresRestart()</span>
+<span class="fc" id="L712">                    .setSecondary();</span>
+
+    /**
+     * Uses the equals key instead of the plus key.
+     */
+    public static final Key&lt;Boolean&gt; SETTINGS_USE_EQUALS_KEY;
+
+    static {
+<span class="fc" id="L720">        String language = Locale.getDefault().getLanguage();</span>
+<span class="fc" id="L721">        SETTINGS_USE_EQUALS_KEY = new Key&lt;&gt;(&quot;equalsInsteadOfPlus&quot;,</span>
+<span class="pc bpc" id="L722" title="3 of 4 branches missed.">                language.equals(&quot;en&quot;) || language.equals(&quot;fr&quot;)).setSecondary();</span>
+    }
+
+    /**
+     * true if a enable input is needed
+     */
+<span class="fc" id="L728">    public static final Key&lt;Boolean&gt; WITH_ENABLE</span>
+<span class="fc" id="L729">            = new Key&lt;&gt;(&quot;withEnable&quot;, true);</span>
+
+    /**
+     * true to simulate a unidirectional FET
+     */
+<span class="fc" id="L734">    public static final Key&lt;Boolean&gt; FET_UNIDIRECTIONAL</span>
+<span class="fc" id="L735">            = new Key&lt;&gt;(&quot;unidirectional&quot;, false);</span>
+
+    /**
+     * true if component is active low
+     */
+<span class="fc" id="L740">    public static final Key&lt;Boolean&gt; ACTIVE_LOW</span>
+<span class="fc" id="L741">            = new Key&lt;&gt;(&quot;activeLow&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * true if button is mapped to the keyboard
+     */
+<span class="fc" id="L746">    public static final Key&lt;Boolean&gt; MAP_TO_KEY</span>
+<span class="fc" id="L747">            = new Key&lt;&gt;(&quot;mapToKey&quot;, false).allowGroupEdit();</span>
+
+    /**
+     * Fitter for the atf1502
+     */
+<span class="fc" id="L752">    public static final Key&lt;File&gt; SETTINGS_LIBRARY_PATH</span>
+<span class="fc" id="L753">            = new Key.KeyFile(&quot;libraryPath&quot;, ElementLibrary.getLibPath()).setDirectoryOnly(true).setSecondary();</span>
+
+    /**
+     * A jar containing custom java components
+     */
+<span class="fc" id="L758">    public static final Key&lt;File&gt; SETTINGS_JAR_PATH</span>
+<span class="fc" id="L759">            = new Key.KeyFile(&quot;jarPath&quot;, new File(&quot;&quot;)).setSecondary().setRequiresRestart();</span>
+
+    /**
+     * The manager which contains all the roms data
+     */
+<span class="fc" id="L764">    public static final Key&lt;ROMManger&gt; ROMMANAGER</span>
+<span class="fc" id="L765">            = new Key&lt;&gt;(&quot;romContent&quot;, ROMManger::new).setSecondary();</span>
+
+
+    /**
+     * The type of the external process
+     */
+<span class="fc" id="L771">    public static final Key.KeyEnum&lt;Application.Type&gt; APPLICATION_TYPE</span>
+<span class="fc" id="L772">            = new Key.KeyEnum&lt;&gt;(&quot;applicationType&quot;, Application.Type.Generic, Application.Type.values());</span>
+    /**
+     * The inputs used by the external process
+     */
+<span class="fc" id="L776">    public static final Key&lt;String&gt; EXTERNAL_INPUTS</span>
+            = new Key&lt;&gt;(&quot;externalInputs&quot;, &quot;in&quot;);
+    /**
+     * The outputs used by the external process
+     */
+<span class="fc" id="L781">    public static final Key&lt;String&gt; EXTERNAL_OUTPUTS</span>
+            = new Key&lt;&gt;(&quot;externalOutputs&quot;, &quot;out&quot;);
+    /**
+     * The code to be executed by the external process
+     */
+<span class="fc" id="L786">    public static final Key.LongString EXTERNAL_CODE</span>
+<span class="fc" id="L787">            = new Key.LongString(&quot;Code&quot;).setRows(30).setColumns(80).setLineNumbers(true);</span>
+    /**
+     * The code to be executed by the external process
+     */
+<span class="fc" id="L791">    public static final Key.KeyFile EXTERNAL_CODE_FILE</span>
+            = new Key.KeyFile(&quot;CodeFile&quot;, new File(&quot;&quot;));
+
+    /**
+     * Path to ghdl
+     */
+<span class="fc" id="L797">    public static final Key&lt;File&gt; SETTINGS_GHDL_PATH</span>
+<span class="fc" id="L798">            = new Key.KeyFile(&quot;ghdlPath&quot;, new File(&quot;ghdl&quot;)).setSecondary();</span>
+
+    /**
+     * The ghdl options
+     */
+<span class="fc" id="L803">    public static final Key&lt;String&gt; GHDL_OPTIONS</span>
+<span class="fc" id="L804">            = new Key.LongString(&quot;ghdlOptions&quot;, &quot;--std=08 --ieee=synopsys&quot;).setRows(3).setColumns(30).setPanelId(&quot;Options&quot;);</span>
+
+    /**
+     * The iverilog options
+     */
+<span class="fc" id="L809">    public static final Key&lt;String&gt; IVERILOG_OPTIONS</span>
+<span class="fc" id="L810">            = new Key.LongString(&quot;iverilogOptions&quot;, &quot;&quot;).setRows(3).setColumns(30).setPanelId(&quot;Options&quot;);</span>
+
+    /**
+     * Path to iverilog installation directory
+     */
+<span class="fc" id="L815">    public static final Key&lt;File&gt; SETTINGS_IVERILOG_PATH</span>
+<span class="fc" id="L816">            = new Key.KeyFile(&quot;iverilogPath&quot;, new File(&quot;iverilog&quot;)).setSecondary();</span>
+
+    /**
+     * Avoid component tooltips in the main panel
+     */
+<span class="fc" id="L821">    public static final Key&lt;Boolean&gt; SETTINGS_NOTOOLTIPS =</span>
+<span class="fc" id="L822">            new Key&lt;&gt;(&quot;noComponentToolTips&quot;, false);</span>
+
+    /**
+     * Shape used to represent a visual element
+     */
+<span class="fc" id="L827">    public static final Key&lt;CustomShapeDescription&gt; CUSTOM_SHAPE</span>
+<span class="fc" id="L828">            = new Key&lt;&gt;(&quot;customShape&quot;, new CustomShapeDescription.Builder().build())</span>
+<span class="fc" id="L829">            .setSecondary()</span>
+<span class="pc" id="L830">            .setDependsOn(SHAPE_TYPE, st -&gt; st.equals(CustomCircuitShapeType.CUSTOM));</span>
+
+    /**
+     * True if a program is loaded to the simulator at startup
+     */
+<span class="fc" id="L835">    public static final Key&lt;Boolean&gt; PRELOAD_PROGRAM</span>
+<span class="fc" id="L836">            = new Key&lt;&gt;(&quot;preloadProgram&quot;, false).setSecondary();</span>
+
+    /**
+     * Uses big endian at file import
+     */
+<span class="fc" id="L841">    public static final Key&lt;Boolean&gt; BIG_ENDIAN =</span>
+<span class="fc" id="L842">            new Key&lt;&gt;(&quot;bigEndian&quot;, false).setSecondary().setDependsOn(AUTO_RELOAD_ROM);</span>
+
+    /**
+     * The file to preload as a program at startup
+     */
+<span class="fc" id="L847">    public static final Key&lt;File&gt; PROGRAM_TO_PRELOAD</span>
+<span class="fc" id="L848">            = new Key.KeyFile(&quot;preloadProgramFile&quot;, new File(&quot;&quot;)).setSecondary().setDependsOn(PRELOAD_PROGRAM);</span>
+
+    /**
+     * Uses big endian at file import
+     */
+<span class="fc" id="L853">    public static final Key&lt;Boolean&gt; BIG_ENDIAN_SETTING =</span>
+<span class="fc" id="L854">            new Key&lt;&gt;(&quot;bigEndianSetting&quot;, false).setSecondary().useTranslationOf(BIG_ENDIAN).setDependsOn(PRELOAD_PROGRAM);</span>
+
+    /**
+     * Selects a wide shape
+     */
+<span class="fc" id="L859">    public static final Key&lt;Boolean&gt; WIDE_SHAPE</span>
+<span class="fc" id="L860">            = new Key&lt;&gt;(&quot;wideShape&quot;, false).setSecondary().allowGroupEdit();</span>
+
+
+    /**
+     * the width of the rectangle
+     */
+<span class="fc" id="L866">    public static final Key.KeyInteger RECT_WIDTH</span>
+<span class="fc" id="L867">            = new Key.KeyInteger(&quot;RectWidth&quot;, 3)</span>
+<span class="fc" id="L868">            .setMin(2);</span>
+
+    /**
+     * the height of the rectangle
+     */
+<span class="fc" id="L873">    public static final Key.KeyInteger RECT_HEIGHT</span>
+<span class="fc" id="L874">            = new Key.KeyInteger(&quot;RectHeight&quot;, 3)</span>
+<span class="fc" id="L875">            .setMin(2);</span>
+
+    /**
+     * the position of the text in the rectangle
+     */
+<span class="fc" id="L880">    public static final Key&lt;Boolean&gt; RECT_INSIDE</span>
+<span class="fc" id="L881">            = new Key&lt;&gt;(&quot;RectInside&quot;, false).setSecondary();</span>
+
+    /**
+     * the position of the text in the rectangle
+     */
+<span class="fc" id="L886">    public static final Key&lt;Boolean&gt; RECT_BOTTOM</span>
+<span class="fc" id="L887">            = new Key&lt;&gt;(&quot;RectBottom&quot;, false).setSecondary();</span>
+
+    /**
+     * the position of the text in the rectangle
+     */
+<span class="fc" id="L892">    public static final Key&lt;Boolean&gt; RECT_RIGHT</span>
+<span class="fc" id="L893">            = new Key&lt;&gt;(&quot;RectRight&quot;, false).setSecondary();</span>
+
+
+    /**
+     * Selects the midi channel
+     */
+<span class="fc" id="L899">    public static final Key.KeyInteger MIDI_CHANNEL =</span>
+<span class="fc" id="L900">            new Key.KeyInteger(&quot;midiChannel&quot;, 1)</span>
+<span class="fc" id="L901">                    .setMin(1)</span>
+<span class="fc" id="L902">                    .setMax(16);</span>
+
+    /**
+     * Selects the midi channel
+     */
+<span class="fc" id="L907">    public static final Key&lt;String&gt; MIDI_INSTRUMENT =</span>
+            new Key&lt;&gt;(&quot;midiInstrument&quot;, &quot;&quot;);
+
+    /**
+     * Enables Program change
+     */
+<span class="fc" id="L913">    public static final Key&lt;Boolean&gt; MIDI_PROG_CHANGE =</span>
+<span class="fc" id="L914">            new Key&lt;&gt;(&quot;midiProgChange&quot;, false);</span>
+
+    /**
+     * Stores the IDE settings file
+     */
+<span class="fc" id="L919">    public static final Key&lt;File&gt; SETTINGS_TOOLCHAIN_CONFIG =</span>
+<span class="fc" id="L920">            new Key.KeyFile(&quot;toolChainConfig&quot;, new File(&quot;&quot;)).setSecondary().setRequiresRestart();</span>
+
+    /**
+     * Used to input statements to generify a circuit.
+     */
+<span class="fc" id="L925">    public static final Key&lt;String&gt; GENERIC =</span>
+<span class="fc" id="L926">            new Key.LongString(&quot;generic&quot;).setLineNumbers(true).allowGroupEdit();</span>
+
+    /**
+     * Used to input statements to generify a circuit.
+     */
+<span class="fc" id="L931">    public static final Key&lt;String&gt; GENERICLARGE =</span>
+<span class="fc" id="L932">            new Key.LongString(&quot;generic&quot;).setLineNumbers(true).setRows(20).allowGroupEdit();</span>
+
+    /**
+     * Circuit is generic
+     */
+<span class="fc" id="L937">    public static final Key&lt;Boolean&gt; IS_GENERIC =</span>
+<span class="fc" id="L938">            new Key&lt;&gt;(&quot;isGeneric&quot;, false).setSecondary();</span>
+
+
+    /**
+     * Enables the tutorial
+     */
+<span class="fc" id="L944">    public static final Key&lt;Boolean&gt; SETTINGS_SHOW_TUTORIAL =</span>
+<span class="fc" id="L945">            new Key&lt;&gt;(&quot;showTutorial&quot;, true).setSecondary();</span>
+
+    /**
+     * Enables the wire tool tips
+     */
+<span class="fc" id="L950">    public static final Key&lt;Boolean&gt; SETTINGS_WIRETOOLTIP =</span>
+<span class="fc" id="L951">            new Key&lt;&gt;(&quot;wireToolTips&quot;, false);</span>
+
+
+    /**
+     * The switch acts as input
+     */
+<span class="fc" id="L957">    public static final Key&lt;Boolean&gt; SWITCH_ACTS_AS_INPUT =</span>
+<span class="fc" id="L958">            new Key&lt;&gt;(&quot;switchActsAsInput&quot;, false).setSecondary();</span>
+
+    /**
+     * Snaps the element to the grid
+     */
+<span class="fc" id="L963">    public static final Key&lt;Boolean&gt; SNAP_TO_GRID =</span>
+<span class="fc" id="L964">            new Key&lt;&gt;(&quot;snapToGrid&quot;, true).setSecondary();</span>
+
+    /**
+     * Mirrors the component
+     */
+<span class="fc" id="L969">    public static final Key&lt;Boolean&gt; MIRROR =</span>
+<span class="fc" id="L970">            new Key&lt;&gt;(&quot;mirror&quot;, false).allowGroupEdit().setSecondary();</span>
+
+    /**
+     * The test data
+     */
+<span class="fc" id="L975">    public static final Key&lt;TestCaseDescription&gt; TESTDATA =</span>
+            new Key&lt;&gt;(&quot;Testdata&quot;, TestCaseDescription::new);
+
+    /**
+     * The scope trigger mode
+     */
+<span class="fc" id="L981">    public static final Key.KeyEnum&lt;ScopeTrigger.Trigger&gt; TRIGGER =</span>
+<span class="fc" id="L982">            new Key.KeyEnum&lt;&gt;(&quot;trigger&quot;, ScopeTrigger.Trigger.both, ScopeTrigger.Trigger.values());</span>
+
+    /**
+     * Selects the telnet port
+     */
+<span class="fc" id="L987">    public static final Key.KeyInteger PORT =</span>
+<span class="fc" id="L988">            new Key.KeyInteger(&quot;port&quot;, 23)</span>
+<span class="fc" id="L989">                    .setMin(1)</span>
+<span class="fc" id="L990">                    .setMax((1 &lt;&lt; 16) - 1);</span>
+    /**
+     * Telnet escape
+     */
+<span class="fc" id="L994">    public static final Key&lt;Boolean&gt; TELNET_ESCAPE =</span>
+<span class="fc" id="L995">            new Key&lt;&gt;(&quot;telnetEscape&quot;, true).allowGroupEdit();</span>
+
+    /**
+     * Skips HDL output for this circuit
+     */
+<span class="fc" id="L1000">    public static final Key&lt;Boolean&gt; SKIP_HDL =</span>
+<span class="fc" id="L1001">            new Key&lt;&gt;(&quot;skipHDL&quot;, false).setSecondary();</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

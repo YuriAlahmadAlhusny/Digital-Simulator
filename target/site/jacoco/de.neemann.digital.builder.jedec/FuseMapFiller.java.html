@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FuseMapFiller.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.jedec</a> &gt; <span class="el_source">FuseMapFiller.java</span></div><h1>FuseMapFiller.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.jedec;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.Not;
+import de.neemann.digital.analyse.expression.Operation;
+import de.neemann.digital.analyse.expression.Variable;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * Fills an equation into a fuse map
+ * Assumes that all product terms follow each other directly in the fuse map.
+ * Assumes that the fuse and not fuse follow each other.
+ */
+public class FuseMapFiller {
+
+    private final FuseMap fuseMap;
+    private final int varsConnectedToMap;
+    private final HashMap&lt;Variable, MapEntry&gt; varMap;
+
+    /**
+     * Creates a new instance
+     *
+     * @param fuseMap            the fuse map to fill
+     * @param varsConnectedToMap the number variables available in matrix
+     */
+<span class="fc" id="L33">    public FuseMapFiller(FuseMap fuseMap, int varsConnectedToMap) {</span>
+<span class="fc" id="L34">        this.fuseMap = fuseMap;</span>
+<span class="fc" id="L35">        this.varsConnectedToMap = varsConnectedToMap;</span>
+<span class="fc" id="L36">        varMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Adds a variable to the matrix
+     *
+     * @param index number in matrix
+     * @param var   the variable
+     * @return this for chained calls
+     */
+    public FuseMapFiller addVariable(int index, Variable var) {
+<span class="fc" id="L47">        varMap.put(var, new MapEntry(index, false));</span>
+<span class="fc" id="L48">        return this;</span>
+    }
+
+    /**
+     * Adds a variable to the matrix
+     * In difference to addVariable() the inverted column comes first and the non inverted column follows.
+     * So the both columns are in reverse order compared to addVariable()
+     *
+     * @param index number in matrix
+     * @param var   the variable
+     * @return this for chained calls
+     */
+    public FuseMapFiller addVariableReverse(int index, Variable var) {
+<span class="fc" id="L61">        varMap.put(var, new MapEntry(index, true));</span>
+<span class="fc" id="L62">        return this;</span>
+    }
+
+
+    /**
+     * Fills an expression to the fuse map
+     *
+     * @param offs         number of first fuse of first product term to use
+     * @param exp          the expression
+     * @param productTerms the number of product terms available
+     * @throws FuseMapFillerException EquationHandlerException
+     */
+    public void fillExpression(int offs, Expression exp, int productTerms) throws FuseMapFillerException {
+        ArrayList&lt;Expression&gt; terms;
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (exp instanceof Operation.Or) {</span>
+<span class="fc" id="L78">            Operation.Or or = (Operation.Or) exp;</span>
+<span class="fc" id="L79">            terms = or.getExpressions();</span>
+<span class="fc" id="L80">        } else {</span>
+<span class="fc" id="L81">            terms = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L82">            terms.add(exp);</span>
+        }
+
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (terms.size() &gt; productTerms)</span>
+<span class="nc" id="L86">            throw new FuseMapFillerException(&quot;only &quot; + productTerms + &quot; product terms supported but &quot; + terms.size() + &quot; needed!&quot;);</span>
+
+<span class="fc" id="L88">        int fusesInTerm = varsConnectedToMap * 2;</span>
+
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (Expression e : terms) {</span>
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (int i = 0; i &lt; fusesInTerm; i++)</span>
+<span class="fc" id="L93">                fuseMap.setFuse(offs + i, true);</span>
+
+            ArrayList&lt;Expression&gt; ands;
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (e instanceof Operation.And) {</span>
+<span class="fc" id="L98">                ands = ((Operation.And) e).getExpressions();</span>
+            } else {
+<span class="fc" id="L100">                ands = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L101">                ands.add(e);</span>
+            }
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            for (Expression v : ands) {</span>
+
+                Variable var;
+<span class="fc" id="L107">                boolean invert = false;</span>
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                if (v instanceof Variable)</span>
+<span class="fc" id="L110">                    var = (Variable) v;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                else if (v instanceof Not) {</span>
+<span class="fc" id="L112">                    Expression n = ((Not) v).getExpression();</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">                    if (n instanceof Variable) {</span>
+<span class="fc" id="L114">                        var = (Variable) n;</span>
+<span class="fc" id="L115">                        invert = true;</span>
+                    } else {
+<span class="nc" id="L117">                        throw new FuseMapFillerException(&quot;NOT does not contain a variable!&quot;);</span>
+                    }
+<span class="fc" id="L119">                } else</span>
+<span class="nc" id="L120">                    throw new FuseMapFillerException(&quot;only VAR or NOT VAR allowed!&quot;);</span>
+
+<span class="fc" id="L122">                MapEntry entry = varMap.get(var);</span>
+
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">                if (entry == null)</span>
+<span class="nc" id="L125">                    throw new FuseMapFillerException(&quot;VAR &quot; + var + &quot; not found in term list!&quot;);</span>
+
+<span class="fc" id="L127">                int fuse = entry.getFuse(invert);</span>
+
+<span class="fc" id="L129">                fuseMap.setFuse(offs + fuse, false);</span>
+<span class="fc" id="L130">            }</span>
+<span class="fc" id="L131">            offs += fusesInTerm;</span>
+<span class="fc" id="L132">        }</span>
+
+
+<span class="fc" id="L135">    }</span>
+
+    private static class MapEntry {
+        private final int index;
+        private final boolean swap;
+
+<span class="fc" id="L141">        MapEntry(int index, boolean swap) {</span>
+<span class="fc" id="L142">            this.index = index;</span>
+<span class="fc" id="L143">            this.swap = swap;</span>
+<span class="fc" id="L144">        }</span>
+
+        int getFuse(boolean invert) {
+<span class="fc" id="L147">            int fuse=index*2;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (swap) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (!invert) fuse++;</span>
+            } else
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                if (invert) fuse++;</span>
+<span class="fc" id="L152">            return fuse;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

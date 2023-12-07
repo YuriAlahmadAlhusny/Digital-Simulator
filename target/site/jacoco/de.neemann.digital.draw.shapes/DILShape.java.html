@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DILShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">DILShape.java</span></div><h1>DILShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * Shape of a DIL package
+ */
+public class DILShape implements Shape {
+<span class="fc" id="L28">    static final float CIRC = (float) (4 * (Math.sqrt(2) - 1) / 3);</span>
+    private static final int SPACING = 2;
+    private static final int RAD = SPACING * SIZE / 4;
+<span class="fc" id="L31">    private static final int BEZ = Math.round(RAD * CIRC);</span>
+
+    private final int pinCount;
+    private final Pins pins;
+    private final int width;
+    private final String shortName;
+    private final String label;
+    private final ShapePinMap map;
+
+    /**
+     * Creates a new dil shape
+     *
+     * @param shortName shortname
+     * @param inputs    inputs
+     * @param outputs   outputs
+     * @param label     label
+     * @param attr      attributes of the embedded circuit
+     */
+<span class="fc" id="L49">    public DILShape(String shortName, PinDescriptions inputs, PinDescriptions outputs, String label, ElementAttributes attr) {</span>
+<span class="fc" id="L50">        this.shortName = shortName;</span>
+<span class="fc" id="L51">        this.label = label;</span>
+<span class="fc" id="L52">        this.width = attr.get(Keys.WIDTH)+1;</span>
+<span class="fc" id="L53">        map = new ShapePinMap(this.width, attr.get(Keys.PINCOUNT));</span>
+<span class="fc" id="L54">        map.addAll(inputs);</span>
+<span class="fc" id="L55">        map.addAll(outputs);</span>
+<span class="fc" id="L56">        this.pinCount = map.getPinCount();</span>
+<span class="fc" id="L57">        pins = map.createPins();</span>
+
+<span class="fc" id="L59">    }</span>
+
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L64">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L69">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L74">        int dp = 2 * SIZE;</span>
+<span class="fc" id="L75">        int pin = dp / 4;</span>
+<span class="fc" id="L76">        int x = width * SIZE;</span>
+<span class="fc" id="L77">        int h = (pinCount / 2) * dp - SIZE;</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int i = 0; i &lt; pinCount / 2; i++) {</span>
+<span class="fc" id="L80">            int y = i * dp;</span>
+<span class="fc" id="L81">            graphic.drawPolygon(</span>
+                    new Polygon(false)
+<span class="fc" id="L83">                            .add(pin, y - pin)</span>
+<span class="fc" id="L84">                            .add(2, y - pin)</span>
+<span class="fc" id="L85">                            .add(2, y + pin)</span>
+<span class="fc" id="L86">                            .add(pin, y + pin), Style.NORMAL);</span>
+<span class="fc" id="L87">            graphic.drawText(new Vector(pin + SIZE2 / 2, y), map.getText(i + 1), Orientation.LEFTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc" id="L88">            graphic.drawPolygon(</span>
+                    new Polygon(false)
+<span class="fc" id="L90">                            .add(x - pin, y - pin)</span>
+<span class="fc" id="L91">                            .add(x - 2, y - pin)</span>
+<span class="fc" id="L92">                            .add(x - 2, y + pin)</span>
+<span class="fc" id="L93">                            .add(x - pin, y + pin), Style.NORMAL);</span>
+<span class="fc" id="L94">            graphic.drawText(new Vector(x - pin - SIZE2 / 2, y), map.getText(pinCount - i), Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+        }
+
+<span class="fc" id="L97">        graphic.drawPolygon(</span>
+                new Polygon(true)
+<span class="fc" id="L99">                        .add(pin, -SIZE)</span>
+<span class="fc" id="L100">                        .add(x / 2 - RAD, -SIZE)</span>
+<span class="fc" id="L101">                        .add(new Vector(x / 2 - RAD, -SIZE + BEZ), new Vector(x / 2 - BEZ, -SIZE + RAD), new Vector(x / 2, -SIZE + RAD))</span>
+<span class="fc" id="L102">                        .add(new Vector(x / 2 + BEZ, -SIZE + RAD), new Vector(x / 2 + RAD, -SIZE + BEZ), new Vector(x / 2 + RAD, -SIZE))</span>
+<span class="fc" id="L103">                        .add(x - pin, -SIZE)</span>
+<span class="fc" id="L104">                        .add(x - pin, h)</span>
+<span class="fc" id="L105">                        .add(pin, h), Style.NORMAL);</span>
+<span class="fc" id="L106">        graphic.drawText(new Vector(x / 2, SIZE2), new Vector(x / 2, SIZE * 2), shortName, Orientation.LEFTCENTER, Style.NORMAL_TEXT);</span>
+
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="nc" id="L109">            graphic.drawText(new Vector(x / 2, h + SIZE2), label, Orientation.CENTERTOP, Style.NORMAL_TEXT);</span>
+<span class="fc" id="L110">    }</span>
+
+    private static final class ShapePinMap {
+        private final int width;
+        private final HashMap&lt;Integer, PinDescription&gt; map;
+        private ArrayList&lt;PinDescription&gt; notAssigned;
+        private int pinCount;
+
+<span class="fc" id="L118">        private ShapePinMap(int width, int minPinCount) {</span>
+<span class="fc" id="L119">            this.width = width;</span>
+<span class="fc" id="L120">            this.pinCount = minPinCount;</span>
+<span class="fc" id="L121">            map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L122">            notAssigned = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L123">        }</span>
+
+        private void addAll(PinDescriptions pinDescriptions) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (PinDescription p : pinDescriptions)</span>
+<span class="fc" id="L127">                add(p);</span>
+<span class="fc" id="L128">        }</span>
+
+        private void add(PinDescription p) {
+<span class="fc" id="L131">            int num = 0;</span>
+            try {
+<span class="fc" id="L133">                String str = p.getPinNumber();</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                if (str != null)</span>
+<span class="fc" id="L135">                    num = Integer.parseInt(str);</span>
+<span class="nc" id="L136">            } catch (NumberFormatException e) {</span>
+                // keep zero
+<span class="fc" id="L138">            }</span>
+
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">            if (num == 0 || map.containsKey(num))</span>
+<span class="nc" id="L141">                notAssigned.add(p);</span>
+            else {
+<span class="fc" id="L143">                map.put(num, p);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                if (num &gt; pinCount)</span>
+<span class="fc" id="L145">                    pinCount = num;</span>
+            }
+<span class="fc" id="L147">        }</span>
+
+        private int getPinCount() {
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            if (notAssigned != null)</span>
+<span class="fc" id="L151">                assignNotAssigned();</span>
+<span class="fc" id="L152">            return pinCount;</span>
+        }
+
+        private void assignNotAssigned() {
+<span class="fc" id="L156">            int num = 1;</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            for (PinDescription p : notAssigned) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                while (map.containsKey(num)) num++;</span>
+<span class="nc" id="L159">                map.put(num, p);</span>
+<span class="nc" id="L160">            }</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (num &gt; pinCount)</span>
+<span class="nc" id="L162">                pinCount = num;</span>
+<span class="fc" id="L163">            notAssigned = null;</span>
+
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            if ((pinCount &amp; 1) == 1)</span>
+<span class="fc" id="L166">                pinCount++;</span>
+<span class="fc" id="L167">        }</span>
+
+        private Vector getPinPos(int pinNumber) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (pinNumber &lt;= pinCount / 2)</span>
+<span class="fc" id="L171">                return new Vector(0, (pinNumber - 1) * SIZE * SPACING);</span>
+            else
+<span class="fc" id="L173">                return new Vector(SIZE * width, (pinCount - pinNumber) * SIZE * SPACING);</span>
+        }
+
+        private Pins createPins() {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">            if (notAssigned != null)</span>
+<span class="nc" id="L178">                assignNotAssigned();</span>
+<span class="fc" id="L179">            Pins pins = new Pins();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            for (Map.Entry&lt;Integer, PinDescription&gt; e : map.entrySet())</span>
+<span class="fc" id="L181">                pins.add(new Pin(getPinPos(e.getKey()), e.getValue()));</span>
+<span class="fc" id="L182">            return pins;</span>
+        }
+
+        private String getText(int i) {
+<span class="fc" id="L186">            PinDescription p = map.get(i);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (p != null)</span>
+<span class="fc" id="L188">                return p.getName();</span>
+            else
+<span class="fc" id="L190">                return &quot;&quot;;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

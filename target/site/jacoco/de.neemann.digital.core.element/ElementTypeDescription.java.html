@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementTypeDescription.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.element</a> &gt; <span class="el_source">ElementTypeDescription.java</span></div><h1>ElementTypeDescription.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.element;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+
+/**
+ * One instance for an element, so there is only one ElementTypeDescription for an AND.
+ * Regardless of how many of these elements are used in the circuit.
+ * It has the possibility to create a concrete element by using the given factory
+ */
+public class ElementTypeDescription {
+    private static final String PINSEPARATOR = &quot;_pin_&quot;;
+    private final String name;
+    private final String langKey;
+    private ClassLoader classLoader;
+    private String shortName;
+    private ElementFactory elementFactory;
+    private final PinDescriptions inputPins;
+    private final ArrayList&lt;Key&gt; attributeList;
+    private boolean supportsHDL;
+
+    /**
+     * Creates a new ElementTypeDescription
+     *
+     * @param clazz     the elements class
+     * @param inputPins names of the input signals
+     */
+    public ElementTypeDescription(Class&lt;? extends Element&gt; clazz, PinDescription... inputPins) {
+<span class="fc" id="L38">        this(clazz.getSimpleName(), clazz, inputPins);</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Creates a new ElementTypeDescription
+     *
+     * @param name      name of this element
+     * @param clazz     the elements class
+     * @param inputPins names of the input signals
+     */
+    public ElementTypeDescription(String name, Class&lt;? extends Element&gt; clazz, PinDescription... inputPins) {
+<span class="fc" id="L49">        this(name, attributes -&gt; {</span>
+            try {
+<span class="fc" id="L51">                Constructor&lt;?&gt; constructor = clazz.getConstructor(ElementAttributes.class);</span>
+<span class="fc" id="L52">                return (Element) constructor.newInstance(attributes);</span>
+<span class="nc" id="L53">            } catch (Exception e) {</span>
+<span class="nc" id="L54">                throw new RuntimeException(Lang.get(&quot;err_couldNotCreateElement_N&quot;, name), e);</span>
+            }
+        }, inputPins);
+<span class="fc" id="L57">        classLoader = clazz.getClassLoader();</span>
+<span class="fc" id="L58">    }</span>
+
+    /**
+     * Creates a new ElementTypeDescription
+     *
+     * @param name           name of this element
+     * @param elementFactory factory used to create the element
+     * @param inputPins      names of the input signals
+     */
+<span class="fc" id="L67">    public ElementTypeDescription(String name, ElementFactory elementFactory, PinDescription... inputPins) {</span>
+<span class="fc" id="L68">        this.name = name;</span>
+<span class="fc" id="L69">        langKey = &quot;elem_&quot; + name;</span>
+<span class="fc" id="L70">        this.elementFactory = elementFactory;</span>
+<span class="fc" id="L71">        this.inputPins = new PinDescriptions(inputPins).setLangKey(getPinLangKey());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (PinDescription p : inputPins)</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (p.getDirection() != PinDescription.Direction.input)</span>
+<span class="nc" id="L74">                throw new RuntimeException(&quot;pin direction error&quot;);</span>
+<span class="fc" id="L75">        attributeList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * Sets the factory to create elements.
+     *
+     * @param elementFactory the factory
+     */
+    public void setElementFactory(ElementFactory elementFactory) {
+<span class="fc" id="L84">        this.elementFactory = elementFactory;</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Returns a short name which should be used to draw on the shape.
+     * If not set, the elements name is used instead.
+     *
+     * @return the shortname
+     */
+    public String getShortName() {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (shortName == null) {</span>
+<span class="fc" id="L95">            String s = Lang.getNull(langKey + &quot;_short&quot;);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (s != null)</span>
+<span class="fc" id="L97">                return s;</span>
+<span class="fc" id="L98">            return getTranslatedName();</span>
+        } else
+<span class="fc" id="L100">            return shortName;</span>
+    }
+
+    /**
+     * @return the language key pin prefix
+     */
+    public String getPinLangKey() {
+<span class="fc" id="L107">        return langKey + PINSEPARATOR;</span>
+    }
+
+    /**
+     * @return returns the translated element name
+     */
+    public String getTranslatedName() {
+<span class="fc" id="L114">        String n = Lang.getNull(langKey);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (n != null) return n;</span>
+<span class="fc" id="L116">        else return name;</span>
+    }
+
+    /**
+     * Sets a short name which should be used to draw it on the shape.
+     *
+     * @param shortName the short name
+     * @return this for call chaining
+     */
+    public ElementTypeDescription setShortName(String shortName) {
+<span class="fc" id="L126">        this.shortName = shortName;</span>
+<span class="fc" id="L127">        return this;</span>
+    }
+
+    /**
+     * Returns a description of this element.
+     * If no description is set, the name is returned
+     *
+     * @param elementAttributes the elements attributes
+     * @return the description
+     */
+    public String getDescription(ElementAttributes elementAttributes) {
+<span class="fc" id="L138">        String d = Lang.getNull(langKey + &quot;_tt&quot;);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (d == null) {</span>
+<span class="nc" id="L140">            d = getTranslatedName();</span>
+        }
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (supportsHDL)</span>
+<span class="fc" id="L143">            d += &quot; &quot; + Lang.get(&quot;msg_supportsHDL&quot;);</span>
+<span class="fc" id="L144">        return d;</span>
+    }
+
+    /**
+     * Adds an attribute to this Part.
+     * Should be one of the constants in AttributeKey.
+     *
+     * @param key     the key
+     * @param &lt;VALUE&gt; type of the value beloging to the key
+     * @return this for call chaining
+     * @see Keys
+     */
+    public &lt;VALUE&gt; ElementTypeDescription addAttribute(Key&lt;VALUE&gt; key) {
+<span class="fc" id="L157">        attributeList.add(key);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (key == Keys.INT_FORMAT)</span>
+<span class="fc" id="L159">            attributeList.add(Keys.FIXED_POINT);</span>
+<span class="fc" id="L160">        return this;</span>
+    }
+
+    /**
+     * Used to flag this elements as supporting hdl export
+     *
+     * @return this for chained calls
+     */
+    public ElementTypeDescription supportsHDL() {
+<span class="fc" id="L169">        supportsHDL = true;</span>
+<span class="fc" id="L170">        return this;</span>
+    }
+
+    /**
+     * @return true if the element supports export to HDL.
+     */
+    public boolean isSupportsHDL() {
+<span class="fc" id="L177">        return supportsHDL;</span>
+    }
+
+    /**
+     * Returns the list of attributes which are used by this element.
+     *
+     * @return the list of attributes
+     */
+    public ArrayList&lt;Key&gt; getAttributeList() {
+<span class="fc" id="L186">        return attributeList;</span>
+    }
+
+    /**
+     * The name of this element.
+     * The name needs to be unique.
+     *
+     * @return the name
+     */
+    public String getName() {
+<span class="fc" id="L196">        return name;</span>
+    }
+
+    /**
+     * Returns the description of the inputs which are needed by this element.
+     * If you need a list of outputs names you can create a element using &lt;code&gt;createElement()&lt;/code&gt;
+     * and request the outputs by calling the elements &lt;code&gt;getOutputs()&lt;/code&gt; method.
+     * The you get an array of &lt;code&gt;ObservableName&lt;/code&gt;s, and &lt;code&gt;ObservableName&lt;/code&gt; has a
+     * field &lt;code&gt;name&lt;/code&gt;. Or call the getOutputDescription method.
+     *
+     * @param elementAttributes the elements attributes
+     * @return the list of input descriptions
+     * @throws NodeException NodeException
+     */
+    public PinDescriptions getInputDescription(ElementAttributes elementAttributes) throws NodeException {
+<span class="fc" id="L211">        return inputPins;</span>
+    }
+
+    /**
+     * Returns the output pin descriptions of this element.
+     *
+     * @param elementAttributes the elements attributes
+     * @return the list of input descriptions
+     * @throws PinException PinException
+     */
+    public PinDescriptions getOutputDescriptions(ElementAttributes elementAttributes) throws PinException {
+<span class="fc" id="L222">        return new PinDescriptions(elementFactory.create(elementAttributes).getOutputs());</span>
+    }
+
+    /**
+     * Creates a element of this type
+     *
+     * @param elementAttributes the elements attributes
+     * @return the Part instance
+     */
+    public Element createElement(ElementAttributes elementAttributes) {
+<span class="fc" id="L232">        return elementFactory.create(elementAttributes);</span>
+    }
+
+    /**
+     * Returns true if this description contains the given key
+     *
+     * @param key the key
+     * @return true if this description contains the given key
+     */
+    public boolean hasAttribute(Key key) {
+<span class="fc" id="L242">        return attributeList.contains(key);</span>
+    }
+
+    /**
+     * Returns the input with the given number or null if it does not exist
+     *
+     * @param i input number
+     * @return the inputs description
+     */
+    public PinDescription getInput(int i) {
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (i &gt;= inputPins.size())</span>
+<span class="nc" id="L253">            return null;</span>
+        else
+<span class="nc" id="L255">            return inputPins.get(i);</span>
+    }
+
+    /**
+     * @return the class loader, the component is loaded from. Maybe null.
+     */
+    public ClassLoader getClassLoader() {
+<span class="fc" id="L262">        return classLoader;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

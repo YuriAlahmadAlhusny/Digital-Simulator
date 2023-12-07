@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataBus.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring.bus</a> &gt; <span class="el_source">DataBus.java</span></div><h1>DataBus.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring.bus;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.model.Net;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+
+/**
+ * Handles the creation of a data bus.
+ * Is needed to connect multiple outputs which can become high Z.
+ * If one of the output becomes low Z, this value is returned by the {@link ObservableValue}
+ * created by this bus. If more than one output becomes low Z and the values are not equal then
+ * a {@link de.neemann.digital.core.BurnException} is thrown after the models step is completed.
+ * During the calculation of of a single step a temporary burn condition is allowed.
+ */
+public class DataBus {
+    private final CommonBusValue commonBusValue;
+
+    /**
+     * Creates a new data bus
+     *
+     * @param net     the net
+     * @param model   the model
+     * @param outputs the outputs building the net
+     * @throws PinException PinException
+     */
+    public DataBus(Net net, Model model, ArrayList&lt;Pin&gt; outputs) throws PinException {
+<span class="fc" id="L38">        this(net, model, createArray(outputs));</span>
+<span class="fc" id="L39">    }</span>
+
+    private static ObservableValue[] createArray(ArrayList&lt;Pin&gt; outputs) {
+<span class="fc" id="L42">        ObservableValue[] o = new ObservableValue[outputs.size()];</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; outputs.size(); i++)</span>
+<span class="fc" id="L44">            o[i] = outputs.get(i).getValue();</span>
+<span class="fc" id="L45">        return o;</span>
+    }
+
+    /**
+     * Creates a new data bus
+     *
+     * @param net     the net
+     * @param model   the model
+     * @param outputs the outputs building the net
+     * @throws PinException PinException
+     */
+<span class="fc" id="L56">    public DataBus(Net net, Model model, ObservableValue... outputs) throws PinException {</span>
+<span class="fc" id="L57">        int bits = 0;</span>
+<span class="fc" id="L58">        PinDescription.PullResistor resistor = PinDescription.PullResistor.none;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (ObservableValue o : outputs) {</span>
+<span class="fc" id="L60">            int b = o.getBits();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (bits == 0) bits = b;</span>
+            else {
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                if (bits != b)</span>
+<span class="nc" id="L64">                    throw new PinException(Lang.get(&quot;err_notAllOutputsSameBits&quot;), net);</span>
+            }
+//            if (!o.supportsHighZ())
+//                throw new PinException(Lang.get(&quot;err_notAllOutputsSupportHighZ&quot;), net);
+
+<span class="fc bfc" id="L69" title="All 3 branches covered.">            switch (o.getPullResistor()) {</span>
+                case pullDown:
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                    if (resistor == PinDescription.PullResistor.pullUp)</span>
+<span class="fc" id="L72">                        throw new PinException(Lang.get(&quot;err_pullUpAndDownNotAllowed&quot;), net);</span>
+<span class="fc" id="L73">                    resistor = PinDescription.PullResistor.pullDown;</span>
+<span class="fc" id="L74">                    break;</span>
+                case pullUp:
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                    if (resistor == PinDescription.PullResistor.pullDown)</span>
+<span class="nc" id="L77">                        throw new PinException(Lang.get(&quot;err_pullUpAndDownNotAllowed&quot;), net);</span>
+<span class="fc" id="L78">                    resistor = PinDescription.PullResistor.pullUp;</span>
+                    break;
+            }
+        }
+
+<span class="fc" id="L83">        BusModelStateObserver obs = model.getOrCreateObserver(BusModelStateObserver.class, BusModelStateObserver::new);</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        commonBusValue = new CommonBusValue(bits, obs, resistor, outputs, net == null ? null : net.getOrigin());</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (ObservableValue p : outputs)</span>
+<span class="fc" id="L87">            p.addObserverToValue(commonBusValue);</span>
+<span class="fc" id="L88">        commonBusValue.hasChanged();</span>
+<span class="fc" id="L89">    }</span>
+
+    /**
+     * Returns the readable ObservableValue for this bus
+     *
+     * @return the readable ObservableValue
+     */
+    public ObservableValue getReadableOutput() {
+<span class="fc" id="L97">        return commonBusValue;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

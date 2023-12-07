@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InputShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">InputShape.java</span></div><h1>InputShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.gui.components.SingleValueDialog;
+import de.neemann.gui.Screen;
+
+import java.awt.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+import static de.neemann.digital.draw.shapes.OutputShape.LATEX_RAD;
+
+/**
+ * The input shape
+ */
+public class InputShape implements Shape {
+
+<span class="fc" id="L34">    private static final int SLIDER_HEIGHT = (int) (300 * Screen.getInstance().getScaling());</span>
+
+    private final String label;
+    private final PinDescriptions outputs;
+    private final ValueFormatter formatter;
+    private final boolean isHighZ;
+    private final boolean avoidLow;
+    private final int bits;
+    private final boolean small;
+    private IOState ioState;
+    private SingleValueDialog dialog;
+    private Value value;
+    private Value inValue;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L55">    public InputShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L56">        this.outputs = outputs;</span>
+<span class="fc" id="L57">        String pinNumber = attr.get(Keys.PINNUMBER);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (pinNumber.length() == 0)</span>
+<span class="fc" id="L59">            this.label = attr.getLabel();</span>
+        else
+<span class="fc" id="L61">            this.label = attr.getLabel() + &quot; (&quot; + pinNumber + &quot;)&quot;;</span>
+
+<span class="fc" id="L63">        formatter = attr.getValueFormatter();</span>
+
+<span class="fc bfc" id="L65" title="All 4 branches covered.">        isHighZ = attr.get(Keys.INPUT_DEFAULT).isHighZ() || attr.get(Keys.IS_HIGH_Z);</span>
+
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">        avoidLow = isHighZ &amp;&amp; attr.get(Keys.AVOID_ACTIVE_LOW);</span>
+
+<span class="fc" id="L69">        bits = attr.getBits();</span>
+<span class="fc" id="L70">        small = attr.get(Keys.IN_OUT_SMALL);</span>
+<span class="fc" id="L71">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L75">        return new Pins().add(new Pin(new Vector(0, 0), outputs.get(0)));</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="fc" id="L80">        this.ioState = ioState;</span>
+<span class="fc" id="L81">        return new InputInteractor();</span>
+    }
+
+    /**
+     * @return the output connected to this shape
+     */
+    public ObservableValue getObservableValue() {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (ioState == null)</span>
+<span class="nc" id="L89">            return null;</span>
+        else
+<span class="nc" id="L91">            return ioState.getOutput(0);</span>
+    }
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (ioState != null) {</span>
+<span class="nc" id="L97">            value = ioState.getOutput(0).getCopy();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (ioState.inputCount() == 1)</span>
+<span class="nc" id="L99">                inValue = ioState.getInput(0).getCopy();</span>
+        }
+<span class="fc" id="L101">    }</span>
+
+    @Override
+    public void drawTo(Graphic graphic, Style heighLight) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (graphic.isFlagSet(Graphic.Flag.smallIO)) {</span>
+<span class="nc" id="L106">            Vector center = new Vector(-LATEX_RAD.x, 0);</span>
+<span class="nc" id="L107">            graphic.drawCircle(center.sub(LATEX_RAD), center.add(LATEX_RAD), Style.NORMAL);</span>
+<span class="nc" id="L108">            Vector textPos = new Vector(-SIZE2 - LATEX_RAD.x, 0);</span>
+<span class="nc" id="L109">            graphic.drawText(textPos, label, Orientation.RIGHTCENTER, Style.INOUT);</span>
+<span class="nc" id="L110">        } else {</span>
+<span class="fc" id="L111">            int outSize = OutputShape.getOutSize(small);</span>
+<span class="fc" id="L112">            Style style = OutputShape.getOutStyle(small);</span>
+<span class="fc" id="L113">            final Polygon box = new Polygon(true).add(-outSize * 2 - 1, -outSize).add(-1, -outSize).add(-1, outSize).add(-outSize * 2 - 1, outSize);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            if (value != null) {</span>
+<span class="nc" id="L115">                style = Style.getWireStyle(value);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (value.getBits() &gt; 1) {</span>
+<span class="nc" id="L117">                    Value v = value;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                    if (inValue != null)</span>
+<span class="nc" id="L119">                        v = inValue;</span>
+<span class="nc" id="L120">                    Vector textPos = new Vector(-1 - outSize, -4 - outSize);</span>
+<span class="nc" id="L121">                    graphic.drawText(textPos, formatter.formatToView(v), Orientation.CENTERBOTTOM, Style.NORMAL);</span>
+<span class="nc" id="L122">                } else {</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">                    if (inValue != null &amp;&amp; !inValue.isEqual(value))</span>
+<span class="nc" id="L124">                        graphic.drawPolygon(box, Style.getWireStyle(inValue));</span>
+                }
+            }
+
+<span class="fc" id="L128">            graphic.drawPolygon(box, Style.NORMAL);</span>
+
+<span class="fc" id="L130">            Vector center = new Vector(-1 - outSize, 0);</span>
+<span class="fc" id="L131">            Vector rad = OutputShape.getOutRad(small);</span>
+<span class="fc" id="L132">            graphic.drawCircle(center.sub(rad), center.add(rad), style);</span>
+
+<span class="fc" id="L134">            Vector textPos = new Vector(-outSize * 3, 0);</span>
+<span class="fc" id="L135">            graphic.drawText(textPos, label, Orientation.RIGHTCENTER, Style.INOUT);</span>
+        }
+<span class="fc" id="L137">    }</span>
+
+<span class="fc" id="L139">    private class InputInteractor extends Interactor {</span>
+        private boolean isDrag;
+        private Point startPos;
+        private long startValue;
+        private long lastValueSet;
+
+        @Override
+        public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L147">            ObservableValue value = ioState.getOutput(0);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (bits == 1) {</span>
+<span class="nc" id="L149">                modelSync.modify(() -&gt; {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                    if (isHighZ) {</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">                        if (value.isHighZ()) {</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">                            if (avoidLow)</span>
+<span class="nc" id="L153">                                value.setValue(1);</span>
+                            else
+<span class="nc" id="L155">                                value.setValue(0);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                        } else if (value.getValue() == 0) value.setValue(1);</span>
+<span class="nc" id="L157">                        else value.setToHighZ();</span>
+                    } else
+<span class="nc" id="L159">                        value.setValue(1 - value.getValue());</span>
+<span class="nc" id="L160">                });</span>
+            } else {
+<span class="nc bnc" id="L162" title="All 4 branches missed.">                if (dialog == null || !dialog.isVisible()) {</span>
+<span class="nc" id="L163">                    Model model = ((In) element).getModel();</span>
+<span class="nc" id="L164">                    dialog = new SingleValueDialog(model.getWindowPosManager().getMainFrame(), pos, label, value, isHighZ, model)</span>
+<span class="nc" id="L165">                            .setSelectedFormat(formatter);</span>
+<span class="nc" id="L166">                    dialog.setVisible(true);</span>
+<span class="nc" id="L167">                } else</span>
+<span class="nc" id="L168">                    dialog.requestFocus();</span>
+
+            }
+<span class="nc" id="L171">        }</span>
+
+        @Override
+        public void pressed(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L175">            isDrag = false;</span>
+<span class="nc" id="L176">        }</span>
+
+        @Override
+        public void dragged(CircuitComponent cc, Point posOnScreen, Vector pos, Transform transform, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L180">            ObservableValue value = ioState.getOutput(0);</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">            if (bits &gt; 1 &amp;&amp; !value.isHighZ()) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">                if (!isDrag) {</span>
+<span class="nc" id="L183">                    isDrag = true;</span>
+<span class="nc" id="L184">                    startPos = posOnScreen;</span>
+<span class="nc" id="L185">                    startValue = value.getValue();</span>
+<span class="nc" id="L186">                    lastValueSet = startValue;</span>
+                } else {
+<span class="nc" id="L188">                    int dy = startPos.y - posOnScreen.y;</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                    if (dy != 0) {</span>
+<span class="nc" id="L190">                        double inc = ((double) dy) / SLIDER_HEIGHT;</span>
+<span class="nc" id="L191">                        long val = formatter.dragValue(startValue, value.getBits(), inc);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                        if (val != lastValueSet) {</span>
+<span class="nc" id="L193">                            modelSync.modify(() -&gt; value.setValue(val));</span>
+<span class="nc" id="L194">                            lastValueSet = val;</span>
+                        }
+                    }
+                }
+            }
+<span class="nc" id="L199">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

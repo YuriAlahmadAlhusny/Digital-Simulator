@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Parser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.testing.parser</a> &gt; <span class="el_source">Parser.java</span></div><h1>Parser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.testing.parser;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.testing.parser.functions.Function;
+import de.neemann.digital.testing.parser.functions.IfThenElse;
+import de.neemann.digital.testing.parser.functions.Random;
+import de.neemann.digital.testing.parser.functions.SignExtend;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * Parser to parse test data.
+ * The constructor takes a string, and after a call to parse()
+ * the names of the signals and the test vectors are generated.
+ * Via the {@link #getValue()} or the {@link #getValue(Context)} functions you can utilize
+ * the parser to evaluate integer functions.
+ * If you want to evaluate an expression several times you should use the {@link #parseExpression()} function.
+ * &lt;p&gt;
+ * Created by Helmut.Neemann on 02.12.2016.
+ */
+public class Parser {
+
+    private final ArrayList&lt;String&gt; names;
+    private final ModelInitializer modelInit;
+    private final ArrayList&lt;VirtualSignal&gt; virtualSignals;
+    private final Tokenizer tok;
+<span class="fc" id="L39">    private final HashMap&lt;String, Function&gt; functions = new HashMap&lt;&gt;();</span>
+    private final Random random;
+    private LineEmitter emitter;
+
+    /**
+     * Creates a new instance
+     *
+     * @param data the test data string
+     */
+<span class="fc" id="L48">    public Parser(String data) {</span>
+<span class="fc" id="L49">        functions.put(&quot;signExt&quot;, new SignExtend());</span>
+<span class="fc" id="L50">        random = new Random();</span>
+<span class="fc" id="L51">        functions.put(&quot;random&quot;, random);</span>
+<span class="fc" id="L52">        functions.put(&quot;ite&quot;, new IfThenElse());</span>
+<span class="fc" id="L53">        names = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L54">        virtualSignals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L55">        modelInit = new ModelInitializer();</span>
+<span class="fc" id="L56">        tok = new Tokenizer(new BufferedReader(new StringReader(data)));</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Parses the data
+     *
+     * @return this for chained calls
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public Parser parse() throws IOException, ParserException {
+<span class="fc" id="L67">        parseHeader();</span>
+<span class="fc" id="L68">        emitter = parseRows(null);</span>
+<span class="fc" id="L69">        expect(Tokenizer.Token.EOF);</span>
+<span class="fc" id="L70">        return this;</span>
+    }
+
+    private void parseHeader() throws IOException, ParserException {
+<span class="fc" id="L74">        tok.skipEmptyLines();</span>
+        while (true) {
+<span class="fc" id="L76">            Tokenizer.Token token = tok.simpleIdent();</span>
+<span class="pc bpc" id="L77" title="1 of 3 branches missed.">            switch (token) {</span>
+                case IDENT:
+<span class="fc" id="L79">                    final String name = tok.getIdent();</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">                    if (names.contains(name))</span>
+<span class="nc" id="L81">                        throw new ParserException(Lang.get(&quot;err_nameUsedTwice_N&quot;, name));</span>
+<span class="fc" id="L82">                    names.add(name);</span>
+<span class="fc" id="L83">                    break;</span>
+                case EOL:
+<span class="fc" id="L85">                    return;</span>
+                default:
+<span class="nc" id="L87">                    throw newUnexpectedToken(token);</span>
+            }
+<span class="fc" id="L89">        }</span>
+    }
+
+    private ParserException newUnexpectedToken(Tokenizer.Token token) {
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        String name = token == Tokenizer.Token.IDENT ? tok.getIdent() : token.name();</span>
+<span class="fc" id="L94">        return new ParserException(Lang.get(&quot;err_unexpectedToken_N0_inLine_N1&quot;, name, tok.getLine()));</span>
+    }
+
+    private LineEmitter parseRows(Tokenizer.Token endToken) throws IOException, ParserException {
+<span class="fc" id="L98">        LineEmitterList list = new LineEmitterList();</span>
+        while (true) {
+<span class="fc" id="L100">            Tokenizer.Token t = tok.peek();</span>
+<span class="pc bpc" id="L101" title="1 of 13 branches missed.">            switch (t) {</span>
+                case EOL:
+<span class="fc" id="L103">                    break;</span>
+                case EOF:
+<span class="fc bfc" id="L105" title="All 2 branches covered.">                    if (endToken != null)</span>
+<span class="fc" id="L106">                        throw newUnexpectedToken(t);</span>
+<span class="fc" id="L107">                    return list.minimize();</span>
+                case BITS:
+                case OPEN:
+                case IDENT:
+                case NUMBER:
+<span class="fc" id="L112">                    list.add(parseSingleRow());</span>
+<span class="fc" id="L113">                    break;</span>
+                case INIT:
+<span class="fc" id="L115">                    tok.consume();</span>
+<span class="fc" id="L116">                    expect(Tokenizer.Token.IDENT);</span>
+<span class="fc" id="L117">                    final String sName = tok.getIdent();</span>
+<span class="fc" id="L118">                    expect(Tokenizer.Token.EQUAL);</span>
+<span class="fc" id="L119">                    int sign = 1;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                    if (tok.peek() == Tokenizer.Token.SUB) {</span>
+<span class="fc" id="L121">                        tok.consume();</span>
+<span class="fc" id="L122">                        sign = -1;</span>
+                    }
+<span class="fc" id="L124">                    expect(Tokenizer.Token.NUMBER);</span>
+<span class="fc" id="L125">                    long n = convToLong(tok.getIdent());</span>
+<span class="fc" id="L126">                    expect(Tokenizer.Token.SEMICOLON);</span>
+<span class="fc" id="L127">                    modelInit.initSignal(sName, sign * n);</span>
+<span class="fc" id="L128">                    break;</span>
+                case MEMORY:
+<span class="fc" id="L130">                    tok.consume();</span>
+<span class="fc" id="L131">                    expect(Tokenizer.Token.IDENT);</span>
+<span class="fc" id="L132">                    final String ramName = tok.getIdent();</span>
+<span class="fc" id="L133">                    expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L134">                    expect(Tokenizer.Token.NUMBER);</span>
+<span class="fc" id="L135">                    long addr = convToLong(tok.getIdent());</span>
+<span class="fc" id="L136">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L137">                    expect(Tokenizer.Token.EQUAL);</span>
+<span class="fc" id="L138">                    expect(Tokenizer.Token.NUMBER);</span>
+<span class="fc" id="L139">                    long val = convToLong(tok.getIdent());</span>
+<span class="fc" id="L140">                    expect(Tokenizer.Token.SEMICOLON);</span>
+<span class="fc" id="L141">                    modelInit.initMemory(ramName, (int) addr, val);</span>
+<span class="fc" id="L142">                    break;</span>
+                case PROGRAM:
+<span class="fc" id="L144">                    tok.consume();</span>
+<span class="fc" id="L145">                    modelInit.initProgramMemory(parseData());</span>
+<span class="fc" id="L146">                    break;</span>
+                case DECLARE:
+<span class="fc" id="L148">                    tok.consume();</span>
+<span class="fc" id="L149">                    expect(Tokenizer.Token.IDENT);</span>
+<span class="fc" id="L150">                    final String sigName = tok.getIdent();</span>
+<span class="fc" id="L151">                    expect(Tokenizer.Token.EQUAL);</span>
+<span class="fc" id="L152">                    final Expression sigExpression = parseExpression();</span>
+<span class="fc" id="L153">                    expect(Tokenizer.Token.SEMICOLON);</span>
+<span class="fc" id="L154">                    addVirtualSignal(new VirtualSignal(sigName, sigExpression));</span>
+<span class="fc" id="L155">                    break;</span>
+                case END:
+<span class="fc" id="L157">                    tok.consume();</span>
+<span class="fc" id="L158">                    expect(endToken);</span>
+<span class="fc" id="L159">                    return list.minimize();</span>
+                case LET:
+<span class="fc" id="L161">                    tok.consume();</span>
+<span class="fc" id="L162">                    expect(Tokenizer.Token.IDENT);</span>
+<span class="fc" id="L163">                    final String varName = tok.getIdent();</span>
+<span class="fc" id="L164">                    expect(Tokenizer.Token.EQUAL);</span>
+<span class="fc" id="L165">                    final Expression intValue = parseExpression();</span>
+<span class="fc" id="L166">                    expect(Tokenizer.Token.SEMICOLON);</span>
+<span class="fc" id="L167">                    list.add((listener, context) -&gt; context.setVar(varName, intValue.value(context)));</span>
+<span class="fc" id="L168">                    break;</span>
+                case REPEAT:
+<span class="fc" id="L170">                    tok.consume();</span>
+<span class="fc" id="L171">                    expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L172">                    long count = parseInt();</span>
+<span class="fc" id="L173">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L174">                    list.add(new LineEmitterRepeat(&quot;n&quot;, count, parseSingleRow()));</span>
+<span class="fc" id="L175">                    break;</span>
+                case LOOP:
+<span class="fc" id="L177">                    tok.consume();</span>
+<span class="fc" id="L178">                    expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L179">                    expect(Tokenizer.Token.IDENT);</span>
+<span class="fc" id="L180">                    String var = tok.getIdent();</span>
+<span class="fc" id="L181">                    expect(Tokenizer.Token.COMMA);</span>
+<span class="fc" id="L182">                    count = parseInt();</span>
+<span class="fc" id="L183">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L184">                    list.add(new LineEmitterRepeat(var, count, parseRows(Tokenizer.Token.LOOP)));</span>
+<span class="fc" id="L185">                    break;</span>
+                case WHILE:
+<span class="fc" id="L187">                    tok.consume();</span>
+<span class="fc" id="L188">                    expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L189">                    final Expression condition = parseExpression();</span>
+<span class="fc" id="L190">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L191">                    list.add(new LineEmitterWhile(condition, parseRows(Tokenizer.Token.WHILE)));</span>
+<span class="fc" id="L192">                    break;</span>
+                default:
+<span class="nc" id="L194">                    throw newUnexpectedToken(t);</span>
+            }
+<span class="fc" id="L196">        }</span>
+    }
+
+    private DataField parseData() throws IOException, ParserException {
+<span class="fc" id="L200">        expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L201">        DataField df = new DataField();</span>
+<span class="fc" id="L202">        int addr = 0;</span>
+        while (true) {
+<span class="fc" id="L204">            expect(Tokenizer.Token.NUMBER);</span>
+<span class="fc" id="L205">            df.setData(addr, convToLong(tok.getIdent()));</span>
+<span class="fc" id="L206">            addr++;</span>
+<span class="fc" id="L207">            Tokenizer.Token t = tok.next();</span>
+<span class="pc bpc" id="L208" title="1 of 3 branches missed.">            switch (t) {</span>
+                case COMMA:
+<span class="fc" id="L210">                    break;</span>
+                case CLOSE:
+<span class="fc" id="L212">                    return df;</span>
+                default:
+<span class="nc" id="L214">                    throw newUnexpectedToken(t);</span>
+            }
+<span class="fc" id="L216">        }</span>
+    }
+
+    private void addVirtualSignal(VirtualSignal vs) throws ParserException {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (VirtualSignal v : virtualSignals)</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            if (v.getName().equals(vs.getName()))</span>
+<span class="nc" id="L222">                throw new ParserException(Lang.get(&quot;err_virtualSignal_N_DeclaredTwiceInLine_N&quot;, vs.getName(), tok.getLine()));</span>
+<span class="fc" id="L223">        virtualSignals.add(vs);</span>
+<span class="fc" id="L224">    }</span>
+
+    private LineEmitter parseSingleRow() throws IOException, ParserException {
+<span class="fc" id="L227">        LineEmitterSimple line = null;</span>
+        while (true) {
+<span class="fc" id="L229">            Tokenizer.Token token = tok.next();</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            if (line == null)</span>
+<span class="fc" id="L231">                line = new LineEmitterSimple(names.size(), tok.getLine());</span>
+<span class="pc bpc" id="L232" title="1 of 6 branches missed.">            switch (token) {</span>
+                case NUMBER:
+<span class="fc" id="L234">                    Value num = new Value(convToLong(tok.getIdent()));</span>
+<span class="fc" id="L235">                    line.add((vals, context) -&gt; vals.add(num));</span>
+<span class="fc" id="L236">                    break;</span>
+                case BITS:
+<span class="fc" id="L238">                    expect(Tokenizer.Token.OPEN);</span>
+<span class="fc" id="L239">                    int bitCount = (int) parseInt();</span>
+<span class="fc" id="L240">                    expect(Tokenizer.Token.COMMA);</span>
+<span class="fc" id="L241">                    Expression exp = parseExpression();</span>
+<span class="fc" id="L242">                    line.add(new ValueAppenderBits(bitCount, exp));</span>
+<span class="fc" id="L243">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L244">                    break;</span>
+                case IDENT:
+                    try {
+<span class="fc" id="L247">                        final Value value = new Value(tok.getIdent().toUpperCase());</span>
+<span class="fc" id="L248">                        line.add((vals, context) -&gt; vals.add(value));</span>
+<span class="fc" id="L249">                    } catch (Bits.NumberFormatException e) {</span>
+<span class="fc" id="L250">                        throw new ParserException(Lang.get(&quot;err_notANumber_N0_inLine_N1&quot;, tok.getIdent(), tok.getLine()));</span>
+<span class="fc" id="L251">                    }</span>
+                    break;
+                case OPEN:
+<span class="fc" id="L254">                    exp = parseExpression();</span>
+<span class="fc" id="L255">                    line.add((vals, context) -&gt; vals.add(new Value(exp.value(context))));</span>
+<span class="fc" id="L256">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L257">                    break;</span>
+                case EOF:
+                case EOL:
+<span class="fc" id="L260">                    return line;</span>
+                default:
+<span class="nc" id="L262">                    throw newUnexpectedToken(token);</span>
+            }
+<span class="fc" id="L264">        }</span>
+    }
+
+    private long convToLong(String num) throws ParserException {
+        try {
+<span class="fc" id="L269">            return Bits.decode(num);</span>
+<span class="nc" id="L270">        } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L271">            throw new ParserException(Lang.get(&quot;err_notANumber_N0_inLine_N1&quot;, tok.getIdent(), tok.getLine()));</span>
+        }
+    }
+
+    private long parseInt() throws ParserException, IOException {
+<span class="fc" id="L276">        return parseExpression().value(new Context());</span>
+    }
+
+    private void expect(Tokenizer.Token token) throws IOException, ParserException {
+<span class="fc" id="L280">        Tokenizer.Token t = tok.next();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (t != token)</span>
+<span class="fc" id="L282">            throw newUnexpectedToken(t);</span>
+
+<span class="fc" id="L284">    }</span>
+
+    /**
+     * @return the used variables
+     */
+    public ArrayList&lt;String&gt; getNames() {
+<span class="fc" id="L290">        return names;</span>
+    }
+
+    /**
+     * @return the list  of declared virtual signals
+     */
+    public ArrayList&lt;VirtualSignal&gt; getVirtualSignals() {
+<span class="fc" id="L297">        return virtualSignals;</span>
+    }
+
+    /**
+     * @return the model init actions
+     */
+    public ModelInitializer getModelInitializer() {
+<span class="fc" id="L304">        return modelInit;</span>
+    }
+
+    /**
+     * @return the random function
+     */
+    public Random getRandom() {
+<span class="fc" id="L311">        return random;</span>
+    }
+
+    /**
+     * @return the line emitter
+     */
+    public LineEmitter getLines() {
+<span class="fc" id="L318">        return emitter;</span>
+    }
+
+    /**
+     * Returns the value of the expression
+     *
+     * @return the value
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public long getValue() throws IOException, ParserException {
+<span class="fc" id="L329">        return getValue(new Context());</span>
+    }
+
+    /**
+     * Returns the value of the expression
+     *
+     * @param context the context of the evaluation
+     * @return the value
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public long getValue(Context context) throws IOException, ParserException {
+<span class="fc" id="L341">        final long value = parseExpression().value(context);</span>
+<span class="fc" id="L342">        expect(Tokenizer.Token.EOF);</span>
+<span class="fc" id="L343">        return value;</span>
+    }
+
+    private Expression parseExpression() throws IOException, ParserException {
+<span class="fc" id="L347">        return parseExpression(OperatorPrecedence.lowest());</span>
+    }
+
+    private Expression parseExpression(OperatorPrecedence op) throws IOException, ParserException {
+<span class="fc" id="L351">        Next next = getNextParser(op.getNextHigherPrecedence());</span>
+<span class="fc" id="L352">        Expression ac = next.next();</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        while (tok.peek().getPrecedence() == op) {</span>
+<span class="fc" id="L354">            Tokenizer.Binary function = tok.next().getFunction();</span>
+<span class="fc" id="L355">            Expression a = ac;</span>
+<span class="fc" id="L356">            Expression b = next.next();</span>
+<span class="fc" id="L357">            ac = (c) -&gt; function.op(a.value(c), b.value(c));</span>
+<span class="fc" id="L358">        }</span>
+<span class="fc" id="L359">        return ac;</span>
+    }
+
+    private Next getNextParser(OperatorPrecedence pr) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (pr == null)</span>
+<span class="fc" id="L364">            return this::parseIdent;</span>
+        else
+<span class="fc" id="L366">            return () -&gt; parseExpression(pr);</span>
+    }
+
+    private Expression parseIdent() throws IOException, ParserException {
+<span class="fc" id="L370">        Tokenizer.Token t = tok.next();</span>
+<span class="pc bpc" id="L371" title="1 of 7 branches missed.">        switch (t) {</span>
+            case IDENT:
+<span class="fc" id="L373">                String name = tok.getIdent();</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">                if (tok.peek() == Tokenizer.Token.OPEN) {</span>
+<span class="fc" id="L375">                    ArrayList&lt;Expression&gt; args = new ArrayList&lt;&gt;();</span>
+                    do {
+<span class="fc" id="L377">                        tok.consume();</span>
+<span class="fc" id="L378">                        args.add(parseExpression());</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">                    } while (tok.peek() == Tokenizer.Token.COMMA);</span>
+<span class="fc" id="L380">                    expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L381">                    return findFunction(name, args);</span>
+                } else
+<span class="fc" id="L383">                    return (c) -&gt; c.getVar(name);</span>
+            case NUMBER:
+<span class="fc" id="L385">                long num = convToLong(tok.getIdent());</span>
+<span class="fc" id="L386">                return (c) -&gt; num;</span>
+            case SUB:
+<span class="fc" id="L388">                Expression negExp = parseIdent();</span>
+<span class="fc" id="L389">                return (c) -&gt; -negExp.value(c);</span>
+            case BIN_NOT:
+<span class="fc" id="L391">                Expression notExp = parseIdent();</span>
+<span class="fc" id="L392">                return (c) -&gt; ~notExp.value(c);</span>
+            case LOG_NOT:
+<span class="fc" id="L394">                Expression boolNotExp = parseIdent();</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">                return (c) -&gt; boolNotExp.value(c) == 0 ? 1 : 0;</span>
+            case OPEN:
+<span class="fc" id="L397">                Expression exp = parseExpression();</span>
+<span class="fc" id="L398">                expect(Tokenizer.Token.CLOSE);</span>
+<span class="fc" id="L399">                return exp;</span>
+            default:
+<span class="nc" id="L401">                throw newUnexpectedToken(t);</span>
+        }
+    }
+
+    private Expression findFunction(String name, ArrayList&lt;Expression&gt; args) throws ParserException {
+<span class="fc" id="L406">        Function f = functions.get(name);</span>
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        if (f == null)</span>
+<span class="nc" id="L408">            throw new ParserException(Lang.get(&quot;err_function_N0_notFoundInLine_N1&quot;, name, tok.getLine()));</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">        if (f.getArgCount() != args.size())</span>
+<span class="nc" id="L410">            throw new ParserException(Lang.get(&quot;err_wrongNumOfArgsIn_N0_InLine_N1_found_N2_expected_N3&quot;, name, tok.getLine(), args.size(), f.getArgCount()));</span>
+
+<span class="fc" id="L412">        return (c) -&gt; f.calcValue(c, args);</span>
+    }
+
+    private interface Next {
+        Expression next() throws IOException, ParserException;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

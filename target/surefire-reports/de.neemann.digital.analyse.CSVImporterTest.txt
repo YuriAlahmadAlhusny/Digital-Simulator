@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.neemann.digital.analyse.CSVImporterTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.733 s - in de.neemann.digital.analyse.CSVImporterTest

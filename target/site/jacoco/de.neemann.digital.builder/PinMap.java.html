@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PinMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder</a> &gt; <span class="el_source">PinMap.java</span></div><h1>PinMap.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.lang.Lang;
+
+import java.util.*;
+
+/**
+ * A PinMap.
+ * Used to assign a symbolic name to a pin number
+ */
+public class PinMap {
+    private final HashMap&lt;String, Integer&gt; pinMap;
+    private final ArrayList&lt;Pin&gt; availPins;
+    private ArrayList&lt;HashSet&lt;String&gt;&gt; alias;
+    private int clockPin;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L28">    public PinMap() {</span>
+<span class="fc" id="L29">        pinMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L30">        alias = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L31">        availPins = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Sets the available input pin numbers
+     *
+     * @param inputPins the input pins
+     * @return this for chained calls
+     */
+    public PinMap setAvailInputs(int... inputPins) {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int p : inputPins)</span>
+<span class="fc" id="L42">            availPins.add(new Pin(p, PinDescription.Direction.input));</span>
+<span class="fc" id="L43">        return this;</span>
+    }
+
+    /**
+     * Sets the available output pin numbers
+     *
+     * @param outputPins the input pins
+     * @return this for chained calls
+     */
+    public PinMap setAvailOutputs(int... outputPins) {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int p : outputPins)</span>
+<span class="fc" id="L54">            availPins.add(new Pin(p, PinDescription.Direction.output));</span>
+<span class="fc" id="L55">        return this;</span>
+    }
+
+    /**
+     * Sets the available bidirectional pin numbers
+     *
+     * @param outputPins the input pins
+     * @return this for chained calls
+     */
+    public PinMap setAvailBidirectional(int... outputPins) {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (int p : outputPins)</span>
+<span class="fc" id="L66">            availPins.add(new Pin(p, PinDescription.Direction.both));</span>
+<span class="fc" id="L67">        return this;</span>
+    }
+
+    /**
+     * Assigns a symbolic name to a pin
+     *
+     * @param name the name
+     * @param pin  the pin
+     * @return this for chained calls
+     * @throws PinMapException FuseMapFillerException
+     */
+    public PinMap assignPin(String name, int pin) throws PinMapException {
+<span class="pc bpc" id="L79" title="1 of 4 branches missed.">        if (name == null || name.length() == 0)</span>
+<span class="fc" id="L80">            throw new PinMapException(Lang.get(&quot;err_pinMap_NoNameForPin_N&quot;, pin));</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (pinMap.containsKey(name))</span>
+<span class="fc" id="L82">            throw new PinMapException(Lang.get(&quot;err_pinMap_Pin_N_AssignedTwicePin&quot;, name));</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (pinMap.containsValue(pin))</span>
+<span class="fc" id="L84">            throw new PinMapException(Lang.get(&quot;err_pinMap_Pin_N_AssignedTwicePin&quot;, pin));</span>
+
+<span class="fc" id="L86">        pinMap.put(name, pin);</span>
+<span class="fc" id="L87">        return this;</span>
+    }
+
+    /**
+     * Assigns pins to names.
+     * Strings must have a form of &quot;a=5, Q_0=6&quot;
+     *
+     * @param assignment the assignment string
+     * @return this for chained calls
+     * @throws PinMapException PinMapException
+     */
+    public PinMap parseString(String assignment) throws PinMapException {
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (assignment == null)</span>
+<span class="nc" id="L100">            return this;</span>
+
+<span class="fc" id="L102">        StringTokenizer st = new StringTokenizer(assignment, &quot;;,&quot;);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        while (st.hasMoreTokens()) {</span>
+<span class="fc" id="L104">            String tok = st.nextToken();</span>
+<span class="fc" id="L105">            int p = tok.indexOf(&quot;=&quot;);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (p &lt; 0) throw new PinMapException(Lang.get(&quot;err_pinMap_noEqualsfound&quot;));</span>
+
+<span class="fc" id="L108">            String name = tok.substring(0, p).trim();</span>
+<span class="fc" id="L109">            String numStr = tok.substring(p + 1).trim();</span>
+            try {
+<span class="fc" id="L111">                int num = Integer.parseInt(numStr);</span>
+<span class="fc" id="L112">                assignPin(name, num);</span>
+<span class="fc" id="L113">            } catch (NumberFormatException e) {</span>
+<span class="fc" id="L114">                throw new PinMapException(e);</span>
+<span class="fc" id="L115">            }</span>
+<span class="fc" id="L116">        }</span>
+<span class="fc" id="L117">        return this;</span>
+    }
+
+    /**
+     * Returns true if the expression is a simple variable
+     * Checks if the assignment is a simple A=B. If true a alias for A is generated in the pin map.
+     * This is needed to void to assign two pins to the same logical signal generated by a flip flop.
+     *
+     * @param name           the name of the target
+     * @param expression     the expression to check
+     * @param sequentialVars if a set is given, only the assignments generated from one of the
+     *                       contained variables are removed. Maybe null.
+     * @return true if expression is a simple variable
+     */
+    public boolean isSimpleAlias(String name, Expression expression, HashSet&lt;String&gt; sequentialVars) {
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (expression instanceof Variable) {</span>
+<span class="fc" id="L133">            String al = ((Variable) expression).getIdentifier();</span>
+
+<span class="fc bfc" id="L135" title="All 4 branches covered.">            if (sequentialVars != null &amp;&amp; !sequentialVars.contains(al))</span>
+<span class="fc" id="L136">                return false;</span>
+
+<span class="fc" id="L138">            HashSet&lt;String&gt; found = null;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            for (HashSet&lt;String&gt; s : alias)</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">                if (s.contains(name) || s.contains(al)) {</span>
+<span class="nc" id="L141">                    found = s;</span>
+<span class="nc" id="L142">                    break;</span>
+                }
+
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (found == null) {</span>
+<span class="fc" id="L146">                found = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L147">                alias.add(found);</span>
+            }
+
+<span class="fc" id="L150">            found.add(name);</span>
+<span class="fc" id="L151">            found.add(al);</span>
+
+<span class="fc" id="L153">            return true;</span>
+        }
+<span class="fc" id="L155">        return false;</span>
+    }
+
+    /**
+     * Adds the given pin assignments to this pin map
+     *
+     * @param pinMap the given assignments
+     * @return this for chained calls
+     * @throws PinMapException PinMapException
+     */
+    public PinMap addAll(Map&lt;String, String&gt; pinMap) throws PinMapException {
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (pinMap != null)</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            for (Map.Entry&lt;String, String&gt; e : pinMap.entrySet()) {</span>
+                try {
+<span class="fc" id="L169">                    assignPin(e.getKey(), Integer.parseInt(e.getValue()));</span>
+<span class="nc" id="L170">                } catch (NumberFormatException ex) {</span>
+<span class="nc" id="L171">                    throw new PinMapException(Lang.get(&quot;err_pinIsNotANumber_N&quot;, e.getValue()));</span>
+<span class="fc" id="L172">                }</span>
+<span class="fc" id="L173">            }</span>
+<span class="fc" id="L174">        return this;</span>
+    }
+
+    private Integer searchFirstFreePin(PinDescription.Direction direction, String name) {
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (Pin pin : availPins) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (!pinMap.containsValue(pin.num))</span>
+<span class="fc bfc" id="L180" title="All 4 branches covered.">                if (pin.direction.equals(direction) || pin.direction.equals(PinDescription.Direction.both)) {</span>
+<span class="fc" id="L181">                    pinMap.put(name, pin.num);</span>
+<span class="fc" id="L182">                    return pin.num;</span>
+                }
+<span class="fc" id="L184">        }</span>
+<span class="fc" id="L185">        return null;</span>
+    }
+
+    private boolean isAvailable(PinDescription.Direction direction, int p) {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        for (Pin pin : availPins)</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (pin.num == p)</span>
+<span class="pc bpc" id="L191" title="1 of 4 branches missed.">                return (pin.direction.equals(direction) || pin.direction.equals(PinDescription.Direction.both));</span>
+<span class="nc" id="L192">        return false;</span>
+    }
+
+    /**
+     * Returns the input pin number for the symbolic name.
+     * If no assignment is found, the pin is selected automatically
+     *
+     * @param in the name
+     * @return the  pin number
+     * @throws PinMapException PinMap
+     */
+    public int getInputFor(String in) throws PinMapException {
+<span class="fc" id="L204">        return getPinFor(in, PinDescription.Direction.input);</span>
+    }
+
+    /**
+     * Returns the assigned pin.
+     *
+     * @param in the pins name
+     * @return the pin number or -1 if not assigned
+     * @throws PinMapException PinMap
+     */
+    public int isOutputAssigned(String in) throws PinMapException {
+<span class="fc" id="L215">        Integer p = searchPinWithAlias(in);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (p == null) return -1;</span>
+        else {
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            if (!isAvailable(PinDescription.Direction.output, p))</span>
+<span class="nc" id="L219">                throw new PinMapException(Lang.get(&quot;err_pinMap_pin_N0_isNotAnOutput&quot;, p));</span>
+<span class="fc" id="L220">            return p;</span>
+        }
+    }
+
+    private int getPinFor(String in, PinDescription.Direction direction) throws PinMapException {
+<span class="fc" id="L225">        Integer p = searchPinWithAlias(in);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (p == null)</span>
+<span class="fc" id="L227">            p = searchFirstFreePin(direction, in);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (p == null) {</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (direction.equals(PinDescription.Direction.input))</span>
+<span class="fc" id="L230">                throw new PinMapException(Lang.get(&quot;err_pinMap_toMannyInputsDefined&quot;));</span>
+            else
+<span class="fc" id="L232">                throw new PinMapException(Lang.get(&quot;err_pinMap_toMannyOutputsDefined&quot;));</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        } else if (!isAvailable(direction, p)) {</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (direction.equals(PinDescription.Direction.input))</span>
+<span class="nc" id="L235">                throw new PinMapException(Lang.get(&quot;err_pinMap_pin_N0_isNotAnInput&quot;, p));</span>
+            else
+<span class="nc" id="L237">                throw new PinMapException(Lang.get(&quot;err_pinMap_pin_N0_isNotAnOutput&quot;, p));</span>
+        }
+<span class="fc" id="L239">        return p;</span>
+    }
+
+    private Integer searchPinWithAlias(String pinName) {
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (HashSet&lt;String&gt; aliasSet : alias)</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            if (aliasSet.contains(pinName)) { // the are aliases</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                for (String n : aliasSet) {</span>
+<span class="fc" id="L246">                    Integer p = pinMap.get(n);</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">                    if (p != null)</span>
+<span class="fc" id="L248">                        return p;</span>
+<span class="fc" id="L249">                }</span>
+            }
+<span class="fc" id="L251">        return pinMap.get(pinName);</span>
+    }
+
+    /**
+     * Returns the output pin number for the symbolic name.
+     * If no assignment is found, the pin is selected automatically
+     *
+     * @param out the name
+     * @return the  pin number
+     * @throws PinMapException FuseMapFillerException
+     */
+    public int getOutputFor(String out) throws PinMapException {
+<span class="fc" id="L263">        return getPinFor(out, PinDescription.Direction.output);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L268">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L269">        sb.append(Lang.get(&quot;msg_pins&quot;)).append(&quot;:\n&quot;);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (Map.Entry&lt;String, Integer&gt; p : pinMap.entrySet())</span>
+<span class="fc" id="L271">            sb.append(Lang.get(&quot;msg_pinMap_pin_N_is_N&quot;, p.getValue(), p.getKey())).append(&quot;\n&quot;);</span>
+
+<span class="fc" id="L273">        return sb.toString();</span>
+    }
+
+    /**
+     * @return the clock pin
+     */
+    public int getClockPin() {
+<span class="fc" id="L280">        return clockPin;</span>
+    }
+
+    /**
+     * Sets the clock pin
+     *
+     * @param clockPin the clock pin
+     * @return this for chained calls
+     */
+    public PinMap setClockPin(int clockPin) {
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (clockPin &gt; 0)</span>
+<span class="fc" id="L291">            this.clockPin = clockPin;</span>
+<span class="fc" id="L292">        return this;</span>
+    }
+
+    private static final class Pin {
+        private final int num;
+        private final PinDescription.Direction direction;
+
+<span class="fc" id="L299">        private Pin(int num, PinDescription.Direction direction) {</span>
+<span class="fc" id="L300">            this.num = num;</span>
+<span class="fc" id="L301">            this.direction = direction;</span>
+<span class="fc" id="L302">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

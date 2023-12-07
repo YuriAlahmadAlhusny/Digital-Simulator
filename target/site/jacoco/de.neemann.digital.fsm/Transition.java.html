@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Transition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">Transition.java</span></div><h1>Transition.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.parser.ParseException;
+import de.neemann.digital.analyse.parser.Parser;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.lang.Lang;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Represents a transition
+ */
+public class Transition extends Movable&lt;Transition&gt; {
+    private static final float EXPANSION_TRANS = 0.001f;
+
+    private final State fromState;
+    private final State toState;
+    private String condition;
+    private transient Expression conditionExpression;
+
+
+    /**
+     * Creates a new transition
+     *
+     * @param fromState the state to leave
+     * @param toState   the state to enter
+     * @param condition the condition
+     */
+    public Transition(State fromState, State toState, String condition) {
+<span class="fc" id="L38">        super();</span>
+<span class="fc" id="L39">        this.fromState = fromState;</span>
+<span class="fc" id="L40">        this.toState = toState;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        this.condition = condition == null ? &quot;&quot; : condition;</span>
+<span class="fc" id="L42">        initPos();</span>
+<span class="fc" id="L43">    }</span>
+
+<span class="fc" id="L45">    Transition(Transition other, ArrayList&lt;State&gt; states, List&lt;State&gt; otherStates) {</span>
+<span class="fc" id="L46">        this.condition = other.condition;</span>
+<span class="fc" id="L47">        this.fromState = states.get(otherStates.indexOf(other.fromState));</span>
+<span class="fc" id="L48">        this.toState = states.get(otherStates.indexOf(other.toState));</span>
+<span class="fc" id="L49">        setValues(other.getValues());</span>
+<span class="fc" id="L50">        setPos(other.getPos());</span>
+<span class="fc" id="L51">    }</span>
+
+    /**
+     * Calculates the repulsive forces
+     *
+     * @param states      the states
+     * @param transitions the transitions
+     */
+    void calcForce(List&lt;State&gt; states, List&lt;Transition&gt; transitions) {
+<span class="nc" id="L60">        float preferredDist = Math.max(fromState.getVisualRadius(), toState.getVisualRadius());</span>
+<span class="nc" id="L61">        calcForce(preferredDist * 5, states, transitions);</span>
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Calculates the repulsive forces
+     *
+     * @param preferredDist the preferred distance
+     * @param states        the states
+     * @param transitions   the transitions
+     */
+    void calcForce(float preferredDist, List&lt;State&gt; states, List&lt;Transition&gt; transitions) {
+
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (fromState != toState) {</span>
+<span class="fc" id="L74">            VectorFloat dir = fromState.getPos().sub(toState.getPos());</span>
+<span class="fc" id="L75">            float len = dir.len();</span>
+<span class="fc" id="L76">            float d = len - preferredDist;</span>
+<span class="fc" id="L77">            dir = dir.mul(EXPANSION_TRANS * d);</span>
+<span class="fc" id="L78">            toState.addToForce(dir);</span>
+<span class="fc" id="L79">            fromState.addToForce(dir.mul(-1));</span>
+        }
+
+<span class="fc" id="L82">        resetForce();</span>
+<span class="fc" id="L83">        VectorFloat center = fromState.getPos().add(toState.getPos()).mul(0.5f);</span>
+<span class="fc" id="L84">        addAttractiveTo(center, 1);</span>
+
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (State s : states)</span>
+<span class="pc bpc" id="L87" title="1 of 6 branches missed.">            if ((s == fromState) == (s == toState))</span>
+<span class="nc" id="L88">                addRepulsive(s.getPos(), 2000);</span>
+
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (Transition t : transitions)</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            if (t != this)</span>
+<span class="nc" id="L92">                addRepulsive(t.getPos(), 1500);</span>
+<span class="fc" id="L93">    }</span>
+
+
+    @Override
+    public void setPosDragging(VectorFloat position) {
+<span class="nc" id="L98">        super.setPosDragging(posConstrain(position));</span>
+<span class="nc" id="L99">    }</span>
+
+    @Override
+    public void setPos(VectorFloat position) {
+<span class="fc" id="L103">        super.setPos(posConstrain(position));</span>
+<span class="fc" id="L104">    }</span>
+
+    private VectorFloat posConstrain(VectorFloat position) {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (fromState != toState) {</span>
+<span class="fc" id="L108">            VectorFloat dist = toState.getPos().sub(fromState.getPos());</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">            if (dist.getXFloat() != 0 || dist.getYFloat() != 0) {</span>
+<span class="fc" id="L110">                dist = dist.norm();</span>
+<span class="fc" id="L111">                VectorFloat start = fromState.getPos().add(dist.mul(fromState.getVisualRadius()));</span>
+<span class="fc" id="L112">                VectorFloat end = toState.getPos().sub(dist.mul(toState.getVisualRadius()));</span>
+
+<span class="fc" id="L114">                VectorFloat p = position.sub(start);</span>
+<span class="fc" id="L115">                VectorFloat n = dist.getOrthogonal();</span>
+<span class="fc" id="L116">                float l = p.mul(n);</span>
+<span class="fc" id="L117">                return start.add(end).div(2).add(n.mul(l));</span>
+            }
+        }
+<span class="fc" id="L120">        return position;</span>
+    }
+
+    /**
+     * Draws the transition
+     *
+     * @param gr the Graphic instance to draw to
+     */
+    public void drawTo(Graphic gr) {
+        final VectorFloat start;
+        final VectorFloat anchor;
+        final VectorFloat end;
+        final VectorFloat anchor0;
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (fromState == toState) {</span>
+<span class="nc" id="L134">            VectorFloat dif = getPos().sub(fromState.getPos()).getOrthogonal().mul(0.5f);</span>
+<span class="nc" id="L135">            VectorFloat ps = getPos().add(dif);</span>
+<span class="nc" id="L136">            VectorFloat pe = getPos().sub(dif);</span>
+<span class="nc" id="L137">            start = fromState.getPos().add(</span>
+<span class="nc" id="L138">                    ps.sub(fromState.getPos()).norm().mul(fromState.getVisualRadius() + Style.MAXLINETHICK));</span>
+<span class="nc" id="L139">            end = toState.getPos().add(</span>
+<span class="nc" id="L140">                    pe.sub(toState.getPos()).norm().mul(toState.getVisualRadius() + Style.MAXLINETHICK + 2));</span>
+
+<span class="nc" id="L142">            VectorFloat d0 = start.sub(fromState.getPos());</span>
+<span class="nc" id="L143">            VectorFloat d3 = end.sub(toState.getPos());</span>
+            float t;
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (Math.abs(d0.getXFloat() + d3.getXFloat()) &gt; Math.abs(d0.getYFloat() + d3.getYFloat()))</span>
+<span class="nc" id="L146">                t = -4 * (start.getXFloat() + end.getXFloat() - 2 * getPos().getXFloat()) / (3 * (d0.getXFloat() + d3.getXFloat()));</span>
+            else
+<span class="nc" id="L148">                t = -4 * (start.getYFloat() + end.getYFloat() - 2 * getPos().getYFloat()) / (3 * (d0.getYFloat() + d3.getYFloat()));</span>
+<span class="nc" id="L149">            anchor0 = start.add(d0.mul(t));</span>
+<span class="nc" id="L150">            anchor = end.add(d3.mul(t));</span>
+<span class="nc" id="L151">        } else {</span>
+<span class="nc" id="L152">            float n = 1.75f;</span>
+<span class="nc" id="L153">            VectorFloat correctedPos = getPos().mul(n).add(fromState.getPos().add(toState.getPos()).mul((1 - n) / 2));</span>
+<span class="nc" id="L154">            start = fromState.getPos().add(</span>
+<span class="nc" id="L155">                    correctedPos.sub(fromState.getPos()).norm().mul(fromState.getVisualRadius() + Style.MAXLINETHICK));</span>
+<span class="nc" id="L156">            end = toState.getPos().add(</span>
+<span class="nc" id="L157">                    correctedPos.sub(toState.getPos()).norm().mul(toState.getVisualRadius() + Style.MAXLINETHICK + 2));</span>
+<span class="nc" id="L158">            anchor = getPos().mul(2).sub(start.div(2)).sub(end.div(2));</span>
+<span class="nc" id="L159">            anchor0 = null;</span>
+        }
+
+<span class="nc" id="L162">        drawArrow(gr, start, anchor0, anchor, end);</span>
+
+        // text
+<span class="nc" id="L165">        ArrayList&lt;String&gt; strings = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L166" title="All 4 branches missed.">        if (condition != null &amp;&amp; !condition.isEmpty())</span>
+<span class="nc" id="L167">            strings.add(&quot;$&quot; + condition + &quot;$&quot;);</span>
+<span class="nc bnc" id="L168" title="All 4 branches missed.">        if (getValues() != null &amp;&amp; !getValues().isEmpty())</span>
+<span class="nc" id="L169">            strings.add(Lang.get(&quot;fsm_set_N&quot;, &quot;$&quot; + getValues() + &quot;$&quot;));</span>
+
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (!strings.isEmpty()) {</span>
+<span class="nc" id="L172">            final int fontSize = Style.NORMAL.getFontSize();</span>
+<span class="nc" id="L173">            VectorFloat textPos = getPos().add(0, -fontSize * (strings.size() - 1) / 2f);</span>
+
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (fromState.getPos().getYFloat() &lt; getPos().getYFloat()</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                    &amp;&amp; toState.getPos().getYFloat() &lt; getPos().getYFloat()) {</span>
+<span class="nc" id="L177">                textPos = textPos.add(new VectorFloat(0, fontSize * strings.size() / 2f));</span>
+            }
+
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            if (fromState.getPos().getYFloat() &gt; getPos().getYFloat()</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">                    &amp;&amp; toState.getPos().getYFloat() &gt; getPos().getYFloat()) {</span>
+<span class="nc" id="L182">                textPos = textPos.add(new VectorFloat(0, -fontSize * strings.size() / 2f));</span>
+            }
+
+<span class="nc bnc" id="L185" title="All 2 branches missed.">            for (String s : strings) {</span>
+<span class="nc" id="L186">                gr.drawText(textPos, s, Orientation.CENTERCENTER, Style.NORMAL);</span>
+<span class="nc" id="L187">                textPos = textPos.add(0, fontSize);</span>
+<span class="nc" id="L188">            }</span>
+        }
+<span class="nc" id="L190">    }</span>
+
+    static void drawArrow(Graphic gr, VectorInterface start, VectorInterface anchor0, VectorInterface anchor, VectorInterface end) {
+<span class="nc" id="L193">        final Style arrowStyle = Style.SHAPE_PIN;</span>
+
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (anchor == null)</span>
+<span class="nc" id="L196">            anchor = start.add(end).div(2);</span>
+
+        // arrow line
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (anchor0 != null)</span>
+<span class="nc" id="L200">            gr.drawPolygon(new Polygon(false).add(start).add(anchor0, anchor, end), arrowStyle);</span>
+        else
+<span class="nc" id="L202">            gr.drawPolygon(new Polygon(false).add(start).add(anchor, end), arrowStyle);</span>
+
+        // arrowhead
+<span class="nc" id="L205">        VectorFloat dir = anchor.sub(end).norm().mul(20);</span>
+<span class="nc" id="L206">        VectorFloat lot = dir.getOrthogonal().mul(0.3f);</span>
+<span class="nc" id="L207">        gr.drawPolygon(new Polygon(false)</span>
+<span class="nc" id="L208">                .add(end.add(dir).add(lot))</span>
+<span class="nc" id="L209">                .add(end.sub(dir.mul(0.1f)))</span>
+<span class="nc" id="L210">                .add(end.add(dir).sub(lot)), arrowStyle);</span>
+<span class="nc" id="L211">    }</span>
+
+    /**
+     * Initializes the position of the transition
+     */
+    void initPos() {
+<span class="fc" id="L217">        setPos(fromState.getPos().add(toState.getPos()).mul(0.5f)</span>
+<span class="fc" id="L218">                .add(new VectorFloat((float) Math.random() - 0.5f, (float) Math.random() - 0.5f).mul(2)));</span>
+<span class="fc" id="L219">    }</span>
+
+    /**
+     * Sets the condition
+     *
+     * @param condition the condition
+     */
+    public void setCondition(String condition) {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (!this.condition.equals(condition)) {</span>
+<span class="nc" id="L228">            this.condition = condition;</span>
+<span class="nc" id="L229">            wasModified(Property.CONDITION);</span>
+<span class="nc" id="L230">            conditionExpression = null;</span>
+        }
+<span class="nc" id="L232">    }</span>
+
+    /**
+     * @return returns the condition
+     */
+    public String getCondition() {
+<span class="nc" id="L238">        return condition;</span>
+    }
+
+    /**
+     * @return the condition
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    Expression getConditionExpression() throws FiniteStateMachineException {
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (conditionExpression == null) {</span>
+<span class="fc bfc" id="L247" title="All 4 branches covered.">            if (condition != null &amp;&amp; condition.trim().length() &gt; 0)</span>
+                try {
+<span class="fc" id="L249">                    ArrayList&lt;Expression&gt; ex = new Parser(condition).parse();</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">                    if (ex.size() != 1)</span>
+<span class="nc" id="L251">                        throw new FiniteStateMachineException(Lang.get(&quot;err_fsmErrorInCondition_N&quot;, condition));</span>
+
+<span class="fc" id="L253">                    this.conditionExpression = ex.get(0);</span>
+<span class="nc" id="L254">                } catch (IOException | ParseException e) {</span>
+<span class="nc" id="L255">                    throw new FiniteStateMachineException(Lang.get(&quot;err_fsmErrorInCondition_N&quot;, condition), e);</span>
+<span class="fc" id="L256">                }</span>
+        }
+<span class="fc" id="L258">        return conditionExpression;</span>
+    }
+
+    /**
+     * @return true if this transition has a condition
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    boolean hasCondition() throws FiniteStateMachineException {
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        return getConditionExpression() != null;</span>
+    }
+
+    /**
+     * @return the starting state
+     */
+    State getStartState() {
+<span class="fc" id="L273">        return fromState;</span>
+    }
+
+    /**
+     * @return the target state
+     */
+    State getTargetState() {
+<span class="fc" id="L280">        return toState;</span>
+    }
+
+    /**
+     * Gives true if the position matches the transition.
+     *
+     * @param pos the position
+     * @return true if pos matches the transition
+     */
+    public boolean matches(Vector pos) {
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        return pos.sub(getPos()).len() &lt; 50;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L295">        return fromState + &quot; --[&quot; + condition + &quot;]-&gt; &quot; + toState;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

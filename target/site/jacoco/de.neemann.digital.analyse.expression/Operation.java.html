@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Operation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression</a> &gt; <span class="el_source">Operation.java</span></div><h1>Operation.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression;
+
+import de.neemann.digital.analyse.expression.modify.ExpressionModifier;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+
+/**
+ * A operation
+ * There are only two implementations: The AND and the OR operation
+ */
+public abstract class Operation implements Expression {
+<span class="fc" id="L19">    private static final Comparator&lt;Expression&gt; EXPRESSION_COMPARATOR</span>
+<span class="fc" id="L20">            = Comparator.comparing(Expression::getOrderString);</span>
+
+    private final ArrayList&lt;Expression&gt; expr;
+
+    /**
+     * Creates a new OR expression
+     *
+     * @param exp the expressions to OR
+     * @return the created expression
+     */
+    public static Expression or(Iterable&lt;Expression&gt; exp) {
+<span class="fc" id="L31">        return simplify(new Or(exp, true));</span>
+    }
+
+    /**
+     * Creates a new OR expression
+     *
+     * @param exp the expressions to OR
+     * @return the created expression
+     */
+    public static Expression or(Expression... exp) {
+<span class="fc" id="L41">        return simplify(new Or(Arrays.asList(exp), true));</span>
+    }
+
+    /**
+     * Creates a new XOR expression
+     *
+     * @param a the expression to XOR
+     * @param b the expression to XOR
+     * @return the created expression
+     */
+    public static Expression xor(Expression a, Expression b) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (b == Constant.ONE) {</span>
+<span class="fc" id="L53">            return Not.not(a);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        } else if (b == Constant.ZERO) {</span>
+<span class="fc" id="L55">            return a;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        } else if (a == Constant.ONE) {</span>
+<span class="fc" id="L57">            return Not.not(b);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        } else if (a == Constant.ZERO) {</span>
+<span class="fc" id="L59">            return b;</span>
+        } else
+<span class="fc" id="L61">            return simplify(new XOr(a, b));</span>
+    }
+
+
+    /**
+     * Creates a new OR expression
+     *
+     * @param exp the expressions to OR
+     * @return the created expression
+     */
+    public static Expression orNoMerge(Expression... exp) {
+<span class="nc" id="L72">        return simplify(new Or(Arrays.asList(exp), false));</span>
+    }
+
+    /**
+     * Creates a new AND expression
+     *
+     * @param exp the expressions to AND
+     * @return the created expression
+     */
+    public static Expression and(Iterable&lt;Expression&gt; exp) {
+<span class="fc" id="L82">        return simplify(new And(exp, true));</span>
+    }
+
+    /**
+     * Creates a new AND expression
+     *
+     * @param exp the expressions to AND
+     * @return the created expression
+     */
+    public static Expression and(Expression... exp) {
+<span class="fc" id="L92">        return simplify(new And(Arrays.asList(exp), true));</span>
+    }
+
+    /**
+     * Creates a new AND expression
+     *
+     * @param exp the expressions to AND
+     * @return the created expression
+     */
+    public static Expression andNoMerge(Expression... exp) {
+<span class="nc" id="L102">        return simplify(new And(Arrays.asList(exp), false));</span>
+    }
+
+    private static Expression simplify(Operation operation) {
+<span class="fc" id="L106">        int size = operation.getExpressions().size();</span>
+<span class="pc bpc" id="L107" title="1 of 3 branches missed.">        switch (size) {</span>
+            case 0:
+<span class="nc" id="L109">                return null;</span>
+            case 1:
+<span class="fc" id="L111">                return operation.getExpressions().get(0);</span>
+            default:
+<span class="fc" id="L113">                operation.getExpressions().sort(EXPRESSION_COMPARATOR);</span>
+<span class="fc" id="L114">                return operation;</span>
+        }
+    }
+
+<span class="fc" id="L118">    private Operation(Iterable&lt;Expression&gt; exp, boolean merge) {</span>
+<span class="fc" id="L119">        expr = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (Expression e : exp)</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (e != null)</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                if (merge)</span>
+<span class="fc" id="L123">                    merge(e);</span>
+                else
+<span class="fc" id="L125">                    expr.add(e);</span>
+<span class="fc" id="L126">    }</span>
+
+<span class="fc" id="L128">    private Operation(Iterable&lt;Expression&gt; expToCopy) {</span>
+<span class="fc" id="L129">        expr = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (Expression e : expToCopy)</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            if (e != null)</span>
+<span class="fc" id="L132">                expr.add(e.copy());</span>
+<span class="fc" id="L133">    }</span>
+
+    private void merge(Expression e) {
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (e.getClass() == getClass()) {</span>
+<span class="fc" id="L137">            expr.addAll(((Operation) e).getExpressions());</span>
+        } else
+<span class="fc" id="L139">            expr.add(e);</span>
+<span class="fc" id="L140">    }</span>
+
+    @Override
+    public boolean calculate(Context context) throws ExpressionException {
+<span class="fc" id="L144">        boolean result = getNeutral();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (Expression e : expr)</span>
+<span class="fc" id="L146">            result = calc(result, e.calculate(context));</span>
+<span class="fc" id="L147">        return result;</span>
+    }
+
+    @Override
+    public &lt;V extends ExpressionVisitor&gt; V traverse(V v) {
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (v.visit(this)) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            for (Expression e : expr)</span>
+<span class="fc" id="L154">                e.traverse(v);</span>
+        }
+<span class="fc" id="L156">        return v;</span>
+    }
+
+    @Override
+    public void modify(ExpressionModifier modifier) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        for (int i = 0; i &lt; expr.size(); i++) {</span>
+<span class="fc" id="L162">            Expression e = expr.get(i);</span>
+<span class="fc" id="L163">            e.modify(modifier);</span>
+<span class="fc" id="L164">            expr.set(i, modifier.modify(e));</span>
+        }
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * @return the sub expressions
+     */
+    public ArrayList&lt;Expression&gt; getExpressions() {
+<span class="fc" id="L172">        return expr;</span>
+    }
+
+    @Override
+    public String getOrderString() {
+<span class="fc" id="L177">        return expr.get(0).getOrderString();</span>
+    }
+
+    /**
+     * @return the neutral element of this operation
+     */
+    protected abstract boolean getNeutral();
+
+    /**
+     * Performs the calculation
+     *
+     * @param a value a
+     * @param b value b
+     * @return result
+     */
+    protected abstract boolean calc(boolean a, boolean b);
+
+    @Override
+    public String toString() {
+<span class="fc" id="L196">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (Expression e : expr) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (sb.length() &gt; 1)</span>
+<span class="fc" id="L199">                sb.append(&quot;,&quot;);</span>
+<span class="fc" id="L200">            sb.append(e.toString());</span>
+<span class="fc" id="L201">        }</span>
+<span class="fc" id="L202">        sb.append(&quot;)&quot;);</span>
+<span class="fc" id="L203">        return sb.toString();</span>
+    }
+
+    /**
+     * The AND expression
+     */
+    public static final class And extends Operation {
+
+        private And(Iterable&lt;Expression&gt; exp, boolean merge) {
+<span class="fc" id="L212">            super(exp, merge);</span>
+<span class="fc" id="L213">        }</span>
+
+        private And(Iterable&lt;Expression&gt; expToCopy) {
+<span class="fc" id="L216">            super(expToCopy);</span>
+<span class="fc" id="L217">        }</span>
+
+        @Override
+        protected boolean getNeutral() {
+<span class="fc" id="L221">            return true;</span>
+        }
+
+        @Override
+        protected boolean calc(boolean a, boolean b) {
+<span class="fc bfc" id="L226" title="All 4 branches covered.">            return a &amp;&amp; b;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L231">            return &quot;and&quot; + super.toString();</span>
+        }
+
+        @Override
+        public Expression copy() {
+<span class="fc" id="L236">            return new And(getExpressions());</span>
+        }
+    }
+
+    /**
+     * The OR expression
+     */
+    public static final class Or extends Operation {
+
+        private Or(Iterable&lt;Expression&gt; exp, boolean merge) {
+<span class="fc" id="L246">            super(exp, merge);</span>
+<span class="fc" id="L247">        }</span>
+
+        private Or(Iterable&lt;Expression&gt; expToCopy) {
+<span class="fc" id="L250">            super(expToCopy);</span>
+<span class="fc" id="L251">        }</span>
+
+        @Override
+        protected boolean getNeutral() {
+<span class="fc" id="L255">            return false;</span>
+        }
+
+        @Override
+        protected boolean calc(boolean a, boolean b) {
+<span class="fc bfc" id="L260" title="All 4 branches covered.">            return a || b;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L265">            return &quot;or&quot; + super.toString();</span>
+        }
+
+        @Override
+        public Expression copy() {
+<span class="fc" id="L270">            return new Or(getExpressions());</span>
+        }
+    }
+
+    /**
+     * The XOR expression
+     */
+    public static final class XOr extends Operation {
+
+        private XOr(Expression a, Expression b) {
+<span class="fc" id="L280">            super(Arrays.asList(a, b), false);</span>
+<span class="fc" id="L281">        }</span>
+
+        private XOr(Iterable&lt;Expression&gt; expToCopy) {
+<span class="nc" id="L284">            super(expToCopy);</span>
+<span class="nc" id="L285">        }</span>
+
+        @Override
+        protected boolean getNeutral() {
+<span class="nc" id="L289">            return false;</span>
+        }
+
+        @Override
+        protected boolean calc(boolean a, boolean b) {
+<span class="fc bfc" id="L294" title="All 8 branches covered.">            return (a || b) &amp;&amp; (!a || !b);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L299">            return &quot;xor&quot; + super.toString();</span>
+        }
+
+        @Override
+        public Expression copy() {
+<span class="nc" id="L304">            return new XOr(getExpressions());</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

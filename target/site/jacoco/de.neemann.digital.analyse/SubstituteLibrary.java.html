@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubstituteLibrary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">SubstituteLibrary.java</span></div><h1>SubstituteLibrary.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.flipflops.FlipflopJK;
+import de.neemann.digital.core.flipflops.FlipflopT;
+import de.neemann.digital.core.io.InValue;
+import de.neemann.digital.core.memory.Counter;
+import de.neemann.digital.core.memory.CounterPreset;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.Register;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.LibraryInterface;
+import de.neemann.digital.draw.model.InverterConfig;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.hdl.hgs.*;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Used to substitute certain complex builtin components by simple custom components.
+ * Used to allow to analyse this components in a more simple way.
+ */
+public class SubstituteLibrary implements LibraryInterface {
+<span class="fc" id="L44">    private static final Logger LOGGER = LoggerFactory.getLogger(SubstituteLibrary.class);</span>
+<span class="fc" id="L45">    private static final Map&lt;String, SubstituteInterface&gt; MAP = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L48">        MAP.put(FlipflopJK.DESCRIPTION.getName(), new SubstituteGenericHGSParser(&quot;JK_FF.dig&quot;));</span>
+<span class="fc" id="L49">        MAP.put(FlipflopT.DESCRIPTION.getName(), new SubstituteMatching()</span>
+<span class="fc" id="L50">                .add(attr -&gt; attr.get(Keys.WITH_ENABLE), new SubstituteGenericHGSParser(&quot;T_FF_EN.dig&quot;))</span>
+<span class="fc" id="L51">                .add(attr -&gt; true, new SubstituteGenericHGSParser(&quot;T_FF.dig&quot;))</span>
+        );
+<span class="fc" id="L53">        MAP.put(Counter.DESCRIPTION.getName(), new SubstituteGenericHGSParser(&quot;Counter.dig&quot;));</span>
+<span class="fc" id="L54">        MAP.put(CounterPreset.DESCRIPTION.getName(), new SubstituteGenericHGSParser(&quot;CounterPreset.dig&quot;));</span>
+<span class="fc" id="L55">        MAP.put(Register.DESCRIPTION.getName(), new SubstituteGenericHGSParser(&quot;Register.dig&quot;));</span>
+<span class="fc" id="L56">    }</span>
+
+    private final ElementLibrary parent;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent the parent library used to create the not substitutable components.
+     */
+<span class="fc" id="L65">    public SubstituteLibrary(ElementLibrary parent) {</span>
+<span class="fc" id="L66">        this.parent = parent;</span>
+<span class="fc" id="L67">    }</span>
+
+    @Override
+    public ElementTypeDescription getElementType(String elementName, ElementAttributes attr) throws ElementNotFoundException {
+<span class="fc" id="L71">        SubstituteInterface subst = MAP.get(elementName);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (subst != null) {</span>
+            try {
+<span class="fc" id="L74">                ElementTypeDescription type = subst.getElementType(attr, parent);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                if (type != null)</span>
+<span class="fc" id="L76">                    return type;</span>
+<span class="nc" id="L77">            } catch (PinException | IOException e) {</span>
+<span class="nc" id="L78">                throw new ElementNotFoundException(Lang.get(&quot;err_substitutingError&quot;), e);</span>
+<span class="nc" id="L79">            }</span>
+        }
+<span class="fc" id="L81">        return parent.getElementType(elementName, attr);</span>
+    }
+
+    @Override
+    public ShapeFactory getShapeFactory() {
+<span class="nc" id="L86">        return parent.getShapeFactory();</span>
+    }
+
+    private interface SubstituteInterface {
+        ElementTypeDescription getElementType(ElementAttributes attr, ElementLibrary library) throws PinException, IOException;
+    }
+
+    private static final class SubstituteMatching implements SubstituteInterface {
+        private final ArrayList&lt;Matcher&gt; matcher;
+
+<span class="fc" id="L96">        private SubstituteMatching() {</span>
+<span class="fc" id="L97">            matcher = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L98">        }</span>
+
+        private SubstituteMatching add(Accept accept, SubstituteInterface substituteInterface) {
+<span class="fc" id="L101">            matcher.add(new Matcher(accept, substituteInterface));</span>
+<span class="fc" id="L102">            return this;</span>
+        }
+
+        @Override
+        public ElementTypeDescription getElementType(ElementAttributes attr, ElementLibrary library) throws PinException, IOException {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            for (Matcher m : matcher) {</span>
+<span class="fc" id="L108">                ElementTypeDescription type = m.getElementType(attr, library);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                if (type != null)</span>
+<span class="fc" id="L110">                    return type;</span>
+<span class="fc" id="L111">            }</span>
+<span class="nc" id="L112">            return null;</span>
+        }
+    }
+
+    private static final class Matcher implements SubstituteInterface {
+        private final Accept accept;
+        private final SubstituteInterface substituteInterface;
+
+<span class="fc" id="L120">        private Matcher(Accept accept, SubstituteInterface substituteInterface) {</span>
+<span class="fc" id="L121">            this.accept = accept;</span>
+<span class="fc" id="L122">            this.substituteInterface = substituteInterface;</span>
+<span class="fc" id="L123">        }</span>
+
+        @Override
+        public ElementTypeDescription getElementType(ElementAttributes attr, ElementLibrary library) throws PinException, IOException {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if (accept.accept(attr))</span>
+<span class="fc" id="L128">                return substituteInterface.getElementType(attr, library);</span>
+<span class="fc" id="L129">            return null;</span>
+        }
+    }
+
+    private interface Accept {
+        boolean accept(ElementAttributes attr);
+    }
+
+    private static abstract class SubstituteGeneric implements SubstituteInterface {
+        private final String filename;
+        private Circuit circuit;
+
+<span class="fc" id="L141">        private SubstituteGeneric(String filename) {</span>
+<span class="fc" id="L142">            this.filename = filename;</span>
+<span class="fc" id="L143">        }</span>
+
+        @Override
+        public ElementTypeDescription getElementType(ElementAttributes attr, ElementLibrary library) throws PinException, IOException {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (circuit == null) {</span>
+<span class="fc" id="L148">                LOGGER.debug(&quot;load substitute circuit &quot; + filename);</span>
+<span class="fc" id="L149">                InputStream in = getClass().getClassLoader().getResourceAsStream(&quot;analyser/&quot; + filename);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                if (in == null)</span>
+<span class="nc" id="L151">                    throw new IOException(&quot;substituting failed: could not find file &quot; + filename);</span>
+
+<span class="fc" id="L153">                circuit = Circuit.loadCircuit(in, library.getShapeFactory());</span>
+            }
+
+<span class="fc" id="L156">            Circuit c = circuit.createDeepCopy();</span>
+            // disable the normal generic handling!
+<span class="fc" id="L158">            c.getAttributes().set(Keys.IS_GENERIC, false);</span>
+<span class="fc" id="L159">            generify(attr, c);</span>
+
+<span class="fc" id="L161">            return ElementLibrary.createCustomDescription(new File(filename), c, library);</span>
+        }
+
+        private void generify(ElementAttributes attr, Circuit circuit) throws IOException {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            for (VisualElement v : circuit.getElements()) {</span>
+<span class="fc" id="L166">                String gen = v.getElementAttributes().get(Keys.GENERIC).trim();</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                if (!gen.isEmpty())</span>
+<span class="fc" id="L168">                    generify(attr, gen, v.getElementAttributes());</span>
+<span class="fc" id="L169">            }</span>
+<span class="fc" id="L170">        }</span>
+
+        abstract void generify(ElementAttributes sourceAttributes, String gen, ElementAttributes nodeAttributes) throws IOException;
+    }
+
+    private static final class SubstituteGenericHGSParser extends SubstituteGeneric {
+        private final HashMap&lt;String, Statement&gt; map;
+
+        private SubstituteGenericHGSParser(String filename) {
+<span class="fc" id="L179">            super(filename);</span>
+<span class="fc" id="L180">            map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L181">        }</span>
+
+        @Override
+        void generify(ElementAttributes sourceAttributes, String gen, ElementAttributes nodeAttributes) throws IOException {
+            try {
+<span class="fc" id="L186">                Statement s = map.get(gen);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                if (s == null) {</span>
+<span class="fc" id="L188">                    LOGGER.debug(&quot;generic: &quot; + gen);</span>
+<span class="fc" id="L189">                    s = new Parser(gen).parse(false);</span>
+<span class="fc" id="L190">                    map.put(gen, s);</span>
+                }
+<span class="fc" id="L192">                Context context = new Context((File) null)</span>
+<span class="fc" id="L193">                        .declareVar(&quot;orig&quot;, sourceAttributes)</span>
+<span class="fc" id="L194">                        .declareVar(&quot;this&quot;, new AllowSetAttributes(nodeAttributes));</span>
+<span class="fc" id="L195">                s.execute(context);</span>
+<span class="nc" id="L196">            } catch (ParserException | HGSEvalException e) {</span>
+<span class="nc" id="L197">                throw new IOException(e);</span>
+<span class="fc" id="L198">            }</span>
+<span class="fc" id="L199">        }</span>
+
+    }
+
+    /**
+     * Allows writing access to the attributes.
+     */
+    public static final class AllowSetAttributes implements HGSMap {
+        private final ElementAttributes attr;
+
+        /**
+         * Creates a new instance.
+         *
+         * @param attr the attributes to write to.
+         */
+<span class="fc" id="L214">        public AllowSetAttributes(ElementAttributes attr) {</span>
+<span class="fc" id="L215">            this.attr = attr;</span>
+<span class="fc" id="L216">        }</span>
+
+        @Override
+        public void hgsMapPut(String key, Object val) throws HGSEvalException {
+<span class="fc" id="L220">            Key k = Keys.getKeyByName(key);</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            if (k == null) {</span>
+<span class="nc" id="L222">                throw new HGSEvalException(&quot;key &quot; + key + &quot; is invalid&quot;);</span>
+            } else {
+<span class="fc" id="L224">                Class&lt;?&gt; expectedClass = k.getDefault().getClass();</span>
+
+<span class="fc" id="L226">                val = doImplicitTypeCasts(expectedClass, val);</span>
+
+<span class="fc" id="L228">                boolean isAssignable = expectedClass.isAssignableFrom(val.getClass());</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">                if (!isAssignable)</span>
+<span class="nc" id="L230">                    throw new HGSEvalException(&quot;error writing to &quot; + key + &quot;: value of type &quot; + val.getClass().getSimpleName() + &quot; can't be assigned to &quot; + expectedClass.getSimpleName());</span>
+<span class="fc" id="L231">                attr.set(k, val);</span>
+            }
+<span class="fc" id="L233">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) {
+<span class="fc" id="L237">            return attr.hgsMapGet(key);</span>
+        }
+    }
+
+    static Object doImplicitTypeCasts(Class&lt;?&gt; expectedClass, Object val) {
+<span class="fc bfc" id="L242" title="All 4 branches covered.">        if (expectedClass == Integer.class &amp;&amp; val instanceof Long) {</span>
+<span class="fc" id="L243">            long l = (Long) val;</span>
+<span class="pc bpc" id="L244" title="2 of 4 branches missed.">            if (l &lt;= Integer.MAX_VALUE &amp;&amp; l &gt;= Integer.MIN_VALUE)</span>
+<span class="fc" id="L245">                return (int) l;</span>
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">        } else if (expectedClass == Long.class &amp;&amp; val instanceof Number) {</span>
+<span class="fc" id="L247">            return ((Number) val).longValue();</span>
+<span class="pc bpc" id="L248" title="1 of 4 branches missed.">        } else if (expectedClass == Color.class &amp;&amp; val instanceof Number) {</span>
+<span class="fc" id="L249">            return new Color(((Number) val).intValue());</span>
+<span class="pc bpc" id="L250" title="1 of 4 branches missed.">        } else if (expectedClass == Boolean.class &amp;&amp; val instanceof Number) {</span>
+<span class="fc" id="L251">            long b = ((Number) val).longValue();</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">            return b != 0;</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        } else if (expectedClass == InValue.class) {</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (val instanceof Number)</span>
+<span class="fc" id="L255">                return new InValue(((Number) val).longValue());</span>
+            else {
+                try {
+<span class="fc" id="L258">                    return new InValue(val.toString());</span>
+<span class="nc" id="L259">                } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L260">                    return val;</span>
+                }
+            }
+<span class="pc bpc" id="L263" title="1 of 4 branches missed.">        } else if (expectedClass == InverterConfig.class &amp;&amp; val instanceof java.util.List) {</span>
+<span class="fc" id="L264">            InverterConfig.Builder b = new InverterConfig.Builder();</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            for (Object i : (java.util.List) val)</span>
+<span class="fc" id="L266">                b.add(i.toString());</span>
+<span class="fc" id="L267">            return b.build();</span>
+<span class="fc bfc" id="L268" title="All 4 branches covered.">        } else if (expectedClass == DataField.class &amp;&amp; val instanceof java.util.List) {</span>
+<span class="fc" id="L269">            java.util.List list = (java.util.List) val;</span>
+<span class="fc" id="L270">            long[] longs = new long[list.size()];</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            for (int i = 0; i &lt; list.size(); i++)</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">                if (list.get(i) instanceof Number)</span>
+<span class="fc" id="L273">                    longs[i] = ((Number) list.get(i)).longValue();</span>
+                else
+<span class="nc" id="L275">                    return val;</span>
+<span class="fc" id="L276">            return new DataField(longs);</span>
+<span class="pc bpc" id="L277" title="1 of 4 branches missed.">        } else if (expectedClass == Rotation.class &amp;&amp; val instanceof Number) {</span>
+<span class="fc" id="L278">            int r = ((Number) val).intValue();</span>
+<span class="fc" id="L279">            return new Rotation(r % 4);</span>
+<span class="pc bpc" id="L280" title="1 of 4 branches missed.">        } else if (expectedClass == File.class &amp;&amp; val instanceof String) {</span>
+<span class="fc" id="L281">            return new File(val.toString());</span>
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">        } else if (expectedClass == TestCaseDescription.class &amp;&amp; val instanceof String) {</span>
+            try {
+<span class="fc" id="L284">                return new TestCaseDescription(val.toString());</span>
+<span class="nc" id="L285">            } catch (Exception e) {</span>
+<span class="nc" id="L286">                return val;</span>
+            }
+<span class="pc bpc" id="L288" title="1 of 4 branches missed.">        } else if (expectedClass.isEnum() &amp;&amp; val instanceof Number) {</span>
+<span class="fc" id="L289">            Class&lt;Enum&lt;?&gt;&gt; e = (Class&lt;Enum&lt;?&gt;&gt;) expectedClass;</span>
+<span class="fc" id="L290">            Object[] values = e.getEnumConstants();</span>
+<span class="fc" id="L291">            int index = ((Number) val).intValue();</span>
+<span class="fc bfc" id="L292" title="All 4 branches covered.">            if (index &lt; 0 || index &gt;= values.length)</span>
+<span class="fc" id="L293">                return values[0];</span>
+            else
+<span class="fc" id="L295">                return values[index];</span>
+        }
+<span class="fc" id="L297">        return val;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

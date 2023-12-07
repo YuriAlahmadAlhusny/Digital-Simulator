@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<icRoot>
+ <ic name="27c801">8 Mbit (1Mb x 8) UV EPROM</ic>
+ <ic name="28c010">1-Megabit (128K x 8) Paged Parallel EEPROM;
+DATA Polling for End of Write Detection not implemented!</ic>
+ <ic name="28c16">16K (2K x 8) Parallel EEPROM;
+DATA Polling for End of Write Detection not implemented!</ic>
+ <ic name="28c64">64K (8K x 8) Parallel EEPROM;
+DATA Polling for End of Write Detection not implemented!</ic>
+ <ic name="28c256">256K (32K x 8) Paged Parallel EEPROM;
+DATA Polling for End of Write Detection not implemented!</ic>
+ <ic name="28c512">512K-Bit (64K x 8) CMOS Parallel EEPROM;
+DATA Polling for End of Write Detection not implemented!</ic>
+ <ic name="7400">quad 2-input NAND gate</ic>
+ <ic name="7401">quad 2-input NAND gate with open-collector outputs</ic>
+ <ic name="7402">quad 2-input NOR gate</ic>
+ <ic name="7403">quad 2-input NAND gate with open-collector outputs, different pinout than 7401</ic>
+ <ic name="7404">hex inverter</ic>
+ <ic name="7405">hex inverter, open-collector output</ic>
+ <ic name="7406">hex inverter buffer, open-collector output</ic>
+ <ic name="7407">hex buffer, open-collector output</ic>
+ <ic name="7408">quad 2-input AND gate</ic>
+ <ic name="7409">quad 2-input AND gate with open-collector outputs</ic>
+ <ic name="7410">triple 3-input NAND gate</ic>
+ <ic name="7411">triple 3-input AND gate</ic>
+ <ic name="7412">triple 3-input NAND gate with open-collector outputs</ic>
+ <ic name="7413">dual 4-input NAND gate, Schmitt trigger</ic>
+ <ic name="7414">hex inverter, Schmitt trigger</ic>
+ <ic name="7415">triple 3-input AND gate with open-collector outputs</ic>
+ <ic name="7416">hex inverter buffer, open-collector output, same as 7406</ic>
+ <ic name="7417">hex buffer, open-collector output, same as 7407</ic>
+ <ic name="7420">dual 4-input NAND gate</ic>
+ <ic name="7421">dual 4-input AND gate</ic>
+ <ic name="7425">dual 4-input NOR gate</ic>
+ <ic name="7427">triple 3-input NOR gate</ic>
+ <ic name="7428">quad 2-input NOR buffer</ic>
+ <ic name="7430">8-input NAND gate</ic>
+ <ic name="7432">quad 2-input OR gate</ic>
+ <ic name="7440">dual 4-input NAND buffer</ic>
+ <ic name="7442">4-line BCD to 10-line decimal decoder</ic>
+ <ic name="7447">BCD to 7-segment decoder, active low</ic>
+ <ic name="7448">BCD to 7-segment decoder, active high</ic>
+ <ic name="7451">2-input/3-input AND-NOR gate</ic>
+ <ic name="7454">2-3-2-3-line AND NOR gate</ic>
+ <ic name="7455">2 wide 4-input AND-NOR gate</ic>
+ <ic name="7458">dual AND OR gate</ic>
+ <ic name="7474">dual D-flip-flop</ic>
+ <ic name="7476">dual J-K flip-flops with preset and clear</ic>
+ <ic name="7480">Gated Full Adder with Complementary Inputs
+and Complementary Sum Outputs</ic>
+ <ic name="7482">2-bit binary full adder</ic>
+ <ic name="7483">4-bit binary full adder</ic>
+ <ic name="7483Real">4-bit binary full adder, real gates</ic>
+ <ic name="7485">4-bit comparator</ic>
+ <ic name="7486">quad 2-input XOR gate</ic>
+ <ic name="7489">64-bit RAM</ic>
+ <ic name="7490">asynchronous two - five - decimal addition counter</ic>
+ <ic name="7493">4-bit Binary Counter.
+
+Connect QA to CKB and clock on CKA for full 4-bit counter.  Connect QB to R1 and QD to R2 for a BCD counter.</ic>
+ <ic name="74107">dual J-K flip-flops with clear</ic>
+ <ic name="74109">Dual J-NOT-K flip-flop with set and reset; positive-edge-trigger</ic>
+ <ic name="74112">Dual J-K negative-edge-triggered flip-flop, clear and preset</ic>
+ <ic name="74116">dual 4-bit D-type latches</ic>
+ <ic name="74125">Quadruple bus buffer gates with 3-state outputs (active low output enable)</ic>
+ <ic name="74126">Quadruple bus buffer gates with 3-state outputs (active high output enable)</ic>
+ <ic name="74133">13-input NAND gate</ic>
+ <ic name="74138">3-line to 8-line decoder/demultiplexer, inverted out</ic>
+ <ic name="74139">dual 2-line to 4-line decoder/demultiplexer</ic>
+ <ic name="74147">10-line to 4-line priority encoder</ic>
+ <ic name="74148">8-line to 3-Line priority encoder</ic>
+ <ic name="74150">4-line to 16-line data selectors/multiplexers</ic>
+ <ic name="74151">3-line to 8-line data selectors/multiplexers</ic>
+ <ic name="74153">dual 4-line to 1-line data selectors/multiplexers</ic>
+ <ic name="74154">4-line to 16-line decoders/demultiplexers</ic>
+ <ic name="74157">quad 2-line to 1-line data selectors/multiplexers</ic>
+ <ic name="74160">decimal synchronous counter, async clear</ic>
+ <ic name="74161">hex synchronous counter, async clear</ic>
+ <ic name="74162">decimal synchronous counter</ic>
+ <ic name="74162Real">decimal synchronous counter, real gates</ic>
+ <ic name="74163">hex synchronous counter</ic>
+ <ic name="74164">8-bit parallel-out serial shift register, asynchronous clear</ic>
+ <ic name="74165">parallel-load 8-bit shift register</ic>
+ <ic name="74166">8-Bit Parallel-In/Serial-Out Shift Register</ic>
+ <ic name="74173">quad 3-state D flip-flop with common clock and reset</ic>
+ <ic name="74174">hex D-flip-flop</ic>
+ <ic name="74175">quad D-flip-flop</ic>
+ <ic name="74181">4-bit arithmetic logic unit</ic>
+ <ic name="74182">look-ahead carry generator</ic>
+ <ic name="74189">64-Bit Random Access Memory with 3-STATE Outputs</ic>
+ <ic name="74190">Presettable synchronous 4-bit bcd up/down counter</ic>
+ <ic name="74191">Presettable synchronous 4-bit binary up/down counter</ic>
+ <ic name="74193">Synchronous 4-Bit Up/Down Binary Counter with Dual Clock</ic>
+ <ic name="74194">4-Bit Bidirectional Universal Shift Register</ic>
+ <ic name="74198">8-bit shift register</ic>
+ <ic name="74238">3-line to 8-line decoder/demultiplexer</ic>
+ <ic name="74244">octal 3-state buffer/line driver/line receiver</ic>
+ <ic name="74245">octal bus transceivers with 3-state outputs</ic>
+ <ic name="74247">BCD to 7-segment decoder, active low, tails on 6 and 9</ic>
+ <ic name="74248">BCD to 7-segment decoder, active high, tails on 6 and 9</ic>
+ <ic name="74253">dual tri state 4-line to 1-line data selectors/multiplexers</ic>
+ <ic name="74257">quad 2-line to 1-line data selectors/multiplexers (3-state output)</ic>
+ <ic name="74260">dual 5-input NOR gate</ic>
+ <ic name="74266">quad 2-input XNOR gate</ic>
+ <ic name="74273">octal D-type flip-flop with clear</ic>
+ <ic name="74280">9 bit Odd-Even Parity Generator-Checker</ic>
+ <ic name="74283">4-bit binary full adder, alternative pinning</ic>
+ <ic name="74299">8-Input Universal Shift/Storage Register
+with Common Parallel I/O Pins</ic>
+ <ic name="74373">octal transparent latches</ic>
+ <ic name="74374">octal positive-edge-triggered flip-flops</ic>
+ <ic name="74377">Octal D Flip-Flop with enable</ic>
+ <ic name="74382">4-Bit Arithmetic Logic Unit</ic>
+ <ic name="74540">octal buffer/line driver, inverted</ic>
+ <ic name="74541">octal buffer/line driver</ic>
+ <ic name="74573">octal transparent latches, different pinout compared to 74373</ic>
+ <ic name="74574">octal positive-edge-triggered flip-flops, different pinout compared to 74374</ic>
+ <ic name="74590">8-bit binary counter with tri-state output registers</ic>
+ <ic name="74595">8-Bit Shift Registers with 3-State Output Registers</ic>
+ <ic name="74670">3-state 4-by-4 Register File</ic>
+ <ic name="74682">8-bit digital comparator</ic>
+ <ic name="74688">8-bit identity comparator</ic>
+ <ic name="74779">8-Bit Bidirectional Binary Counter with 3-STATE Outputs</ic>
+ <ic name="74804">hex 2-input NAND gate
+
+https://www.ti.com/lit/ds/symlink/sn74as804b.pdf</ic>
+ <ic name="74805">hex 2-input NOR gate
+
+http://www.ti.com/lit/ds/symlink/sn54as805b.pdf</ic>
+ <ic name="74808">hex 2-input AND gate
+
+http://www.ti.com/lit/ds/symlink/sn54as808b.pdf</ic>
+ <ic name="74832">hex 2-input OR gate
+
+http://www.ti.com/lit/ds/symlink/sn54as832b.pdf</ic>
+ <ic name="744017">Johnson decade counter with 10 decoded outputs</ic>
+ <ic name="744075">triple 3-input OR gate</ic>
+ <ic name="A623308A">8K X 8 BIT CMOS SRAM</ic>
+ <ic name="RAM32Bit">A 32-bit memory that allows byte access and can handle non-aligned 
+memory addresses.</ic>
+</icRoot>

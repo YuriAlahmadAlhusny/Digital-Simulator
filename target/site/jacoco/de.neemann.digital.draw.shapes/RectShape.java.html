@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RectShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">RectShape.java</span></div><h1>RectShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.lang.Lang;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * Simple rectangle
+ */
+public class RectShape implements ShapeSpecificMatch {
+    private final String label;
+    private final int width;
+    private final int height;
+    private final boolean inside;
+    private final boolean bottom;
+    private final boolean right;
+    private final int fontSize;
+
+    /**
+     * Create a new instance
+     *
+     * @param attr    attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L38">    public RectShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L39">        final String l = attr.get(Keys.LABEL);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (l.isEmpty())</span>
+<span class="fc" id="L41">            label = Lang.get(&quot;elem_Text&quot;);</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        else if (l.equals(&quot;-&quot;))</span>
+<span class="nc" id="L43">            label = &quot;&quot;;</span>
+        else
+<span class="fc" id="L45">            label = Lang.evalMultilingualContent(l);</span>
+
+<span class="fc" id="L47">        width = attr.get(Keys.RECT_WIDTH);</span>
+<span class="fc" id="L48">        height = attr.get(Keys.RECT_HEIGHT);</span>
+<span class="fc" id="L49">        inside = attr.get(Keys.RECT_INSIDE);</span>
+<span class="fc" id="L50">        bottom = attr.get(Keys.RECT_BOTTOM);</span>
+<span class="fc" id="L51">        right = attr.get(Keys.RECT_RIGHT);</span>
+<span class="fc" id="L52">        fontSize = attr.get(Keys.FONT_SIZE);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L57">        return new Pins();</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="nc" id="L62">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+
+<span class="fc" id="L68">        int ofs = -3;</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        Orientation orientation = right ? Orientation.RIGHTBOTTOM : Orientation.LEFTBOTTOM;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (inside ^ bottom) {</span>
+<span class="nc" id="L71">            ofs = -ofs;</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            orientation = right ? Orientation.RIGHTTOP : Orientation.LEFTTOP;</span>
+        }
+
+<span class="fc" id="L75">        Vector pos = new Vector(2, ofs);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (right)</span>
+<span class="nc" id="L77">            pos = pos.add(width * SIZE - 4, 0);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (bottom)</span>
+<span class="nc" id="L79">            pos = pos.add(0, height * SIZE);</span>
+
+<span class="fc" id="L81">        Style style = Style.NORMAL.deriveFontStyle(fontSize, true);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (!label.isEmpty())</span>
+<span class="fc" id="L83">            graphic.drawText(pos, label, orientation, style);</span>
+
+<span class="fc" id="L85">        graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L86">                .add(0, 0)</span>
+<span class="fc" id="L87">                .add(width * SIZE, 0)</span>
+<span class="fc" id="L88">                .add(width * SIZE, height * SIZE)</span>
+<span class="fc" id="L89">                .add(0, height * SIZE), Style.DASH);</span>
+<span class="fc" id="L90">    }</span>
+
+    @Override
+    public boolean matches(Vector pos) {
+<span class="nc bnc" id="L94" title="All 32 branches missed.">        return (pos.x &gt; -SIZE2 &amp;&amp; pos.x &lt; SIZE2 &amp;&amp; pos.y &gt; -SIZE2 &amp;&amp; pos.y &lt; height * SIZE + SIZE2)</span>
+                || (pos.x &gt; width * SIZE - SIZE2 &amp;&amp; pos.x &lt; width * SIZE + SIZE2 &amp;&amp; pos.y &gt; -SIZE2 &amp;&amp; pos.y &lt; height * SIZE + SIZE2)
+                || (pos.y &gt; -SIZE2 &amp;&amp; pos.y &lt; SIZE2 &amp;&amp; pos.x &gt; -SIZE2 &amp;&amp; pos.x &lt; width * SIZE + SIZE2)
+                || (pos.y &gt; height * SIZE - SIZE2 &amp;&amp; pos.y &lt; height * SIZE + SIZE2 &amp;&amp; pos.x &gt; -SIZE2 &amp;&amp; pos.x &lt; width * SIZE + SIZE2);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

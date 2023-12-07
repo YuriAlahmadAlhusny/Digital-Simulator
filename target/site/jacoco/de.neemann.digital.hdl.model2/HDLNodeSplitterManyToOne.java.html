@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLNodeSplitterManyToOne.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLNodeSplitterManyToOne.java</span></div><h1>HDLNodeSplitterManyToOne.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.hdl.model2.expression.ExprVar;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.expression.Visitor;
+import de.neemann.digital.hdl.printer.CodePrinter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * The Many to One splitter.
+ * A Many to Many splitter is build with a ManyToOne and a OneToMany splitter.
+ */
+public class HDLNodeSplitterManyToOne extends HDLNode implements Iterable&lt;HDLNodeSplitterManyToOne.SplitterAssignment&gt; {
+    private final ArrayList&lt;SplitterAssignment&gt; outputs;
+
+    /**
+     * Creates a new instance
+     *
+     * @param node       the original splitter node
+     * @param inputSplit input splitting
+     */
+    HDLNodeSplitterManyToOne(HDLNode node, Splitter.Ports inputSplit) {
+<span class="fc" id="L32">        super(node.getElementName(), node.getElementAttributes(), null);</span>
+
+<span class="fc" id="L34">        outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L35">        int i = 0;</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (Splitter.Port p : inputSplit) {</span>
+<span class="fc" id="L37">            outputs.add(new SplitterAssignment(</span>
+<span class="fc" id="L38">                    p.getPos() + p.getBits() - 1,</span>
+<span class="fc" id="L39">                    p.getPos(),</span>
+<span class="fc" id="L40">                    new ExprVar(node.getInputs().get(i).getNet())));</span>
+<span class="fc" id="L41">            i++;</span>
+<span class="fc" id="L42">        }</span>
+
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (HDLPort p : node.getInputs())</span>
+<span class="fc" id="L45">            addPort(p);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (HDLPort p : node.getOutputs())</span>
+<span class="fc" id="L47">            addPort(p);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * @return the targets signal name
+     */
+    public String getTargetSignal() {
+<span class="fc" id="L54">        HDLNet net = getOutput().getNet();</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (net == null)</span>
+<span class="nc" id="L56">            return null;</span>
+<span class="fc" id="L57">        return net.getName();</span>
+    }
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L62">        super.print(out);</span>
+<span class="fc" id="L63">        int i = 0;</span>
+<span class="fc" id="L64">        HDLPort o = getOutput();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (SplitterAssignment sp : this) {</span>
+<span class="fc" id="L66">            out.print(o.getNet().getName());</span>
+<span class="fc" id="L67">            outputs.get(i++).print(out);</span>
+<span class="fc" id="L68">            out.println();</span>
+<span class="fc" id="L69">        }</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void replaceNetByExpression(HDLNet net, Expression expression) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (SplitterAssignment p : this)</span>
+<span class="fc" id="L75">            p.replace(net, expression);</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public &lt;V extends Visitor&gt; V traverseExpressions(V visitor) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (SplitterAssignment p : this)</span>
+<span class="fc" id="L81">            p.traverseExpressions(visitor);</span>
+<span class="fc" id="L82">        return visitor;</span>
+    }
+
+    @Override
+    public Iterator&lt;SplitterAssignment&gt; iterator() {
+<span class="fc" id="L87">        return outputs.iterator();</span>
+    }
+
+    /**
+     * The splitter assignment
+     */
+    public final static class SplitterAssignment implements Printable {
+        private final int msb;
+        private final int lsb;
+        private Expression expression;
+
+<span class="fc" id="L98">        private SplitterAssignment(int msb, int lsb, Expression expression) {</span>
+<span class="fc" id="L99">            this.msb = msb;</span>
+<span class="fc" id="L100">            this.lsb = lsb;</span>
+<span class="fc" id="L101">            this.expression = expression;</span>
+<span class="fc" id="L102">        }</span>
+
+        @Override
+        public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L106">            out.print(&quot;(&quot;).print(msb).print(&quot;-&quot;).print(lsb).print(&quot;)&quot;).print(&quot; := &quot;);</span>
+<span class="fc" id="L107">            expression.print(out);</span>
+<span class="fc" id="L108">        }</span>
+
+        /**
+         * @return the msb of the assignment
+         */
+        public int getMsb() {
+<span class="fc" id="L114">            return msb;</span>
+        }
+
+        /**
+         * @return the lsb of the assignment
+         */
+        public int getLsb() {
+<span class="fc" id="L121">            return lsb;</span>
+        }
+
+        /**
+         * @return the expression to assign
+         */
+        public Expression getExpression() {
+<span class="fc" id="L128">            return expression;</span>
+        }
+
+        private void replace(HDLNet net, Expression expr) {
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (Expression.isVar(expression, net))</span>
+<span class="fc" id="L133">                expression = expr;</span>
+            else
+<span class="fc" id="L135">                expression.replace(net, expr);</span>
+<span class="fc" id="L136">        }</span>
+
+        private void traverseExpressions(Visitor visitor) {
+<span class="fc" id="L139">            expression.traverse(visitor);</span>
+<span class="fc" id="L140">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

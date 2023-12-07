@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.vhdl2</a> &gt; <span class="el_source">VHDLCreator.java</span></div><h1>VHDLCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.vhdl2;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.model2.*;
+import de.neemann.digital.hdl.model2.expression.*;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.hdl.vhdl2.entities.VHDLEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+
+/**
+ * Create the vhdl output.
+ * Used to print a optimized {@link de.neemann.digital.hdl.model2.HDLModel} as VHDL
+ * code to a {@link CodePrinter} instance.
+ */
+public class VHDLCreator {
+<span class="fc" id="L29">    private static final Logger LOGGER = LoggerFactory.getLogger(VHDLCreator.class);</span>
+    private static final String ZEROS = &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;;
+    private final CodePrinter out;
+    private final VHDLLibrary library;
+    private HashSet&lt;String&gt; customPrinted;
+
+    /**
+     * Creates a new instance
+     *
+     * @param out the output stream
+     */
+<span class="fc" id="L40">    VHDLCreator(CodePrinter out, ElementLibrary lib) {</span>
+<span class="fc" id="L41">        this.out = out;</span>
+<span class="fc" id="L42">        library = new VHDLLibrary(lib);</span>
+<span class="fc" id="L43">        customPrinted = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Returns the vhdl type name
+     *
+     * @param bits the number of bits
+     * @return the types name
+     */
+    public static String getType(int bits) {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (bits == 1)</span>
+<span class="fc" id="L54">            return &quot;std_logic&quot;;</span>
+        else
+<span class="fc" id="L56">            return &quot;std_logic_vector(&quot; + (bits - 1) + &quot; downto 0)&quot;;</span>
+    }
+
+    /**
+     * Creates a vhdl value
+     *
+     * @param con the constant
+     * @return the value as vhdl code
+     */
+    public static String value(ExprConstant con) {
+<span class="fc" id="L66">        return value(con.getValue(), con.getBits());</span>
+    }
+
+    /**
+     * Creates a vhdl value
+     *
+     * @param val  the value
+     * @param bits the bit number
+     * @return the value as vhdl code
+     */
+    public static String value(long val, int bits) {
+<span class="fc" id="L77">        String s = Long.toBinaryString(val &amp; Bits.mask(bits));</span>
+<span class="fc" id="L78">        int missing = bits - s.length();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (missing &gt; 0)</span>
+<span class="fc" id="L80">            s = ZEROS.substring(0, missing) + s;</span>
+
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (bits &gt; 1)</span>
+<span class="fc" id="L83">            s = &quot;\&quot;&quot; + s + &quot;\&quot;&quot;;</span>
+        else
+<span class="fc" id="L85">            s = &quot;'&quot; + s + &quot;'&quot;;</span>
+
+<span class="fc" id="L87">        return s;</span>
+    }
+
+    private void printNodeBuiltIn(HDLNodeBuildIn node, File root) throws HDLException, IOException, HGSEvalException {
+<span class="fc" id="L91">        VHDLEntity entity = library.getEntity(node);</span>
+<span class="fc" id="L92">        String hdlEntityName = entity.print(out, node, root);</span>
+<span class="fc" id="L93">        node.setHdlEntityName(hdlEntityName);</span>
+<span class="fc" id="L94">    }</span>
+
+    private void printNodeCustom(HDLNodeCustom node, File root) throws HDLException, IOException, HGSEvalException {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (!customPrinted.contains(node.getElementName())) {</span>
+<span class="fc" id="L98">            printHDLCircuit(node.getCircuit(), root);</span>
+<span class="fc" id="L99">            customPrinted.add(node.getElementName());</span>
+        }
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Prints the given circuit to the output.
+     * Also all needed entities are printed.
+     *
+     * @param circuit the circuit to print
+     * @param root    the projects main folder
+     * @throws IOException      IOException
+     * @throws HDLException     HDLException
+     * @throws HGSEvalException HGSEvalException
+     */
+    public void printHDLCircuit(HDLCircuit circuit, File root) throws IOException, HDLException, HGSEvalException {
+        // skip the HDL export and any dependant circuits
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (circuit.shouldSkipHDLExport()) {</span>
+<span class="fc" id="L116">            return;</span>
+        }
+
+        // at first print all used entities to maintain the correct order
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (HDLNode node : circuit)</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (node instanceof HDLNodeCustom)</span>
+<span class="fc" id="L122">                printNodeCustom((HDLNodeCustom) node, root);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            else if (node instanceof HDLNodeBuildIn)</span>
+<span class="fc" id="L124">                printNodeBuiltIn((HDLNodeBuildIn) node, root);</span>
+
+<span class="fc" id="L126">        LOGGER.info(&quot;export &quot; + circuit.getElementName());</span>
+
+        // after that print this entity
+<span class="fc" id="L129">        out.println()</span>
+<span class="fc" id="L130">                .println(&quot;LIBRARY ieee;&quot;)</span>
+<span class="fc" id="L131">                .println(&quot;USE ieee.std_logic_1164.all;&quot;)</span>
+<span class="fc" id="L132">                .println(&quot;USE ieee.numeric_std.all;&quot;)</span>
+<span class="fc" id="L133">                .println();</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (circuit.hasDescription())</span>
+<span class="fc" id="L136">            out.printComment(&quot;-- &quot;, circuit.getDescription());</span>
+
+<span class="fc" id="L138">        out.print(&quot;entity &quot;).print(circuit.getHdlEntityName()).println(&quot; is&quot;).inc();</span>
+<span class="fc" id="L139">        writePorts(out, circuit);</span>
+<span class="fc" id="L140">        out.dec();</span>
+<span class="fc" id="L141">        out.print(&quot;end &quot;).print(circuit.getHdlEntityName()).println(&quot;;&quot;);</span>
+<span class="fc" id="L142">        out.println();</span>
+<span class="fc" id="L143">        out.print(&quot;architecture Behavioral of &quot; + circuit.getHdlEntityName()).println(&quot; is&quot;).inc();</span>
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (HDLNet net : circuit.getNets())</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (net.needsVariable())</span>
+<span class="fc" id="L147">                out.print(&quot;signal &quot;).print(net.getName()).print(&quot;: &quot;).print(getType(net.getBits())).println(&quot;;&quot;);</span>
+
+
+<span class="fc" id="L150">        out.dec().println(&quot;begin&quot;).inc();</span>
+
+<span class="fc" id="L152">        int num = 0;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        for (HDLNode node : circuit)</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (node instanceof HDLNodeAssignment)</span>
+<span class="fc" id="L155">                printExpression((HDLNodeAssignment) node);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            else if (node instanceof HDLNodeBuildIn)</span>
+<span class="fc" id="L157">                printEntityInstantiation((HDLNodeBuildIn) node, num++, root);</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">            else if (node instanceof HDLNodeSplitterOneToMany)</span>
+<span class="nc" id="L159">                printOneToMany((HDLNodeSplitterOneToMany) node);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">            else if (node instanceof HDLNodeSplitterManyToOne)</span>
+<span class="fc" id="L161">                printManyToOne((HDLNodeSplitterManyToOne) node);</span>
+            else
+<span class="nc" id="L163">                throw new HDLException(&quot;Not yet implemented: &quot; + node.getClass().getSimpleName());</span>
+
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (HDLPort p : circuit.getOutputs()) {</span>
+<span class="fc" id="L166">            final HDLNet net = p.getNet();</span>
+<span class="fc bfc" id="L167" title="All 4 branches covered.">            if (net.needsVariable() || net.isInput())</span>
+<span class="fc" id="L168">                out.print(p.getName()).print(&quot; &lt;= &quot;).print(p.getNet().getName()).println(&quot;;&quot;);</span>
+<span class="fc" id="L169">        }</span>
+
+<span class="fc" id="L171">        out.dec().println(&quot;end Behavioral;&quot;);</span>
+<span class="fc" id="L172">    }</span>
+
+    /**
+     * Writes the ports of the given circuit
+     *
+     * @param out     the stream to write to
+     * @param circuit the circuit
+     * @throws IOException IOException
+     */
+    public static void writePorts(CodePrinter out, HDLCircuit circuit) throws IOException {
+<span class="fc" id="L182">        out.println(&quot;port (&quot;).inc();</span>
+
+<span class="fc" id="L184">        Separator sep = new Separator(out, &quot;;\n&quot;);</span>
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (HDLPort i : circuit.getInputs()) {</span>
+<span class="fc" id="L187">            sep.check();</span>
+<span class="fc" id="L188">            out.print(i.getName()).print(&quot;: &quot;).print(getDir(i.getDirection(), &quot;in&quot;)).print(&quot; &quot;).print(getType(i.getBits()));</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">            if (i.hasDescription()) sep.setLineFinalizer(ou -&gt; ou.printComment(&quot; -- &quot;, i.getDescription()));</span>
+<span class="fc" id="L190">        }</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (HDLPort o : circuit.getOutputs()) {</span>
+<span class="fc" id="L192">            sep.check();</span>
+<span class="fc" id="L193">            out.print(o.getName()).print(&quot;: &quot;).print(getDir(o.getDirection(), &quot;out&quot;)).print(&quot; &quot;).print(getType(o.getBits()));</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (o.hasDescription()) sep.setLineFinalizer(ou -&gt; ou.printComment(&quot; -- &quot;, o.getDescription()));</span>
+<span class="fc" id="L195">        }</span>
+<span class="fc" id="L196">        sep.close();</span>
+<span class="fc" id="L197">        out.println(&quot;);&quot;).dec();</span>
+<span class="fc" id="L198">    }</span>
+
+    private static String getDir(HDLPort.Direction direction, String def) {
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        if (direction == HDLPort.Direction.INOUT)</span>
+<span class="nc" id="L202">            return &quot;inout&quot;;</span>
+<span class="fc" id="L203">        return def;</span>
+    }
+
+    private void printManyToOne(HDLNodeSplitterManyToOne node) throws IOException, HDLException {
+<span class="fc" id="L207">        String target = node.getTargetSignal();</span>
+
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (target != null) {</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            for (HDLNodeSplitterManyToOne.SplitterAssignment in : node) {</span>
+<span class="fc" id="L211">                out.print(target).print(&quot;(&quot;);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">                if (in.getLsb() == in.getMsb())</span>
+<span class="fc" id="L213">                    out.print(in.getLsb());</span>
+                else
+<span class="fc" id="L215">                    out.print(in.getMsb()).print(&quot; downto &quot;).print(in.getLsb());</span>
+<span class="fc" id="L216">                out.print(&quot;) &lt;= &quot;);</span>
+<span class="fc" id="L217">                printExpression(in.getExpression());</span>
+<span class="fc" id="L218">                out.println(&quot;;&quot;);</span>
+<span class="fc" id="L219">            }</span>
+        }
+<span class="fc" id="L221">    }</span>
+
+    /**
+     * After ReplaceOneToMany optimization there are no such nodes in the model!
+     */
+    private void printOneToMany(HDLNodeSplitterOneToMany node) throws IOException {
+<span class="nc" id="L227">        String source = node.getSourceSignal();</span>
+<span class="nc" id="L228">        Splitter.Ports is = node.getOutputSplit();</span>
+<span class="nc" id="L229">        int i = 0;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        for (HDLPort outPort : node.getOutputs()) {</span>
+<span class="nc" id="L231">            Splitter.Port sp = is.getPort(i++);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (outPort.getNet() != null) {</span>
+<span class="nc" id="L233">                out.print(outPort.getNet().getName()).print(&quot; &lt;= &quot;).print(source).print(&quot;(&quot;);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                if (outPort.getBits() == 1)</span>
+<span class="nc" id="L235">                    out.print(sp.getPos());</span>
+                else
+<span class="nc" id="L237">                    out.print(sp.getPos() + sp.getBits() - 1).print(&quot; downto &quot;).print(sp.getPos());</span>
+<span class="nc" id="L238">                out.println(&quot;);&quot;);</span>
+            }
+<span class="nc" id="L240">        }</span>
+<span class="nc" id="L241">    }</span>
+
+    private void printEntityInstantiation(HDLNodeBuildIn node, int num, File root) throws IOException, HDLException {
+<span class="fc" id="L244">        String entityName = node.getHdlEntityName();</span>
+
+<span class="fc" id="L246">        out.print(&quot;gate&quot;).print(num).print(&quot;: entity work.&quot;).print(entityName);</span>
+
+<span class="fc" id="L248">        final String label = node.getElementAttributes().getLabel();</span>
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="fc" id="L250">            out.print(&quot; -- &quot;).print(label.replace('\n', ' '));</span>
+
+<span class="fc" id="L252">        out.println().inc();</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (!(node instanceof HDLNodeCustom))</span>
+<span class="fc" id="L254">            library.getEntity(node).writeGenericMap(out, node, root);</span>
+<span class="fc" id="L255">        out.println(&quot;port map (&quot;).inc();</span>
+<span class="fc" id="L256">        Separator sep = new Separator(out, &quot;,\n&quot;);</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (HDLNodeBuildIn.InputAssignment i : node) {</span>
+<span class="fc" id="L258">            sep.check();</span>
+<span class="fc" id="L259">            out.print(i.getTargetName()).print(&quot; =&gt; &quot;);</span>
+<span class="fc" id="L260">            printExpression(i.getExpression());</span>
+<span class="fc" id="L261">        }</span>
+
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        for (HDLPort o : node.getOutputs())</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            if (o.getNet() != null) {</span>
+<span class="fc" id="L265">                sep.check();</span>
+<span class="fc" id="L266">                out.print(o.getName()).print(&quot; =&gt; &quot;).print(o.getNet().getName());</span>
+            }
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (HDLPort o : node.getInOutputs())</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">            if (o.getNet() != null) {</span>
+<span class="fc" id="L270">                sep.check();</span>
+<span class="fc" id="L271">                out.print(o.getName()).print(&quot; =&gt; &quot;).print(o.getNet().getName());</span>
+            }
+<span class="fc" id="L273">        out.println(&quot;);&quot;).dec().dec();</span>
+<span class="fc" id="L274">    }</span>
+
+    private void printExpression(HDLNodeAssignment node) throws IOException, HDLException {
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (node.getTargetNet() != null) {</span>
+<span class="fc" id="L278">            out.print(node.getTargetNet().getName()).print(&quot; &lt;= &quot;);</span>
+<span class="fc" id="L279">            printExpression(node.getExpression());</span>
+<span class="fc" id="L280">            out.println(&quot;;&quot;);</span>
+        }
+<span class="fc" id="L282">    }</span>
+
+    private void printExpression(Expression expression) throws IOException, HDLException {
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (expression instanceof ExprVar)</span>
+<span class="fc" id="L286">            out.print(((ExprVar) expression).getNet().getName());</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        else if (expression instanceof ExprVarRange) {</span>
+<span class="fc" id="L288">            final ExprVarRange evr = (ExprVarRange) expression;</span>
+<span class="fc" id="L289">            out.print(evr.getNet().getName()).print(&quot;(&quot;);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (evr.getMsb() == evr.getLsb())</span>
+<span class="fc" id="L291">                out.print(evr.getMsb());</span>
+            else
+<span class="fc" id="L293">                out.print(evr.getMsb()).print(&quot; downto &quot;).print(evr.getLsb());</span>
+<span class="fc" id="L294">            out.print(&quot;)&quot;);</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        } else if (expression instanceof ExprConstant) {</span>
+<span class="fc" id="L296">            final ExprConstant constant = (ExprConstant) expression;</span>
+<span class="fc" id="L297">            out.print(value(constant));</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        } else if (expression instanceof ExprNot) {</span>
+<span class="fc" id="L299">            out.print(&quot;NOT &quot;);</span>
+<span class="fc" id="L300">            Expression inner = ((ExprNot) expression).getExpression();</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">            if (inner instanceof ExprNot) { // Quartus does not like a NOT NOT</span>
+<span class="nc" id="L302">                out.print(&quot;(&quot;);</span>
+<span class="nc" id="L303">                printExpression(inner);</span>
+<span class="nc" id="L304">                out.print(&quot;)&quot;);</span>
+            } else
+<span class="fc" id="L306">                printExpression(inner);</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        } else if (expression instanceof ExprOperate) {</span>
+<span class="fc" id="L308">            out.print(&quot;(&quot;);</span>
+<span class="fc" id="L309">            boolean first = true;</span>
+<span class="fc" id="L310">            final ExprOperate operate = (ExprOperate) expression;</span>
+
+            String op;
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">            switch (operate.getOperation()) {</span>
+                case OR:
+<span class="fc" id="L315">                    op = &quot; OR &quot;;</span>
+<span class="fc" id="L316">                    break;</span>
+                case AND:
+<span class="fc" id="L318">                    op = &quot; AND &quot;;</span>
+<span class="fc" id="L319">                    break;</span>
+                case XOR:
+<span class="fc" id="L321">                    op = &quot; XOR &quot;;</span>
+<span class="fc" id="L322">                    break;</span>
+                default:
+<span class="nc" id="L324">                    throw new HDLException(&quot;unknown operation &quot; + operate.getOperation());</span>
+            }
+<span class="fc bfc" id="L326" title="All 2 branches covered.">            for (Expression exp : operate.getOperands()) {</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                if (first)</span>
+<span class="fc" id="L328">                    first = false;</span>
+                else
+<span class="fc" id="L330">                    out.print(op);</span>
+<span class="fc" id="L331">                printExpression(exp);</span>
+<span class="fc" id="L332">            }</span>
+<span class="fc" id="L333">            out.print(&quot;)&quot;);</span>
+<span class="fc" id="L334">        } else</span>
+<span class="nc" id="L335">            throw new HDLException(&quot;expression type &quot; + expression.getClass().getSimpleName() + &quot; unknown&quot;);</span>
+<span class="fc" id="L336">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

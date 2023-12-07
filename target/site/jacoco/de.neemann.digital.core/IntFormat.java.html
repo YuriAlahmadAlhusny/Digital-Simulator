@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntFormat.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core</a> &gt; <span class="el_source">IntFormat.java</span></div><h1>IntFormat.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+
+/**
+ * The available number formats
+ */
+<span class="fc" id="L14">public enum IntFormat {</span>
+    /**
+     * the default format
+     */
+<span class="fc" id="L18">    def(ValueFormatterDefault.INSTANCE),</span>
+    /**
+     * decimal
+     */
+<span class="fc" id="L22">    dec(new ValueFormatterDecimal(false)),</span>
+    /**
+     * decimal signed
+     */
+<span class="fc" id="L26">    decSigned(new ValueFormatterDecimal(true)),</span>
+    /**
+     * hex
+     */
+<span class="fc" id="L30">    hex(ValueFormatterHex.INSTANCE),</span>
+    /**
+     * binary
+     */
+<span class="fc" id="L34">    bin(new ValueFormatterBinary()),</span>
+    /**
+     * octal
+     */
+<span class="fc" id="L38">    oct(new ValueFormatterOctal()),</span>
+    /**
+     * ascii
+     */
+<span class="fc" id="L42">    ascii(new ValueFormatterAscii()),</span>
+    /**
+     * fixed point
+     */
+<span class="fc" id="L46">    fixed(attributes -&gt; new ValueFormatterFixedPoint(attributes, false)),</span>
+    /**
+     * fixed point signed
+     */
+<span class="fc" id="L50">    fixedSigned(attributes -&gt; new ValueFormatterFixedPoint(attributes, true)),</span>
+    /**
+     * floating point
+     */
+<span class="fc" id="L54">    floating(new ValueFormatterFloat());</span>
+
+    /**
+     * The default formatter
+     */
+<span class="fc" id="L59">    public static final ValueFormatter DEFAULT_FORMATTER = ValueFormatterDefault.INSTANCE;</span>
+    /**
+     * The hexadecimal formatter
+     */
+<span class="fc" id="L63">    public static final ValueFormatter HEX_FORMATTER = ValueFormatterHex.INSTANCE;</span>
+
+    private final Factory factory;
+    private final boolean dependsOnAttributes;
+
+<span class="fc" id="L68">    IntFormat(ValueFormatter instance) {</span>
+<span class="fc" id="L69">        this.factory = attributes -&gt; instance;</span>
+<span class="fc" id="L70">        this.dependsOnAttributes = false;</span>
+<span class="fc" id="L71">    }</span>
+
+<span class="fc" id="L73">    IntFormat(Factory factory) {</span>
+<span class="fc" id="L74">        this.factory = factory;</span>
+<span class="fc" id="L75">        this.dependsOnAttributes = true;</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * Creates a formatter which is able to format Values
+     *
+     * @param attributes the elements attributes
+     * @return the created {@link ValueFormatter}
+     */
+    public ValueFormatter createFormatter(ElementAttributes attributes) {
+<span class="fc" id="L85">        return factory.create(attributes);</span>
+    }
+
+    /**
+     * @return true if this type depends on elements attributes
+     */
+    public boolean dependsOnAttributes() {
+<span class="fc" id="L92">        return dependsOnAttributes;</span>
+    }
+
+    private interface Factory {
+        ValueFormatter create(ElementAttributes attributes);
+    }
+
+<span class="fc" id="L99">    private static final char[] DIGITS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};</span>
+
+    /**
+     * The default value formatter
+     */
+    private static final class ValueFormatterDefault implements ValueFormatter {
+<span class="fc" id="L105">        private static final ValueFormatter INSTANCE = new ValueFormatterDefault();</span>
+
+        @Override
+        public String formatToView(Value inValue) {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (inValue.isHighZ())</span>
+<span class="nc" id="L110">                return inValue.toString();</span>
+            else
+<span class="fc" id="L112">                return toShortHex(inValue.getValue(), false);</span>
+        }
+
+        @Override
+        public String formatToEdit(Value inValue) {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            if (inValue.isHighZ())</span>
+<span class="nc" id="L118">                return &quot;Z&quot;;</span>
+
+<span class="fc" id="L120">            final long value = inValue.getValue();</span>
+<span class="fc bfc" id="L121" title="All 4 branches covered.">            if (value &gt;= 0 &amp;&amp; value &lt; 10)</span>
+<span class="fc" id="L122">                return Long.toString(value);</span>
+            else
+<span class="fc" id="L124">                return &quot;0x&quot; + toShortHex(value, true);</span>
+        }
+
+        @Override
+        public int strLen(int bits) {
+<span class="nc" id="L129">            return (bits - 1) / 4 + 3;</span>
+        }
+
+        @Override
+        public boolean isSuitedForAddresses() {
+<span class="nc" id="L134">            return false; // difficult to read in a table</span>
+        }
+
+        @Override
+        public long dragValue(long initial, int bits, double inc) {
+<span class="nc" id="L139">            return dragValueSigned(initial, bits, inc, false);</span>
+        }
+
+        @Override
+        public boolean isSeparatorInFrontOf(int bits, int bit) {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            return bit % 4 == 0;</span>
+        }
+    }
+
+    private static long dragValueSigned(long initial, int bits, double inc, boolean signed) {
+        long max;
+        long min;
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (signed) {</span>
+<span class="fc" id="L152">            long mask = Bits.mask(bits);</span>
+<span class="fc" id="L153">            long signedFlag = Bits.signedFlagMask(bits);</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">            if ((initial &amp; signedFlag) != 0) initial |= ~mask;</span>
+
+<span class="fc" id="L156">            max = mask &gt;&gt;&gt; 1;</span>
+<span class="fc" id="L157">            min = -max - 1;</span>
+<span class="fc" id="L158">        } else {</span>
+<span class="fc" id="L159">            max = Bits.mask(bits);</span>
+<span class="fc" id="L160">            min = 0;</span>
+        }
+<span class="fc" id="L162">        return Math.max(min, Math.min(max, initial + Math.round(max * inc)));</span>
+    }
+
+    /**
+     * Base class of all formatters where the string to edit and the string to display are the same.
+     */
+    private static abstract class ValueFormatterViewEdit implements ValueFormatter {
+        private final boolean suitedForAddresses;
+
+<span class="fc" id="L171">        private ValueFormatterViewEdit(boolean suitedForAddresses) {</span>
+<span class="fc" id="L172">            this.suitedForAddresses = suitedForAddresses;</span>
+<span class="fc" id="L173">        }</span>
+
+        @Override
+        public String formatToView(Value inValue) {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">            if (inValue.isHighZ())</span>
+<span class="nc" id="L178">                return inValue.toString();</span>
+            else
+<span class="fc" id="L180">                return format(inValue);</span>
+        }
+
+        @Override
+        public String formatToEdit(Value inValue) {
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            if (inValue.isHighZ())</span>
+<span class="fc" id="L186">                return &quot;Z&quot;;</span>
+            else
+<span class="fc" id="L188">                return format(inValue);</span>
+        }
+
+        @Override
+        public boolean isSuitedForAddresses() {
+<span class="nc" id="L193">            return suitedForAddresses;</span>
+        }
+
+        protected abstract String format(Value value);
+
+        @Override
+        public long dragValue(long initial, int bits, double inc) {
+<span class="fc" id="L200">            return dragValueSigned(initial, bits, inc, false);</span>
+        }
+    }
+
+    /**
+     * the hexadecimal formatter
+     */
+    private static final class ValueFormatterHex extends ValueFormatterViewEdit {
+<span class="fc" id="L208">        private static final ValueFormatterHex INSTANCE = new ValueFormatterHex();</span>
+
+        private ValueFormatterHex() {
+<span class="fc" id="L211">            super(true);</span>
+<span class="fc" id="L212">        }</span>
+
+        @Override
+        protected String format(Value inValue) {
+<span class="fc" id="L216">            final int bits = inValue.getBits();</span>
+<span class="fc" id="L217">            final int numChars = (bits - 1) / 4 + 1;</span>
+
+<span class="fc" id="L219">            StringBuilder sb = new StringBuilder(&quot;0x&quot;);</span>
+<span class="fc" id="L220">            final long value = inValue.getValue();</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            for (int i = numChars - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L222">                int c = (int) ((value &gt;&gt; (i * 4)) &amp; 0xf);</span>
+<span class="fc" id="L223">                sb.append(DIGITS[c]);</span>
+            }
+<span class="fc" id="L225">            return sb.toString();</span>
+        }
+
+        @Override
+        public int strLen(int bits) {
+<span class="fc" id="L230">            return (bits - 1) / 4 + 3;</span>
+        }
+
+        @Override
+        public boolean isSeparatorInFrontOf(int bits, int bit) {
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            return bit % 4 == 0;</span>
+        }
+    }
+
+    /**
+     * Creates a short hex representation of the given value.
+     * Use only to represent a value.
+     * If confusion is excluded, the prefix '0x' is omitted.
+     * Thus 0x1A3 is converted to &quot;1A3&quot; which can not be parsed back to a long because &quot;0x&quot; is missing.
+     *
+     * @param value the value
+     * @return the hex string
+     */
+    public static String toShortHex(long value) {
+<span class="fc" id="L249">        return toShortHex(value, false);</span>
+    }
+
+    private static final int BUF = 16;
+
+    private static String toShortHex(long value, boolean omitPrefix) {
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (value == 0)</span>
+<span class="fc" id="L256">            return &quot;0&quot;;</span>
+
+<span class="fc" id="L258">        boolean wasChar = false;</span>
+<span class="fc" id="L259">        int p = BUF;</span>
+<span class="fc" id="L260">        char[] data = new char[BUF];</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        while (value != 0) {</span>
+<span class="fc" id="L262">            final int d = (int) (value &amp; 0xf);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (d &gt;= 10) wasChar = true;</span>
+<span class="fc" id="L264">            p--;</span>
+<span class="fc" id="L265">            data[p] = DIGITS[d];</span>
+<span class="fc" id="L266">            value &gt;&gt;&gt;= 4;</span>
+<span class="fc" id="L267">        }</span>
+
+<span class="fc bfc" id="L269" title="All 6 branches covered.">        if (omitPrefix || wasChar || p == BUF - 1)</span>
+<span class="fc" id="L270">            return new String(data, p, BUF - p);</span>
+        else
+<span class="fc" id="L272">            return &quot;0x&quot; + new String(data, p, BUF - p);</span>
+    }
+
+    /**
+     * the octal formatter
+     */
+    private static final class ValueFormatterOctal extends ValueFormatterViewEdit {
+
+        private ValueFormatterOctal() {
+<span class="fc" id="L281">            super(true);</span>
+<span class="fc" id="L282">        }</span>
+
+        @Override
+        public int strLen(int bits) {
+<span class="fc" id="L286">            return (bits - 1) / 3 + 3;</span>
+        }
+
+        @Override
+        protected String format(Value inValue) {
+<span class="fc" id="L291">            final int bits = inValue.getBits();</span>
+<span class="fc" id="L292">            final int numChars = (bits - 1) / 3 + 1;</span>
+
+<span class="fc" id="L294">            StringBuilder sb = new StringBuilder(&quot;0&quot;);</span>
+<span class="fc" id="L295">            final long value = inValue.getValue();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">            for (int i = numChars - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L297">                int c = (int) ((value &gt;&gt; (i * 3)) &amp; 0x7);</span>
+<span class="fc" id="L298">                sb.append(DIGITS[c]);</span>
+            }
+<span class="fc" id="L300">            return sb.toString();</span>
+        }
+
+        @Override
+        public boolean isSeparatorInFrontOf(int bits, int bit) {
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            return bit % 3 == 0;</span>
+        }
+    }
+
+    /**
+     * the binary formatter
+     */
+    private static final class ValueFormatterBinary extends ValueFormatterViewEdit {
+
+        private ValueFormatterBinary() {
+<span class="fc" id="L315">            super(false); // column becomes to wide</span>
+<span class="fc" id="L316">        }</span>
+
+        @Override
+        public int strLen(int bits) {
+<span class="fc" id="L320">            return bits + 2;</span>
+        }
+
+        @Override
+        protected String format(Value inValue) {
+<span class="fc" id="L325">            final int bits = inValue.getBits();</span>
+<span class="fc" id="L326">            char[] data = new char[bits];</span>
+<span class="fc" id="L327">            final long value = inValue.getValue();</span>
+<span class="fc" id="L328">            long mask = 1;</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            for (int i = bits - 1; i &gt;= 0; i--) {</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                if ((value &amp; mask) != 0)</span>
+<span class="fc" id="L331">                    data[i] = '1';</span>
+                else
+<span class="fc" id="L333">                    data[i] = '0';</span>
+<span class="fc" id="L334">                mask &lt;&lt;= 1;</span>
+            }
+<span class="fc" id="L336">            return &quot;0b&quot; + new String(data);</span>
+        }
+    }
+
+    /**
+     * The ascii formatter
+     */
+    private static final class ValueFormatterAscii extends ValueFormatterViewEdit {
+
+        private ValueFormatterAscii() {
+<span class="fc" id="L346">            super(false); // does not represent all values</span>
+<span class="fc" id="L347">        }</span>
+
+        @Override
+        public int strLen(int bits) {
+<span class="nc" id="L351">            return 3;</span>
+        }
+
+        @Override
+        protected String format(Value value) {
+<span class="fc" id="L356">            return &quot;'&quot; + ((char) value.getValue()) + &quot;'&quot;;</span>
+        }
+    }
+
+    /**
+     * The decimal value formatter
+     */
+    private static final class ValueFormatterDecimal extends ValueFormatterViewEdit {
+        private final boolean signed;
+
+        private ValueFormatterDecimal(boolean signed) {
+<span class="fc" id="L367">            super(true);</span>
+<span class="fc" id="L368">            this.signed = signed;</span>
+<span class="fc" id="L369">        }</span>
+
+        @Override
+        public int strLen(int bits) {
+<span class="fc bfc" id="L373" title="All 2 branches covered.">            if (signed)</span>
+<span class="fc" id="L374">                return decStrLen(bits - 1) + 1;</span>
+            else
+<span class="fc" id="L376">                return decStrLen(bits);</span>
+        }
+
+        @Override
+        protected String format(Value value) {
+<span class="fc bfc" id="L381" title="All 2 branches covered.">            if (signed)</span>
+<span class="fc" id="L382">                return Long.toString(value.getValueSigned());</span>
+            else
+<span class="fc" id="L384">                return Long.toString(value.getValue());</span>
+        }
+
+        @Override
+        public long dragValue(long initial, int bits, double inc) {
+<span class="fc" id="L389">            return dragValueSigned(initial, bits, inc, signed);</span>
+        }
+    }
+
+    private static int decStrLen(int bits) {
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (bits == 64)</span>
+<span class="fc" id="L395">            return 20;</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        else if (bits == 63) {</span>
+<span class="fc" id="L397">            return 19;</span>
+        } else
+<span class="fc" id="L399">            return (int) Math.ceil(Math.log10(1L &lt;&lt; bits));</span>
+    }
+
+
+    /**
+     * Fixed point formatter
+     */
+    private static final class ValueFormatterFixedPoint implements ValueFormatter {
+<span class="fc" id="L407">        private static final int[] TABLE = new int[]{</span>
+                0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 16, 17, 17,
+                18, 19, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21,
+                21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
+                21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22};
+
+        private final int fixedPoint;
+        private final boolean signed;
+        private final double divisor;
+
+        /**
+         * Creates a new generic instance
+         *
+         * @param attr   the defining elements attributes
+         * @param signed signed
+         */
+<span class="fc" id="L423">        private ValueFormatterFixedPoint(ElementAttributes attr, boolean signed) {</span>
+<span class="fc" id="L424">            fixedPoint = attr.get(Keys.FIXED_POINT);</span>
+<span class="fc" id="L425">            divisor = Bits.up(1, fixedPoint);</span>
+<span class="fc" id="L426">            this.signed = signed;</span>
+<span class="fc" id="L427">        }</span>
+
+        @Override
+        public String formatToView(Value inValue) {
+<span class="fc bfc" id="L431" title="All 2 branches covered.">            if (inValue.isHighZ())</span>
+<span class="fc" id="L432">                return inValue.toString();</span>
+<span class="fc" id="L433">            return format(inValue);</span>
+        }
+
+        @Override
+        public String formatToEdit(Value inValue) {
+<span class="fc bfc" id="L438" title="All 2 branches covered.">            if (inValue.isHighZ())</span>
+<span class="fc" id="L439">                return &quot;Z&quot;;</span>
+<span class="fc" id="L440">            return format(inValue) + &quot;:&quot; + fixedPoint;</span>
+        }
+
+        @Override
+        public int strLen(int bits) {
+<span class="nc" id="L445">            int fp = fixedPoint;</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">            if (fp &gt;= TABLE.length) fp = TABLE.length - 1;</span>
+<span class="nc" id="L447">            return decStrLen(Math.max(1, bits - fp)) + TABLE[fp];</span>
+        }
+
+        @Override
+        public boolean isSuitedForAddresses() {
+<span class="nc" id="L452">            return false;</span>
+        }
+
+        private String format(Value inValue) {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">            if (signed)</span>
+<span class="fc" id="L457">                return Double.toString(inValue.getValueSigned() / divisor);</span>
+            else
+<span class="fc" id="L459">                return Double.toString(inValue.getValue() / divisor);</span>
+        }
+
+        @Override
+        public long dragValue(long initial, int bits, double inc) {
+<span class="nc" id="L464">            return dragValueSigned(initial, bits, inc, signed);</span>
+        }
+
+        @Override
+        public boolean isSeparatorInFrontOf(int bits, int bit) {
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            return bit == fixedPoint;</span>
+        }
+    }
+
+    /**
+     * Floating point formatter
+     */
+    private static final class ValueFormatterFloat implements ValueFormatter {
+<span class="fc" id="L477">        private static final int SIZE32 = Float.toString((float) -Math.PI).length();</span>
+<span class="fc" id="L478">        private static final int SIZE64 = Double.toString(-Math.PI).length();</span>
+
+        @Override
+        public String formatToView(Value inValue) {
+<span class="fc bfc" id="L482" title="All 2 branches covered.">            if (inValue.isHighZ())</span>
+<span class="fc" id="L483">                return inValue.toString();</span>
+
+<span class="pc bpc" id="L485" title="1 of 3 branches missed.">            switch (inValue.getBits()) {</span>
+                case 32:
+<span class="fc" id="L487">                    return Float.toString(Float.intBitsToFloat((int) inValue.getValue()));</span>
+                case 64:
+<span class="fc" id="L489">                    return Double.toString(Double.longBitsToDouble(inValue.getValue()));</span>
+                default:
+<span class="nc" id="L491">                    return HEX_FORMATTER.formatToView(inValue);</span>
+            }
+        }
+
+        @Override
+        public String formatToEdit(Value inValue) {
+<span class="fc bfc" id="L497" title="All 2 branches covered.">            if (inValue.isHighZ())</span>
+<span class="fc" id="L498">                return &quot;Z&quot;;</span>
+
+<span class="fc bfc" id="L500" title="All 3 branches covered.">            switch (inValue.getBits()) {</span>
+                case 32:
+<span class="fc" id="L502">                    float f = Float.intBitsToFloat((int) inValue.getValue());</span>
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">                    if (Float.isFinite(f))</span>
+<span class="fc" id="L504">                        return Float.toString(f);</span>
+                    else
+<span class="nc" id="L506">                        return HEX_FORMATTER.formatToEdit(inValue);</span>
+                case 64:
+<span class="fc" id="L508">                    double d = Double.longBitsToDouble(inValue.getValue());</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">                    if (Double.isFinite(d))</span>
+<span class="fc" id="L510">                        return d + &quot;d&quot;;</span>
+                    else
+<span class="nc" id="L512">                        return HEX_FORMATTER.formatToEdit(inValue);</span>
+                default:
+<span class="fc" id="L514">                    return HEX_FORMATTER.formatToEdit(inValue);</span>
+            }
+        }
+
+        @Override
+        public int strLen(int bits) {
+<span class="nc bnc" id="L520" title="All 3 branches missed.">            switch (bits) {</span>
+                case 32:
+<span class="nc" id="L522">                    return SIZE32;</span>
+                case 64:
+<span class="nc" id="L524">                    return SIZE64;</span>
+                default:
+<span class="nc" id="L526">                    return HEX_FORMATTER.strLen(bits);</span>
+            }
+        }
+
+        @Override
+        public boolean isSuitedForAddresses() {
+<span class="nc" id="L532">            return false;</span>
+        }
+
+        @Override
+        public long dragValue(long initialInt, int bits, double inc) {
+            double initial;
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (bits == 32)</span>
+<span class="fc" id="L539">                initial = Float.intBitsToFloat((int) initialInt);</span>
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">            else if (bits == 64)</span>
+<span class="fc" id="L541">                initial = Double.longBitsToDouble(initialInt);</span>
+            else
+<span class="nc" id="L543">                return HEX_FORMATTER.dragValue(initialInt, bits, inc);</span>
+
+<span class="pc bpc" id="L545" title="1 of 2 branches missed.">            if (!Double.isFinite(initial))</span>
+<span class="nc" id="L546">                initial = 0;</span>
+
+<span class="fc" id="L548">            double fac = Math.exp(Math.abs(inc) * 15) / 1000;</span>
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">            double delta = Math.abs(initial == 0 ? 1 : initial) * fac * Math.signum(inc);</span>
+<span class="fc" id="L550">            double exp = Math.pow(10, Math.floor(Math.log10(Math.abs(delta))));</span>
+<span class="fc" id="L551">            double val = Math.round((initial + delta) / exp) * exp;</span>
+
+<span class="fc bfc" id="L553" title="All 2 branches covered.">            if (bits == 32)</span>
+<span class="fc" id="L554">                return Float.floatToIntBits((float) val);</span>
+            else
+<span class="fc" id="L556">                return Double.doubleToLongBits(val);</span>
+        }
+
+        @Override
+        public boolean isSeparatorInFrontOf(int bits, int bit) {
+<span class="nc bnc" id="L561" title="All 3 branches missed.">            switch (bits) {</span>
+                case 32:
+<span class="nc bnc" id="L563" title="All 4 branches missed.">                    return bit == 31 || bit == 23;</span>
+                case 64:
+<span class="nc bnc" id="L565" title="All 4 branches missed.">                    return bit == 63 || bit == 52;</span>
+                default:
+<span class="nc" id="L567">                    return HEX_FORMATTER.isSeparatorInFrontOf(bits, bit);</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

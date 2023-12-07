@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BruteForceGetAll.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.quinemc.primeselector</a> &gt; <span class="el_source">BruteForceGetAll.java</span></div><h1>BruteForceGetAll.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.quinemc.primeselector;
+
+
+import de.neemann.digital.analyse.quinemc.TableRow;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.TreeSet;
+
+/**
+ */
+<span class="fc" id="L17">public class BruteForceGetAll implements PrimeSelector {</span>
+
+    private ArrayList&lt;ArrayList&lt;TableRow&gt;&gt; foundSolutions;
+
+    @Override
+    public void select(ArrayList&lt;TableRow&gt; primes, ArrayList&lt;TableRow&gt; primesAvail, TreeSet&lt;Integer&gt; termIndices) {
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (primesAvail.size() &gt; 31)</span>
+<span class="nc" id="L24">            throw new RuntimeException(&quot;to many primes&quot;);</span>
+
+<span class="fc" id="L26">        int comb = 1 &lt;&lt; primesAvail.size();</span>
+<span class="fc" id="L27">        ArrayList&lt;Integer&gt; list = new ArrayList&lt;&gt;(comb);</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        for (int i = 1; i &lt; comb; i++) {</span>
+<span class="fc" id="L29">            list.add(i);</span>
+        }
+<span class="fc" id="L31">        Collections.sort(list, (i1, i2) -&gt; Integer.bitCount(i1) - Integer.bitCount(i2));</span>
+
+<span class="fc" id="L33">        int primesUsed = 0;</span>
+
+<span class="fc" id="L35">        foundSolutions = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L37">        ArrayList&lt;Integer&gt; indicesOpen = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (int mask : list) {</span>
+
+<span class="fc bfc" id="L40" title="All 4 branches covered.">            if (primesUsed != 0 &amp;&amp; Integer.bitCount(mask) &gt; primesUsed)</span>
+<span class="fc" id="L41">                break;</span>
+
+<span class="fc" id="L43">            indicesOpen.clear();</span>
+<span class="fc" id="L44">            indicesOpen.addAll(termIndices);</span>
+<span class="fc" id="L45">            int m = mask;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            for (TableRow aPrimesAvail : primesAvail) {</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">                if ((m &amp; 1) &gt; 0) {</span>
+<span class="fc" id="L48">                    indicesOpen.removeAll(aPrimesAvail.getSource());</span>
+                }
+<span class="fc" id="L50">                m &gt;&gt;= 1;</span>
+<span class="fc" id="L51">            }</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (indicesOpen.isEmpty()) {</span>
+<span class="fc" id="L53">                primesUsed = Integer.bitCount(mask);</span>
+
+<span class="fc" id="L55">                ArrayList&lt;TableRow&gt; singleSolution = new ArrayList&lt;&gt;(primes);</span>
+<span class="fc" id="L56">                m = mask;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                for (TableRow aPrime : primesAvail) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                    if ((m &amp; 1) &gt; 0) {</span>
+<span class="fc" id="L59">                        singleSolution.add(aPrime);</span>
+                    }
+<span class="fc" id="L61">                    m &gt;&gt;= 1;</span>
+<span class="fc" id="L62">                }</span>
+<span class="fc" id="L63">                foundSolutions.add(singleSolution);</span>
+            }
+<span class="fc" id="L65">        }</span>
+<span class="fc" id="L66">        primes.clear();</span>
+<span class="fc" id="L67">        primes.addAll(foundSolutions.get(0));</span>
+<span class="fc" id="L68">    }</span>
+
+    @Override
+    public ArrayList&lt;ArrayList&lt;TableRow&gt;&gt; getAllSolutions() {
+<span class="fc" id="L72">        return foundSolutions;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KarnaughMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.karnaugh</a> &gt; <span class="el_source">KarnaughMap.java</span></div><h1>KarnaughMap.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.karnaugh;
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Creates the covers needed to draw a kv map
+ */
+public class KarnaughMap implements Iterable&lt;KarnaughMap.Cover&gt; {
+
+    private final ArrayList&lt;Cell&gt; cells;
+    private final List&lt;Variable&gt; vars;
+    private final ArrayList&lt;Cover&gt; covers;
+    private final Header headerLeft;
+    private final Header headerRight;
+    private final Header headerBottom;
+    private final Header headerTop;
+
+    /**
+     * Creates a new instance
+     *
+     * @param vars the variables used
+     * @param expr the expression
+     * @throws KarnaughException KarnaughException
+     */
+    public KarnaughMap(List&lt;Variable&gt; vars, Expression expr) throws KarnaughException {
+<span class="fc" id="L37">        this(vars, expr, new MapLayout(vars.size()));</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param vars      the variables used
+     * @param expr      the expression
+     * @param mapLayout the layout mode of the map
+     * @throws KarnaughException KarnaughException
+     */
+<span class="fc" id="L48">    public KarnaughMap(List&lt;Variable&gt; vars, Expression expr, MapLayout mapLayout) throws KarnaughException {</span>
+<span class="fc" id="L49">        this.vars = vars;</span>
+<span class="fc" id="L50">        cells = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L51">        covers = new ArrayList&lt;&gt;();</span>
+
+<span class="pc bpc" id="L53" title="1 of 4 branches missed.">        switch (vars.size()) {</span>
+            case 2:  // create the needed KV cells
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                for (int row = 0; row &lt; 2; row++)</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                    for (int col = 0; col &lt; 2; col++)</span>
+<span class="fc" id="L57">                        cells.add(new Cell(row, col));</span>
+
+<span class="fc" id="L59">                boolean leftMode = mapLayout.getInvert(0);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">                headerLeft = new Header(mapLayout.get(0), !leftMode, leftMode).toRows(2, this);</span>
+<span class="fc" id="L61">                boolean topMode = mapLayout.getInvert(1);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">                headerTop = new Header(mapLayout.get(1), !topMode, topMode).toCols(2, this);</span>
+<span class="fc" id="L63">                headerRight = null;</span>
+<span class="fc" id="L64">                headerBottom = null;</span>
+<span class="fc" id="L65">                break;</span>
+            case 3:
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                for (int row = 0; row &lt; 2; row++)</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                    for (int col = 0; col &lt; 4; col++)</span>
+<span class="fc" id="L69">                        cells.add(new Cell(row, col));</span>
+
+<span class="fc" id="L71">                leftMode = mapLayout.getInvert(0);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">                headerLeft = new Header(mapLayout.get(0), !leftMode, leftMode).toRows(4, this);</span>
+<span class="fc" id="L73">                topMode = mapLayout.getInvert(1);</span>
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">                headerTop = new Header(mapLayout.get(1), !topMode, !topMode, topMode, topMode).toCols(2, this);</span>
+<span class="fc" id="L75">                boolean bottomMode = mapLayout.getInvert(2);</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">                headerBottom = new Header(mapLayout.get(2), !bottomMode, bottomMode, bottomMode, !bottomMode).toCols(2, this);</span>
+<span class="fc" id="L77">                headerRight = null;</span>
+<span class="fc" id="L78">                break;</span>
+            case 4:
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                for (int row = 0; row &lt; 4; row++)</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                    for (int col = 0; col &lt; 4; col++)</span>
+<span class="fc" id="L82">                        cells.add(new Cell(row, col));</span>
+
+<span class="fc" id="L84">                leftMode = mapLayout.getInvert(0);</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">                headerLeft = new Header(mapLayout.get(0), !leftMode, !leftMode, leftMode, leftMode).toRows(4, this);</span>
+<span class="fc" id="L86">                boolean rightMode = mapLayout.getInvert(1);</span>
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">                headerRight = new Header(mapLayout.get(1), !rightMode, rightMode, rightMode, !rightMode).toRows(4, this);</span>
+<span class="fc" id="L88">                topMode = mapLayout.getInvert(2);</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">                headerTop = new Header(mapLayout.get(2), !topMode, !topMode, topMode, topMode).toCols(4, this);</span>
+<span class="fc" id="L90">                bottomMode = mapLayout.getInvert(3);</span>
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">                headerBottom = new Header(mapLayout.get(3), !bottomMode, bottomMode, bottomMode, !bottomMode).toCols(4, this);</span>
+<span class="fc" id="L92">                break;</span>
+            default:
+<span class="nc" id="L94">                throw new KarnaughException(Lang.get(&quot;err_toManyVars&quot;));</span>
+        }
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (Cell c : cells)   // set the row index of the bool table to the cells</span>
+<span class="fc" id="L97">            c.createBoolTableRow();</span>
+
+<span class="fc" id="L99">        addExpression(expr);   // create the covers</span>
+<span class="fc" id="L100">    }</span>
+
+    /**
+     * Returns the cell at the given position
+     *
+     * @param row the row
+     * @param col the column
+     * @return the cell at this position
+     */
+    public Cell getCell(int row, int col) {
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        for (Cell cell : cells)</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (cell.is(row, col)) return cell;</span>
+<span class="nc" id="L112">        throw new RuntimeException(&quot;cell not found&quot;);</span>
+    }
+
+    /**
+     * @return all cells
+     */
+    public ArrayList&lt;Cell&gt; getCells() {
+<span class="nc" id="L119">        return cells;</span>
+    }
+
+    private void addExpression(Expression expr) throws KarnaughException {
+<span class="fc bfc" id="L123" title="All 4 branches covered.">        if (expr instanceof Not || expr instanceof Variable) {</span>
+<span class="fc" id="L124">            addCover(expr);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        } else if (expr instanceof Operation.And) {</span>
+<span class="fc" id="L126">            addCover(((Operation.And) expr).getExpressions());</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        } else if (expr instanceof Operation.Or) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            for (Expression and : ((Operation.Or) expr).getExpressions())</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                if (and instanceof Operation.And)</span>
+<span class="fc" id="L130">                    addCover(((Operation.And) and).getExpressions());</span>
+<span class="pc bpc" id="L131" title="3 of 4 branches missed.">                else if (and instanceof Not || and instanceof Variable)</span>
+<span class="fc" id="L132">                    addCover(and);</span>
+                else
+<span class="nc" id="L134">                    throw new KarnaughException(Lang.get(&quot;err_invalidExpression&quot;));</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        } else if (!(expr instanceof Constant))</span>
+<span class="nc" id="L136">            throw new KarnaughException(Lang.get(&quot;err_invalidExpression&quot;));</span>
+<span class="fc" id="L137">    }</span>
+
+    private void addCover(Expression expr) throws KarnaughException {
+<span class="fc" id="L140">        addCoverToCells(new Cover().add(getVarOf(expr)));</span>
+<span class="fc" id="L141">    }</span>
+
+    private void addCover(ArrayList&lt;Expression&gt; expressions) throws KarnaughException {
+<span class="fc" id="L144">        Cover cover = new Cover();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (Expression expr : expressions)</span>
+<span class="fc" id="L146">            cover.add(getVarOf(expr));</span>
+<span class="fc" id="L147">        addCoverToCells(cover);</span>
+<span class="fc" id="L148">    }</span>
+
+    private void addCoverToCells(Cover cover) {
+<span class="fc" id="L151">        covers.add(cover);</span>
+
+<span class="fc" id="L153">        HashSet&lt;Integer&gt; insetsUsed = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (Cell cell : cells)</span>
+<span class="fc" id="L155">            cell.addCoverToCell(cover, insetsUsed);</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        for (int i = 0; i &lt; 8; i++)</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (!insetsUsed.contains(i)) {</span>
+<span class="fc" id="L158">                cover.inset = i;</span>
+<span class="fc" id="L159">                break;</span>
+            }
+<span class="fc" id="L161">    }</span>
+
+    private VarState getVarOf(Expression expression) throws KarnaughException {
+<span class="fc" id="L164">        String name = null;</span>
+<span class="fc" id="L165">        boolean invert = false;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (expression instanceof Variable) {</span>
+<span class="fc" id="L167">            name = ((Variable) expression).getIdentifier();</span>
+<span class="fc" id="L168">            invert = false;</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        } else if (expression instanceof Not) {</span>
+<span class="fc" id="L170">            Expression ex = ((Not) expression).getExpression();</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">            if (ex instanceof Variable) {</span>
+<span class="fc" id="L172">                name = ((Variable) ex).getIdentifier();</span>
+<span class="fc" id="L173">                invert = true;</span>
+            }
+        }
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (name == null) throw new KarnaughException(Lang.get(&quot;err_invalidExpression&quot;));</span>
+
+<span class="fc" id="L178">        int var = vars.indexOf(new Variable(name));</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (var &lt; 0) throw new KarnaughException(Lang.get(&quot;err_invalidExpression&quot;));</span>
+
+<span class="fc" id="L181">        return new VarState(var, invert);</span>
+    }
+
+    @Override
+    public Iterator&lt;Cover&gt; iterator() {
+<span class="fc" id="L186">        return covers.iterator();</span>
+    }
+
+    /**
+     * @return the number of covers
+     */
+    public int size() {
+<span class="fc" id="L193">        return covers.size();</span>
+    }
+
+    /**
+     * @return the rows of the table
+     */
+    public int getRows() {
+<span class="fc" id="L200">        return headerLeft.size();</span>
+    }
+
+    /**
+     * @return the cols of the table
+     */
+    public int getColumns() {
+<span class="fc" id="L207">        return headerTop.size();</span>
+    }
+
+    /**
+     * @return the left header
+     */
+    public Header getHeaderLeft() {
+<span class="fc" id="L214">        return headerLeft;</span>
+    }
+
+    /**
+     * @return the right header
+     */
+    public Header getHeaderRight() {
+<span class="fc" id="L221">        return headerRight;</span>
+    }
+
+    /**
+     * @return the bottom header
+     */
+    public Header getHeaderBottom() {
+<span class="fc" id="L228">        return headerBottom;</span>
+    }
+
+    /**
+     * @return the top header
+     */
+    public Header getHeaderTop() {
+<span class="fc" id="L235">        return headerTop;</span>
+    }
+
+    /**
+     * a single cell in the kv map
+     */
+    public static final class Cell {
+        private final int row;
+        private final int col;
+        private final ArrayList&lt;VarState&gt; minTerm; // min term  of the cell
+        private final ArrayList&lt;Cover&gt; covers;
+        private int boolTableRow;
+
+<span class="fc" id="L248">        private Cell(int row, int col) {</span>
+<span class="fc" id="L249">            this.row = row;</span>
+<span class="fc" id="L250">            this.col = col;</span>
+<span class="fc" id="L251">            minTerm = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L252">            covers = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L253">        }</span>
+
+        private void add(VarState varState) {
+<span class="fc" id="L256">            minTerm.add(varState);</span>
+<span class="fc" id="L257">        }</span>
+
+        private boolean is(int row, int col) {
+<span class="fc bfc" id="L260" title="All 4 branches covered.">            return (this.row == row) &amp;&amp; (this.col == col);</span>
+        }
+
+        private void addCoverToCell(Cover cover, HashSet&lt;Integer&gt; insetsUsed) {
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            for (VarState s : minTerm)</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">                if (cover.contains(s.not()))</span>
+<span class="fc" id="L266">                    return;</span>
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            for (Cover c : covers)</span>
+<span class="fc" id="L269">                insetsUsed.add(c.inset);</span>
+
+<span class="fc" id="L271">            covers.add(cover);</span>
+<span class="fc" id="L272">            cover.incCellCount();</span>
+<span class="fc" id="L273">        }</span>
+
+        private boolean contains(Cover cover) {
+<span class="fc" id="L276">            return covers.contains(cover);</span>
+        }
+
+        private void createBoolTableRow() {
+<span class="fc" id="L280">            int tableCols = minTerm.size();</span>
+<span class="fc" id="L281">            boolTableRow = 0;</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            for (VarState i : minTerm) {</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                if (!i.invert)</span>
+<span class="fc" id="L284">                    boolTableRow += (1 &lt;&lt; (tableCols - i.num - 1));</span>
+<span class="fc" id="L285">            }</span>
+<span class="fc" id="L286">        }</span>
+
+        /**
+         * @return the row
+         */
+        public int getRow() {
+<span class="nc" id="L292">            return row;</span>
+        }
+
+        /**
+         * @return the column
+         */
+        public int getCol() {
+<span class="nc" id="L299">            return col;</span>
+        }
+
+        /**
+         * @return the row in the truth table this cell belongs to
+         */
+        public int getBoolTableRow() {
+<span class="fc" id="L306">            return boolTableRow;</span>
+        }
+
+        boolean isVarInMinTerm(int var, boolean invert) {
+<span class="fc" id="L310">            return minTerm.contains(new VarState(var, invert));</span>
+        }
+    }
+
+    private static final class VarState {
+        private final int num;        // number of the variable in the vars list
+        private final boolean invert; // true if variable is inverted
+
+<span class="fc" id="L318">        private VarState(int num, boolean invert) {</span>
+<span class="fc" id="L319">            this.num = num;</span>
+<span class="fc" id="L320">            this.invert = invert;</span>
+<span class="fc" id="L321">        }</span>
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L326" title="2 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L328">            VarState varState = (VarState) o;</span>
+
+<span class="fc bfc" id="L330" title="All 2 branches covered.">            if (num != varState.num) return false;</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">            return invert == varState.invert;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L336">            int result = num;</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            result = 31 * result + (invert ? 1 : 0);</span>
+<span class="nc" id="L338">            return result;</span>
+        }
+
+        private VarState not() {
+<span class="fc bfc" id="L342" title="All 2 branches covered.">            return new VarState(num, !invert);</span>
+        }
+    }
+
+    /**
+     * a cover in the kv table
+     */
+    public final class Cover {
+        private final ArrayList&lt;VarState&gt; varStates;
+        private Pos pos;
+        private int cellCount;
+<span class="fc" id="L353">        private int inset = 0;</span>
+
+<span class="fc" id="L355">        private Cover() {</span>
+<span class="fc" id="L356">            varStates = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L357">        }</span>
+
+        private Cover add(VarState varState) {
+<span class="fc" id="L360">            varStates.add(varState);</span>
+<span class="fc" id="L361">            return this;</span>
+        }
+
+        private boolean contains(VarState s) {
+<span class="fc" id="L365">            return varStates.contains(s);</span>
+        }
+
+        /**
+         * @return the position of the cover. Caution: Returns a bounding box!
+         */
+        public Pos getPos() {
+<span class="fc bfc" id="L372" title="All 2 branches covered.">            if (pos == null) {</span>
+<span class="fc" id="L373">                int rowMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L374">                int rowMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L375">                int colMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L376">                int colMax = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                for (Cell c : cells) {</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">                    if (c.contains(this)) {</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">                        if (c.row &gt; rowMax) rowMax = c.row;</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">                        if (c.row &lt; rowMin) rowMin = c.row;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">                        if (c.col &gt; colMax) colMax = c.col;</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">                        if (c.col &lt; colMin) colMin = c.col;</span>
+                    }
+<span class="fc" id="L384">                }</span>
+<span class="fc" id="L385">                int width = colMax - colMin + 1;</span>
+<span class="fc" id="L386">                int height = rowMax - rowMin + 1;</span>
+<span class="fc" id="L387">                pos = new Pos(rowMin, colMin, width, height);</span>
+            }
+<span class="fc" id="L389">            return pos;</span>
+        }
+
+        private void incCellCount() {
+<span class="fc" id="L393">            cellCount++;</span>
+<span class="fc" id="L394">        }</span>
+
+        /**
+         * @return the size of a cover
+         */
+        public int getSize() {
+<span class="fc" id="L400">            return cellCount;</span>
+        }
+
+        /**
+         * @return the inset of this cover;
+         */
+        public int getInset() {
+<span class="nc" id="L407">            return inset;</span>
+        }
+
+        /**
+         * @return true if cover is split, thus the cover is wrapping around the border
+         */
+        public boolean isDisconnected() {
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">            return getPos().width * getPos().height &gt; cellCount;</span>
+        }
+
+        /**
+         * @return covers only the edges
+         */
+        public boolean onlyEdges() {
+<span class="pc bpc" id="L421" title="2 of 4 branches missed.">            return getPos().width * getPos().height == 16 &amp;&amp; cellCount == 4;</span>
+        }
+
+        /**
+         * @return true if disconnected cover is vertical divided
+         */
+        public boolean isVerticalDivided() {
+<span class="fc" id="L428">            Pos p = getPos();</span>
+<span class="pc bpc" id="L429" title="2 of 4 branches missed.">            if (p.width * p.height == 16 &amp;&amp; cellCount == 8)</span>
+<span class="fc" id="L430">                return getCell(1, 0).contains(this);</span>
+            else
+<span class="nc bnc" id="L432" title="All 2 branches missed.">                return p.getWidth() &gt; p.getHeight();</span>
+        }
+    }
+
+    /**
+     * The position of the cover.
+     * If a cover is wrapping around the borders the bounding box is returned!
+     */
+    public static final class Pos {
+        private final int row;
+        private final int col;
+        private final int width;
+        private final int height;
+
+<span class="fc" id="L446">        private Pos(int row, int col, int width, int height) {</span>
+<span class="fc" id="L447">            this.row = row;</span>
+<span class="fc" id="L448">            this.col = col;</span>
+<span class="fc" id="L449">            this.width = width;</span>
+<span class="fc" id="L450">            this.height = height;</span>
+<span class="fc" id="L451">        }</span>
+
+
+        /**
+         * @return the row
+         */
+        public int getRow() {
+<span class="fc" id="L458">            return row;</span>
+        }
+
+        /**
+         * @return the column
+         */
+        public int getCol() {
+<span class="fc" id="L465">            return col;</span>
+        }
+
+        /**
+         * @return the width of the cover
+         */
+        public int getWidth() {
+<span class="nc" id="L472">            return width;</span>
+        }
+
+        /**
+         * @return the height of the cover
+         */
+        public int getHeight() {
+<span class="nc" id="L479">            return height;</span>
+        }
+
+    }
+
+    /**
+     * Defines the variables in the borders of the KV map
+     */
+    public static final class Header {
+        private final int var;
+        private final boolean[] invert;
+
+<span class="fc" id="L491">        private Header(int var, boolean... invert) {</span>
+<span class="fc" id="L492">            this.var = var;</span>
+<span class="fc" id="L493">            this.invert = invert;</span>
+<span class="fc" id="L494">        }</span>
+
+        /**
+         * @return the variable
+         */
+        public int getVar() {
+<span class="fc" id="L500">            return var;</span>
+        }
+
+        /**
+         * @return the size
+         */
+        public int size() {
+<span class="fc" id="L507">            return invert.length;</span>
+        }
+
+        /**
+         * Returns the variable state
+         *
+         * @param i the index of the row column
+         * @return true if inverted variable
+         */
+        public boolean getInvert(int i) {
+<span class="fc" id="L517">            return invert[i];</span>
+        }
+
+        /**
+         * Initializes the table according to the selected header.
+         *
+         * @param cols the number columns in the table
+         * @param kmap the k-map to use
+         * @return this for chained calls
+         */
+        public Header toRows(int cols, KarnaughMap kmap) {
+<span class="fc bfc" id="L528" title="All 2 branches covered.">            for (int row = 0; row &lt; invert.length; row++)</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">                for (int col = 0; col &lt; cols; col++)</span>
+<span class="fc" id="L530">                    kmap.getCell(row, col).add(new VarState(var, invert[row]));</span>
+<span class="fc" id="L531">            return this;</span>
+        }
+
+        /**
+         * Initializes the table according to the selected header.
+         *
+         * @param rows the number rows in the table
+         * @param kmap the k-map to use
+         * @return this for chained calls
+         */
+        public Header toCols(int rows, KarnaughMap kmap) {
+<span class="fc bfc" id="L542" title="All 2 branches covered.">            for (int col = 0; col &lt; invert.length; col++)</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">                for (int row = 0; row &lt; rows; row++)</span>
+<span class="fc" id="L544">                    kmap.getCell(row, col).add(new VarState(var, invert[col]));</span>
+<span class="fc" id="L545">            return this;</span>
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransformRotate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">TransformRotate.java</span></div><h1>TransformRotate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+/**
+ * Implements a rotation and translation.
+ */
+public class TransformRotate implements Transform {
+
+    private final int sin;
+    private final int cos;
+    private final VectorInterface translation;
+
+    /**
+     * Creates a new instance
+     *
+     * @param translation the translation
+     * @param rot         the rotation
+     */
+<span class="fc" id="L23">    public TransformRotate(VectorInterface translation, int rot) {</span>
+<span class="fc" id="L24">        this.translation = translation;</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">        switch (rot) {</span>
+            case 1:
+<span class="fc" id="L27">                sin = 1;</span>
+<span class="fc" id="L28">                cos = 0;</span>
+<span class="fc" id="L29">                break;</span>
+            case 2:
+<span class="fc" id="L31">                sin = 0;</span>
+<span class="fc" id="L32">                cos = -1;</span>
+<span class="fc" id="L33">                break;</span>
+            case 3:
+<span class="fc" id="L35">                sin = -1;</span>
+<span class="fc" id="L36">                cos = 0;</span>
+<span class="fc" id="L37">                break;</span>
+            default:// 0
+<span class="fc" id="L39">                sin = 0;</span>
+<span class="fc" id="L40">                cos = 1;</span>
+                break;
+        }
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public Vector transform(Vector v) {
+<span class="fc" id="L47">        return new Vector(v.getX() * cos + v.getY() * sin + translation.getX(),</span>
+<span class="fc" id="L48">                -v.getX() * sin + v.getY() * cos + translation.getY());</span>
+    }
+
+    @Override
+    public VectorFloat transform(VectorFloat v) {
+<span class="fc" id="L53">        return new VectorFloat(v.getXFloat() * cos + v.getYFloat() * sin + translation.getXFloat(),</span>
+<span class="fc" id="L54">                -v.getXFloat() * sin + v.getYFloat() * cos + translation.getYFloat());</span>
+    }
+
+    @Override
+    public TransformMatrix getMatrix() {
+<span class="fc" id="L59">        return new TransformMatrix(cos, sin, -sin, cos, translation.getXFloat(), translation.getYFloat());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

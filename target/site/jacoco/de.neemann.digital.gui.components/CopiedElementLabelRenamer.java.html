@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CopiedElementLabelRenamer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">CopiedElementLabelRenamer.java</span></div><h1>CopiedElementLabelRenamer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.Movable;
+import de.neemann.digital.draw.elements.VisualElement;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Objects;
+
+/**
+ * Used to renumber labels if copied elements are inserted into a circuit.
+ * Modifies the elements only if a element is present in the circuit which has
+ * the same label as the element to copy.
+ */
+public class CopiedElementLabelRenamer {
+
+    private final ArrayList&lt;Movable&gt; elements;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit  the circuit to copy to
+     * @param elements the element to insert
+     */
+<span class="fc" id="L33">    CopiedElementLabelRenamer(Circuit circuit, ArrayList&lt;Movable&gt; elements) {</span>
+<span class="fc" id="L34">        this.elements = elements;</span>
+
+
+<span class="fc" id="L37">        HashMap&lt;LabelClass, PresentIndex&gt; circuitMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (VisualElement ve : circuit.getElements()) {</span>
+<span class="fc" id="L39">            LabelInstance li = LabelInstance.create(ve);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">            if (li != null) {</span>
+<span class="fc" id="L41">                PresentIndex pi = circuitMap.computeIfAbsent(li.getLabelClass(), labelClass -&gt; new PresentIndex());</span>
+<span class="fc" id="L42">                pi.add(li.getNumber());</span>
+            }
+<span class="fc" id="L44">        }</span>
+
+<span class="fc" id="L46">        HashMap&lt;LabelClass, MinIndex&gt; insertMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (Movable m : elements)</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            if (m instanceof VisualElement) {</span>
+<span class="fc" id="L49">                LabelInstance li = LabelInstance.create((VisualElement) m);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                if (li != null) {</span>
+<span class="fc" id="L51">                    MinIndex mi = insertMap.get(li.getLabelClass());</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">                    if (mi == null) {</span>
+<span class="fc" id="L53">                        mi = new MinIndex(li.getNumber());</span>
+<span class="fc" id="L54">                        insertMap.put(li.getLabelClass(), mi);</span>
+                    } else {
+<span class="fc" id="L56">                        mi.checkMin(li.getNumber());</span>
+                    }
+                }
+            }
+
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (Movable m : elements)</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (m instanceof VisualElement) {</span>
+<span class="fc" id="L63">                final VisualElement ve = (VisualElement) m;</span>
+
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                if (!ve.getElementAttributes().get(Keys.PINNUMBER).isEmpty())</span>
+<span class="fc" id="L66">                    continue;</span>
+
+<span class="fc" id="L68">                LabelInstance li = LabelInstance.create(ve);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                if (li == null)</span>
+<span class="fc" id="L70">                    continue;</span>
+
+<span class="fc" id="L72">                PresentIndex pi = circuitMap.get(li.getLabelClass());</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                if (pi == null)</span>
+<span class="fc" id="L74">                    continue;</span>
+
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                if (!pi.contains(li.getNumber()))</span>
+<span class="fc" id="L77">                    continue;</span>
+
+<span class="fc" id="L79">                int maxAvail = pi.getMax();</span>
+<span class="fc" id="L80">                int minToInsert = insertMap.get(li.getLabelClass()).getMin();</span>
+
+<span class="fc" id="L82">                int delta = maxAvail - minToInsert + 1;</span>
+
+<span class="fc" id="L84">                ve.setAttribute(Keys.LABEL, li.getLabel(delta));</span>
+            }
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * @return the elements with renamed labels.
+     */
+    public ArrayList&lt;Movable&gt; rename() {
+<span class="fc" id="L92">        return elements;</span>
+    }
+
+    static final class LabelInstance {
+
+        static LabelInstance create(VisualElement ve) {
+<span class="fc" id="L98">            return create(ve.getElementName(), ve.getElementAttributes().getLabel());</span>
+        }
+
+        static LabelInstance create(String elementName, String fullLabel) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (fullLabel == null)</span>
+<span class="nc" id="L103">                return null;</span>
+
+<span class="fc" id="L105">            int pos = fullLabel.length();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (pos == 0)</span>
+<span class="fc" id="L107">                return null;</span>
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (!Character.isDigit(fullLabel.charAt(pos - 1)))</span>
+<span class="fc" id="L110">                return null;</span>
+
+<span class="fc" id="L112">            int number = 0;</span>
+<span class="fc" id="L113">            int base = 1;</span>
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">            while (pos &gt; 0 &amp;&amp; Character.isDigit(fullLabel.charAt(pos - 1))) {</span>
+<span class="fc" id="L115">                pos--;</span>
+<span class="fc" id="L116">                number += (fullLabel.charAt(pos) - '0') * base;</span>
+<span class="fc" id="L117">                base *= 10;</span>
+            }
+
+<span class="fc" id="L120">            String label = fullLabel.substring(0, pos);</span>
+<span class="fc" id="L121">            LabelClass lc = new LabelClass(elementName, label);</span>
+
+<span class="fc" id="L123">            return new LabelInstance(lc, number);</span>
+        }
+
+        private final LabelClass lc;
+        private final int number;
+
+<span class="fc" id="L129">        private LabelInstance(LabelClass lc, int number) {</span>
+<span class="fc" id="L130">            this.lc = lc;</span>
+<span class="fc" id="L131">            this.number = number;</span>
+<span class="fc" id="L132">        }</span>
+
+        LabelClass getLabelClass() {
+<span class="fc" id="L135">            return lc;</span>
+        }
+
+        public int getNumber() {
+<span class="fc" id="L139">            return number;</span>
+        }
+
+        public String getLabel(int delta) {
+<span class="fc" id="L143">            return lc.label + Integer.toString(number + delta);</span>
+        }
+    }
+
+
+    static final class LabelClass {
+        private final String elementName;
+        private final String label;
+
+<span class="fc" id="L152">        private LabelClass(String elementName, String label) {</span>
+<span class="fc" id="L153">            this.elementName = elementName;</span>
+<span class="fc" id="L154">            this.label = label;</span>
+<span class="fc" id="L155">        }</span>
+
+        public String getElementName() {
+<span class="fc" id="L158">            return elementName;</span>
+        }
+
+        public String getLabel() {
+<span class="fc" id="L162">            return label;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L168" title="2 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L169">            LabelClass that = (LabelClass) o;</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">            return Objects.equals(elementName, that.elementName)</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">                    &amp;&amp; Objects.equals(label, that.label);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L176">            return Objects.hash(elementName, label);</span>
+        }
+    }
+
+    private static final class MinIndex {
+        private int min;
+
+<span class="fc" id="L183">        private MinIndex(int number) {</span>
+<span class="fc" id="L184">            this.min = number;</span>
+<span class="fc" id="L185">        }</span>
+
+        void checkMin(int number) {
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            if (this.min &gt; number)</span>
+<span class="fc" id="L189">                this.min = number;</span>
+<span class="fc" id="L190">        }</span>
+
+        public int getMin() {
+<span class="fc" id="L193">            return min;</span>
+        }
+    }
+
+    private static final class PresentIndex {
+        private HashSet&lt;Integer&gt; numbers;
+<span class="fc" id="L199">        private int max = Integer.MIN_VALUE;</span>
+
+<span class="fc" id="L201">        private PresentIndex() {</span>
+<span class="fc" id="L202">            numbers = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L203">        }</span>
+
+        public void add(int number) {
+<span class="fc" id="L206">            numbers.add(number);</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">            if (number &gt; max)</span>
+<span class="fc" id="L208">                max = number;</span>
+<span class="fc" id="L209">        }</span>
+
+        public boolean contains(int number) {
+<span class="fc" id="L212">            return numbers.contains(number);</span>
+        }
+
+        public int getMax() {
+<span class="fc" id="L216">            return max;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

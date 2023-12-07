@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">NetList.java</span></div><h1>NetList.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.lang.Lang;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+
+/**
+ * Holds all the nets in a circuit
+ */
+public class NetList implements Iterable&lt;Net&gt; {
+
+    private final ArrayList&lt;Net&gt; netList;
+    private HashMap&lt;Vector, Net&gt; posMap;
+    private HashMap&lt;Pin, Net&gt; pinMap;
+
+    /**
+     * Creates a net list from the given circuit
+     *
+     * @param circuit the circuit
+     * @throws PinException PinException
+     */
+<span class="fc" id="L33">    public NetList(Circuit circuit) throws PinException {</span>
+<span class="fc" id="L34">        netList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (Wire w : circuit.getWires())</span>
+<span class="fc" id="L36">            add(w);</span>
+
+
+        // handles a direct pin overlap by adding a single point net
+<span class="fc" id="L40">        HashSet&lt;Vector&gt; allPinPositions = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L41">        HashSet&lt;Vector&gt; directConnection = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (VisualElement ve : circuit.getElements())</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            for (Pin p : ve.getPins()) {</span>
+<span class="fc" id="L44">                Vector v = p.getPos();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">                if (allPinPositions.contains(v))</span>
+<span class="fc" id="L46">                    directConnection.add(v);</span>
+                else
+<span class="fc" id="L48">                    allPinPositions.add(v);</span>
+<span class="fc" id="L49">            }</span>
+
+<span class="fc" id="L51">        HashMap&lt;Vector, Net&gt; allNetPositions = getAllNetPositions();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (Vector v : directConnection)</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (!allNetPositions.containsKey(v)) {</span>
+<span class="fc" id="L54">                Net net = new Net(v);</span>
+<span class="fc" id="L55">                netList.add(net);</span>
+<span class="fc" id="L56">                allNetPositions.put(v, net);</span>
+            }
+
+
+<span class="fc" id="L60">        boolean hasLabel = false;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (VisualElement ve : circuit.getElements())</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (ve.equalsDescription(Tunnel.DESCRIPTION)) {</span>
+<span class="fc" id="L63">                String label = ve.getElementAttributes().get(Keys.NETNAME).trim();</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">                if (!label.isEmpty()) {</span>
+<span class="fc" id="L65">                    Net found = allNetPositions.get(ve.getPos());</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">                    if (found == null) {</span>
+<span class="nc" id="L67">                        final PinException e = new PinException(Lang.get(&quot;err_labelNotConnectedToNet_N&quot;, label), ve);</span>
+<span class="nc" id="L68">                        e.setOrigin(circuit.getOrigin());</span>
+<span class="nc" id="L69">                        throw e;</span>
+                    }
+
+<span class="fc" id="L72">                    found.addLabel(label);</span>
+<span class="fc" id="L73">                    hasLabel = true;</span>
+                }
+            }
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (hasLabel)</span>
+<span class="fc" id="L78">            mergeLabels();</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (Net n : netList)</span>
+<span class="fc" id="L81">            n.setOrigin(circuit.getOrigin());</span>
+<span class="fc" id="L82">    }</span>
+
+    private void mergeLabels() {
+<span class="fc" id="L85">        ArrayList&lt;Net&gt; oldNetList = new ArrayList&lt;&gt;(netList);</span>
+<span class="fc" id="L86">        netList.clear();</span>
+
+<span class="fc" id="L88">        HashMap&lt;String, Net&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (Net n : oldNetList) {</span>
+<span class="fc" id="L90">            HashSet&lt;String&gt; labels = n.getLabels();</span>
+<span class="fc bfc" id="L91" title="All 3 branches covered.">            switch (labels.size()) {</span>
+                case 0:
+<span class="fc" id="L93">                    netList.add(n);</span>
+<span class="fc" id="L94">                    break;</span>
+                case 1:
+<span class="fc" id="L96">                    String label = labels.iterator().next();</span>
+<span class="fc" id="L97">                    Net net = map.get(label);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                    if (net == null) {</span>
+<span class="fc" id="L99">                        netList.add(n);</span>
+<span class="fc" id="L100">                        map.put(label, n);</span>
+                    } else {
+<span class="fc" id="L102">                        net.addAllPointsFrom(n);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                        for (String l : n.getLabels())</span>
+<span class="fc" id="L104">                            map.put(l, net);</span>
+                    }
+<span class="fc" id="L106">                    break;</span>
+                default:
+<span class="fc bfc" id="L108" title="All 2 branches covered.">                    for (String la : new ArrayList&lt;&gt;(labels)) {</span>
+<span class="fc" id="L109">                        net = map.get(la);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                        if (net != null) {</span>
+<span class="fc" id="L111">                            n.addAllPointsFrom(net);</span>
+<span class="fc" id="L112">                            netList.remove(net);</span>
+                        }
+<span class="fc" id="L114">                    }</span>
+<span class="fc" id="L115">                    netList.add(n);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                    for (String l : n.getLabels())</span>
+<span class="fc" id="L117">                        map.put(l, n);</span>
+            }
+<span class="fc" id="L119">        }</span>
+<span class="fc" id="L120">    }</span>
+
+    /**
+     * Creates a copy of the given net list
+     *
+     * @param toCopy        the net list to copy
+     * @param visualElement the containing visual element, only used to create better error messages
+     */
+<span class="fc" id="L128">    public NetList(NetList toCopy, VisualElement visualElement) {</span>
+<span class="fc" id="L129">        netList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (Net net : toCopy)</span>
+<span class="fc" id="L131">            netList.add(new Net(net, visualElement));</span>
+<span class="fc" id="L132">    }</span>
+
+    /**
+     * Adds a complete net list to this net list.
+     * Used during custom component connection.
+     *
+     * @param netList the net list to add
+     */
+    public void add(NetList netList) {
+<span class="fc" id="L141">        this.netList.addAll(netList.netList);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (pinMap != null)</span>
+<span class="fc" id="L143">            pinMap.putAll(netList.pinMap);</span>
+<span class="fc" id="L144">    }</span>
+
+    /**
+     * Adds a pin to this net list.
+     * Used only during model creation.
+     *
+     * @param pin the pin to add
+     */
+    public void add(Pin pin) {
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (posMap == null)</span>
+<span class="fc" id="L154">            posMap = getAllNetPositions();</span>
+
+<span class="fc" id="L156">        Net net = posMap.get(pin.getPos());</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (net != null)</span>
+<span class="fc" id="L158">            net.add(pin);</span>
+<span class="fc" id="L159">    }</span>
+
+    private void add(Wire w) {
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (Net net : netList) {</span>
+<span class="fc" id="L163">            Vector added = net.tryMerge(w);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (added != null) {</span>
+<span class="fc" id="L165">                netChanged(net, added);</span>
+<span class="fc" id="L166">                return;</span>
+            }
+<span class="fc" id="L168">        }</span>
+<span class="fc" id="L169">        netList.add(new Net(w));</span>
+<span class="fc" id="L170">    }</span>
+
+    private void netChanged(Net changedNet, Vector added) {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (Net n : netList) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (n != changedNet) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                if (n.contains(added)) {</span>
+<span class="fc" id="L176">                    n.addAllPointsFrom(changedNet);</span>
+<span class="fc" id="L177">                    netList.remove(changedNet);</span>
+<span class="fc" id="L178">                    return;</span>
+                }
+            }
+<span class="fc" id="L181">        }</span>
+<span class="fc" id="L182">    }</span>
+
+    /**
+     * @return the number of nets in this net list
+     */
+    public int size() {
+<span class="fc" id="L188">        return netList.size();</span>
+    }
+
+    @Override
+    public Iterator&lt;Net&gt; iterator() {
+<span class="fc" id="L193">        return netList.iterator();</span>
+    }
+
+    /**
+     * Returns the net of the given pin.
+     * Used during custom component connection.
+     *
+     * @param p the pin
+     * @return the net or null if not found
+     */
+    public Net getNetOfPin(Pin p) {
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        if (pinMap == null) {</span>
+<span class="fc" id="L205">            pinMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            for (Net n : netList)</span>
+<span class="fc" id="L207">                n.addPinsTo(pinMap);</span>
+        }
+<span class="fc" id="L209">        return pinMap.get(p);</span>
+    }
+
+    /**
+     * Returns the net of the given position.
+     * Not used during model formation
+     *
+     * @param pos the position
+     * @return the net
+     */
+    public Net getNetOfPos(Vector pos) {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (Net n : netList)</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            if (n.contains(pos))</span>
+<span class="fc" id="L222">                return n;</span>
+<span class="fc" id="L223">        return null;</span>
+    }
+
+    private HashMap&lt;Vector, Net&gt; getAllNetPositions() {
+<span class="fc" id="L227">        HashMap&lt;Vector, Net&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (Net n : netList)</span>
+<span class="fc" id="L229">            n.addPointsTo(map);</span>
+<span class="fc" id="L230">        return map;</span>
+    }
+
+    /**
+     * Removes a net from this net list.
+     * Used during custom component connection.
+     *
+     * @param childNet the net to remove
+     */
+    public void remove(Net childNet) {
+<span class="fc" id="L240">        netList.remove(childNet);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        for (Pin p : childNet.getPins())</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">            if (pinMap.get(p) == childNet)</span>
+<span class="fc" id="L243">                pinMap.remove(p);</span>
+<span class="fc" id="L244">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLTemplateFunctions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.vhdl2.entities</a> &gt; <span class="el_source">VHDLTemplateFunctions.java</span></div><h1>VHDLTemplateFunctions.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.vhdl2.entities;
+
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.Value;
+import de.neemann.digital.hdl.vhdl2.VHDLCreator;
+
+import java.util.ArrayList;
+
+/**
+ * Helper functions for the vhdl template generator.
+ * The public methods are mapped to the vhdl templates.
+ */
+public final class VHDLTemplateFunctions {
+
+    private ArrayList&lt;Generic&gt; generics;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L25">    VHDLTemplateFunctions() {</span>
+<span class="fc" id="L26">        generics = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Create a vhdl zero with the given bit number
+     *
+     * @param bits the bit number
+     * @return '0' or (others =&gt; '0')
+     */
+    public static String zero(long bits) {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (bits == 1)</span>
+<span class="fc" id="L37">            return &quot;'0'&quot;;</span>
+        else
+<span class="fc" id="L39">            return &quot;(others =&gt; '0')&quot;;</span>
+    }
+
+    /**
+     * Creates a vhdl value
+     *
+     * @param val  the value
+     * @param bits the bit number
+     * @return the value as vhdl code
+     */
+    public static String value(long val, long bits) {
+<span class="fc" id="L50">        return VHDLCreator.value(val, (int) bits);</span>
+    }
+
+    /**
+     * Creates the code for a generic type
+     *
+     * @param n the number of bits
+     * @return the type
+     */
+    public static String genericType(long n) {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (n == 1)</span>
+<span class="fc" id="L61">            return &quot;std_logic&quot;;</span>
+        else
+<span class="fc" id="L63">            return &quot;std_logic_vector ((Bits-1) downto 0)&quot;;</span>
+    }
+
+    /**
+     * Creates a type of given width
+     *
+     * @param n the number of bits
+     * @return the type
+     */
+    public static String type(long n) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (n == 1)</span>
+<span class="fc" id="L74">            return &quot;std_logic&quot;;</span>
+        else
+<span class="fc" id="L76">            return &quot;std_logic_vector (&quot; + (n - 1) + &quot; downto 0)&quot;;</span>
+    }
+
+    /**
+     * Registers a generic value of the given type
+     *
+     * @param args the arguments
+     * @throws HGSEvalException HGSEvalException
+     */
+    public void registerGeneric(String... args) throws HGSEvalException {
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (args.length == 1)</span>
+<span class="fc" id="L87">            generics.add(new Generic(args[0], &quot;integer&quot;));</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        else if (args.length == 2)</span>
+<span class="fc" id="L89">            generics.add(new Generic(args[0], args[1]));</span>
+        else
+<span class="nc" id="L91">            throw new HGSEvalException(&quot;wrong number of arguments&quot;);</span>
+<span class="fc" id="L92">    }</span>
+
+
+    ArrayList&lt;Generic&gt; getGenerics() {
+<span class="fc" id="L96">        return generics;</span>
+    }
+
+    /**
+     * A generic value
+     */
+    public static final class Generic {
+        private final String name;
+        private final String type;
+
+<span class="fc" id="L106">        private Generic(String name, String type) {</span>
+<span class="fc" id="L107">            this.name = name;</span>
+<span class="fc" id="L108">            this.type = type.toLowerCase();</span>
+<span class="fc" id="L109">        }</span>
+
+        /**
+         * @return the name of the generic value
+         */
+        public String getName() {
+<span class="fc" id="L115">            return name;</span>
+        }
+
+        /**
+         * Formats the generic value according to the values type
+         *
+         * @param val the value
+         * @return the formatted vhdl value
+         * @throws HGSEvalException HGSEvalException
+         */
+        public String format(Object val) throws HGSEvalException {
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">            switch (type) {</span>
+                case &quot;integer&quot;:
+<span class="fc" id="L128">                    return Long.toString(Value.toLong(val));</span>
+                case &quot;real&quot;:
+<span class="nc" id="L130">                    return Double.toString(Value.toDouble(val));</span>
+                case &quot;std_logic&quot;:
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">                    return &quot;'&quot; + (Value.toBool(val) ? 1 : 0) + &quot;'&quot;;</span>
+                default:
+<span class="nc" id="L134">                    throw new HGSEvalException(&quot;type &quot; + type + &quot; not allowed as generic&quot;);</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReplaceOneToMany.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.optimizations</a> &gt; <span class="el_source">ReplaceOneToMany.java</span></div><h1>ReplaceOneToMany.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.optimizations;
+
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.hdl.model2.*;
+import de.neemann.digital.hdl.model2.expression.ExprVarRange;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * Replace {@link HDLNodeSplitterOneToMany} by several {@link HDLNodeAssignment} instances.
+ */
+<span class="fc" id="L18">public class ReplaceOneToMany implements Optimization {</span>
+
+    @Override
+    public void optimize(HDLCircuit circuit) throws HDLException {
+<span class="fc" id="L22">        ArrayList&lt;HDLNodeAssignment&gt; newNodes = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L24">        Iterator&lt;HDLNode&gt; it = circuit.getNodes().iterator();</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L26">            HDLNode n = it.next();</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">            if (n instanceof HDLNodeSplitterOneToMany) {</span>
+<span class="fc" id="L28">                it.remove();</span>
+<span class="fc" id="L29">                replace((HDLNodeSplitterOneToMany) n, newNodes);</span>
+            }
+<span class="fc" id="L31">        }</span>
+
+<span class="fc" id="L33">        circuit.getNodes().addAll(newNodes);</span>
+<span class="fc" id="L34">    }</span>
+
+    private void replace(HDLNodeSplitterOneToMany n, ArrayList&lt;HDLNodeAssignment&gt; newNodes) throws HDLException {
+<span class="fc" id="L37">        final HDLPort inPort = n.getInputs().get(0);</span>
+<span class="fc" id="L38">        HDLNet inNet = inPort.getNet();</span>
+<span class="fc" id="L39">        inPort.setNet(null);</span>
+
+<span class="fc" id="L41">        int i = 0;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (Splitter.Port p : n.getOutputSplit()) {</span>
+<span class="fc" id="L43">            final HDLPort outPort = n.getOutputs().get(i);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (outPort.getNet()!=null) {</span>
+<span class="fc" id="L45">                ExprVarRange exp = new ExprVarRange(inNet, p.getPos() + p.getBits() - 1, p.getPos());</span>
+<span class="fc" id="L46">                HDLNodeAssignment node = new HDLNodeAssignment(&quot;splitter&quot;, null, null);</span>
+<span class="fc" id="L47">                node.setExpression(exp);</span>
+
+<span class="fc" id="L49">                node.addPort(new HDLPort(&quot;in&quot;, inNet, HDLPort.Direction.IN, inPort.getBits()));</span>
+<span class="fc" id="L50">                node.addPort(outPort);</span>
+<span class="fc" id="L51">                newNodes.add(node);</span>
+            }
+<span class="fc" id="L53">            i++;</span>
+<span class="fc" id="L54">        }</span>
+
+<span class="fc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

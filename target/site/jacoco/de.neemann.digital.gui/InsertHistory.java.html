@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InsertHistory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">InsertHistory.java</span></div><h1>InsertHistory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.LibraryListener;
+import de.neemann.digital.draw.library.LibraryNode;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * The InsertHistory puts the most frequently used elements to the toolbar of the main window.
+ * So its easier to build circuits.
+ */
+public class InsertHistory implements LibraryListener {
+    private static final int MAX_ICONS = 6;
+    private final JToolBar bar;
+    private final ElementLibrary library;
+    private final ArrayList&lt;WrapperAction&gt; wrappers;
+    private int mainTime;
+    private InsertAction lastInsertAction;
+
+    /**
+     * Creates a new instance
+     *
+     * @param bar     the toolbar to put the elements to
+     * @param library the library to use
+     */
+<span class="nc" id="L35">    public InsertHistory(JToolBar bar, ElementLibrary library) {</span>
+<span class="nc" id="L36">        this.bar = bar;</span>
+<span class="nc" id="L37">        this.library = library;</span>
+<span class="nc" id="L38">        wrappers = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L39">    }</span>
+
+    /**
+     * Add an action to the toolbar.
+     * The given action is wrapped by an action which counts the usage.
+     * So its possible to remove the item which is not used the longest time when the toolbar becomes to large.
+     *
+     * @param action the action
+     */
+    public void add(InsertAction action) {
+<span class="nc" id="L49">        lastInsertAction = action;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (!contains(action)) {</span>
+<span class="nc" id="L51">            WrapperAction wrapper = new WrapperAction(action, bar.getComponentCount());</span>
+<span class="nc" id="L52">            wrappers.add(wrapper);</span>
+<span class="nc" id="L53">            bar.add(wrapper).setToolTipText(action.getNode().getToolTipText());</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (wrappers.size() &gt; MAX_ICONS) {</span>
+<span class="nc" id="L55">                int oldest = findOldestIndex();</span>
+<span class="nc" id="L56">                removeWrapperFromToolBar(wrappers.get(oldest));</span>
+<span class="nc" id="L57">                wrappers.remove(oldest);</span>
+            }
+        }
+<span class="nc" id="L60">    }</span>
+
+    private void removeWrapperFromToolBar(WrapperAction wrapper) {
+<span class="nc" id="L63">        final int position = wrapper.componentPosition;</span>
+<span class="nc" id="L64">        bar.remove(position);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        for (WrapperAction w : wrappers)</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (w.componentPosition &gt; position)</span>
+<span class="nc" id="L67">                w.componentPosition--;</span>
+<span class="nc" id="L68">    }</span>
+
+    private int findOldestIndex() {
+<span class="nc" id="L71">        int found = -1;</span>
+<span class="nc" id="L72">        int oldestTime = mainTime;</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        for (int i = 0; i &lt; wrappers.size(); i++) {</span>
+<span class="nc" id="L74">            WrapperAction wrapper = wrappers.get(i);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (wrapper.time &lt; oldestTime) {</span>
+<span class="nc" id="L76">                found = i;</span>
+<span class="nc" id="L77">                oldestTime = wrapper.time;</span>
+            }
+        }
+<span class="nc" id="L80">        return found;</span>
+    }
+
+    private boolean contains(InsertAction action) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (WrapperAction wrapper : wrappers)</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (wrapper.action.getName().equals(action.getName()))</span>
+<span class="nc" id="L86">                return true;</span>
+<span class="nc" id="L87">        return false;</span>
+    }
+
+    /**
+     * @return the last insert action
+     */
+    public InsertAction getLastInsertAction() {
+<span class="nc" id="L94">        return lastInsertAction;</span>
+    }
+
+    @Override
+    public void libraryChanged(LibraryNode node) {
+<span class="nc" id="L99">        updateCustomComponents();</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * Updates all custom components.
+     * If the component no longer exists, it is deleted from the history toolbar.
+     */
+    private void updateCustomComponents() {
+<span class="nc" id="L107">        Iterator&lt;WrapperAction&gt; it = wrappers.iterator();</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L109">            WrapperAction w = it.next();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (w.action.isCustom()) {</span>
+<span class="nc" id="L111">                LibraryNode n = library.getElementNodeOrNull(w.action.getName());</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                if (n == null) {  // is'nt there, so delete</span>
+<span class="nc" id="L113">                    removeWrapperFromToolBar(w);</span>
+<span class="nc" id="L114">                    it.remove();</span>
+                } else
+<span class="nc" id="L116">                    w.update(n);</span>
+            }
+<span class="nc" id="L118">        }</span>
+<span class="nc" id="L119">        bar.revalidate();</span>
+<span class="nc" id="L120">    }</span>
+
+    private final class WrapperAction extends AbstractAction {
+        private final InsertAction action;
+        private int componentPosition;
+        private int time;
+
+<span class="nc" id="L127">        private WrapperAction(InsertAction action, int componentPosition) {</span>
+<span class="nc" id="L128">            super(action.getValue(Action.NAME).toString(), (Icon) action.getValue(Action.SMALL_ICON));</span>
+<span class="nc" id="L129">            this.action = action;</span>
+<span class="nc" id="L130">            this.componentPosition = componentPosition;</span>
+<span class="nc" id="L131">            time = mainTime++;</span>
+<span class="nc" id="L132">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L136">            action.actionPerformed(e);</span>
+<span class="nc" id="L137">            time = mainTime++;</span>
+<span class="nc" id="L138">        }</span>
+
+        public void update(LibraryNode n) {
+<span class="nc" id="L141">            action.update(n);</span>
+<span class="nc" id="L142">            putValue(Action.SMALL_ICON, action.getValue(Action.SMALL_ICON));</span>
+<span class="nc" id="L143">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

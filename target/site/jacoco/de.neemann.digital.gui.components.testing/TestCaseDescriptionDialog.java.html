@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestCaseDescriptionDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.testing</a> &gt; <span class="el_source">TestCaseDescriptionDialog.java</span></div><h1>TestCaseDescriptionDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.testing;
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.gui.components.TextLineNumber;
+import de.neemann.digital.gui.components.modification.ModifyAttribute;
+import de.neemann.digital.gui.components.table.ShowStringDialog;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.Transitions;
+import de.neemann.digital.testing.parser.ParserException;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+
+import static de.neemann.digital.gui.components.EditorFactory.addF1Traversal;
+import static de.neemann.digital.gui.components.EditorFactory.createUndoManager;
+
+/**
+ * Dialog to show and edit the testing data source.
+ */
+public class TestCaseDescriptionDialog extends JDialog {
+
+    private final JTextArea text;
+    private final TestCaseDescription initialData;
+    private final VisualElement element;
+    private TestCaseDescription modifiedData;
+<span class="nc" id="L43">    private boolean circuitModified = false;</span>
+
+    /**
+     * Creates a new data dialog.
+     *
+     * @param parent      the parent component
+     * @param initialData the data to edit
+     */
+    public TestCaseDescriptionDialog(Window parent, TestCaseDescription initialData) {
+<span class="nc" id="L52">        this(parent, initialData, null);</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Creates a new data dialog.
+     * This constructor allows to open the dialog in a modeless way.
+     *
+     * @param parent      the parent component
+     * @param initialData the data to edit
+     * @param element     the element to be modified
+     */
+    public TestCaseDescriptionDialog(Window parent, TestCaseDescription initialData, VisualElement element) {
+<span class="nc" id="L64">        super(parent,</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                Lang.get(&quot;key_Testdata&quot;),</span>
+                element == null ? ModalityType.APPLICATION_MODAL : ModalityType.MODELESS);
+<span class="nc" id="L67">        this.element = element;</span>
+<span class="nc" id="L68">        this.initialData = initialData;</span>
+<span class="nc" id="L69">        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);</span>
+
+<span class="nc" id="L71">        text = addF1Traversal(new JTextArea(initialData.getDataString(), 30, 50));</span>
+<span class="nc" id="L72">        text.setFont(new Font(Font.MONOSPACED, Font.PLAIN, Screen.getInstance().getFontSize()));</span>
+
+<span class="nc" id="L74">        createUndoManager(text);</span>
+
+<span class="nc" id="L76">        addWindowListener(new ClosingWindowListener());</span>
+
+<span class="nc" id="L78">        JScrollPane scrollPane = new JScrollPane(text);</span>
+<span class="nc" id="L79">        getContentPane().add(scrollPane);</span>
+<span class="nc" id="L80">        scrollPane.setRowHeaderView(new TextLineNumber(text, 3));</span>
+
+<span class="nc" id="L82">        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+
+<span class="nc" id="L84">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_help&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L87">                new ShowStringDialog(</span>
+                        TestCaseDescriptionDialog.this,
+<span class="nc" id="L89">                        Lang.get(&quot;msg_testVectorHelpTitle&quot;),</span>
+<span class="nc" id="L90">                        Lang.get(&quot;msg_testVectorHelp&quot;), true)</span>
+<span class="nc" id="L91">                        .setVisible(true);</span>
+<span class="nc" id="L92">            }</span>
+<span class="nc" id="L93">        }.createJButton());</span>
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (Main.isExperimentalMode()) {</span>
+<span class="nc" id="L96">            buttons.add(new ToolTipAction(Lang.get(&quot;btn_addTransitions&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">                    if (parent instanceof Main) {</span>
+<span class="nc" id="L100">                        CircuitComponent cc = ((Main) parent).getCircuitComponent();</span>
+                        try {
+<span class="nc" id="L102">                            Transitions tr = new Transitions(text.getText(), cc.getCircuit().getInputNames());</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                            if (tr.isNew()) {</span>
+<span class="nc" id="L104">                                text.setText(tr.getCompletedText());</span>
+                            }
+<span class="nc" id="L106">                        } catch (ParserException | IOException | PinException e1) {</span>
+<span class="nc" id="L107">                            new ErrorMessage(e1.getMessage()).show(TestCaseDescriptionDialog.this);</span>
+<span class="nc" id="L108">                        }</span>
+                    }
+<span class="nc" id="L110">                }</span>
+<span class="nc" id="L111">            }.setToolTip(Lang.get(&quot;btn_addTransitions_tt&quot;)).createJButton());</span>
+        }
+
+<span class="nc" id="L114">        buttons.add(new ToolTipAction(Lang.get(&quot;cancel&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L117">                tryDispose();</span>
+<span class="nc" id="L118">            }</span>
+<span class="nc" id="L119">        }.createJButton());</span>
+
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (element != null) {</span>
+<span class="nc" id="L122">            buttons.add(new ToolTipAction(Lang.get(&quot;menu_runTests&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                        if (parent instanceof Main) {</span>
+<span class="nc" id="L127">                            CircuitComponent cc = ((Main) parent).getCircuitComponent();</span>
+<span class="nc" id="L128">                            element.getElementAttributes().set(Keys.TESTDATA, new TestCaseDescription(text.getText()));</span>
+<span class="nc" id="L129">                            circuitModified = true;</span>
+<span class="nc" id="L130">                            cc.getMain().startTests();</span>
+                        }
+<span class="nc" id="L132">                    } catch (ParserException | IOException e1) {</span>
+<span class="nc" id="L133">                        new ErrorMessage(e1.getMessage()).show(TestCaseDescriptionDialog.this);</span>
+<span class="nc" id="L134">                    }</span>
+<span class="nc" id="L135">                }</span>
+<span class="nc" id="L136">            }.createJButton());</span>
+        }
+
+<span class="nc" id="L139">        buttons.add(new ToolTipAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L143">                    modifiedData = new TestCaseDescription(text.getText());</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">                    if (element != null</span>
+<span class="nc bnc" id="L145" title="All 4 branches missed.">                            &amp;&amp; isStateChanged()</span>
+                            &amp;&amp; parent instanceof Main) {
+<span class="nc" id="L147">                        CircuitComponent cc = ((Main) parent).getCircuitComponent();</span>
+<span class="nc" id="L148">                        cc.modify(new ModifyAttribute&lt;&gt;(element, Keys.TESTDATA, modifiedData));</span>
+                    }
+<span class="nc" id="L150">                    dispose();</span>
+<span class="nc" id="L151">                } catch (ParserException | IOException e1) {</span>
+<span class="nc" id="L152">                    new ErrorMessage(e1.getMessage()).show(TestCaseDescriptionDialog.this);</span>
+<span class="nc" id="L153">                }</span>
+<span class="nc" id="L154">            }</span>
+<span class="nc" id="L155">        }.createJButton());</span>
+
+
+<span class="nc" id="L158">        getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L160">        pack();</span>
+<span class="nc" id="L161">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L162">    }</span>
+
+    /**
+     * Shows the dialog and returns the modified data
+     *
+     * @return the modified data or null if not modified
+     */
+    public TestCaseDescription showDialog() {
+<span class="nc" id="L170">        modifiedData = null;</span>
+<span class="nc" id="L171">        setVisible(true);</span>
+<span class="nc" id="L172">        return modifiedData;</span>
+    }
+
+    private boolean isStateChanged() {
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        return !initialData.getDataString().equals(text.getText());</span>
+    }
+
+    private void tryDispose() {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (isStateChanged()) {</span>
+<span class="nc" id="L181">            int r = JOptionPane.showOptionDialog(</span>
+                    this,
+<span class="nc" id="L183">                    Lang.get(&quot;msg_dataWillBeLost_n&quot;, Keys.TESTDATA.getName()),</span>
+<span class="nc" id="L184">                    Lang.get(&quot;msg_warning&quot;),</span>
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+<span class="nc" id="L187">                    null, new String[]{Lang.get(&quot;btn_discard&quot;), Lang.get(&quot;btn_editFurther&quot;)},</span>
+<span class="nc" id="L188">                    Lang.get(&quot;cancel&quot;));</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (r == JOptionPane.YES_OPTION)</span>
+<span class="nc" id="L190">                myDispose();</span>
+<span class="nc" id="L191">        } else</span>
+<span class="nc" id="L192">            myDispose();</span>
+<span class="nc" id="L193">    }</span>
+
+    private void myDispose() {
+<span class="nc" id="L196">        dispose();</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (circuitModified)</span>
+<span class="nc" id="L198">            element.getElementAttributes().set(Keys.TESTDATA, initialData);</span>
+<span class="nc" id="L199">    }</span>
+
+<span class="nc" id="L201">    private final class ClosingWindowListener extends WindowAdapter {</span>
+        @Override
+        public void windowClosing(WindowEvent e) {
+<span class="nc" id="L204">            tryDispose();</span>
+<span class="nc" id="L205">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

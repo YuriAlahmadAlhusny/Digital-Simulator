@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortDefinition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">PortDefinition.java</span></div><h1>PortDefinition.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.element.PinInfo;
+import de.neemann.digital.hdl.hgs.HGSArray;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.StringTokenizer;
+
+/**
+ * The list of ports used by an external component
+ */
+public class PortDefinition implements Iterable&lt;Port&gt;, HGSArray {
+    private final ArrayList&lt;Port&gt; ports;
+
+    /**
+     * Creates a ew instance
+     *
+     * @param portDescription a comma separated list of port names
+     */
+<span class="fc" id="L30">    public PortDefinition(String portDescription) {</span>
+<span class="fc" id="L31">        ports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L32">        StringTokenizer st = new StringTokenizer(portDescription, &quot;,&quot;);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        while (st.hasMoreTokens())</span>
+<span class="fc" id="L34">            ports.add(new Port(st.nextToken().trim()));</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * Creates the output values to be used by the model
+     *
+     * @return the output values
+     */
+    public ObservableValues createOutputs() {
+<span class="fc" id="L43">        ObservableValues.Builder builder = new ObservableValues.Builder();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (Port p : ports)</span>
+<span class="fc" id="L45">            builder.add(new ObservableValue(p.getName(), p.getBits()));</span>
+<span class="fc" id="L46">        return builder.build();</span>
+    }
+
+    /**
+     * Creates the pin descriptions
+     *
+     * @param direction the direction to use for the pin descriptions
+     * @return the pin descriptions
+     */
+    public PinDescriptions getPinDescriptions(PinDescription.Direction direction) {
+<span class="fc" id="L56">        PinInfo[] infos = new PinInfo[ports.size()];</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; infos.length; i++)</span>
+<span class="fc" id="L58">            infos[i] = new PinInfo(ports.get(i).getName(), &quot;&quot;, direction);</span>
+<span class="fc" id="L59">        return new PinDescriptions(infos);</span>
+    }
+
+    /**
+     * Getter for a single port
+     *
+     * @param i the port number
+     * @return the port
+     */
+    public Port getPort(int i) {
+<span class="nc" id="L69">        return ports.get(i);</span>
+    }
+
+    /**
+     * @return sum of all bits
+     */
+    public int getBits() {
+<span class="nc" id="L76">        int bits = 0;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (Port p : ports)</span>
+<span class="nc" id="L78">            bits += p.getBits();</span>
+<span class="nc" id="L79">        return bits;</span>
+    }
+
+    @Override
+    public Iterator&lt;Port&gt; iterator() {
+<span class="nc" id="L84">        return ports.iterator();</span>
+    }
+
+    /**
+     * Adds a port to this description
+     *
+     * @param name the name
+     * @param bits the number of bits
+     */
+    public void addPort(String name, int bits) {
+<span class="fc" id="L94">        ports.add(new Port(name, bits));</span>
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * @return the number of ports
+     */
+    public int size() {
+<span class="fc" id="L101">        return ports.size();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L106">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (Port p : ports) {</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (sb.length() &gt; 0)</span>
+<span class="fc" id="L109">                sb.append(&quot;,&quot;);</span>
+<span class="fc" id="L110">            sb.append(p.toString());</span>
+<span class="fc" id="L111">        }</span>
+
+<span class="fc" id="L113">        return sb.toString();</span>
+    }
+
+    @Override
+    public int hgsArraySize() {
+<span class="fc" id="L118">        return ports.size();</span>
+    }
+
+    @Override
+    public Object hgsArrayGet(int i) {
+<span class="fc" id="L123">        return ports.get(i);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OSExecute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.tt2</a> &gt; <span class="el_source">OSExecute.java</span></div><h1>OSExecute.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.tt2;
+
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * OSExecute is used to start external programs
+ * It is used to start external fitters like fit1502.exe
+ */
+public class OSExecute {
+
+    private final ProcessBuilder processBuilder;
+<span class="nc" id="L23">    private int timeOutSec = 30;</span>
+    private Process process;
+<span class="nc" id="L25">    private boolean ignoreReturnCode = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param args the program to start
+     */
+<span class="nc" id="L32">    public OSExecute(String... args) {</span>
+<span class="nc" id="L33">        processBuilder = new ProcessBuilder(args);</span>
+<span class="nc" id="L34">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param args the program to start
+     */
+<span class="nc" id="L41">    public OSExecute(List&lt;String&gt; args) {</span>
+<span class="nc" id="L42">        processBuilder = new ProcessBuilder(args);</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * Sets the working directory
+     *
+     * @param workingDir the working directory
+     * @return this for chained calls
+     */
+    public OSExecute setWorkingDir(File workingDir) {
+<span class="nc" id="L52">        processBuilder.directory(workingDir);</span>
+<span class="nc" id="L53">        return this;</span>
+    }
+
+    /**
+     * Sets an environment variable
+     *
+     * @param key   the key
+     * @param value the value
+     * @return this for chained calls
+     */
+    public OSExecute setEnvVar(String key, String value) {
+<span class="nc" id="L64">        processBuilder.environment().put(key, value);</span>
+<span class="nc" id="L65">        return this;</span>
+    }
+
+    /**
+     * Sets the time out period.
+     *
+     * @param timeOutSec time out in seconds
+     * @return this for chained calls
+     */
+    public OSExecute setTimeOutSec(int timeOutSec) {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (timeOutSec == 0)</span>
+<span class="nc" id="L76">            timeOutSec = Integer.MAX_VALUE;</span>
+<span class="nc" id="L77">        this.timeOutSec = timeOutSec;</span>
+<span class="nc" id="L78">        return this;</span>
+    }
+
+    /**
+     * Starts the execution and waits for its completion.
+     *
+     * @return the console output of the started process
+     * @throws IOException IOException
+     */
+    public String startAndWait() throws IOException {
+<span class="nc" id="L88">        processBuilder.redirectErrorStream(true);</span>
+
+<span class="nc" id="L90">        process = processBuilder.start();</span>
+
+<span class="nc" id="L92">        InputStream console = process.getInputStream();</span>
+<span class="nc" id="L93">        StreamReader consoleReader = new StreamReader(console);</span>
+<span class="nc" id="L94">        consoleReader.start();</span>
+
+        try {
+<span class="nc" id="L97">            process.waitFor(timeOutSec, TimeUnit.SECONDS);</span>
+<span class="nc" id="L98">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L99">            e.printStackTrace();</span>
+<span class="nc" id="L100">        }</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (process.isAlive()) {</span>
+<span class="nc" id="L103">            process.destroy();</span>
+<span class="nc" id="L104">            consoleReader.interrupt();</span>
+<span class="nc" id="L105">            throw new IOException(Lang.get(&quot;err_processDoesNotTerminate_N&quot;, processBuilder.command()));</span>
+        }
+
+        try {
+<span class="nc" id="L109">            consoleReader.join();</span>
+<span class="nc" id="L110">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L111">            e.printStackTrace();</span>
+<span class="nc" id="L112">        }</span>
+
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        if (process.exitValue() != 0 &amp;&amp; !ignoreReturnCode)</span>
+<span class="nc" id="L115">            throw new IOException(Lang.get(&quot;err_processExitedWithError_N1_N2&quot;, process.exitValue(), &quot;\n&quot; + consoleReader.toString()));</span>
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (consoleReader.getException() != null)</span>
+<span class="nc" id="L118">            throw consoleReader.getException();</span>
+
+<span class="nc" id="L120">        return consoleReader.toString();</span>
+    }
+
+    /**
+     * Sends a terminate signal to the running process.
+     */
+    public void terminate() {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (process.isAlive()) {</span>
+<span class="nc" id="L128">            ignoreReturnCode = true;</span>
+<span class="nc" id="L129">            process.destroy();</span>
+        }
+<span class="nc" id="L131">    }</span>
+
+    /**
+     * @return true if process is alive.
+     */
+    public boolean isAlive() {
+<span class="nc" id="L137">        return process.isAlive();</span>
+    }
+
+    /**
+     * Start process in its own thread.
+     *
+     * @param callback the callback functions
+     * @return this for chained calls
+     */
+    public OSExecute startInThread(ProcessCallback callback) {
+<span class="nc" id="L147">        new WaitThread(this, callback).start();</span>
+<span class="nc" id="L148">        return this;</span>
+    }
+
+    private static final class StreamReader extends Thread {
+        private final InputStream console;
+        private final RotationByteArrayOutputStream baos;
+        private IOException exception;
+
+<span class="nc" id="L156">        private StreamReader(InputStream console) {</span>
+<span class="nc" id="L157">            this.console = console;</span>
+<span class="nc" id="L158">            baos = new RotationByteArrayOutputStream(20 * 1024);</span>
+<span class="nc" id="L159">            setDaemon(true);</span>
+<span class="nc" id="L160">        }</span>
+
+        @Override
+        public void run() {
+            try {
+<span class="nc" id="L165">                byte[] data = new byte[4096];</span>
+                int l;
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                while ((l = console.read(data)) &gt;= 0) {</span>
+<span class="nc" id="L168">                    synchronized (baos) {</span>
+<span class="nc" id="L169">                        baos.write(data, 0, l);</span>
+<span class="nc" id="L170">                    }</span>
+                }
+<span class="nc" id="L172">            } catch (IOException e) {</span>
+<span class="nc" id="L173">                exception = e;</span>
+<span class="nc" id="L174">            }</span>
+<span class="nc" id="L175">        }</span>
+
+        private IOException getException() {
+<span class="nc" id="L178">            return exception;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="nc" id="L183">            synchronized (baos) {</span>
+<span class="nc" id="L184">                return baos.toString();</span>
+            }
+        }
+    }
+
+    private static final class WaitThread extends Thread {
+        private final OSExecute os;
+        private final ProcessCallback callback;
+
+<span class="nc" id="L193">        private WaitThread(OSExecute os, ProcessCallback callback) {</span>
+<span class="nc" id="L194">            this.os = os;</span>
+<span class="nc" id="L195">            this.callback = callback;</span>
+<span class="nc" id="L196">            setDaemon(true);</span>
+<span class="nc" id="L197">        }</span>
+
+        @Override
+        public void run() {
+            try {
+<span class="nc" id="L202">                String result = os.startAndWait();</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">                if (callback != null)</span>
+<span class="nc" id="L204">                    callback.processTerminated(result);</span>
+<span class="nc" id="L205">            } catch (Exception e) {</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                if (callback != null)</span>
+<span class="nc" id="L207">                    callback.exception(e);</span>
+<span class="nc" id="L208">            }</span>
+<span class="nc" id="L209">        }</span>
+    }
+
+    /**
+     * Process callback functions
+     */
+    public interface ProcessCallback {
+        /**
+         * The console out after process is terminated
+         *
+         * @param consoleOut the console output
+         */
+        void processTerminated(String consoleOut);
+
+        /**
+         * Called if an exception is thrown
+         *
+         * @param e the exception
+         */
+        void exception(Exception e);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

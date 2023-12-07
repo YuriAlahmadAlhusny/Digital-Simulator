@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JavaClass.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs.function</a> &gt; <span class="el_source">JavaClass.java</span></div><h1>JavaClass.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs.function;
+
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.Expression;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.HGSMap;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * Used to call a java function from the template code.
+ * Uses reflection to invoke the methods.
+ * All public methods which are declared in the given class are available via a
+ * {@link HGSMap} instance obtained by calling {@link JavaClass#createMap(Object)}.
+ * See {@link de.neemann.digital.hdl.vhdl.lib.VHDLTemplate} as an example.
+ *
+ * @param &lt;T&gt; the type of the instance
+ */
+public final class JavaClass&lt;T&gt; {
+    private final HashMap&lt;String, MyMethod&lt;T&gt;&gt; methods;
+
+    /**
+     * Creates a new instance
+     *
+     * @param clazz the class
+     */
+<span class="fc" id="L37">    public JavaClass(Class&lt;T&gt; clazz) {</span>
+<span class="fc" id="L38">        methods = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (Method m : clazz.getDeclaredMethods()) {</span>
+<span class="fc" id="L40">            int mod = m.getModifiers();</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (Modifier.isPublic(mod)) {</span>
+<span class="fc" id="L42">                final String name = m.getName();</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">                if (methods.containsKey(name))</span>
+<span class="nc" id="L44">                    throw new RuntimeException(&quot;Method overloading (&quot;</span>
+                            + name + &quot;) is not supported! Try to use the ellipsis (...) instead.&quot;);
+<span class="fc" id="L46">                methods.put(name, new MyMethod&lt;&gt;(m));</span>
+            }
+        }
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Creates the method map.
+     *
+     * @param instance the instance to call
+     * @return the method map
+     */
+    public HGSMap createMap(T instance) {
+<span class="fc" id="L58">        return new MethodMap&lt;&gt;(this, instance);</span>
+    }
+
+    private static final class MyMethod&lt;T&gt; {
+        private final Method method;
+        private final boolean isStatic;
+        private final boolean addContext;
+        private final int argCount;
+        private final int javaArgCount;
+        private final boolean isVarArgs;
+        private final Class&lt;?&gt; compType;
+
+<span class="fc" id="L70">        private MyMethod(Method method) {</span>
+<span class="fc" id="L71">            this.method = method;</span>
+<span class="fc" id="L72">            this.isStatic = Modifier.isStatic(method.getModifiers());</span>
+
+<span class="fc" id="L74">            Class&lt;?&gt;[] argTypes = method.getParameterTypes();</span>
+<span class="fc" id="L75">            javaArgCount = argTypes.length;</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">            addContext = (argTypes.length &gt; 0 &amp;&amp; argTypes[0].isAssignableFrom(Context.class));</span>
+
+<span class="fc" id="L78">            isVarArgs = method.isVarArgs();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (isVarArgs) {</span>
+<span class="fc" id="L80">                argCount = -1;</span>
+<span class="fc" id="L81">                compType = argTypes[argTypes.length - 1].getComponentType();</span>
+            } else {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                if (addContext)</span>
+<span class="nc" id="L84">                    argCount = argTypes.length - 1;</span>
+                else
+<span class="fc" id="L86">                    argCount = argTypes.length;</span>
+<span class="fc" id="L87">                compType = null;</span>
+            }
+<span class="fc" id="L89">        }</span>
+
+        private Object call(T instance, Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="pc bpc" id="L92" title="1 of 4 branches missed.">            if (instance == null &amp;&amp; !isStatic)</span>
+<span class="nc" id="L93">                throw new HGSEvalException(&quot;Function &quot; + method.getName() + &quot; is not static!&quot;);</span>
+
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">            if (argCount &gt;= 0 &amp;&amp; argCount != args.size())</span>
+<span class="nc" id="L96">                throw new HGSEvalException(&quot;Wrong number of arguments! expected: &quot;</span>
+<span class="nc" id="L97">                        + argCount + &quot;, but found:&quot; + args.size());</span>
+
+<span class="fc" id="L99">            Object[] a = new Object[javaArgCount];</span>
+<span class="fc" id="L100">            int i = 0;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (addContext) {</span>
+<span class="fc" id="L102">                a[0] = c;</span>
+<span class="fc" id="L103">                i++;</span>
+            }
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (!isVarArgs) {</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                for (Expression exp : args) {</span>
+<span class="fc" id="L108">                    a[i] = exp.value(c);</span>
+<span class="fc" id="L109">                    i++;</span>
+<span class="fc" id="L110">                }</span>
+            } else {
+                // ellipsis
+                try {
+                    // the fixed args
+<span class="fc" id="L115">                    int fixed = javaArgCount - i - 1;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                    for (int n = 0; n &lt; fixed; n++) {</span>
+<span class="fc" id="L117">                        a[i] = args.get(n).value(c);</span>
+<span class="fc" id="L118">                        i++;</span>
+                    }
+                    // put the var args to an array
+<span class="fc" id="L121">                    final int numVarArgs = args.size() - fixed;</span>
+<span class="fc" id="L122">                    Object varArgs = Array.newInstance(compType, numVarArgs);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                    for (int n = fixed; n &lt; args.size(); n++)</span>
+<span class="fc" id="L124">                        Array.set(varArgs, n - fixed, args.get(n).value(c));</span>
+
+                    // and pass the array
+<span class="fc" id="L127">                    a[i] = varArgs;</span>
+<span class="nc" id="L128">                } catch (RuntimeException e) {</span>
+<span class="nc" id="L129">                    throw new HGSEvalException(&quot;type error assigning value to var array in &quot;</span>
+<span class="nc" id="L130">                            + method.getName() + &quot;. Type &quot;</span>
+<span class="nc" id="L131">                            + compType.getSimpleName() + &quot; is required.&quot;);</span>
+<span class="fc" id="L132">                }</span>
+            }
+
+            try {
+<span class="fc" id="L136">                return method.invoke(instance, a);</span>
+<span class="nc" id="L137">            } catch (RuntimeException | IllegalAccessException | InvocationTargetException e) {</span>
+<span class="nc" id="L138">                throw new HGSEvalException(&quot;Error invoking the java method &quot; + method.getName() + &quot;!&quot;, e);</span>
+            }
+        }
+    }
+
+    private static final class MethodMap&lt;T&gt; implements HGSMap {
+        private final JavaClass&lt;T&gt; javaClass;
+        private final T instance;
+
+<span class="fc" id="L147">        private MethodMap(JavaClass&lt;T&gt; javaClass, T instance) {</span>
+<span class="fc" id="L148">            this.javaClass = javaClass;</span>
+<span class="fc" id="L149">            this.instance = instance;</span>
+<span class="fc" id="L150">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) {
+<span class="fc" id="L154">            MyMethod&lt;T&gt; m = javaClass.methods.get(key);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">            if (m == null) return null;</span>
+<span class="fc" id="L156">            return new MethodCall&lt;&gt;(m, instance);</span>
+        }
+    }
+
+    private static final class MethodCall&lt;T&gt; extends InnerFunction {
+        private final MyMethod&lt;T&gt; m;
+        private final T instance;
+
+        private MethodCall(MyMethod&lt;T&gt; m, T instance) {
+<span class="fc" id="L165">            super(m.argCount);</span>
+<span class="fc" id="L166">            this.m = m;</span>
+<span class="fc" id="L167">            this.instance = instance;</span>
+<span class="fc" id="L168">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc" id="L172">            return m.call(instance, c, args);</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:23 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="17.2mm"
+   height="10.8mm"
+   viewBox="-4 -42 86 54">
+<g stroke-linecap="square">
+<path d="M 2,10 L 2,-40 L 80,-40 L 80,10 Z" stroke="#000000" stroke-width="4.0" fill="none"/>
+<path d="M 9,-6 L 26,-6 L 26,-26 L 46,-26 L 46,-6 L 53,-6" stroke="#008e00" stroke-width="2.0" fill="none"/>
+<path d="M 8,-8 L 8,-22 Q 8,-34 20,-34 L 42,-34 Q 54,-34 54,-22 L 54,-8 Q 54,4 42,4 L 20,4 Q 8,4 8,-8 Z" stroke="#000000" stroke-width="2.0" fill="none"/>
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+</g>
+</svg>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MergeConstants.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.optimizations</a> &gt; <span class="el_source">MergeConstants.java</span></div><h1>MergeConstants.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.optimizations;
+
+import de.neemann.digital.hdl.model2.*;
+import de.neemann.digital.hdl.model2.expression.ExprConstant;
+import de.neemann.digital.hdl.model2.expression.ExprVar;
+
+import java.util.ArrayList;
+
+/**
+ * Multiple usages of the same constant are mapped to a single constant signal.
+ */
+<span class="fc" id="L17">public class MergeConstants implements Optimization {</span>
+
+    private HDLCircuit circuit;
+
+    @Override
+    public void optimize(HDLCircuit circuit) throws HDLException {
+<span class="fc" id="L23">        this.circuit = circuit;</span>
+<span class="fc" id="L24">        ArrayList&lt;HDLNode&gt; nodes = circuit.getNodes();</span>
+<span class="fc" id="L25">        int n1 = 0;</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        while (n1 &lt; nodes.size()) {</span>
+<span class="fc" id="L27">            final HDLNode node1 = nodes.get(n1);</span>
+<span class="fc" id="L28">            ExprConstant con1 = ExprConstant.isConstant(node1);</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">            if (con1 != null) {</span>
+                //modification of loop variable n2 is intended!
+                //CHECKSTYLE.OFF: ModifiedControlVariable
+<span class="fc bfc" id="L32" title="All 2 branches covered.">                for (int n2 = n1 + 1; n2 &lt; nodes.size(); n2++) {</span>
+<span class="fc" id="L33">                    final HDLNode node2 = nodes.get(n2);</span>
+<span class="fc" id="L34">                    ExprConstant con2 = ExprConstant.isConstant(node2);</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                    if (con2 != null) {</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">                        if (con1.isEqualTo(con2)) {</span>
+<span class="fc" id="L37">                            merge(node1, node2);</span>
+<span class="fc" id="L38">                            nodes.remove(n2);</span>
+<span class="fc" id="L39">                            n2--;</span>
+                        }
+                    }
+                }
+                //CHECKSTYLE.ON: ModifiedControlVariable
+            }
+
+<span class="fc" id="L46">            n1++;</span>
+<span class="fc" id="L47">        }</span>
+<span class="fc" id="L48">    }</span>
+
+    private void merge(HDLNode node1, HDLNode node2) throws HDLException {
+<span class="fc" id="L51">        HDLNet usedNet = node1.getOutput().getNet();</span>
+<span class="fc" id="L52">        HDLNet obsoleteNet = node2.getOutput().getNet();</span>
+
+<span class="fc" id="L54">        final ArrayList&lt;HDLPort&gt; ins = obsoleteNet.getInputs();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (HDLPort p : ins.toArray(new HDLPort[ins.size()]))</span>
+<span class="fc" id="L56">            p.setNet(usedNet);</span>
+
+<span class="fc" id="L58">        circuit.replaceNetByExpression(obsoleteNet, new ExprVar(usedNet));</span>
+
+<span class="fc" id="L60">        circuit.removeNet(obsoleteNet);</span>
+<span class="fc" id="L61">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

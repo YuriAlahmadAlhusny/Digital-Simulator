@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CSVImporter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">CSVImporter.java</span></div><h1>CSVImporter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2021 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.quinemc.BoolTableByteArray;
+import de.neemann.digital.lang.Lang;
+
+import java.io.*;
+import java.util.ArrayList;
+
+/**
+ * Used to read a CSV file
+ */
+public final class CSVImporter {
+
+    private CSVImporter() {
+    }
+
+    /**
+     * Reads a CSV file
+     *
+     * @param file the file
+     * @return the truth table
+     * @throws IOException IOException
+     */
+    public static TruthTable readCSV(File file) throws IOException {
+<span class="nc" id="L31">        return readCSV(new FileReader(file));</span>
+    }
+
+    /**
+     * Reads a CSV file
+     *
+     * @param csv the string to read
+     * @return the truth table
+     * @throws IOException IOException
+     */
+    public static TruthTable readCSV(String csv) throws IOException {
+<span class="fc" id="L42">        return readCSV(new StringReader(csv));</span>
+    }
+
+    /**
+     * Reads a CSV file
+     *
+     * @param csv the reader
+     * @return the truth table
+     * @throws IOException IOException
+     */
+    public static TruthTable readCSV(Reader csv) throws IOException {
+<span class="fc" id="L53">        BufferedReader r = new BufferedReader(csv);</span>
+<span class="fc" id="L54">        TruthTable tt = readHeader(r);</span>
+
+        while (true) {
+<span class="fc" id="L57">            String line = r.readLine();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (line == null)</span>
+<span class="fc" id="L59">                return tt;</span>
+<span class="fc" id="L60">            line = line.trim();</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            if (!line.isEmpty())</span>
+<span class="fc" id="L62">                parseLine(tt, line);</span>
+<span class="fc" id="L63">        }</span>
+
+    }
+
+    private static TruthTable readHeader(BufferedReader r) throws IOException {
+        String header;
+        do {
+<span class="fc" id="L70">            header = r.readLine();</span>
+<span class="fc bfc" id="L71" title="All 4 branches covered.">        } while (header != null &amp;&amp; header.length() == 0);</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (header == null)</span>
+<span class="fc" id="L74">            throw new IOException(Lang.get(&quot;err_csvNoHeaderFound&quot;));</span>
+
+<span class="fc" id="L76">        ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L78">        TruthTable tt = null;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (String ss : header.split(&quot;,&quot;)) {</span>
+<span class="fc" id="L80">            String h = ss.trim();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (h.isEmpty())</span>
+<span class="fc" id="L82">                tt = new TruthTable(vars);</span>
+            else {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                if (tt == null)</span>
+<span class="fc" id="L85">                    vars.add(new Variable(h));</span>
+                else
+<span class="fc" id="L87">                    tt.addResult(h, new BoolTableByteArray(1 &lt;&lt; vars.size()));</span>
+
+            }
+        }
+
+<span class="pc bpc" id="L92" title="1 of 4 branches missed.">        if (tt == null || tt.getResultCount() == 0)</span>
+<span class="fc" id="L93">            throw new IOException(Lang.get(&quot;err_csvNoOutputValuesFound&quot;));</span>
+
+<span class="fc" id="L95">        return tt;</span>
+    }
+
+    private static void parseLine(TruthTable tt, String line) throws IOException {
+<span class="fc" id="L99">        int resNum = tt.getResultCount();</span>
+<span class="fc" id="L100">        int varNum = tt.getVars().size();</span>
+<span class="fc" id="L101">        int mask = 1 &lt;&lt; (varNum - 1);</span>
+<span class="fc" id="L102">        ArrayList&lt;Integer&gt; dc = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L103">        int row = 0;</span>
+<span class="fc" id="L104">        int rCol = 0;</span>
+<span class="fc" id="L105">        Generator generator = null;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (String ss : line.split(&quot;,&quot;)) {</span>
+<span class="fc" id="L107">            String e = ss.trim().toLowerCase();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (e.isEmpty())</span>
+<span class="fc" id="L109">                generator = new Generator(row, dc);</span>
+            else {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                if (generator == null) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                    if (mask == 0)</span>
+<span class="fc" id="L113">                        throw new IOException(Lang.get(&quot;err_csvToManyValues&quot;));</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                    if (e.equals(&quot;1&quot;))</span>
+<span class="fc" id="L115">                        row |= mask;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                    else if (e.equals(&quot;x&quot;))</span>
+<span class="fc" id="L117">                        dc.add(mask);</span>
+<span class="fc" id="L118">                    mask = mask &gt;&gt; 1;</span>
+                } else {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                    if (rCol &gt;= resNum)</span>
+<span class="fc" id="L121">                        throw new IOException(Lang.get(&quot;err_csvToManyValues&quot;));</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                    if (e.equals(&quot;1&quot;))</span>
+<span class="fc" id="L123">                        generator.addCol(rCol);</span>
+<span class="fc" id="L124">                    rCol++;</span>
+                }
+            }
+        }
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (mask != 0)</span>
+<span class="fc" id="L130">            throw new IOException(Lang.get(&quot;err_csvNotEnoughValues&quot;));</span>
+
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (generator != null)</span>
+<span class="fc" id="L133">            generator.applyTo(tt);</span>
+<span class="fc" id="L134">    }</span>
+
+    private static final class Generator {
+        private final int row;
+        private final ArrayList&lt;Integer&gt; dc;
+        private final ArrayList&lt;Integer&gt; cols;
+
+<span class="fc" id="L141">        private Generator(int row, ArrayList&lt;Integer&gt; dc) {</span>
+<span class="fc" id="L142">            this.row = row;</span>
+<span class="fc" id="L143">            this.dc = dc;</span>
+<span class="fc" id="L144">            cols = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L145">        }</span>
+
+        public void addCol(int rCol) {
+<span class="fc" id="L148">            cols.add(rCol);</span>
+<span class="fc" id="L149">        }</span>
+
+        public void applyTo(TruthTable tt) {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (cols.isEmpty())</span>
+<span class="fc" id="L153">                return;</span>
+
+<span class="fc" id="L155">            int vars = tt.getVars().size();</span>
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (dc.isEmpty())</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                for (int col : cols)</span>
+<span class="fc" id="L159">                    tt.setValue(row, vars + col, 1);</span>
+            else {
+<span class="fc" id="L161">                int dcRows = 1 &lt;&lt; dc.size();</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">                for (int i = 0; i &lt; dcRows; i++) {</span>
+<span class="fc" id="L163">                    int r = row;</span>
+<span class="fc" id="L164">                    int bitMask = 1;</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">                    for (int orMask : dc) {</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                        if ((i &amp; bitMask) != 0)</span>
+<span class="fc" id="L167">                            r = r | orMask;</span>
+<span class="fc" id="L168">                        bitMask *= 2;</span>
+<span class="fc" id="L169">                    }</span>
+
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                    for (int col : cols)</span>
+<span class="fc" id="L172">                        tt.setValue(r, vars + col, 1);</span>
+
+                }
+            }
+<span class="fc" id="L176">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

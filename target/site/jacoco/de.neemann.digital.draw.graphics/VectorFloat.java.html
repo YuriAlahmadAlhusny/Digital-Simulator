@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VectorFloat.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">VectorFloat.java</span></div><h1>VectorFloat.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import java.util.Objects;
+
+/**
+ * A vector with float coordinates
+ */
+public class VectorFloat implements VectorInterface {
+
+    private final float x;
+    private final float y;
+
+    /**
+     * Creates a new vector
+     *
+     * @param x the x coordinate
+     * @param y the x coordinate
+     */
+<span class="fc" id="L24">    public VectorFloat(float x, float y) {</span>
+<span class="fc" id="L25">        this.x = x;</span>
+<span class="fc" id="L26">        this.y = y;</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Creates a new vector which is a copy of the given vector.
+     *
+     * @param v the vector to copy
+     */
+<span class="fc" id="L34">    public VectorFloat(VectorInterface v) {</span>
+<span class="fc" id="L35">        this.x = v.getXFloat();</span>
+<span class="fc" id="L36">        this.y = v.getYFloat();</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public int getX() {
+<span class="fc" id="L41">        return Math.round(x);</span>
+    }
+
+    @Override
+    public int getY() {
+<span class="fc" id="L46">        return Math.round(y);</span>
+    }
+
+    @Override
+    public float getXFloat() {
+<span class="fc" id="L51">        return x;</span>
+    }
+
+    @Override
+    public float getYFloat() {
+<span class="fc" id="L56">        return y;</span>
+    }
+
+    @Override
+    public VectorInterface transform(Transform tr) {
+<span class="fc" id="L61">        return tr.transform(this);</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this+a
+     *
+     * @param a a
+     * @return this+a
+     */
+    public VectorFloat add(VectorInterface a) {
+<span class="fc" id="L71">        return new VectorFloat(x + a.getXFloat(), y + a.getYFloat());</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this+(dx,dy)
+     *
+     * @param dx dx
+     * @param dy dy
+     * @return this+(dx,dy)
+     */
+    public VectorFloat add(float dx, float dy) {
+<span class="nc" id="L82">        return new VectorFloat(x + dx, y + dy);</span>
+    }
+
+    /**
+     * Subtracts the given vector
+     *
+     * @param sub the vector to subtract
+     * @return the new vector
+     */
+    public VectorFloat sub(VectorInterface sub) {
+<span class="fc" id="L92">        return new VectorFloat(x - sub.getXFloat(), y - sub.getYFloat());</span>
+    }
+
+    @Override
+    public VectorFloat norm() {
+<span class="fc" id="L97">        float l = (float) Math.sqrt(x * x + y * y);</span>
+<span class="fc" id="L98">        return new VectorFloat(x / l, y / l);</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this*a
+     *
+     * @param a a
+     * @return this*a
+     */
+    public VectorFloat mul(float a) {
+<span class="fc" id="L108">        return new VectorFloat(x * a, y * a);</span>
+    }
+
+    /**
+     * Returns the sclar product
+     *
+     * @param p the other vector
+     * @return the scalar procuct
+     */
+    public float mul(VectorFloat p) {
+<span class="fc" id="L118">        return x * p.x + y * p.y;</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this/d
+     *
+     * @param d a
+     * @return this/d
+     */
+    public VectorFloat div(int d) {
+<span class="fc" id="L128">        return new VectorFloat(x / d, y / d);</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L135">        VectorFloat that = (VectorFloat) o;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        return Float.compare(that.x, x) == 0</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                &amp;&amp; Float.compare(that.y, y) == 0;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L142">        return Objects.hash(x, y);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L147">        return &quot;(x=&quot; + x</span>
+                + &quot;, y=&quot; + y
+                + ')';
+    }
+
+    @Override
+    public Vector round() {
+<span class="fc" id="L154">        return new Vector(getX(), getY());</span>
+    }
+
+    @Override
+    public float len() {
+<span class="fc" id="L159">        return (float) Math.sqrt(x * x + y * y);</span>
+    }
+
+    @Override
+    public VectorFloat toFloat() {
+<span class="nc" id="L164">        return this;</span>
+    }
+
+    @Override
+    public VectorFloat getOrthogonal() {
+<span class="fc" id="L169">        return new VectorFloat(y, -x);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

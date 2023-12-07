@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelAnalyserInfo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">ModelAnalyserInfo.java</span></div><h1>ModelAnalyserInfo.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.Signal;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TreeMap;
+
+/**
+ * Additional infos obtained from the model
+ */
+public class ModelAnalyserInfo {
+    private final String clockPin;
+    private final ArrayList&lt;Bus&gt; inputBusList;
+    private final ArrayList&lt;Bus&gt; outputBusList;
+    private final HashMap&lt;String, Long&gt; initValueMap;
+    private final boolean isSequential;
+    private TreeMap&lt;String, String&gt; pins;
+    private ArrayList&lt;Signal&gt; inputs;
+    private ArrayList&lt;Signal&gt; outputs;
+    private ArrayList&lt;String&gt; pinsWithoutNumber;
+    private String stateSignalName;
+
+    /**
+     * creates a new instance
+     *
+     * @param model the model used
+     */
+<span class="fc" id="L36">    public ModelAnalyserInfo(Model model) {</span>
+<span class="fc bfc" id="L37" title="All 4 branches covered.">        if (model != null &amp;&amp; model.getClocks().size() == 1)</span>
+<span class="fc" id="L38">            clockPin = model.getClocks().get(0).getClockPin();</span>
+        else
+<span class="fc" id="L40">            clockPin = null;</span>
+
+<span class="fc bfc" id="L42" title="All 4 branches covered.">        isSequential = model != null &amp;&amp; !model.findNode(Node::hasState).isEmpty();</span>
+
+<span class="fc" id="L44">        inputBusList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">        outputBusList = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L47">        initValueMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Sets the inputs and outputs
+     *
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+    public void setInOut(ArrayList&lt;Signal&gt; inputs, ArrayList&lt;Signal&gt; outputs) {
+<span class="fc" id="L57">        this.inputs = new ArrayList&lt;&gt;(inputs);</span>
+<span class="fc" id="L58">        this.outputs = new ArrayList&lt;&gt;(outputs);</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * @return the assigned pins
+     */
+    public TreeMap&lt;String, String&gt; getPins() {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (pins == null) {</span>
+<span class="fc" id="L66">            pins = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            for (Signal s : this.inputs)</span>
+<span class="fc" id="L68">                addPinNumber(s);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (Signal s : this.outputs)</span>
+<span class="fc" id="L70">                addPinNumber(s);</span>
+        }
+<span class="fc" id="L72">        return pins;</span>
+    }
+
+    private void addPinNumber(Signal s) {
+<span class="fc" id="L76">        String p = s.getPinNumber();</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">        if (p != null &amp;&amp; p.length() &gt; 0) pins.put(s.getName(), p);</span>
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * @return list of pins without a number. Never null, maybe a empty list
+     */
+    public ArrayList&lt;String&gt; getPinsWithoutNumber() {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (pinsWithoutNumber == null) {</span>
+<span class="nc" id="L85">            pinsWithoutNumber = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            for (Signal s : inputs)</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                if (s.missingPinNumber())</span>
+<span class="nc" id="L88">                    pinsWithoutNumber.add((s.getName()));</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            for (Signal s : outputs)</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                if (s.missingPinNumber())</span>
+<span class="nc" id="L91">                    pinsWithoutNumber.add((s.getName()));</span>
+        }
+<span class="nc" id="L93">        return pinsWithoutNumber;</span>
+    }
+
+    /**
+     * @return the clock pin
+     */
+    public int getClockPinInt() {
+<span class="nc bnc" id="L100" title="All 4 branches missed.">        if (clockPin == null || clockPin.length() == 0)</span>
+<span class="nc" id="L101">            return 0;</span>
+
+        try {
+<span class="nc" id="L104">            return Integer.parseInt(clockPin);</span>
+<span class="nc" id="L105">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L106">            return 0;</span>
+        }
+    }
+
+    void addInputBus(String name, ArrayList&lt;String&gt; names) {
+<span class="fc" id="L111">        inputBusList.add(new Bus(name, names));</span>
+<span class="fc" id="L112">    }</span>
+
+    /**
+     * Adds an output bus.
+     *
+     * @param name  the bus name
+     * @param names the individual names in the truth table
+     */
+    public void addOutputBus(String name, ArrayList&lt;String&gt; names) {
+<span class="fc" id="L121">        outputBusList.add(new Bus(name, names));</span>
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * @return input bus map
+     */
+    public ArrayList&lt;Bus&gt; getInputBusList() {
+<span class="fc" id="L128">        return inputBusList;</span>
+    }
+
+    /**
+     * @return output bus map
+     */
+    public ArrayList&lt;Bus&gt; getOutputBusList() {
+<span class="fc" id="L135">        return outputBusList;</span>
+    }
+
+    /**
+     * @return true if model is sequential
+     */
+    public boolean isSequential() {
+<span class="nc" id="L142">        return isSequential;</span>
+    }
+
+    /**
+     * Gets the init value of a sequential state machine
+     *
+     * @param name the name of the state variable
+     * @return the init value
+     */
+    public long getSequentialInitValue(String name) {
+<span class="nc" id="L152">        final Long init = initValueMap.get(name);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (init == null)</span>
+<span class="nc" id="L154">            return 0;</span>
+<span class="nc" id="L155">        return init;</span>
+    }
+
+    /**
+     * Sets a init value of a sequential state machine
+     *
+     * @param name  state variable
+     * @param value initial state
+     */
+    public void setSequentialInitValue(String name, long value) {
+<span class="fc" id="L165">        initValueMap.put(name, value);</span>
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * @return the state variable name, maybe null
+     */
+    public String getStateSignalName() {
+<span class="fc" id="L172">        return stateSignalName;</span>
+    }
+
+    /**
+     * Sets the state variable name
+     *
+     * @param stateSignalName the state variable name
+     */
+    public void setStateSignalName(String stateSignalName) {
+<span class="fc" id="L181">        this.stateSignalName = stateSignalName;</span>
+<span class="fc" id="L182">    }</span>
+
+    /**
+     * Description of a bus used as input or output of the circuit
+     */
+    public static final class Bus {
+        private final String busName;
+        private final ArrayList&lt;String&gt; signalNames;
+
+<span class="fc" id="L191">        private Bus(String busName, ArrayList&lt;String&gt; signalNames) {</span>
+<span class="fc" id="L192">            this.busName = busName;</span>
+<span class="fc" id="L193">            this.signalNames = signalNames;</span>
+<span class="fc" id="L194">        }</span>
+
+        /**
+         * @return the name of the bus
+         */
+        public String getBusName() {
+<span class="fc" id="L200">            return busName;</span>
+        }
+
+        /**
+         * @return list of names of the signals the bus is made of
+         */
+        public ArrayList&lt;String&gt; getSignalNames() {
+<span class="fc" id="L207">            return signalNames;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

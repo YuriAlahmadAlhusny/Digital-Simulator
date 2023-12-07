@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InsertAction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">InsertAction.java</span></div><h1>InsertAction.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.library.LibraryNode;
+import de.neemann.digital.draw.shapes.MissingShape;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.io.IOException;
+
+/**
+ * Action to insert the given node to the given circuit
+ */
+public final class InsertAction extends ToolTipAction {
+    private final InsertHistory insertHistory;
+    private final CircuitComponent circuitComponent;
+    private final ShapeFactory shapeFactory;
+    private LibraryNode node;
+
+    /**
+     * Creates a new instance
+     *
+     * @param node             the node which holds the element to add
+     * @param insertHistory    the history to add the element to
+     * @param circuitComponent the component to add the element to
+     * @param shapeFactory     the shapeFactory to create the icon
+     */
+    public InsertAction(LibraryNode node, InsertHistory insertHistory, CircuitComponent circuitComponent, ShapeFactory shapeFactory) {
+<span class="nc" id="L40">        super(node.getTranslatedName(), node.getIconOrNull(shapeFactory));</span>
+<span class="nc" id="L41">        this.shapeFactory = shapeFactory;</span>
+<span class="nc" id="L42">        this.node = node;</span>
+<span class="nc" id="L43">        this.insertHistory = insertHistory;</span>
+<span class="nc" id="L44">        this.circuitComponent = circuitComponent;</span>
+<span class="nc" id="L45">        setEnabled(node.isUnique());</span>
+<span class="nc" id="L46">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (node.isUnique()) {</span>
+<span class="nc" id="L51">            VisualElement visualElement = node.setWideShapeFlagTo(new VisualElement(node.getName()).setPos(new Vector(10, 10)).setShapeFactory(shapeFactory));</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            if (getIcon() == null) {</span>
+                try {
+<span class="nc" id="L54">                    node.getDescription();</span>
+<span class="nc" id="L55">                    setIcon(node.getIcon(shapeFactory));</span>
+<span class="nc" id="L56">                } catch (IOException ex) {</span>
+<span class="nc" id="L57">                    SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorImportingModel_N0&quot;, node.getName())).addCause(ex));</span>
+<span class="nc" id="L58">                }</span>
+            }
+
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (visualElement.getShape() instanceof MissingShape)</span>
+<span class="nc" id="L62">                return;</span>
+
+<span class="nc" id="L64">            circuitComponent.setPartToInsert(visualElement);</span>
+<span class="nc" id="L65">            insertHistory.add(this);</span>
+        }
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * @return true if element to insert is a custom element
+     */
+    public boolean isCustom() {
+<span class="nc" id="L73">        return node.isCustom();</span>
+    }
+
+    /**
+     * @return the name of the node to insert
+     */
+    public String getName() {
+<span class="nc" id="L80">        return node.getName();</span>
+    }
+
+    /**
+     * Updates this action to a new node
+     *
+     * @param node the node
+     */
+    public void update(LibraryNode node) {
+<span class="nc" id="L89">        this.node = node;</span>
+        try {
+<span class="nc" id="L91">            final Icon icon = node.getIcon(shapeFactory);</span>
+<span class="nc" id="L92">            setIcon(icon);</span>
+<span class="nc" id="L93">        } catch (IOException ex) {</span>
+<span class="nc" id="L94">            SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorImportingModel_N0&quot;, node.getName())).addCause(ex));</span>
+<span class="nc" id="L95">        }</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * @return the library node
+     */
+    public LibraryNode getNode() {
+<span class="nc" id="L102">        return node;</span>
+    }
+
+
+    /**
+     * Implements a lazy loading of the tooltips.
+     * Avoids the reading of all tooltips from the lib files if menu is created.
+     * This code ensures that the tooltips are only loaded from the file if the text is shown to the user.
+     *
+     * @return the JMenuItem created
+     */
+    @Override
+    public JMenuItem createJMenuItem() {
+<span class="nc" id="L115">        JMenuItem i = new JMenuItem(node.getTranslatedName(), getIcon()) {</span>
+            @Override
+            public String getToolTipText() {
+<span class="nc" id="L118">                return node.getToolTipText();</span>
+            }
+        };
+<span class="nc" id="L121">        i.addActionListener(InsertAction.this);</span>
+<span class="nc" id="L122">        i.setEnabled(node.isUnique());</span>
+<span class="nc" id="L123">        ToolTipManager.sharedInstance().registerComponent(i);</span>
+<span class="nc" id="L124">        return i;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

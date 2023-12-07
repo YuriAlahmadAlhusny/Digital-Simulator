@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SelectTree.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.tree</a> &gt; <span class="el_source">SelectTree.java</span></div><h1>SelectTree.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.tree;
+
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.LibraryNode;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.InsertAction;
+import de.neemann.digital.gui.InsertHistory;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+
+import javax.swing.*;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreePath;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.util.Enumeration;
+
+/**
+ * Tree to select items
+ */
+public class SelectTree extends JTree {
+
+    private final ShapeFactory shapeFactory;
+    private Enumeration&lt;TreePath&gt; storedExpanded;
+
+    /**
+     * Create a new instance
+     *
+     * @param model         the model to use
+     * @param component     the component to insert the components to
+     * @param shapeFactory  the shape factory
+     * @param insertHistory the insert history
+     */
+    public SelectTree(LibraryTreeModel model, CircuitComponent component, ShapeFactory shapeFactory, InsertHistory insertHistory) {
+<span class="nc" id="L44">        super(model);</span>
+<span class="nc" id="L45">        this.shapeFactory = shapeFactory;</span>
+<span class="nc" id="L46">        setSelectionModel(null);</span>
+<span class="nc" id="L47">        addMouseListener(new MouseAdapter() {</span>
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+<span class="nc" id="L50">                TreePath path = getClosestPathForLocation(mouseEvent.getX(), mouseEvent.getY());</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">                if (path != null &amp;&amp; path.getPathCount() &gt; 0) {</span>
+<span class="nc" id="L52">                    LibraryNode node = (LibraryNode) path.getLastPathComponent();</span>
+<span class="nc bnc" id="L53" title="All 4 branches missed.">                    if (node.isLeaf() &amp;&amp; node.isUnique()) {</span>
+                        try {
+<span class="nc" id="L55">                            ElementTypeDescription d = node.getDescription();</span>
+<span class="nc" id="L56">                            final VisualElement element = node.setWideShapeFlagTo(new VisualElement(d.getName()).setShapeFactory(shapeFactory));</span>
+<span class="nc" id="L57">                            component.setPartToInsert(element);</span>
+<span class="nc" id="L58">                            insertHistory.add(new InsertAction(node, insertHistory, component, shapeFactory));</span>
+<span class="nc" id="L59">                        } catch (IOException e) {</span>
+<span class="nc" id="L60">                            SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorImportingModel_N0&quot;, node.getName())).addCause(e));</span>
+<span class="nc" id="L61">                        }</span>
+                    }
+                }
+<span class="nc" id="L64">            }</span>
+        });
+<span class="nc" id="L66">        setCellRenderer(new MyCellRenderer());</span>
+<span class="nc" id="L67">        setToolTipText(&quot;&quot;);</span>
+
+        // open first child
+<span class="nc" id="L70">        expandPath(new TreePath(model.getFirstLeafParent().getPath()));</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * Sets a new model to this SelectTree.
+     *
+     * @param newModel the new model
+     */
+    public void setModel(LibraryTreeModel newModel) {
+<span class="nc" id="L79">        LibraryTreeModel oldModel = (LibraryTreeModel) getModel();</span>
+<span class="nc bnc" id="L80" title="All 4 branches missed.">        if (!oldModel.isFiltered() &amp;&amp; newModel.isFiltered())</span>
+<span class="nc" id="L81">            storedExpanded = getExpandedDescendants(new TreePath(getModel().getRoot()));</span>
+
+<span class="nc" id="L83">        oldModel.close();</span>
+
+<span class="nc bnc" id="L85" title="All 4 branches missed.">        boolean restore = oldModel.isFiltered() &amp;&amp; !newModel.isFiltered();</span>
+<span class="nc" id="L86">        super.setModel(newModel);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (restore &amp;&amp; storedExpanded != null) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            while (storedExpanded.hasMoreElements())</span>
+<span class="nc" id="L89">                expandPath(storedExpanded.nextElement());</span>
+<span class="nc" id="L90">            storedExpanded = null;</span>
+        } else
+<span class="nc" id="L92">            expandPath(new TreePath(newModel.getFirstLeafParent().getPath()));</span>
+<span class="nc" id="L93">    }</span>
+
+    @Override
+    public String getToolTipText(MouseEvent e) {
+<span class="nc" id="L97">        TreePath selPath = getPathForLocation(e.getX(), e.getY());</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">        if (selPath != null &amp;&amp; selPath.getPathCount() &gt; 0) {</span>
+<span class="nc" id="L99">            Object lp = selPath.getLastPathComponent();</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">            if (lp instanceof LibraryNode) {</span>
+<span class="nc" id="L101">                return ((LibraryNode) lp).getToolTipText();</span>
+            }
+        }
+<span class="nc" id="L104">        return null;</span>
+    }
+
+<span class="nc" id="L107">    private class MyCellRenderer extends DefaultTreeCellRenderer {</span>
+        @Override
+        public Component getTreeCellRendererComponent(JTree tree,
+                                                      Object value,
+                                                      boolean selected,
+                                                      boolean expanded,
+                                                      boolean leaf,
+                                                      int row,
+                                                      boolean hasFocus) {
+<span class="nc" id="L116">            JLabel comp = (JLabel) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);</span>
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (leaf)</span>
+<span class="nc" id="L119">                comp.setIcon(((LibraryNode) value).getIconOrNull(shapeFactory));</span>
+            else
+<span class="nc" id="L121">                comp.setIcon(null);</span>
+
+<span class="nc" id="L123">            return comp;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

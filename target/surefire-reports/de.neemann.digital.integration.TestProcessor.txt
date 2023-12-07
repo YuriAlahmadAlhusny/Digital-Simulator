@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.neemann.digital.integration.TestProcessor
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.376 s - in de.neemann.digital.integration.TestProcessor

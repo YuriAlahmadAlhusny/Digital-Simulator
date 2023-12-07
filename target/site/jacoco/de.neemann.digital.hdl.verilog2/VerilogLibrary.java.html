@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VerilogLibrary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.verilog2</a> &gt; <span class="el_source">VerilogLibrary.java</span></div><h1>VerilogLibrary.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Ivan Deras
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.verilog2;
+
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.hdl.model2.HDLException;
+import de.neemann.digital.hdl.model2.HDLNode;
+import de.neemann.digital.hdl.verilog2.lib.VerilogElement;
+import de.neemann.digital.hdl.verilog2.lib.VerilogTemplate;
+import de.neemann.digital.lang.Lang;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author ideras
+ */
+public class VerilogLibrary {
+<span class="fc" id="L28">    private static final Logger LOGGER = LoggerFactory.getLogger(VerilogLibrary.class);</span>
+
+    private final HashMap&lt;String, VerilogElement&gt; map;
+<span class="fc" id="L31">    private final ArrayList&lt;HDLNode&gt; nodeList = new ArrayList&lt;&gt;();</span>
+    private final ElementLibrary elementLibrary;
+
+    /**
+     * Creates a new instance
+     *
+     * @param elementLibrary the element library used
+     */
+<span class="fc" id="L39">    public VerilogLibrary(ElementLibrary elementLibrary) {</span>
+<span class="fc" id="L40">        this.elementLibrary = elementLibrary;</span>
+<span class="fc" id="L41">        map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L42">    }</span>
+
+    private void put(ElementTypeDescription description, VerilogElement velem) {
+<span class="nc" id="L45">        map.put(description.getName(), velem);</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Returns the associated verilog element for a given node
+     *
+     * @param node the HDL node
+     * @return the associated verilog element.
+     * @throws HDLException HDLException
+     */
+    public VerilogElement getVerilogElement(HDLNode node) throws HDLException {
+<span class="fc" id="L56">        String elementName = node.getElementName();</span>
+<span class="fc" id="L57">        VerilogElement e = map.get(elementName);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (e == null) {</span>
+            try {
+<span class="fc" id="L60">                ClassLoader cl = null;</span>
+                try {
+<span class="fc" id="L62">                    cl = elementLibrary.getElementType(elementName).getClassLoader();</span>
+<span class="fc" id="L63">                } catch (ElementNotFoundException ex) {</span>
+                    // try default
+<span class="fc" id="L65">                }</span>
+
+<span class="fc" id="L67">                e = new VerilogTemplate(elementName, cl);</span>
+<span class="fc" id="L68">                map.put(elementName, e);</span>
+<span class="nc" id="L69">            } catch (IOException ex) {</span>
+<span class="nc" id="L70">                ex.printStackTrace();</span>
+<span class="nc" id="L71">                LOGGER.info(&quot;could not load '&quot; + VerilogTemplate.neededFileName(elementName) + &quot;'&quot;);</span>
+<span class="fc" id="L72">            }</span>
+        }
+
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (e == null)</span>
+<span class="nc" id="L76">            throw new HDLException(Lang.get(&quot;err_verilogNoElement_N&quot;, elementName));</span>
+
+<span class="fc" id="L78">        return e;</span>
+    }
+
+    /**
+     * Returns the verilog name of the given node
+     *
+     * @param node the node
+     * @return the name
+     */
+    public String getName(HDLNode node) {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (!nodeList.contains(node)) {</span>
+<span class="nc" id="L89">            nodeList.add(node);</span>
+<span class="nc" id="L90">            node.setHdlEntityName(node.getElementName());</span>
+
+        }
+<span class="nc" id="L93">        return node.getHdlEntityName();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

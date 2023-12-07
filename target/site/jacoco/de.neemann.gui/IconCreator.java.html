@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IconCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">IconCreator.java</span></div><h1>IconCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2014 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+
+/**
+ * Helper to create Images and Icons
+ */
+public final class IconCreator {
+<span class="fc" id="L23">    private static final Logger LOGGER = LoggerFactory.getLogger(IconCreator.class);</span>
+
+    private IconCreator() {
+    }
+
+    /**
+     * Creates an icon from a resource
+     *
+     * @param name name of the resource
+     * @return the icon
+     */
+    public static Icon create(String name) {
+<span class="fc" id="L35">        return new ImageIcon(createImage(name));</span>
+    }
+
+    /**
+     * Creates an image from a resource
+     *
+     * @param name name of the resource
+     * @return the image
+     */
+    public static Image createImage(String name) {
+        try {
+<span class="fc" id="L46">            final float scaling = Screen.getInstance().getScaling();</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">            if (scaling == 1) {</span>
+<span class="fc" id="L48">                return getImage(name);</span>
+            } else {
+<span class="nc" id="L50">                BufferedImage image = getImageOrNull(name.substring(0, name.length() - 4) + &quot;_hi.png&quot;);</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">                if (image != null) {</span>
+<span class="nc" id="L52">                    int w = (int) (image.getWidth() * scaling / 2);</span>
+<span class="nc" id="L53">                    int h = (int) (image.getHeight() * scaling / 2);</span>
+<span class="nc" id="L54">                    return image.getScaledInstance(w, h, BufferedImage.SCALE_SMOOTH);</span>
+                } else {
+<span class="nc" id="L56">                    LOGGER.info(&quot;upscaling of &quot; + name);</span>
+<span class="nc" id="L57">                    image = getImage(name);</span>
+<span class="nc" id="L58">                    int w = (int) (image.getWidth() * scaling);</span>
+<span class="nc" id="L59">                    int h = (int) (image.getHeight() * scaling);</span>
+<span class="nc" id="L60">                    return image.getScaledInstance(w, h, BufferedImage.SCALE_SMOOTH);</span>
+                }
+            }
+<span class="nc" id="L63">        } catch (IOException e) {</span>
+<span class="nc" id="L64">            throw new RuntimeException(&quot;Image &quot; + name + &quot; not found&quot;, e);</span>
+        }
+    }
+
+    private static BufferedImage getImage(String name) throws IOException {
+<span class="fc" id="L69">        BufferedImage image = getImageOrNull(name);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (image == null) {</span>
+<span class="nc" id="L71">            throw new NullPointerException(&quot;resource &quot; + name + &quot; not found!&quot;);</span>
+        }
+<span class="fc" id="L73">        return image;</span>
+    }
+
+    private static BufferedImage getImageOrNull(String name) throws IOException {
+<span class="fc" id="L77">        URL systemResource = ClassLoader.getSystemResource(&quot;icons/&quot; + name);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (systemResource == null) {</span>
+<span class="nc" id="L79">            return null;</span>
+        }
+<span class="fc" id="L81">        return ImageIO.read(systemResource);</span>
+    }
+
+    /**
+     * Creates an image list from a resource
+     *
+     * @param names names of the resource
+     * @return the image
+     */
+    public static ArrayList&lt;Image&gt; createImages(String... names) {
+        try {
+<span class="nc" id="L92">            ArrayList&lt;Image&gt; list = new ArrayList&lt;Image&gt;(names.length);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            for (String name : names) {</span>
+<span class="nc" id="L94">                list.add(getImage(name));</span>
+            }
+<span class="nc" id="L96">            return list;</span>
+<span class="nc" id="L97">        } catch (IOException e) {</span>
+<span class="nc" id="L98">            throw new RuntimeException(e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

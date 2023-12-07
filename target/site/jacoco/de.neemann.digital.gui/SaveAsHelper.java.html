@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SaveAsHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">SaveAsHelper.java</span></div><h1>SaveAsHelper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+
+/**
+ * Helper to handle the overwrite confirmation
+ */
+public final class SaveAsHelper {
+<span class="fc" id="L21">    private static final HashSet&lt;String&gt; KNOWN = new HashSet&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L24">        KNOWN.add(&quot;dig&quot;);</span>
+<span class="fc" id="L25">        KNOWN.add(&quot;fsm&quot;);</span>
+<span class="fc" id="L26">        KNOWN.add(&quot;hex&quot;);</span>
+<span class="fc" id="L27">        KNOWN.add(&quot;tru&quot;);</span>
+<span class="fc" id="L28">        KNOWN.add(&quot;svg&quot;);</span>
+<span class="fc" id="L29">        KNOWN.add(&quot;vhdl&quot;);</span>
+<span class="fc" id="L30">        KNOWN.add(&quot;v&quot;);</span>
+<span class="fc" id="L31">        KNOWN.add(&quot;csv&quot;);</span>
+<span class="fc" id="L32">        KNOWN.add(&quot;gif&quot;);</span>
+<span class="fc" id="L33">        KNOWN.add(&quot;png&quot;);</span>
+<span class="fc" id="L34">        KNOWN.add(&quot;tt2&quot;);</span>
+<span class="fc" id="L35">        KNOWN.add(&quot;cupl&quot;);</span>
+<span class="fc" id="L36">        KNOWN.add(&quot;jed&quot;);</span>
+<span class="fc" id="L37">        KNOWN.add(&quot;zip&quot;);</span>
+<span class="fc" id="L38">    }</span>
+
+    private final Component parent;
+    private final JFileChooser fc;
+    private final String suffix;
+    private boolean repeat;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent the parent
+     * @param fc     the file chooser
+     */
+    public SaveAsHelper(Component parent, JFileChooser fc) {
+<span class="nc" id="L52">        this(parent, fc, null);</span>
+<span class="nc" id="L53">    }</span>
+
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent the parent
+     * @param fc     the file chooser
+     * @param suffix the suffix to enforce
+     */
+<span class="nc" id="L63">    public SaveAsHelper(Component parent, JFileChooser fc, String suffix) {</span>
+<span class="nc" id="L64">        this.parent = parent;</span>
+<span class="nc" id="L65">        this.fc = fc;</span>
+<span class="nc" id="L66">        this.suffix = suffix;</span>
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * Uses the JFileChooser to select a file and checks, if the file exists.
+     * Uses the gicen interface to save the file.
+     *
+     * @param saveAs used to save the file
+     */
+    public void checkOverwrite(SaveAs saveAs) {
+        do {
+<span class="nc" id="L77">            repeat = false;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (fc.showSaveDialog(parent) == JFileChooser.APPROVE_OPTION) {</span>
+
+<span class="nc" id="L80">                final File selectedFile = checkSuffix(fc.getSelectedFile(), suffix);</span>
+
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                if (selectedFile.exists()) {</span>
+<span class="nc" id="L83">                    Object[] options = {Lang.get(&quot;btn_overwrite&quot;), Lang.get(&quot;btn_newName&quot;)};</span>
+<span class="nc" id="L84">                    int res = JOptionPane.showOptionDialog(parent,</span>
+<span class="nc" id="L85">                            Lang.get(&quot;msg_fileExists&quot;, selectedFile.getName()),</span>
+<span class="nc" id="L86">                            Lang.get(&quot;msg_warning&quot;),</span>
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                            null, options, options[0]);
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                    if (res != JOptionPane.OK_OPTION) {</span>
+<span class="nc" id="L90">                        repeat = true;</span>
+<span class="nc" id="L91">                        continue;</span>
+                    }
+                }
+
+                try {
+<span class="nc" id="L96">                    saveAs.saveAs(selectedFile);</span>
+<span class="nc" id="L97">                } catch (IOException e) {</span>
+<span class="nc" id="L98">                    new ErrorMessage(Lang.get(&quot;msg_errorWritingFile&quot;)).addCause(e).show(parent);</span>
+<span class="nc" id="L99">                }</span>
+            }
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        } while (repeat);</span>
+<span class="nc" id="L102">    }</span>
+
+    /**
+     * if called user can select an other name
+     */
+    public void retryFileSelect() {
+<span class="nc" id="L108">        repeat = true;</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * Adds the given suffix to the file
+     *
+     * @param filename filename
+     * @param suffix   suffix
+     * @return the file name with the given suffix
+     */
+    public static File checkSuffix(File filename, String suffix) {
+<span class="pc bpc" id="L119" title="2 of 4 branches missed.">        if (suffix == null || filename == null)</span>
+<span class="nc" id="L120">            return filename;</span>
+
+<span class="fc" id="L122">        String name = filename.getName();</span>
+<span class="fc" id="L123">        int p = name.lastIndexOf('.');</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (p &gt;= 0) {</span>
+<span class="fc" id="L125">            String suf = name.substring(p + 1).toLowerCase();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            if (KNOWN.contains(suf))</span>
+<span class="fc" id="L127">                name = name.substring(0, p);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">            while (name.length() &gt; 0 &amp;&amp; name.charAt(name.length() - 1) == '.')</span>
+<span class="fc" id="L129">                name = name.substring(0, name.length() - 1);</span>
+        }
+<span class="fc" id="L131">        return new File(filename.getParentFile(), name + &quot;.&quot; + suffix);</span>
+    }
+
+
+    /**
+     * Used to encapsulate the save action
+     */
+    public interface SaveAs {
+        /**
+         * Interface to implement the save operation
+         *
+         * @param file the file to write
+         * @throws IOException IOException
+         */
+        void saveAs(File file) throws IOException;
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

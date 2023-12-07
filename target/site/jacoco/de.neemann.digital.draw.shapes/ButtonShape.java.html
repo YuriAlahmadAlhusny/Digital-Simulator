@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ButtonShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">ButtonShape.java</span></div><h1>ButtonShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.io.Button;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.gui.components.CircuitComponent;
+
+import java.awt.*;
+
+import static de.neemann.digital.draw.shapes.OutputShape.OUT_SIZE;
+
+/**
+ * The Button shape
+ */
+public class ButtonShape implements Shape {
+
+    protected static final int HEIGHT = OUT_SIZE / 2;
+
+    private final String label;
+    private final PinDescriptions outputs;
+    private Button button;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L42">    public ButtonShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L43">        this.outputs = outputs;</span>
+<span class="fc" id="L44">        this.label = attr.getLabel();</span>
+<span class="fc" id="L45">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L49">        return new Pins().add(new Pin(new Vector(0, 0), outputs.get(0)));</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L54">        this.button = (Button) ioState.getElement();</span>
+<span class="nc" id="L55">        return new InteractorInterface() {</span>
+            @Override
+            public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L58">            }</span>
+
+            @Override
+            public void pressed(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L62">                modelSync.modify(() -&gt; button.setPressed(true));</span>
+<span class="nc" id="L63">            }</span>
+
+            @Override
+            public void released(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L67">                modelSync.modify(() -&gt; button.setPressed(false));</span>
+<span class="nc" id="L68">            }</span>
+
+            @Override
+            public void dragged(CircuitComponent cc, Point posOnScreen, Vector pos, Transform trans, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L72">            }</span>
+        };
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style heighLight) {
+<span class="fc" id="L78">        boolean isPressed = false;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (button != null) isPressed = button.isPressed();</span>
+
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (isPressed) {</span>
+<span class="nc" id="L82">            graphic.drawPolygon(new Polygon(true)</span>
+<span class="nc" id="L83">                    .add(-OUT_SIZE * 2 - 1, -OUT_SIZE)</span>
+<span class="nc" id="L84">                    .add(-1, -OUT_SIZE)</span>
+<span class="nc" id="L85">                    .add(-1, OUT_SIZE)</span>
+<span class="nc" id="L86">                    .add(-OUT_SIZE * 2 - 1, OUT_SIZE), Style.NORMAL);</span>
+        } else {
+<span class="fc" id="L88">            int t = Style.NORMAL.getThickness() / 4;</span>
+<span class="fc" id="L89">            graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L90">                    .add(-OUT_SIZE * 2 - 1 - HEIGHT, -OUT_SIZE - HEIGHT)</span>
+<span class="fc" id="L91">                    .add(-1 - HEIGHT, -OUT_SIZE - HEIGHT)</span>
+<span class="fc" id="L92">                    .add(-1, -OUT_SIZE)</span>
+<span class="fc" id="L93">                    .add(-1, OUT_SIZE)</span>
+<span class="fc" id="L94">                    .add(-OUT_SIZE * 2 - 1, OUT_SIZE)</span>
+<span class="fc" id="L95">                    .add(-OUT_SIZE * 2 - 1 - HEIGHT, OUT_SIZE - HEIGHT), Style.NORMAL);</span>
+<span class="fc" id="L96">            graphic.drawPolygon(new Polygon(false)</span>
+<span class="fc" id="L97">                    .add(-1 - HEIGHT, -OUT_SIZE + t - HEIGHT)</span>
+<span class="fc" id="L98">                    .add(-1 - HEIGHT, OUT_SIZE - HEIGHT)</span>
+<span class="fc" id="L99">                    .add(t - OUT_SIZE * 2 - 1 - HEIGHT, OUT_SIZE - HEIGHT), Style.NORMAL);</span>
+<span class="fc" id="L100">            graphic.drawLine(new Vector(-1 - HEIGHT, OUT_SIZE - HEIGHT), new Vector(-1 - t, OUT_SIZE - t), Style.NORMAL);</span>
+        }
+
+<span class="fc" id="L103">        Vector textPos = new Vector(-OUT_SIZE * 3, -4);</span>
+<span class="fc" id="L104">        graphic.drawText(textPos, label, Orientation.RIGHTCENTER, Style.NORMAL);</span>
+<span class="fc" id="L105">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

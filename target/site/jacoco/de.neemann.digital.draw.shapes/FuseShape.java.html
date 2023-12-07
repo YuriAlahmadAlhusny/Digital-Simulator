@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FuseShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">FuseShape.java</span></div><h1>FuseShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The light bulb shape
+ */
+public class FuseShape implements Shape {
+<span class="fc" id="L26">    private static final int BEZ = Math.round(SIZE2 / 2 * DILShape.CIRC);</span>
+
+<span class="fc" id="L28">    private static final Polygon OK_POLY = new Polygon(false)</span>
+<span class="fc" id="L29">            .add(0, 0)</span>
+<span class="fc" id="L30">            .add(new Vector(0, -BEZ), new Vector(SIZE2 / 2 - BEZ, -SIZE2 / 2), new Vector(SIZE2 / 2, -SIZE2 / 2))</span>
+<span class="fc" id="L31">            .add(new Vector(SIZE2 / 2 + BEZ, -SIZE2 / 2), new Vector(SIZE2, -SIZE2 / 2 + BEZ), new Vector(SIZE2, 0))</span>
+<span class="fc" id="L32">            .add(new Vector(SIZE2, BEZ), new Vector(SIZE2 + SIZE2 / 2 - BEZ, SIZE2 / 2), new Vector(SIZE2 + SIZE2 / 2, SIZE2 / 2))</span>
+<span class="fc" id="L33">            .add(new Vector(SIZE2 + SIZE2 / 2 + BEZ, SIZE2 / 2), new Vector(SIZE, SIZE2 / 2 - BEZ), new Vector(SIZE, 0));</span>
+<span class="fc" id="L34">    private static final Polygon BLOWN_POLY1 = new Polygon(false)</span>
+<span class="fc" id="L35">            .add(0, 0)</span>
+<span class="fc" id="L36">            .add(new Vector(0, -BEZ), new Vector(SIZE2 / 2 - BEZ, -SIZE2 / 2), new Vector(SIZE2 / 2, -SIZE2 / 2));</span>
+<span class="fc" id="L37">    private static final Polygon BLOWN_POLY2 = new Polygon(false)</span>
+<span class="fc" id="L38">            .add(SIZE2 + SIZE2 / 2, SIZE2 / 2)</span>
+<span class="fc" id="L39">            .add(new Vector(SIZE2 + SIZE2 / 2 + BEZ, SIZE2 / 2), new Vector(SIZE, SIZE2 / 2 - BEZ), new Vector(SIZE, 0));</span>
+
+    private final PinDescriptions outputs;
+    private final boolean blown;
+
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L52">    public FuseShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L53">        this.outputs = outputs;</span>
+<span class="fc" id="L54">        blown = attr.get(Keys.BLOWN);</span>
+<span class="fc" id="L55">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L59">        return new Pins()</span>
+<span class="fc" id="L60">                .add(new Pin(new Vector(0, 0), outputs.get(0)))</span>
+<span class="fc" id="L61">                .add(new Pin(new Vector(SIZE, 0), outputs.get(1)));</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L66">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (blown) {</span>
+<span class="nc" id="L72">            graphic.drawPolygon(BLOWN_POLY1, Style.THIN);</span>
+<span class="nc" id="L73">            graphic.drawPolygon(BLOWN_POLY2, Style.THIN);</span>
+        } else
+<span class="fc" id="L75">            graphic.drawPolygon(OK_POLY, Style.THIN);</span>
+<span class="fc" id="L76">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

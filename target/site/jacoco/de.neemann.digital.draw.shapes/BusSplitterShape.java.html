@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BusSplitterShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">BusSplitterShape.java</span></div><h1>BusSplitterShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.BitsException;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The Bus Splitter shape
+ */
+public class BusSplitterShape implements Shape {
+    private final PinDescriptions inputs;
+    private final PinDescriptions outputs;
+    private final int length;
+    private final int spreading;
+    private Pins pins;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     * @throws BitsException BitsException
+     */
+<span class="fc" id="L38">    public BusSplitterShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) throws BitsException {</span>
+<span class="fc" id="L39">        this.inputs = inputs;</span>
+<span class="fc" id="L40">        this.outputs = outputs;</span>
+<span class="fc" id="L41">        spreading = attr.get(Keys.SPLITTER_SPREADING);</span>
+<span class="fc" id="L42">        length = (Math.max(inputs.size() + 1, outputs.size() - 1) - 1) * spreading * SIZE + 2;</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (pins == null) {</span>
+<span class="fc" id="L48">            pins = new Pins();</span>
+<span class="fc" id="L49">            pins.add(new Pin(new Vector(0, 0), outputs.get(0)));</span>
+<span class="fc" id="L50">            pins.add(new Pin(new Vector(0, SIZE), inputs.get(0)));</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            for (int i = 0; i &lt; outputs.size() - 1; i++)</span>
+<span class="fc" id="L52">                pins.add(new Pin(new Vector(SIZE, i * spreading * SIZE), outputs.get(i + 1)));</span>
+        }
+<span class="fc" id="L54">        return pins;</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="nc" id="L59">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style heighLight) {
+<span class="fc" id="L64">        Vector pos = new Vector(-2, 0 - 3);</span>
+<span class="fc" id="L65">        graphic.drawText(pos, outputs.get(0).getName(), Orientation.RIGHTBOTTOM, Style.SHAPE_SPLITTER);</span>
+<span class="fc" id="L66">        graphic.drawLine(new Vector(0, 0), new Vector(SIZE2, 0), Style.NORMAL);</span>
+<span class="fc" id="L67">        pos = new Vector(-2, SIZE - 3);</span>
+<span class="fc" id="L68">        graphic.drawText(pos, inputs.get(0).getName(), Orientation.RIGHTBOTTOM, Style.SHAPE_SPLITTER);</span>
+<span class="fc" id="L69">        graphic.drawLine(new Vector(0, SIZE), new Vector(SIZE2, SIZE), Style.NORMAL);</span>
+
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; outputs.size() - 1; i++) {</span>
+<span class="fc" id="L72">            pos = new Vector(SIZE + 2, i * spreading * SIZE - 3);</span>
+<span class="fc" id="L73">            graphic.drawText(pos, outputs.get(i + 1).getName(), Orientation.LEFTBOTTOM, Style.SHAPE_SPLITTER);</span>
+<span class="fc" id="L74">            graphic.drawLine(new Vector(SIZE, i * spreading * SIZE), new Vector(SIZE2, i * spreading * SIZE), Style.NORMAL);</span>
+        }
+
+<span class="fc" id="L77">        graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L78">                .add(SIZE2 - 2, -2)</span>
+<span class="fc" id="L79">                .add(SIZE2 + 2, -2)</span>
+<span class="fc" id="L80">                .add(SIZE2 + 2, length)</span>
+<span class="fc" id="L81">                .add(SIZE2 - 2, length), Style.FILLED);</span>
+<span class="fc" id="L82">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Value.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs</a> &gt; <span class="el_source">Value.java</span></div><h1>Value.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs;
+
+import java.util.List;
+import java.util.Map;
+
+import static de.neemann.digital.hdl.hgs.Tokenizer.isWhiteSpace;
+
+/**
+ * Helpers for values
+ */
+public final class Value {
+
+    private Value() {
+    }
+
+    /**
+     * Converts the given value to a long
+     *
+     * @param value the value to convert
+     * @return the long
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static long toLong(Object value) throws HGSEvalException {
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (value instanceof Number)</span>
+<span class="fc" id="L30">            return ((Number) value).longValue();</span>
+<span class="nc" id="L31">        throw new HGSEvalException(&quot;not a number: &quot; + value.toString());</span>
+    }
+
+    /**
+     * Converts the given value to a double
+     *
+     * @param value the value to convert
+     * @return the long
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static double toDouble(Object value) throws HGSEvalException {
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (value instanceof Number)</span>
+<span class="fc" id="L43">            return ((Number) value).doubleValue();</span>
+<span class="nc" id="L44">        throw new HGSEvalException(&quot;not a number: &quot; + value.toString());</span>
+    }
+
+    /**
+     * Converts the given value to an int
+     *
+     * @param value the value to convert
+     * @return the int value
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static int toInt(Object value) throws HGSEvalException {
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (value instanceof Number)</span>
+<span class="fc" id="L56">            return ((Number) value).intValue();</span>
+<span class="nc" id="L57">        throw new HGSEvalException(&quot;not a number: &quot; + value.toString());</span>
+    }
+
+    /**
+     * Converts the given value to a bool
+     *
+     * @param value the value to convert
+     * @return the bool value
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static boolean toBool(Object value) throws HGSEvalException {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (value instanceof Number)</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            return ((Number) value).longValue() != 0;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (value instanceof Boolean)</span>
+<span class="fc" id="L71">            return ((Boolean) value);</span>
+<span class="nc" id="L72">        throw new HGSEvalException(&quot;Must be an integer or a bool, is: &quot; + value.getClass().getSimpleName() + &quot;=&quot; + value);</span>
+    }
+
+    /**
+     * Converts the given value to a string
+     *
+     * @param value the value to convert
+     * @return the string
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static String toString(Object value) throws HGSEvalException {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (value instanceof String)</span>
+<span class="fc" id="L84">            return value.toString();</span>
+<span class="nc" id="L85">        throw new HGSEvalException(&quot;must be a string, is a &quot; + value.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Converts the given value to an array
+     *
+     * @param value the value to convert
+     * @return the function
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static HGSArray toArray(Object value) throws HGSEvalException {
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (value instanceof HGSArray)</span>
+<span class="fc" id="L97">            return (HGSArray) value;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (value instanceof List)</span>
+<span class="fc" id="L99">            return new HGSArrayList((List) value);</span>
+<span class="fc" id="L100">        throw new HGSEvalException(&quot;must be an array, is a &quot; + value.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Converts the given value to a map
+     *
+     * @param value the value to convert
+     * @return the function
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static HGSMap toMap(Object value) throws HGSEvalException {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (value instanceof HGSMap)</span>
+<span class="fc" id="L112">            return (HGSMap) value;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (value instanceof Map)</span>
+<span class="fc" id="L114">            return new HGSMapMap((Map) value);</span>
+<span class="fc" id="L115">        throw new HGSEvalException(&quot;must be a map, is a &quot; + value.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Compares two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return true if both values are equal
+     */
+    public static boolean equals(Object a, Object b) {
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc" id="L127">            return a.equals(b);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">        else if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            return ((Number) a).longValue() == ((Number) b).longValue();</span>
+<span class="pc bpc" id="L130" title="3 of 4 branches missed.">        else if (a instanceof String || b instanceof String)</span>
+<span class="fc" id="L131">            return a.toString().equals(b.toString());</span>
+        else
+<span class="nc" id="L133">            return a.equals(b);</span>
+    }
+
+    /**
+     * Adds two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return the sum
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object add(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc" id="L146">            return toDouble(a) + toDouble(b);</span>
+<span class="fc bfc" id="L147" title="All 4 branches covered.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L148">            return ((Number) a).longValue() + ((Number) b).longValue();</span>
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">        if (a instanceof String || b instanceof String)</span>
+<span class="fc" id="L150">            return a.toString() + b.toString();</span>
+<span class="nc" id="L151">        throw new HGSEvalException(&quot;arguments must be int or string, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Subtracts two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return the sum
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object sub(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc" id="L164">            return toDouble(a) - toDouble(b);</span>
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L166">            return ((Number) a).longValue() - ((Number) b).longValue();</span>
+<span class="nc" id="L167">        throw new HGSEvalException(&quot;arguments must be int or double, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Multiplies two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return the product
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object mul(Object a, Object b) throws HGSEvalException {
+<span class="fc bfc" id="L179" title="All 4 branches covered.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc" id="L180">            return toDouble(a) * toDouble(b);</span>
+<span class="pc bpc" id="L181" title="2 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L182">            return ((Number) a).longValue() * ((Number) b).longValue();</span>
+<span class="nc" id="L183">        throw new HGSEvalException(&quot;arguments must be int or double, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Divides two numbers
+     *
+     * @param a a value
+     * @param b a value
+     * @return the quotient
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object div(Object a, Object b) throws HGSEvalException {
+<span class="fc bfc" id="L195" title="All 4 branches covered.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc" id="L196">            return toDouble(a) / toDouble(b);</span>
+<span class="pc bpc" id="L197" title="2 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L198">            return ((Number) a).longValue() / ((Number) b).longValue();</span>
+<span class="nc" id="L199">        throw new HGSEvalException(&quot;arguments must be int or double, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Performs an or operation
+     *
+     * @param a a value
+     * @param b a value
+     * @return the or'ed values
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object or(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L211" title="1 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L212">            return ((Number) a).longValue() | ((Number) b).longValue();</span>
+<span class="fc bfc" id="L213" title="All 4 branches covered.">        return toBool(a) || toBool(b);</span>
+    }
+
+    /**
+     * Performs an xor operation
+     *
+     * @param a a value
+     * @param b a value
+     * @return the xor'ed values
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object xor(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L225" title="1 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L226">            return ((Number) a).longValue() ^ ((Number) b).longValue();</span>
+<span class="fc" id="L227">        return toBool(a) ^ toBool(b);</span>
+    }
+
+    /**
+     * Performs an and operation
+     *
+     * @param a a value
+     * @param b a value
+     * @return the and'ed values
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object and(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L239" title="1 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc" id="L240">            return ((Number) a).longValue() &amp; ((Number) b).longValue();</span>
+<span class="fc bfc" id="L241" title="All 4 branches covered.">        return toBool(a) &amp;&amp; toBool(b);</span>
+    }
+
+    /**
+     * Performs a not operation
+     *
+     * @param value a value
+     * @return the inverted value
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object not(Object value) throws HGSEvalException {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (value instanceof Number)</span>
+<span class="fc" id="L253">            return ~((Number) value).longValue();</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        return !toBool(value);</span>
+    }
+
+    /**
+     * Changes the sign of the given value
+     *
+     * @param value the value
+     * @return value with changed sign
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static Object neg(Object value) throws HGSEvalException {
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (value instanceof Double)</span>
+<span class="fc" id="L266">            return -(Double) value;</span>
+<span class="fc" id="L267">        return -toLong(value);</span>
+    }
+
+    /**
+     * Helper compare two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return true if a&amp;lt;b
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static boolean less(Object a, Object b) throws HGSEvalException {
+<span class="fc bfc" id="L279" title="All 4 branches covered.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            return toDouble(a) &lt; toDouble(b);</span>
+<span class="pc bpc" id="L281" title="1 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            return toLong(a) &lt; toLong(b);</span>
+<span class="pc bpc" id="L283" title="2 of 4 branches missed.">        if (a instanceof String &amp;&amp; b instanceof String)</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            return a.toString().compareTo(b.toString()) &lt; 0;</span>
+<span class="nc" id="L285">        throw new HGSEvalException(&quot;arguments must be int, double or string, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Helper compare two values
+     *
+     * @param a a value
+     * @param b a value
+     * @return true if a&lt;=b
+     * @throws HGSEvalException HGSEvalException
+     */
+    public static boolean lessEqual(Object a, Object b) throws HGSEvalException {
+<span class="pc bpc" id="L297" title="2 of 4 branches missed.">        if (a instanceof Double || b instanceof Double)</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">            return toDouble(a) &lt;= toDouble(b);</span>
+<span class="pc bpc" id="L299" title="2 of 4 branches missed.">        if (a instanceof Number &amp;&amp; b instanceof Number)</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">            return toLong(a) &lt;= toLong(b);</span>
+<span class="nc bnc" id="L301" title="All 4 branches missed.">        if (a instanceof String &amp;&amp; b instanceof String)</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            return a.toString().compareTo(b.toString()) &lt;= 0;</span>
+<span class="nc" id="L303">        throw new HGSEvalException(&quot;arguments must be int, double or string, not &quot; + a.getClass().getSimpleName() + &quot;+&quot; + b.getClass().getSimpleName());</span>
+    }
+
+    /**
+     * Trims spaces at the right side of the string.
+     *
+     * @param str the string
+     * @return the trimmed string
+     */
+    public static String trimRight(String str) {
+<span class="fc" id="L313">        int initial = str.length() - 1;</span>
+<span class="fc" id="L314">        int pos = initial;</span>
+<span class="fc bfc" id="L315" title="All 4 branches covered.">        while (pos &gt;= 0 &amp;&amp; isWhiteSpace(str.charAt(pos)))</span>
+<span class="fc" id="L316">            pos--;</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        if (pos == initial)</span>
+<span class="fc" id="L318">            return str;</span>
+        else
+<span class="fc" id="L320">            return str.substring(0, pos + 1);</span>
+    }
+
+    /**
+     * Trims spaces at the left side of the string.
+     *
+     * @param str the string
+     * @return the trimmed string
+     */
+    public static String trimLeft(String str) {
+<span class="fc" id="L330">        int pos = 0;</span>
+<span class="fc bfc" id="L331" title="All 4 branches covered.">        while (pos &lt; str.length() &amp;&amp; isWhiteSpace(str.charAt(pos)))</span>
+<span class="fc" id="L332">            pos++;</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        if (pos == 0)</span>
+<span class="fc" id="L334">            return str;</span>
+        else
+<span class="fc" id="L336">            return str.substring(pos);</span>
+    }
+
+    private static final class HGSArrayList implements HGSArray {
+        private final List&lt;Object&gt; list;
+
+<span class="fc" id="L342">        private HGSArrayList(List&lt;Object&gt; list) {</span>
+<span class="fc" id="L343">            this.list = list;</span>
+<span class="fc" id="L344">        }</span>
+
+        @Override
+        public int hgsArraySize() {
+<span class="fc" id="L348">            return list.size();</span>
+        }
+
+        @Override
+        public void hgsArrayAdd(Object initial) {
+<span class="fc" id="L353">            list.add(initial);</span>
+<span class="fc" id="L354">        }</span>
+
+        @Override
+        public void hgsArraySet(int i, Object val) {
+<span class="fc" id="L358">            list.set(i, val);</span>
+<span class="fc" id="L359">        }</span>
+
+        @Override
+        public Object hgsArrayGet(int i) {
+<span class="fc" id="L363">            return list.get(i);</span>
+        }
+    }
+
+    private static final class HGSMapMap implements HGSMap {
+        private final Map&lt;String, Object&gt; map;
+
+<span class="fc" id="L370">        private HGSMapMap(Map&lt;String, Object&gt; map) {</span>
+<span class="fc" id="L371">            this.map = map;</span>
+<span class="fc" id="L372">        }</span>
+
+        @Override
+        public void hgsMapPut(String key, Object val) {
+<span class="fc" id="L376">            map.put(key, val);</span>
+<span class="fc" id="L377">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) {
+<span class="fc" id="L381">            return map.get(key);</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

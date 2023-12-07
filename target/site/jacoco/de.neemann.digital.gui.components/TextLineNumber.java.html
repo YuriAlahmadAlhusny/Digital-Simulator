@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextLineNumber.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">TextLineNumber.java</span></div><h1>TextLineNumber.java</h1><pre class="source lang-java linenums">package de.neemann.digital.gui.components;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.*;
+import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.HashMap;
+
+/**
+ * This class will display line numbers for a related text component. The text
+ * component must use the same line height for each line. TextLineNumber
+ * supports wrapped lines and will highlight the line number of the current
+ * line in the text component.
+ * &lt;p&gt;
+ * This class was designed to be used as a component added to the row header
+ * of a JScrollPane.
+ * &lt;p&gt;
+ * Written by Rob Camick, May 23, 2009
+ * See: https://tips4java.wordpress.com/2009/05/23/text-component-line-number/
+ */
+public class TextLineNumber extends JPanel
+        implements CaretListener, DocumentListener, PropertyChangeListener {
+    /**
+     * Constant to left align the digits
+     */
+    public final static float LEFT = 0.0f;
+    /**
+     * Constant to center the digits
+     */
+    public final static float CENTER = 0.5f;
+    /**
+     * Constant to right align the digits
+     */
+    public final static float RIGHT = 1.0f;
+
+<span class="nc" id="L45">    private final static Border OUTER = new MatteBorder(0, 0, 0, 2, Color.GRAY);</span>
+
+    private final static int HEIGHT = Integer.MAX_VALUE - 1000000;
+
+    //  Text component this TextTextLineNumber component is in sync with
+
+    private JTextComponent component;
+
+    //  Properties that can be changed
+
+    private boolean updateFont;
+    private int borderGap;
+    private Color currentLineForeground;
+    private float digitAlignment;
+    private int minimumDisplayDigits;
+
+    //  Keep history information to reduce the number of times the component
+    //  needs to be repainted
+
+    private int lastDigits;
+    private int lastHeight;
+    private int lastLine;
+
+    private HashMap&lt;String, FontMetrics&gt; fonts;
+
+    /**
+     * Create a line number component for a text component. This minimum
+     * display width will be based on 3 digits.
+     *
+     * @param component the related text component
+     */
+    public TextLineNumber(JTextComponent component) {
+<span class="nc" id="L77">        this(component, 3);</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Create a line number component for a text component.
+     *
+     * @param component            the related text component
+     * @param minimumDisplayDigits the number of digits used to calculate
+     *                             the minimum width of the component
+     */
+<span class="nc" id="L87">    public TextLineNumber(JTextComponent component, int minimumDisplayDigits) {</span>
+<span class="nc" id="L88">        this.component = component;</span>
+
+<span class="nc" id="L90">        setFont(component.getFont());</span>
+
+<span class="nc" id="L92">        setBorderGap(5);</span>
+<span class="nc" id="L93">        setCurrentLineForeground(Color.RED);</span>
+<span class="nc" id="L94">        setDigitAlignment(RIGHT);</span>
+<span class="nc" id="L95">        setMinimumDisplayDigits(minimumDisplayDigits);</span>
+
+<span class="nc" id="L97">        component.getDocument().addDocumentListener(this);</span>
+<span class="nc" id="L98">        component.addCaretListener(this);</span>
+<span class="nc" id="L99">        component.addPropertyChangeListener(&quot;font&quot;, this);</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * Gets the update font property
+     *
+     * @return the update font property
+     */
+    public boolean getUpdateFont() {
+<span class="nc" id="L108">        return updateFont;</span>
+    }
+
+    /**
+     * Set the update font property. Indicates whether this Font should be
+     * updated automatically when the Font of the related text component
+     * is changed.
+     *
+     * @param updateFont when true update the Font and repaint the line
+     *                   numbers, otherwise just repaint the line numbers.
+     */
+    public void setUpdateFont(boolean updateFont) {
+<span class="nc" id="L120">        this.updateFont = updateFont;</span>
+<span class="nc" id="L121">    }</span>
+
+    /**
+     * Gets the border gap
+     *
+     * @return the border gap in pixels
+     */
+    public int getBorderGap() {
+<span class="nc" id="L129">        return borderGap;</span>
+    }
+
+    /**
+     * The border gap is used in calculating the left and right insets of the
+     * border. Default value is 5.
+     *
+     * @param borderGap the gap in pixels
+     */
+    public void setBorderGap(int borderGap) {
+<span class="nc" id="L139">        this.borderGap = borderGap;</span>
+<span class="nc" id="L140">        Border inner = new EmptyBorder(0, borderGap, 0, borderGap);</span>
+<span class="nc" id="L141">        setBorder(new CompoundBorder(OUTER, inner));</span>
+<span class="nc" id="L142">        lastDigits = 0;</span>
+<span class="nc" id="L143">        setPreferredWidth();</span>
+<span class="nc" id="L144">    }</span>
+
+    /**
+     * Gets the current line rendering Color
+     *
+     * @return the Color used to render the current line number
+     */
+    public Color getCurrentLineForeground() {
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        return currentLineForeground == null ? getForeground() : currentLineForeground;</span>
+    }
+
+    /**
+     * The Color used to render the current line digits. Default is Coolor.RED.
+     *
+     * @param currentLineForeground the Color used to render the current line
+     */
+    public void setCurrentLineForeground(Color currentLineForeground) {
+<span class="nc" id="L161">        this.currentLineForeground = currentLineForeground;</span>
+<span class="nc" id="L162">    }</span>
+
+    /**
+     * Gets the digit alignment
+     *
+     * @return the alignment of the painted digits
+     */
+    public float getDigitAlignment() {
+<span class="nc" id="L170">        return digitAlignment;</span>
+    }
+
+    /**
+     * Specify the horizontal alignment of the digits within the component.
+     * Common values would be:
+     * &lt;ul&gt;
+     * &lt;li&gt;TextLineNumber.LEFT
+     * &lt;li&gt;TextLineNumber.CENTER
+     * &lt;li&gt;TextLineNumber.RIGHT (default)
+     * &lt;/ul&gt;
+     *
+     * @param digitAlignment the alignment of the numbers
+     */
+    public void setDigitAlignment(float digitAlignment) {
+<span class="nc bnc" id="L185" title="All 4 branches missed.">        this.digitAlignment =</span>
+                digitAlignment &gt; 1.0f ? 1.0f : digitAlignment &lt; 0.0f ? -1.0f : digitAlignment;
+<span class="nc" id="L187">    }</span>
+
+    /**
+     * Gets the minimum display digits
+     *
+     * @return the minimum display digits
+     */
+    public int getMinimumDisplayDigits() {
+<span class="nc" id="L195">        return minimumDisplayDigits;</span>
+    }
+
+    /**
+     * Specify the mimimum number of digits used to calculate the preferred
+     * width of the component. Default is 3.
+     *
+     * @param minimumDisplayDigits the number digits used in the preferred
+     *                             width calculation
+     */
+    public void setMinimumDisplayDigits(int minimumDisplayDigits) {
+<span class="nc" id="L206">        this.minimumDisplayDigits = minimumDisplayDigits;</span>
+<span class="nc" id="L207">        setPreferredWidth();</span>
+<span class="nc" id="L208">    }</span>
+
+    /**
+     * Calculate the width needed to display the maximum line number
+     */
+    private void setPreferredWidth() {
+<span class="nc" id="L214">        Element root = component.getDocument().getDefaultRootElement();</span>
+<span class="nc" id="L215">        int lines = root.getElementCount();</span>
+<span class="nc" id="L216">        int digits = Math.max(String.valueOf(lines).length(), minimumDisplayDigits);</span>
+
+        //  Update sizes when number of digits in the line number changes
+
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (lastDigits != digits) {</span>
+<span class="nc" id="L221">            lastDigits = digits;</span>
+<span class="nc" id="L222">            FontMetrics fontMetrics = getFontMetrics(getFont());</span>
+<span class="nc" id="L223">            int width = fontMetrics.charWidth('0') * digits;</span>
+<span class="nc" id="L224">            Insets insets = getInsets();</span>
+<span class="nc" id="L225">            int preferredWidth = insets.left + insets.right + width;</span>
+
+<span class="nc" id="L227">            Dimension d = getPreferredSize();</span>
+<span class="nc" id="L228">            d.setSize(preferredWidth, HEIGHT);</span>
+<span class="nc" id="L229">            setPreferredSize(d);</span>
+<span class="nc" id="L230">            setSize(d);</span>
+        }
+<span class="nc" id="L232">    }</span>
+
+    /**
+     * Draw the line numbers
+     */
+    @Override
+    public void paintComponent(Graphics g) {
+<span class="nc" id="L239">        super.paintComponent(g);</span>
+
+        // Determine the width of the space available to draw the line number
+
+<span class="nc" id="L243">        FontMetrics fontMetrics = component.getFontMetrics(component.getFont());</span>
+<span class="nc" id="L244">        Insets insets = getInsets();</span>
+<span class="nc" id="L245">        int availableWidth = getSize().width - insets.left - insets.right;</span>
+
+        //  Determine the rows to draw within the clipped bounds.
+
+<span class="nc" id="L249">        Rectangle clip = g.getClipBounds();</span>
+<span class="nc" id="L250">        int rowStartOffset = component.viewToModel(new Point(0, clip.y));</span>
+<span class="nc" id="L251">        int endOffset = component.viewToModel(new Point(0, clip.y + clip.height));</span>
+
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        while (rowStartOffset &lt;= endOffset) {</span>
+            try {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                if (isCurrentLine(rowStartOffset))</span>
+<span class="nc" id="L256">                    g.setColor(getCurrentLineForeground());</span>
+                else
+<span class="nc" id="L258">                    g.setColor(getForeground());</span>
+
+                //  Get the line number as a string and then determine the
+                //  &quot;X&quot; and &quot;Y&quot; offsets for drawing the string.
+
+<span class="nc" id="L263">                String lineNumber = getTextLineNumber(rowStartOffset);</span>
+<span class="nc" id="L264">                int stringWidth = fontMetrics.stringWidth(lineNumber);</span>
+<span class="nc" id="L265">                int x = getOffsetX(availableWidth, stringWidth) + insets.left;</span>
+<span class="nc" id="L266">                int y = getOffsetY(rowStartOffset, fontMetrics);</span>
+<span class="nc" id="L267">                g.drawString(lineNumber, x, y);</span>
+
+                //  Move to the next row
+
+<span class="nc" id="L271">                rowStartOffset = Utilities.getRowEnd(component, rowStartOffset) + 1;</span>
+<span class="nc" id="L272">            } catch (Exception e) {</span>
+<span class="nc" id="L273">                break;</span>
+<span class="nc" id="L274">            }</span>
+        }
+<span class="nc" id="L276">    }</span>
+
+    /*
+     *  We need to know if the caret is currently positioned on the line we
+     *  are about to paint so the line number can be highlighted.
+     */
+    private boolean isCurrentLine(int rowStartOffset) {
+<span class="nc" id="L283">        int caretPosition = component.getCaretPosition();</span>
+<span class="nc" id="L284">        Element root = component.getDocument().getDefaultRootElement();</span>
+
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        return root.getElementIndex(rowStartOffset) == root.getElementIndex(caretPosition);</span>
+    }
+
+    /**
+     * Get the line number to be drawn. The empty string will be returned
+     * when a line of text has wrapped.
+     *
+     * @param rowStartOffset the address of the line in the string
+     * @return line number
+     */
+    protected String getTextLineNumber(int rowStartOffset) {
+<span class="nc" id="L297">        Element root = component.getDocument().getDefaultRootElement();</span>
+<span class="nc" id="L298">        int index = root.getElementIndex(rowStartOffset);</span>
+<span class="nc" id="L299">        Element line = root.getElement(index);</span>
+
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (line.getStartOffset() == rowStartOffset)</span>
+<span class="nc" id="L302">            return String.valueOf(index + 1);</span>
+        else
+<span class="nc" id="L304">            return &quot;&quot;;</span>
+    }
+
+    /*
+     *  Determine the X offset to properly align the line number when drawn
+     */
+    private int getOffsetX(int availableWidth, int stringWidth) {
+<span class="nc" id="L311">        return (int) ((availableWidth - stringWidth) * digitAlignment);</span>
+    }
+
+    /*
+     *  Determine the Y offset for the current row
+     */
+    private int getOffsetY(int rowStartOffset, FontMetrics fontMetrics)
+            throws BadLocationException {
+        //  Get the bounding rectangle of the row
+
+<span class="nc" id="L321">        Rectangle r = component.modelToView(rowStartOffset);</span>
+<span class="nc" id="L322">        int lineHeight = fontMetrics.getHeight();</span>
+<span class="nc" id="L323">        int y = r.y + r.height;</span>
+<span class="nc" id="L324">        int descent = 0;</span>
+
+        //  The text needs to be positioned above the bottom of the bounding
+        //  rectangle based on the descent of the font(s) contained on the row.
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (r.height == lineHeight) { // default font is being used</span>
+<span class="nc" id="L330">            descent = fontMetrics.getDescent();</span>
+        } else { // We need to check all the attributes for font changes
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            if (fonts == null)</span>
+<span class="nc" id="L333">                fonts = new HashMap&lt;String, FontMetrics&gt;();</span>
+
+<span class="nc" id="L335">            Element root = component.getDocument().getDefaultRootElement();</span>
+<span class="nc" id="L336">            int index = root.getElementIndex(rowStartOffset);</span>
+<span class="nc" id="L337">            Element line = root.getElement(index);</span>
+
+<span class="nc bnc" id="L339" title="All 2 branches missed.">            for (int i = 0; i &lt; line.getElementCount(); i++) {</span>
+<span class="nc" id="L340">                Element child = line.getElement(i);</span>
+<span class="nc" id="L341">                AttributeSet as = child.getAttributes();</span>
+<span class="nc" id="L342">                String fontFamily = (String) as.getAttribute(StyleConstants.FontFamily);</span>
+<span class="nc" id="L343">                Integer fontSize = (Integer) as.getAttribute(StyleConstants.FontSize);</span>
+<span class="nc" id="L344">                String key = fontFamily + fontSize;</span>
+
+<span class="nc" id="L346">                FontMetrics fm = fonts.get(key);</span>
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">                if (fm == null) {</span>
+<span class="nc" id="L349">                    Font font = new Font(fontFamily, Font.PLAIN, fontSize);</span>
+<span class="nc" id="L350">                    fm = component.getFontMetrics(font);</span>
+<span class="nc" id="L351">                    fonts.put(key, fm);</span>
+                }
+
+<span class="nc" id="L354">                descent = Math.max(descent, fm.getDescent());</span>
+            }
+        }
+
+<span class="nc" id="L358">        return y - descent;</span>
+    }
+
+    //
+//  Implement CaretListener interface
+//
+    @Override
+    public void caretUpdate(CaretEvent e) {
+        //  Get the line the caret is positioned on
+
+<span class="nc" id="L368">        int caretPosition = component.getCaretPosition();</span>
+<span class="nc" id="L369">        Element root = component.getDocument().getDefaultRootElement();</span>
+<span class="nc" id="L370">        int currentLine = root.getElementIndex(caretPosition);</span>
+
+        //  Need to repaint so the correct line number can be highlighted
+
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (lastLine != currentLine) {</span>
+<span class="nc" id="L375">            repaint();</span>
+<span class="nc" id="L376">            lastLine = currentLine;</span>
+        }
+<span class="nc" id="L378">    }</span>
+
+    //
+//  Implement DocumentListener interface
+//
+    @Override
+    public void changedUpdate(DocumentEvent e) {
+<span class="nc" id="L385">        documentChanged();</span>
+<span class="nc" id="L386">    }</span>
+
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+<span class="nc" id="L390">        documentChanged();</span>
+<span class="nc" id="L391">    }</span>
+
+    @Override
+    public void removeUpdate(DocumentEvent e) {
+<span class="nc" id="L395">        documentChanged();</span>
+<span class="nc" id="L396">    }</span>
+
+    /*
+     *  A document change may affect the number of displayed lines of text.
+     *  Therefore the lines numbers will also change.
+     */
+    private void documentChanged() {
+        //  View of the component has not been updated at the time
+        //  the DocumentEvent is fired
+
+<span class="nc" id="L406">        SwingUtilities.invokeLater(new Runnable() {</span>
+            @Override
+            public void run() {
+                try {
+<span class="nc" id="L410">                    int endPos = component.getDocument().getLength();</span>
+<span class="nc" id="L411">                    Rectangle rect = component.modelToView(endPos);</span>
+
+<span class="nc bnc" id="L413" title="All 4 branches missed.">                    if (rect != null &amp;&amp; rect.y != lastHeight) {</span>
+<span class="nc" id="L414">                        setPreferredWidth();</span>
+<span class="nc" id="L415">                        repaint();</span>
+<span class="nc" id="L416">                        lastHeight = rect.y;</span>
+                    }
+<span class="nc" id="L418">                } catch (BadLocationException ex) { /* nothing to do */ }</span>
+<span class="nc" id="L419">            }</span>
+        });
+<span class="nc" id="L421">    }</span>
+
+    //
+//  Implement PropertyChangeListener interface
+//
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+<span class="nc bnc" id="L428" title="All 2 branches missed.">        if (evt.getNewValue() instanceof Font) {</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">            if (updateFont) {</span>
+<span class="nc" id="L430">                Font newFont = (Font) evt.getNewValue();</span>
+<span class="nc" id="L431">                setFont(newFont);</span>
+<span class="nc" id="L432">                lastDigits = 0;</span>
+<span class="nc" id="L433">                setPreferredWidth();</span>
+<span class="nc" id="L434">            } else {</span>
+<span class="nc" id="L435">                repaint();</span>
+            }
+        }
+<span class="nc" id="L438">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

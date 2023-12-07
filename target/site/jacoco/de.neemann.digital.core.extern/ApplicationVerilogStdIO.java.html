@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationVerilogStdIO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">ApplicationVerilogStdIO.java</span></div><h1>ApplicationVerilogStdIO.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.extern.VerilogTokenizer.Token;
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.Parser;
+import de.neemann.digital.hdl.hgs.Statement;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.util.NoSuchElementException;
+
+
+/**
+ * Base class of applications which are able to interpret Verilog-Code.
+ * The generated verilog code is able to operate with the {@link de.neemann.digital.core.extern.handler.StdIOInterface}.
+ */
+<span class="fc" id="L25">public abstract class ApplicationVerilogStdIO implements Application {</span>
+    private Token currToken;
+
+<span class="fc" id="L28">    private static final Statement TEMPLATE =</span>
+<span class="fc" id="L29">            Parser.createFromJarStatic(&quot;verilog/VerilogStdIOTemplate.vtpl&quot;);</span>
+
+    /**
+     * Creates a verilog file in a temp directory.
+     *
+     * @param label   the name of the verilog code
+     * @param code    the verilog code
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     * @param root    the projects main folder
+     * @return the verilog file
+     * @throws IOException IOException
+     */
+    public File createVerilogFile(String label, String code, PortDefinition inputs, PortDefinition outputs, File root) throws IOException {
+<span class="nc" id="L43">        File dir = Files.createTempDirectory(&quot;digital_verilog_&quot;).toFile();</span>
+
+<span class="nc" id="L45">        File file = new File(dir, label + &quot;.v&quot;);</span>
+
+<span class="nc" id="L47">        try (Writer w = new FileWriter(file)) {</span>
+<span class="nc" id="L48">            w.write(createVerilog(label, code, inputs, outputs, root));</span>
+<span class="nc" id="L49">        } catch (HGSEvalException e) {</span>
+<span class="nc" id="L50">            throw new IOException(&quot;error evaluating the template&quot;, e);</span>
+<span class="nc" id="L51">        }</span>
+
+<span class="nc" id="L53">        return file;</span>
+    }
+
+    /**
+     * Creates the verilog code
+     *
+     * @param label   the name of the verilog module
+     * @param code    the verilog code
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     * @param root    the projects main folder
+     * @return the verilog code
+     * @throws HGSEvalException HGSEvalException
+     */
+    public String createVerilog(String label, String code, PortDefinition inputs, PortDefinition outputs, File root) throws HGSEvalException {
+<span class="nc" id="L68">        Context context = new Context(root)</span>
+<span class="nc" id="L69">                .declareVar(&quot;moduleName&quot;, label)</span>
+<span class="nc" id="L70">                .declareVar(&quot;code&quot;, code)</span>
+<span class="nc" id="L71">                .declareVar(&quot;inputs&quot;, inputs)</span>
+<span class="nc" id="L72">                .declareVar(&quot;outputs&quot;, outputs);</span>
+
+<span class="nc" id="L74">        TEMPLATE.execute(context);</span>
+<span class="nc" id="L75">        return context.toString();</span>
+    }
+
+    private void match(Token tkExpect, String tkText, VerilogTokenizer st) throws ParseException, IOException, VerilogTokenizer.TokenizerException {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (currToken != tkExpect) {</span>
+<span class="nc" id="L80">            throw new ParseException(&quot;unexpected '&quot; + tkText + &quot;'&quot;);</span>
+        }
+<span class="fc" id="L82">        currToken = st.nextToken();</span>
+<span class="fc" id="L83">    }</span>
+
+    @Override
+    public boolean ensureConsistency(ElementAttributes attributes, File root) {
+        try {
+<span class="fc" id="L88">            String code = Application.getCode(attributes, root);</span>
+<span class="fc" id="L89">            VerilogTokenizer st = new VerilogTokenizer(new StringReader(code));</span>
+
+            PortDefinition in;
+            PortDefinition out;
+            String label;
+
+<span class="fc" id="L95">            currToken = st.nextToken();</span>
+
+<span class="fc" id="L97">            match(Token.MODULE, &quot;keyword 'module'&quot;, st);</span>
+<span class="fc" id="L98">            label = st.value();</span>
+<span class="fc" id="L99">            match(Token.IDENT, &quot;identifier&quot;, st);</span>
+<span class="fc" id="L100">            match(Token.OPENPAR, &quot;'('&quot;, st);</span>
+
+<span class="fc" id="L102">            in = new PortDefinition(&quot;&quot;);</span>
+<span class="fc" id="L103">            out = new PortDefinition(&quot;&quot;);</span>
+<span class="fc" id="L104">            scanPortArgs(st, in, out);</span>
+
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            if (currToken == Token.SEMICOLON) {</span>
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">                if (in.size() == 0 &amp;&amp; out.size() == 0) {</span>
+                    do {
+<span class="fc" id="L109">                        currToken = st.nextToken();</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">                        if (currToken == Token.INPUT || currToken == Token.OUTPUT)</span>
+<span class="fc" id="L111">                            scanPort(st, in, out);</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">                    } while ((currToken != Token.ENDMODULE) &amp;&amp; (currToken != Token.EOF));</span>
+                }
+            } else {
+<span class="nc" id="L115">                return false;</span>
+            }
+
+<span class="pc bpc" id="L118" title="2 of 4 branches missed.">            if (in.size() &gt; 0 &amp;&amp; out.size() &gt; 0) {</span>
+<span class="fc" id="L119">                attributes.set(Keys.LABEL, label);</span>
+<span class="fc" id="L120">                attributes.set(Keys.EXTERNAL_INPUTS, in.toString());</span>
+<span class="fc" id="L121">                attributes.set(Keys.EXTERNAL_OUTPUTS, out.toString());</span>
+<span class="fc" id="L122">                return true;</span>
+            } else
+<span class="nc" id="L124">                return false;</span>
+
+<span class="nc" id="L126">        } catch (NoSuchElementException | ParseException | VerilogTokenizer.TokenizerException | IOException e) {</span>
+<span class="nc" id="L127">            return false;</span>
+        }
+    }
+
+    private void scanPortArgs(VerilogTokenizer st, PortDefinition in, PortDefinition out) throws ParseException, IOException, VerilogTokenizer.TokenizerException {
+        while (true) {
+<span class="pc bpc" id="L133" title="1 of 5 branches missed.">            switch (currToken) {</span>
+                case IDENT:
+<span class="fc" id="L135">                    currToken = st.nextToken();</span>
+<span class="fc" id="L136">                    break;</span>
+                case INPUT:
+                case OUTPUT:
+<span class="fc" id="L139">                    scanPort(st, in, out);</span>
+<span class="fc" id="L140">                    break;</span>
+                case CLOSEPAR:
+<span class="fc" id="L142">                    currToken = st.nextToken();</span>
+<span class="fc" id="L143">                    return;</span>
+                case COMMA:
+<span class="fc" id="L145">                    currToken = st.nextToken();</span>
+<span class="fc" id="L146">                    break;</span>
+                default:
+<span class="nc" id="L148">                    throw new ParseException(&quot;unexpected '&quot; + st.value() + &quot;'&quot;);</span>
+            }
+        }
+    }
+
+    private void scanPort(VerilogTokenizer st, PortDefinition in, PortDefinition out) throws ParseException, IOException, VerilogTokenizer.TokenizerException {
+        boolean isInput;
+
+<span class="pc bpc" id="L156" title="1 of 3 branches missed.">        switch (currToken) {</span>
+            case INPUT:
+<span class="fc" id="L158">                isInput = true;</span>
+<span class="fc" id="L159">                currToken = st.nextToken();</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">                if (currToken == Token.WIRE) {</span>
+<span class="nc" id="L161">                    currToken = st.nextToken();</span>
+                }
+                break;
+            case OUTPUT:
+<span class="fc" id="L165">                isInput = false;</span>
+<span class="fc" id="L166">                currToken = st.nextToken();</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">                if (currToken == Token.WIRE</span>
+                        || currToken == Token.REG) {
+<span class="nc" id="L169">                    currToken = st.nextToken();</span>
+                }
+                break;
+            default:
+<span class="nc" id="L173">                throw new ParseException(&quot;unexpected '&quot; + st.value() + &quot;'&quot;);</span>
+        }
+
+<span class="fc" id="L176">        int bits = 1;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (currToken == Token.OPENBRACKET) {</span>
+<span class="fc" id="L178">            match(Token.OPENBRACKET, &quot;&quot;, st);</span>
+<span class="fc" id="L179">            String rangeStart = st.value();</span>
+<span class="fc" id="L180">            match(Token.NUMBER, &quot;a number&quot;, st);</span>
+<span class="fc" id="L181">            match(Token.COLON, &quot;':'&quot;, st);</span>
+<span class="fc" id="L182">            String rangeEnd = st.value();</span>
+<span class="fc" id="L183">            match(Token.NUMBER, &quot;a number&quot;, st);</span>
+<span class="fc" id="L184">            match(Token.CLOSEBRACKET, &quot;']'&quot;, st);</span>
+<span class="fc" id="L185">            bits = (Integer.parseInt(rangeStart) - Integer.parseInt(rangeEnd)) + 1;</span>
+        }
+<span class="fc" id="L187">        String name = st.value();</span>
+<span class="fc" id="L188">        match(Token.IDENT, &quot;identifier&quot;, st);</span>
+
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (isInput) {</span>
+<span class="fc" id="L191">            in.addPort(name, bits);</span>
+        } else {
+<span class="fc" id="L193">            out.addPort(name, bits);</span>
+        }
+
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        while (currToken == Token.COMMA) {</span>
+<span class="fc" id="L197">            match(Token.COMMA, &quot;comma&quot;, st);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (currToken != Token.IDENT)</span>
+<span class="fc" id="L199">                return;</span>
+<span class="fc" id="L200">            name = st.value();</span>
+<span class="fc" id="L201">            match(Token.IDENT, &quot;identifier&quot;, st);</span>
+
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">            if (isInput) {</span>
+<span class="fc" id="L204">                in.addPort(name, bits);</span>
+            } else {
+<span class="nc" id="L206">                out.addPort(name, bits);</span>
+            }
+        }
+<span class="fc" id="L209">    }</span>
+
+    private static final class ParseException extends Exception {
+        private ParseException(String message) {
+<span class="nc" id="L213">            super(message);</span>
+<span class="nc" id="L214">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

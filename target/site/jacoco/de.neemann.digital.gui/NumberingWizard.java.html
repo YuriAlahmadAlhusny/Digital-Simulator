@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NumberingWizard.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">NumberingWizard.java</span></div><h1>NumberingWizard.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.gui.components.modification.ModifyAttribute;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.Screen;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+/**
+ * Wizard for pin numbering
+ */
+public class NumberingWizard extends JDialog implements CircuitComponent.WizardNotification {
+    private final CircuitComponent circuitComponent;
+    private final JLabel label;
+    private int pinNumber;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent           the parent frame
+     * @param circuitComponent the component used to select the inputs and outputs
+     */
+    public NumberingWizard(JFrame parent, CircuitComponent circuitComponent) {
+<span class="nc" id="L38">        super(parent, Lang.get(&quot;msg_numberingWizard&quot;), false);</span>
+<span class="nc" id="L39">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L40">        this.circuitComponent = circuitComponent;</span>
+<span class="nc" id="L41">        label = new JLabel();</span>
+<span class="nc" id="L42">        label.setFont(Screen.getInstance().getFont(1.5f));</span>
+<span class="nc" id="L43">        int b = Screen.getInstance().getFontSize();</span>
+<span class="nc" id="L44">        label.setBorder(BorderFactory.createEmptyBorder(b, b, b, b));</span>
+<span class="nc" id="L45">        setPinNumber(999);</span>
+<span class="nc" id="L46">        getContentPane().add(label);</span>
+
+<span class="nc" id="L48">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosed(WindowEvent windowEvent) {
+<span class="nc" id="L51">                circuitComponent.deactivateWizard();</span>
+<span class="nc" id="L52">            }</span>
+        });
+<span class="nc" id="L54">        pack();</span>
+
+<span class="nc" id="L56">        pinNumber = 1;</span>
+<span class="nc" id="L57">        setPinNumber(pinNumber);</span>
+<span class="nc" id="L58">        setLocation(parent.getLocation());</span>
+<span class="nc" id="L59">    }</span>
+
+    private void setPinNumber(int num) {
+<span class="nc" id="L62">        label.setText(Lang.get(&quot;msg_pin_numbering_N&quot;, num));</span>
+<span class="nc" id="L63">    }</span>
+
+    /**
+     * Start the wizard
+     */
+    public void start() {
+<span class="nc" id="L69">        setVisible(true);</span>
+<span class="nc" id="L70">        circuitComponent.activateWizard(this);</span>
+<span class="nc" id="L71">    }</span>
+
+    @Override
+    public void notify(VisualElement clicked) {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (clicked.equalsDescription(In.DESCRIPTION)</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                || clicked.equalsDescription(Clock.DESCRIPTION)</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                || clicked.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L78">            circuitComponent.modify(new ModifyAttribute&lt;&gt;(clicked, Keys.PINNUMBER, Integer.toString(pinNumber)));</span>
+<span class="nc" id="L79">            pinNumber++;</span>
+<span class="nc" id="L80">            setPinNumber(pinNumber);</span>
+        }
+<span class="nc" id="L82">    }</span>
+
+    @Override
+    public void closed() {
+<span class="nc" id="L86">        dispose();</span>
+<span class="nc" id="L87">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

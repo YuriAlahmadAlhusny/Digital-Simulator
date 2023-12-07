@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ROM.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">ROM.java</span></div><h1>ROM.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.memory.importer.Importer;
+import de.neemann.digital.core.memory.rom.ROMInterface;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.IOException;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A ROM module.
+ */
+public class ROM extends Node implements Element, ROMInterface, ProgramMemory {
+
+    /**
+     * The ROMs {@link ElementTypeDescription}
+     */
+<span class="fc" id="L31">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(ROM.class,</span>
+<span class="fc" id="L32">            input(&quot;A&quot;),</span>
+<span class="fc" id="L33">            input(&quot;sel&quot;))</span>
+<span class="fc" id="L34">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.ADDR_BITS)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.DATA)</span>
+<span class="fc" id="L39">            .addAttribute(Keys.INT_FORMAT)</span>
+<span class="fc" id="L40">            .addAttribute(Keys.IS_PROGRAM_MEMORY)</span>
+<span class="fc" id="L41">            .addAttribute(Keys.AUTO_RELOAD_ROM)</span>
+<span class="fc" id="L42">            .addAttribute(Keys.LAST_DATA_FILE)</span>
+<span class="fc" id="L43">            .addAttribute(Keys.BIG_ENDIAN)</span>
+<span class="fc" id="L44">            .supportsHDL();</span>
+
+    private DataField data;
+    private final ValueFormatter formatter;
+    private final ObservableValue output;
+    private final int addrBits;
+    private final int dataBits;
+    private final boolean autoLoad;
+    private final boolean isProgramMemory;
+    private final ElementAttributes attr;
+    private final String label;
+    private ObservableValue addrIn;
+    private ObservableValue selIn;
+    private int addr;
+    private boolean sel;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+<span class="fc" id="L65">    public ROM(ElementAttributes attr) {</span>
+<span class="fc" id="L66">        dataBits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L67">        output = createOutput1();</span>
+<span class="fc" id="L68">        data = attr.get(Keys.DATA);</span>
+<span class="fc" id="L69">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L70">        autoLoad = attr.get(Keys.AUTO_RELOAD_ROM);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (autoLoad)</span>
+<span class="nc" id="L72">            this.attr = attr;</span>
+        else
+<span class="fc" id="L74">            this.attr = null;</span>
+<span class="fc" id="L75">        label = attr.getLabel();</span>
+<span class="fc" id="L76">        isProgramMemory = attr.isProgramMemory();</span>
+<span class="fc" id="L77">        formatter = attr.getValueFormatter();</span>
+<span class="fc" id="L78">    }</span>
+
+    ObservableValue createOutput1() {
+<span class="fc" id="L81">        return new ObservableValue(&quot;D&quot;, dataBits)</span>
+<span class="fc" id="L82">                .setToHighZ()</span>
+<span class="fc" id="L83">                .setPinDescription(DESCRIPTION);</span>
+    }
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L88">        addrIn = inputs.get(0).checkBits(addrBits, this, 0).addObserverToValue(this);</span>
+<span class="fc" id="L89">        selIn = inputs.get(1).checkBits(1, this, 1).addObserverToValue(this);</span>
+<span class="fc" id="L90">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L94">        return output.asList();</span>
+    }
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L99">        addr = (int) addrIn.getValue();</span>
+<span class="fc" id="L100">        sel = selIn.getBool();</span>
+<span class="fc" id="L101">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (sel)</span>
+<span class="fc" id="L106">            output.setValue(getDataWord(addr));</span>
+        else
+<span class="fc" id="L108">            output.setToHighZ();</span>
+<span class="fc" id="L109">    }</span>
+
+    long getDataWord(int addr) {
+<span class="fc" id="L112">        return data.getDataWord(addr);</span>
+    }
+
+    @Override
+    public void init(Model model) throws NodeException {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (autoLoad) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (attr == null)</span>
+<span class="nc" id="L119">                throw new NodeException(Lang.get(&quot;err_ROM_noFileGivenToLoad&quot;), this, -1, null);</span>
+            try {
+<span class="nc" id="L121">                File f = attr.getFile(Keys.LAST_DATA_FILE, model.getRootPath());</span>
+<span class="nc" id="L122">                boolean bigEndian = attr.get(Keys.BIG_ENDIAN);</span>
+<span class="nc" id="L123">                data = Importer.read(f, dataBits, bigEndian);</span>
+<span class="nc" id="L124">            } catch (IOException e) {</span>
+<span class="nc" id="L125">                throw new NodeException(e.getMessage(), this, -1, null);</span>
+<span class="nc" id="L126">            }</span>
+        }
+<span class="fc" id="L128">    }</span>
+
+
+    @Override
+    public void setProgramMemory(DataField dataField) {
+<span class="fc" id="L133">        setData(dataField);</span>
+<span class="fc" id="L134">    }</span>
+
+    /**
+     * @return true if this is program memory
+     */
+    @Override
+    public boolean isProgramMemory() {
+<span class="fc" id="L141">        return isProgramMemory;</span>
+    }
+
+    @Override
+    public void setData(DataField data) {
+<span class="fc" id="L146">        this.data = data;</span>
+<span class="fc" id="L147">    }</span>
+
+    @Override
+    public String getLabel() {
+<span class="fc" id="L151">        return label;</span>
+    }
+
+    @Override
+    public int getAddrBits() {
+<span class="fc" id="L156">        return addrBits;</span>
+    }
+
+    @Override
+    public ValueFormatter getValueFormatter() {
+<span class="nc" id="L161">        return formatter;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="fc" id="L166">        return dataBits;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

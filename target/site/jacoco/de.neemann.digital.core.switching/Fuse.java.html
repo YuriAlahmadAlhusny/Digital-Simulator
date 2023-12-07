@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Fuse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.switching</a> &gt; <span class="el_source">Fuse.java</span></div><h1>Fuse.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.switching;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.NodeInterface;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+/**
+ * A simple fuse.
+ */
+public class Fuse implements Element, NodeInterface {
+
+    /**
+     * The fuse description
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(Fuse.class)</span>
+<span class="fc" id="L26">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L27">            .addAttribute(Keys.BLOWN);</span>
+
+    private final PlainSwitch s;
+
+    /**
+     * Create a new fuse
+     *
+     * @param attr the attributes
+     */
+<span class="fc" id="L36">    public Fuse(ElementAttributes attr) {</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        s = new PlainSwitch(attr.getBits(), !attr.get(Keys.BLOWN), &quot;out1&quot;, &quot;out2&quot;);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L42">        s.setInputs(inputs.get(0), inputs.get(1));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L47">        return s.getOutputs();</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public void init(Model model) {
+<span class="fc" id="L56">        s.init(model);</span>
+<span class="fc" id="L57">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="nc" id="L61">        s.hasChanged();</span>
+<span class="nc" id="L62">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

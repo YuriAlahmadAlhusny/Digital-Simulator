@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">DataShape.java</span></div><h1>DataShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Signal;
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.data.DataPlotter;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.data.ValueTable;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.model.ModelEntry;
+import de.neemann.digital.gui.components.OrderMerger;
+import de.neemann.digital.gui.components.data.ValueTableObserver;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.util.ArrayList;
+
+/**
+ * Shape which shows the data graph inside the models circuit area.
+ */
+public class DataShape implements Shape {
+
+    private final boolean microStep;
+    private final int maxSize;
+    private ValueTable logDataModel;
+    private ValueTable logData;
+<span class="fc" id="L38">    private SyncAccess modelSync = SyncAccess.NOSYNC;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L47">    public DataShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L48">        microStep = attr.get(Keys.MICRO_STEP);</span>
+<span class="fc" id="L49">        maxSize = attr.get(Keys.MAX_STEP_COUNT);</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L54">        return new Pins();</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="nc" id="L59">        return null;</span>
+    }
+
+
+    @Override
+    public void readObservableValues() {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (logDataModel != null)</span>
+<span class="fc" id="L66">            logData = new ValueTable(logDataModel);</span>
+<span class="fc" id="L67">    }</span>
+
+    @Override
+    public void drawTo(Graphic graphic, Style heighLight) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (logData == null) {</span>
+<span class="fc" id="L72">            logData = new ValueTable(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)</span>
+<span class="fc" id="L73">                    .add(new TestRow(new Value(0), new Value(0), new Value(0)))</span>
+<span class="fc" id="L74">                    .add(new TestRow(new Value(0), new Value(1), new Value(0)));</span>
+        }
+<span class="fc" id="L76">        new DataPlotter(logData, modelSync).drawTo(graphic, null);</span>
+<span class="fc" id="L77">    }</span>
+
+    @Override
+    public void registerModel(ModelCreator modelCreator, Model model, ModelEntry element) {
+<span class="fc" id="L81">        modelSync = model;</span>
+<span class="fc" id="L82">        ArrayList&lt;Signal&gt; signals = model.getSignalsCopy();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        signals.removeIf(signal -&gt; !signal.isShowInGraph());</span>
+<span class="fc" id="L84">        new OrderMerger&lt;String, Signal&gt;(modelCreator.getCircuit().getMeasurementOrdering()) {</span>
+            @Override
+            public boolean equals(Signal a, String b) {
+<span class="fc" id="L87">                return a.getName().equals(b);</span>
+            }
+<span class="fc" id="L89">        }.order(signals);</span>
+
+<span class="fc" id="L91">        boolean ms = microStep;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (model.getAsyncInfos() != null)</span>
+<span class="fc" id="L93">            ms = true;</span>
+
+<span class="fc" id="L95">        ValueTableObserver valueTableObserver = new ValueTableObserver(ms, signals, maxSize);</span>
+<span class="fc" id="L96">        logDataModel = valueTableObserver.getLogData();</span>
+<span class="fc" id="L97">        model.addObserver(valueTableObserver);</span>
+<span class="fc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

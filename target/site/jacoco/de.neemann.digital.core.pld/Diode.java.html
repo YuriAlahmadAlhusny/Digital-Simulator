@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Diode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.pld</a> &gt; <span class="el_source">Diode.java</span></div><h1>Diode.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.pld;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+/**
+ * A diode needed to create wired elements
+ * Used to build a wired OR or AND.
+ */
+public class Diode implements Element, NodeInterface {
+
+    /**
+     * The diodes description
+     */
+<span class="fc" id="L23">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(Diode.class)</span>
+<span class="fc" id="L24">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L25">            .addAttribute(Keys.BLOWN);</span>
+
+    private final ObservableValue cathode;
+    private final ObservableValue anode;
+    private final boolean blown;
+    private ObservableValue cathodeIn;
+    private ObservableValue anodeIn;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+<span class="nc" id="L38">    public Diode(ElementAttributes attr) {</span>
+<span class="nc" id="L39">        cathode = new ObservableValue(&quot;cathode&quot;, 1)</span>
+<span class="nc" id="L40">                .setToHighZ()</span>
+<span class="nc" id="L41">                .setBidirectional();</span>
+<span class="nc" id="L42">        anode = new ObservableValue(&quot;anode&quot;, 1)</span>
+<span class="nc" id="L43">                .setToHighZ()</span>
+<span class="nc" id="L44">                .setBidirectional();</span>
+<span class="nc" id="L45">        blown = attr.get(Keys.BLOWN);</span>
+<span class="nc" id="L46">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="nc" id="L50">        cathodeIn = inputs.get(0).addObserverToValue(this).checkBits(1, null);</span>
+<span class="nc" id="L51">        anodeIn = inputs.get(1).addObserverToValue(this).checkBits(1, null);</span>
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="nc" id="L56">        return new ObservableValues(cathode, anode);</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+        // its just a wire and has no delay, so it is'nt a node
+<span class="nc" id="L62">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!blown) {</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">            if (anodeIn.getBool() &amp;&amp; !anodeIn.isHighZ())</span>
+<span class="nc" id="L68">                cathode.setValue(1);</span>
+            else
+<span class="nc" id="L70">                cathode.setToHighZ();</span>
+<span class="nc bnc" id="L71" title="All 4 branches missed.">            if (!cathodeIn.getBool() &amp;&amp; !cathodeIn.isHighZ())</span>
+<span class="nc" id="L72">                anode.setValue(0);</span>
+            else
+<span class="nc" id="L74">                anode.setToHighZ();</span>
+        }
+<span class="nc" id="L76">    }</span>
+
+    @Override
+    public void init(Model model) throws NodeException {
+<span class="nc" id="L80">        hasChanged();</span>
+<span class="nc" id="L81">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Context.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes.custom.svg</a> &gt; <span class="el_source">Context.java</span></div><h1>Context.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes.custom.svg;
+
+import de.neemann.digital.draw.graphics.*;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+
+import java.awt.*;
+import java.util.HashMap;
+import java.util.StringTokenizer;
+
+class Context {
+    private static final float PIXELPERMM = 72 / 25.4f * 4 / 3; // 72 DPI by definition
+
+<span class="fc" id="L20">    private static final HashMap&lt;String, AttrParser&gt; PARSER = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L23">        PARSER.put(&quot;transform&quot;, (c, value) -&gt; c.tr = Transform.mul(new TransformParser(value).parse(), c.tr));</span>
+<span class="fc" id="L24">        PARSER.put(&quot;fill&quot;, (c, value) -&gt; c.fill = getColorFromString(value));</span>
+<span class="fc" id="L25">        PARSER.put(&quot;fill-opacity&quot;, (c, value) -&gt; c.fillOpacity = getFloatFromString(value));</span>
+<span class="fc" id="L26">        PARSER.put(&quot;stroke&quot;, (c, value) -&gt; c.stroke = getColorFromString(value));</span>
+<span class="fc" id="L27">        PARSER.put(&quot;stroke-opacity&quot;, (c, value) -&gt; c.strokeOpacity = getFloatFromString(value));</span>
+<span class="fc" id="L28">        PARSER.put(&quot;stroke-width&quot;, (c, value) -&gt; c.thickness = getLengthFromString(c, value, 1, 1));</span>
+<span class="fc" id="L29">        PARSER.put(&quot;font-size&quot;, (c, value) -&gt; c.fontSize = getLengthFromString(c, value, c.fontSize, c.getFontSize()));</span>
+<span class="fc" id="L30">        PARSER.put(&quot;style&quot;, Context::readStyle);</span>
+<span class="fc" id="L31">        PARSER.put(&quot;text-anchor&quot;, (c, value) -&gt; c.textAnchor = value);</span>
+<span class="fc" id="L32">        PARSER.put(&quot;fill-rule&quot;, (c, value) -&gt; c.fillRuleEvenOdd = value.equalsIgnoreCase(&quot;evenodd&quot;));</span>
+<span class="fc" id="L33">        PARSER.put(&quot;class&quot;, Context::evalClass);</span>
+<span class="fc" id="L34">    }</span>
+
+    private final Context parent;
+    private Transform tr;
+    private Color fill;
+    private float fillOpacity;
+    private Color stroke;
+    private float strokeOpacity;
+    private float thickness;
+    private float fontSize;
+    private String textAnchor;
+    private boolean fillRuleEvenOdd;
+    private HashMap&lt;String, String&gt; classesMap;
+
+<span class="fc" id="L48">    Context() {</span>
+<span class="fc" id="L49">        parent = null;</span>
+<span class="fc" id="L50">        tr = Transform.IDENTITY;</span>
+<span class="fc" id="L51">        thickness = 1;</span>
+<span class="fc" id="L52">        stroke = Color.BLACK;</span>
+<span class="fc" id="L53">        fontSize = Style.NORMAL.getFontSize();</span>
+<span class="fc" id="L54">        fill = Color.BLACK;</span>
+<span class="fc" id="L55">        fillOpacity = 1;</span>
+<span class="fc" id="L56">        strokeOpacity = 1;</span>
+<span class="fc" id="L57">    }</span>
+
+<span class="fc" id="L59">    private Context(Context parent) {</span>
+<span class="fc" id="L60">        this.parent = parent;</span>
+<span class="fc" id="L61">        tr = parent.tr;</span>
+<span class="fc" id="L62">        fill = parent.fill;</span>
+<span class="fc" id="L63">        fillOpacity = parent.fillOpacity;</span>
+<span class="fc" id="L64">        stroke = parent.stroke;</span>
+<span class="fc" id="L65">        strokeOpacity = parent.strokeOpacity;</span>
+<span class="fc" id="L66">        thickness = parent.thickness;</span>
+<span class="fc" id="L67">        fontSize = parent.fontSize;</span>
+<span class="fc" id="L68">        textAnchor = parent.textAnchor;</span>
+<span class="fc" id="L69">        fillRuleEvenOdd = parent.fillRuleEvenOdd;</span>
+<span class="fc" id="L70">    }</span>
+
+    Context(Context parent, Element element) throws SvgException {
+<span class="fc" id="L73">        this(parent);</span>
+<span class="fc" id="L74">        final NamedNodeMap attributes = element.getAttributes();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="fc" id="L76">            final Node item = attributes.item(i);</span>
+<span class="fc" id="L77">            AttrParser p = PARSER.get(item.getNodeName());</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (p != null)</span>
+<span class="fc" id="L79">                p.parse(this, item.getNodeValue().trim());</span>
+        }
+<span class="fc" id="L81">    }</span>
+
+    static Context readStyle(Context context, String style) throws SvgException {
+<span class="fc" id="L84">        SVGTokenizer t = new SVGTokenizer(style);</span>
+        while (true) {
+<span class="fc" id="L86">            final String command = t.readTo(':');</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (command.length() == 0)</span>
+<span class="fc" id="L88">                break;</span>
+<span class="fc" id="L89">            final String value = t.readTo(';');</span>
+<span class="fc" id="L90">            AttrParser p = PARSER.get(command);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (p != null)</span>
+<span class="fc" id="L92">                p.parse(context, value);</span>
+<span class="fc" id="L93">        }</span>
+<span class="fc" id="L94">        return context;</span>
+    }
+
+    Transform getTransform() {
+<span class="fc" id="L98">        return tr;</span>
+    }
+
+    public Color getStroke() {
+<span class="fc" id="L102">        return createColor(stroke, strokeOpacity);</span>
+    }
+
+    public Color getFilled() {
+<span class="fc" id="L106">        return createColor(fill, fillOpacity);</span>
+    }
+
+    private static Color createColor(Color color, float opacity) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (color == null)</span>
+<span class="fc" id="L111">            return null;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (opacity == 1)</span>
+<span class="fc" id="L113">            return color;</span>
+<span class="fc" id="L114">        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (255 * opacity));</span>
+    }
+
+    public int getThickness() {
+<span class="fc" id="L118">        return (int) thickness;</span>
+    }
+
+    boolean isFillRuleEvenOdd() {
+<span class="fc" id="L122">        return fillRuleEvenOdd;</span>
+    }
+
+    Orientation getTextOrientation() {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (textAnchor == null)</span>
+<span class="fc" id="L127">            return Orientation.LEFTBOTTOM;</span>
+
+<span class="pc bpc" id="L129" title="2 of 3 branches missed.">        switch (textAnchor) {</span>
+            case &quot;end&quot;:
+<span class="nc" id="L131">                return Orientation.RIGHTBOTTOM;</span>
+            case &quot;middle&quot;:
+<span class="nc" id="L133">                return Orientation.CENTERBOTTOM;</span>
+            default:
+<span class="fc" id="L135">                return Orientation.LEFTBOTTOM;</span>
+        }
+    }
+
+    public VectorInterface tr(VectorInterface vector) {
+<span class="nc" id="L140">        return vector.transform(tr);</span>
+    }
+
+    public VectorInterface v(float x, float y) {
+<span class="fc" id="L144">        return new VectorFloat(x, y).transform(tr);</span>
+    }
+
+    public float getFontSize() {
+<span class="fc" id="L148">        return fontSize;</span>
+    }
+
+    void addClasses(String classes) {
+<span class="fc" id="L152">        SVGTokenizer t = new SVGTokenizer(classes);</span>
+        try {
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            while (t.nextIsChar('.')) {</span>
+<span class="fc" id="L155">                String key = t.readTo('{');</span>
+<span class="fc" id="L156">                String val = t.readTo('}');</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                if (classesMap == null)</span>
+<span class="fc" id="L158">                    classesMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L159">                classesMap.put(key, val);</span>
+<span class="fc" id="L160">            }</span>
+<span class="nc" id="L161">        } catch (SVGTokenizer.TokenizerException e) {</span>
+            // ignore errors
+<span class="fc" id="L163">        }</span>
+<span class="fc" id="L164">    }</span>
+
+    String getCssClass(String key) {
+<span class="fc" id="L167">        String v = null;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (classesMap != null) v = classesMap.get(key);</span>
+
+<span class="pc bpc" id="L170" title="1 of 4 branches missed.">        if (v == null &amp;&amp; parent != null)</span>
+<span class="fc" id="L171">            return parent.getCssClass(key);</span>
+
+<span class="fc" id="L173">        return v;</span>
+    }
+
+    /**
+     * Gets a length from the string
+     *
+     * @param value the length value, translated to pixels
+     * @return the length in pixels
+     */
+    public float getLength(String value) {
+<span class="fc" id="L183">        return getLengthFromString(this, value, 1, 0);</span>
+    }
+
+    private static void evalClass(Context c, String value) throws SvgException {
+<span class="fc" id="L187">        StringTokenizer st = new StringTokenizer(value, &quot;, &quot;);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        while (st.hasMoreTokens()) {</span>
+<span class="fc" id="L189">            String cl = st.nextToken();</span>
+<span class="fc" id="L190">            String style = c.getCssClass(cl);</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">            if (style != null)</span>
+<span class="fc" id="L192">                readStyle(c, style);</span>
+<span class="fc" id="L193">        }</span>
+<span class="fc" id="L194">    }</span>
+
+    private interface AttrParser {
+        void parse(Context c, String value) throws SvgException;
+    }
+
+    private static Color getColorFromString(String v) {
+        try {
+<span class="fc" id="L202">            SVGTokenizer t = new SVGTokenizer(v);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (t.nextIsChar('#')) {</span>
+<span class="fc" id="L204">                String c = t.remaining();</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (c.length() == 3)</span>
+<span class="fc" id="L206">                    return new Color(sRGB(c.charAt(0)), sRGB(c.charAt(1)), sRGB(c.charAt(2)));</span>
+                else
+<span class="fc" id="L208">                    return Color.decode(v);</span>
+            } else {
+<span class="fc" id="L210">                final String command = t.readCommand();</span>
+<span class="fc bfc" id="L211" title="All 3 branches covered.">                switch (command) {</span>
+                    case &quot;none&quot;:
+<span class="fc" id="L213">                        return null;</span>
+                    case &quot;rgb&quot;:
+<span class="fc" id="L215">                        t.expect('(');</span>
+<span class="fc" id="L216">                        Color col = new Color(rgb(t), rgb(t), rgb(t));</span>
+<span class="fc" id="L217">                        t.expect(')');</span>
+<span class="fc" id="L218">                        return col;</span>
+                    default:
+<span class="fc" id="L220">                        return (Color) Color.class.getField(command.toLowerCase()).get(null);</span>
+                }
+            }
+<span class="nc" id="L223">        } catch (Exception e) {</span>
+<span class="nc" id="L224">            return Color.BLACK;</span>
+        }
+    }
+
+    private static int rgb(SVGTokenizer t) throws SVGTokenizer.TokenizerException {
+<span class="fc" id="L229">        float v = t.readFloat();</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        if (t.nextIsChar('%'))</span>
+<span class="fc" id="L231">            return (int) (v * 2.55f);</span>
+        else
+<span class="fc" id="L233">            return (int) v;</span>
+    }
+
+    private static int sRGB(char c) {
+<span class="fc" id="L237">        int v = Character.digit(c, 16);</span>
+<span class="fc" id="L238">        return v * 16 + v;</span>
+    }
+
+    private static float getFloatFromString(String inp) {
+        try {
+<span class="fc" id="L243">            return Float.parseFloat(inp);</span>
+<span class="nc" id="L244">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L245">            return 1;</span>
+        }
+    }
+
+    private static float getLengthFromString(Context c, String value, float percent100, float defaultValue) {
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (value.isEmpty())</span>
+<span class="fc" id="L251">            return defaultValue;</span>
+
+<span class="fc" id="L253">        SVGTokenizer t = new SVGTokenizer(value);</span>
+        try {
+<span class="fc" id="L255">            float s = t.readFloat();</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (t.isEOF())</span>
+<span class="fc" id="L257">                return s;</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">            else if (t.nextIsChar('%'))</span>
+<span class="fc" id="L259">                return s * percent100 / 100f;</span>
+            else {
+<span class="pc bpc" id="L261" title="1 of 8 branches missed.">                switch (t.readCommand()) {</span>
+                    case &quot;em&quot;:
+<span class="fc" id="L263">                        return s * c.getFontSize();</span>
+                    case &quot;pt&quot;:
+<span class="fc" id="L265">                        return 4 * s / 3;</span>
+                    case &quot;pc&quot;:
+<span class="fc" id="L267">                        return 16 * s;</span>
+                    case &quot;px&quot;:
+<span class="fc" id="L269">                        return s;</span>
+                    case &quot;mm&quot;:
+<span class="fc" id="L271">                        return s * PIXELPERMM;</span>
+                    case &quot;cm&quot;:
+<span class="fc" id="L273">                        return 10 * s * PIXELPERMM;</span>
+                    case &quot;in&quot;:
+<span class="fc" id="L275">                        return 25.4f * s * PIXELPERMM;</span>
+                    default:
+<span class="nc" id="L277">                        return defaultValue;</span>
+                }
+            }
+<span class="nc" id="L280">        } catch (SVGTokenizer.TokenizerException e) {</span>
+<span class="nc" id="L281">            return defaultValue;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

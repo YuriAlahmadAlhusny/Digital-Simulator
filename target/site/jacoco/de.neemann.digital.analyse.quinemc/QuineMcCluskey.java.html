@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuineMcCluskey.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.quinemc</a> &gt; <span class="el_source">QuineMcCluskey.java</span></div><h1>QuineMcCluskey.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.quinemc;
+
+
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.analyse.quinemc.primeselector.PrimeSelector;
+import de.neemann.digital.analyse.quinemc.primeselector.PrimeSelectorDefault;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+
+import static de.neemann.digital.analyse.expression.Operation.or;
+
+/**
+ * The algorithm of Quine and McCluskey
+ */
+public class QuineMcCluskey {
+<span class="fc" id="L24">    private static final Logger LOGGER = LoggerFactory.getLogger(QuineMcCluskey.class);</span>
+
+    private final List&lt;Variable&gt; variables;
+    private final ArrayList&lt;TableRow&gt; primes;
+    private TableRows rows;
+
+    /**
+     * Creates a new instance
+     *
+     * @param variables the variables to use
+     */
+<span class="fc" id="L35">    public QuineMcCluskey(List&lt;Variable&gt; variables) {</span>
+<span class="fc" id="L36">        this.variables = variables;</span>
+<span class="fc" id="L37">        this.rows = new TableRows();</span>
+<span class="fc" id="L38">        this.primes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L39">    }</span>
+
+<span class="fc" id="L41">    QuineMcCluskey(List&lt;Variable&gt; variables, TableRows rows, ArrayList&lt;TableRow&gt; primes) {</span>
+<span class="fc" id="L42">        this.variables = variables;</span>
+<span class="fc" id="L43">        this.rows = rows;</span>
+<span class="fc" id="L44">        this.primes = primes;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Creates a new instance.
+     * The Bool table is build using the given expression
+     *
+     * @param expression the expression used to build the table
+     * @throws ExpressionException ExpressionException
+     */
+<span class="fc" id="L54">    public QuineMcCluskey(Expression expression) throws ExpressionException {</span>
+<span class="fc" id="L55">        ContextFiller context = new ContextFiller(expression);</span>
+<span class="fc" id="L56">        variables = context.getVariables();</span>
+<span class="fc" id="L57">        rows = new TableRows();</span>
+<span class="fc" id="L58">        fillTableWith(new BoolTableExpression(expression, context));</span>
+<span class="fc" id="L59">        primes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * Fills the instance with the given values
+     *
+     * @param values the values
+     * @return this for chained calls
+     * @throws ExpressionException ExpressionException
+     */
+    public QuineMcCluskey fillTableWith(BoolTable values) throws ExpressionException {
+<span class="fc" id="L70">        int n = 1 &lt;&lt; variables.size();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (n != values.size())</span>
+<span class="nc" id="L72">            throw new ExpressionException(Lang.get(&quot;err_exact_N0_valuesNecessaryNot_N1&quot;, n, values.size()));</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L74">            ThreeStateValue value = values.get(i);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            if (!value.equals(ThreeStateValue.zero)) {</span>
+<span class="fc" id="L76">                add(i, value.equals(ThreeStateValue.dontCare));</span>
+            }
+        }
+<span class="fc" id="L79">        return this;</span>
+    }
+
+
+    private void add(int i, boolean dontCare) {
+<span class="fc" id="L84">        rows.add(new TableRow(variables.size(), i, rows.size() + 1, dontCare));</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Simplifies the given expression.
+     * If no simplification was found, the original expression is returned unchanged.
+     *
+     * @param expression the expression to simplify
+     * @return the simplified expression
+     * @throws ExpressionException ExpressionException
+     */
+    public static Expression simplify(Expression expression) throws ExpressionException {
+<span class="fc" id="L96">        int initialCplx = expression.traverse(new ComplexityInclNotVisitor()).getComplexity();</span>
+
+<span class="fc" id="L98">        Expression newExp = new QuineMcCluskey(expression)</span>
+<span class="fc" id="L99">                .simplify()</span>
+<span class="fc" id="L100">                .getExpression();</span>
+
+<span class="fc" id="L102">        int newCplx = newExp.traverse(new ComplexityInclNotVisitor()).getComplexity();</span>
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (newCplx &lt; initialCplx)</span>
+<span class="fc" id="L105">            return newExp;</span>
+        else
+<span class="fc" id="L107">            return expression;</span>
+    }
+
+    /**
+     * Simplifies the table the the default {@link PrimeSelector}
+     *
+     * @return the simplified QMC instance
+     */
+    public QuineMcCluskey simplify() {
+<span class="fc" id="L116">        return simplify(new PrimeSelectorDefault());</span>
+    }
+
+    /**
+     * Simplifies the table the the given {@link PrimeSelector}
+     *
+     * @param ps the prime selector
+     * @return the simplified QMC instance
+     */
+    public QuineMcCluskey simplify(PrimeSelector ps) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        while (!isFinished()) {</span>
+<span class="fc" id="L127">            LOGGER.debug(&quot;QMC rows &quot; + rows.size());</span>
+<span class="fc" id="L128">            simplifyStep();</span>
+        }
+<span class="fc" id="L130">        simplifyPrimes(ps);</span>
+
+<span class="fc" id="L132">        return this;</span>
+    }
+
+
+    /**
+     * a single simplification iteration
+     */
+    public void simplifyStep() {
+<span class="fc" id="L140">        TableRows newRows = new TableRows();</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        for (TableRows.InnerList list : rows.listIterable())</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            for (int i = 0; i &lt; list.size() - 1; i++)</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                for (int j = i + 1; j &lt; list.size(); j++) {</span>
+<span class="fc" id="L145">                    TableRow r1 = list.get(i);</span>
+<span class="fc" id="L146">                    TableRow r2 = list.get(j);</span>
+
+<span class="fc" id="L148">                    int index = r1.checkCompatible(r2);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                    if (index &gt;= 0) {</span>
+                        // can optimize;
+<span class="fc" id="L151">                        TableRow newRow = new TableRow(r1);</span>
+<span class="fc" id="L152">                        newRow.setToOptimized(index);</span>
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                        if (!newRows.contains(newRow)) {</span>
+<span class="fc" id="L155">                            newRow.addSource(r1.getSource());</span>
+<span class="fc" id="L156">                            newRow.addSource(r2.getSource());</span>
+<span class="fc" id="L157">                            newRows.add(newRow);</span>
+                        }
+<span class="fc" id="L159">                        r1.setUsed();</span>
+<span class="fc" id="L160">                        r2.setUsed();</span>
+                    }
+                }
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (TableRow row : rows)</span>
+<span class="fc bfc" id="L165" title="All 4 branches covered.">            if (!row.isUsed() &amp;&amp; row.getSource().size() &gt; 0)</span>
+<span class="fc" id="L166">                primes.add(row);</span>
+
+<span class="fc" id="L168">        rows = newRows;</span>
+<span class="fc" id="L169">    }</span>
+
+    /**
+     * @return true id simplification is complete
+     */
+    public boolean isFinished() {
+<span class="fc" id="L175">        return rows.isEmpty();</span>
+    }
+
+    /**
+     * @return the actual table rows
+     */
+    public TableRows getRows() {
+<span class="nc" id="L182">        return rows;</span>
+    }
+
+    /**
+     * Sets the table rows.
+     *
+     * @param rows the rows to use
+     */
+    public void setRows(TableRows rows) {
+<span class="nc" id="L191">        this.rows = rows;</span>
+<span class="nc" id="L192">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L196">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L197">        ArrayList&lt;TableRow&gt; newList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (TableRow r : rows) {</span>
+<span class="fc" id="L199">            newList.add(r);</span>
+<span class="fc" id="L200">        }</span>
+<span class="fc" id="L201">        Collections.sort(newList);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (TableRow r : newList) {</span>
+<span class="fc" id="L203">            sb.append(r.toString());</span>
+<span class="fc" id="L204">            sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L205">        }</span>
+<span class="fc" id="L206">        return sb.toString();</span>
+    }
+
+    /**
+     * @return the final primes
+     */
+    public ArrayList&lt;TableRow&gt; getPrimes() {
+<span class="fc" id="L213">        return primes;</span>
+    }
+
+    /**
+     * @return the variables used
+     */
+    public List&lt;Variable&gt; getVariables() {
+<span class="nc" id="L220">        return variables;</span>
+    }
+
+    /**
+     * @return the simplified expression which represent this table
+     */
+    public Expression getExpression() {
+<span class="pc bpc" id="L227" title="1 of 4 branches missed.">        if (primes.isEmpty() &amp;&amp; rows.isEmpty())</span>
+<span class="fc" id="L228">            return Constant.ZERO;</span>
+
+<span class="fc" id="L230">        Expression e = addAnd(null, primes, variables);</span>
+<span class="fc" id="L231">        return addAnd(e, rows, variables);</span>
+    }
+
+    /**
+     * Creates the final expression
+     *
+     * @param e         the expression to complete
+     * @param rows      the rows to add
+     * @param variables the variables to use to build the expression
+     * @return the expression
+     */
+    public static Expression addAnd(Expression e, Iterable&lt;TableRow&gt; rows, List&lt;Variable&gt; variables) {
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (TableRow r : rows) {</span>
+<span class="fc" id="L244">            Expression n = r.getExpression(variables);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (e == null)</span>
+<span class="fc" id="L246">                e = n;</span>
+            else
+<span class="fc" id="L248">                e = or(e, n);</span>
+<span class="fc" id="L249">        }</span>
+<span class="fc" id="L250">        return e;</span>
+    }
+
+    /**
+     * Simplify the primes
+     *
+     * @param primeSelector the prime selector to use
+     */
+    public void simplifyPrimes(PrimeSelector primeSelector) {
+
+<span class="fc" id="L260">        TreeSet&lt;Integer&gt; columns = new TreeSet&lt;&gt;();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (TableRow r : primes)</span>
+<span class="fc" id="L262">            columns.addAll(r.getSource());</span>
+
+<span class="fc" id="L264">        LOGGER.debug(&quot;initial primes &quot; + primes.size());</span>
+
+        // remove all primes which are easy to remove
+        while (true) {
+            // find rows to delete
+<span class="fc" id="L269">            HashSet&lt;TableRow&gt; rowsToDelete = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            for (TableRow r1 : primes)</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">                for (TableRow r2 : primes) {</span>
+<span class="fc bfc" id="L272" title="All 6 branches covered.">                    if ((r1 != r2) &amp;&amp; !rowsToDelete.contains(r1) &amp;&amp; r1.getSource().containsAll(r2.getSource()))</span>
+<span class="fc" id="L273">                        rowsToDelete.add(r2);</span>
+<span class="fc" id="L274">                }</span>
+
+<span class="fc" id="L276">            primes.removeAll(rowsToDelete);</span>
+
+            // find the cols to delete
+<span class="fc" id="L279">            HashSet&lt;Integer&gt; colsToDelete = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            for (int c1 : columns) {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                for (int c2 : columns) {</span>
+<span class="fc bfc" id="L282" title="All 6 branches covered.">                    if ((c1 != c2) &amp;&amp; !colsToDelete.contains(c1) &amp;&amp; smaller(c1, c2, primes))</span>
+<span class="fc" id="L283">                        colsToDelete.add(c2);</span>
+<span class="fc" id="L284">                }</span>
+<span class="fc" id="L285">            }</span>
+
+<span class="fc bfc" id="L287" title="All 4 branches covered.">            if (colsToDelete.isEmpty() &amp;&amp; rowsToDelete.isEmpty())</span>
+<span class="fc" id="L288">                break;</span>
+
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            for (TableRow p : primes)</span>
+<span class="fc" id="L291">                p.getSource().removeAll(colsToDelete);</span>
+
+<span class="fc" id="L293">            columns.removeAll(colsToDelete);</span>
+<span class="fc" id="L294">        }</span>
+
+<span class="fc" id="L296">        LOGGER.debug(&quot;residual primes &quot; + primes.size());</span>
+
+        // try to reduce the number of primes needed
+<span class="fc bfc" id="L299" title="All 4 branches covered.">        if (primeSelector != null &amp;&amp; !columns.isEmpty()) {</span>
+<span class="fc" id="L300">            ArrayList&lt;TableRow&gt; availPrimes = new ArrayList&lt;&gt;(primes.size());</span>
+<span class="fc" id="L301">            availPrimes.addAll(primes);</span>
+<span class="fc" id="L302">            primes.clear();</span>
+<span class="fc" id="L303">            primeSelector.select(primes, availPrimes, columns);</span>
+<span class="fc" id="L304">            LOGGER.debug(&quot;final primes &quot; + primes.size());</span>
+        }
+<span class="fc" id="L306">    }</span>
+
+    private boolean smaller(int c1, int c2, ArrayList&lt;TableRow&gt; primes) {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (TableRow r : primes) {</span>
+<span class="fc" id="L310">            Collection&lt;Integer&gt; s = r.getSource();</span>
+<span class="fc bfc" id="L311" title="All 4 branches covered.">            if (s.contains(c1) &amp;&amp; !s.contains(c2))</span>
+<span class="fc" id="L312">                return false;</span>
+<span class="fc" id="L313">        }</span>
+<span class="fc" id="L314">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

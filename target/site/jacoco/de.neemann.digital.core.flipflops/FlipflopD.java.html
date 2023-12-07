@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FlipflopD.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.flipflops</a> &gt; <span class="el_source">FlipflopD.java</span></div><h1>FlipflopD.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.flipflops;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.stats.Countable;
+
+import static de.neemann.digital.core.ObservableValues.ovs;
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The D Flipflop
+ */
+public class FlipflopD extends Node implements Element, Countable {
+
+    /**
+     * The D-FF description
+     */
+<span class="fc" id="L26">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L27">            = new ElementTypeDescription(&quot;D_FF&quot;, FlipflopD.class, input(&quot;D&quot;), input(&quot;C&quot;).setClock())</span>
+<span class="fc" id="L28">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.MIRROR)</span>
+<span class="fc" id="L30">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L32">            .addAttribute(Keys.DEFAULT)</span>
+<span class="fc" id="L33">            .addAttribute(Keys.INVERTER_CONFIG)</span>
+<span class="fc" id="L34">            .addAttribute(Keys.VALUE_IS_PROBE)</span>
+<span class="fc" id="L35">            .supportsHDL();</span>
+
+    private final int bits;
+    private final boolean isProbe;
+    private final String label;
+    private ObservableValue dVal;
+    private ObservableValue clockVal;
+    private ObservableValue q;
+    private ObservableValue qn;
+    private boolean lastClock;
+    private long value;
+    private long defaultValue;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+    public FlipflopD(ElementAttributes attributes) {
+<span class="fc" id="L54">        this(attributes,</span>
+<span class="fc" id="L55">                new ObservableValue(&quot;Q&quot;, attributes.getBits()).setPinDescription(DESCRIPTION),</span>
+<span class="fc" id="L56">                new ObservableValue(&quot;~Q&quot;, attributes.getBits()).setPinDescription(DESCRIPTION));</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Creates a new D-FF with the given outputs!
+     *
+     * @param label the label
+     * @param q     output
+     * @param qn    inverted output
+     * @param def   the default value
+     */
+    public FlipflopD(String label, ObservableValue q, ObservableValue qn, long def) {
+<span class="fc" id="L68">        this(new ElementAttributes()</span>
+<span class="fc" id="L69">                .set(Keys.LABEL, label)</span>
+<span class="fc" id="L70">                .setBits(q.getBits())</span>
+<span class="fc" id="L71">                .set(Keys.DEFAULT, def), q, qn);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (qn.getBits() != q.getBits())</span>
+<span class="nc" id="L73">            throw new RuntimeException(&quot;wrong bit count given!&quot;);</span>
+<span class="fc" id="L74">    }</span>
+
+    FlipflopD(ElementAttributes attributes, ObservableValue q, ObservableValue qn) {
+<span class="fc" id="L77">        super(true);</span>
+<span class="fc" id="L78">        bits = attributes.getBits();</span>
+<span class="fc" id="L79">        this.q = q;</span>
+<span class="fc" id="L80">        this.qn = qn;</span>
+<span class="fc" id="L81">        isProbe = attributes.get(Keys.VALUE_IS_PROBE);</span>
+<span class="fc" id="L82">        label = attributes.getLabel();</span>
+
+<span class="fc" id="L84">        defaultValue = attributes.get(Keys.DEFAULT);</span>
+<span class="fc" id="L85">        value = defaultValue;</span>
+<span class="fc" id="L86">        q.setValue(value);</span>
+<span class="fc" id="L87">        qn.setValue(~value);</span>
+<span class="fc" id="L88">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L92">        boolean clock = clockVal.getBool();</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">        if (clock &amp;&amp; !lastClock)</span>
+<span class="fc" id="L94">            value = dVal.getValue();</span>
+<span class="fc" id="L95">        lastClock = clock;</span>
+<span class="fc" id="L96">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L100">        q.setValue(value);</span>
+<span class="fc" id="L101">        qn.setValue(~value);</span>
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws BitsException {
+<span class="fc" id="L106">        dVal = inputs.get(0).checkBits(bits, this, 0);</span>
+<span class="fc" id="L107">        clockVal = inputs.get(1).addObserverToValue(this).checkBits(1, this, 1);</span>
+<span class="fc" id="L108">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L112">        return ovs(q, qn);</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L117">        super.registerNodes(model);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (isProbe)</span>
+<span class="fc" id="L119">            model.addSignal(new Signal(label, q, (v, z) -&gt; {</span>
+<span class="nc" id="L120">                value = v;</span>
+<span class="nc" id="L121">                q.setValue(value);</span>
+<span class="nc" id="L122">                qn.setValue(~value);</span>
+<span class="pc" id="L123">            }).setTestOutput());</span>
+<span class="fc" id="L124">    }</span>
+
+    /**
+     * @return the D input
+     */
+    public ObservableValue getDInput() {
+<span class="fc" id="L130">        return dVal;</span>
+    }
+
+    /**
+     * @return the label
+     */
+    public String getLabel() {
+<span class="fc" id="L137">        return label;</span>
+    }
+
+    /**
+     * @return the clock value
+     */
+    public ObservableValue getClock() {
+<span class="fc" id="L144">        return clockVal;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="fc" id="L149">        return bits;</span>
+    }
+
+    void setValue(long value) {
+<span class="fc" id="L153">        this.value = value;</span>
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * @return the default value
+     */
+    public long getDefault() {
+<span class="fc" id="L160">        return defaultValue;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

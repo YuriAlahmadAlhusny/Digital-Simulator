@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes.custom</a> &gt; <span class="el_source">CustomShape.java</span></div><h1>CustomShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes.custom;
+
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.draw.shapes.InteractorInterface;
+import de.neemann.digital.draw.shapes.Shape;
+
+/**
+ * Represents a custom shape.
+ */
+public class CustomShape implements Shape {
+    private final String label;
+    private final CustomShapeDescription shapeDescription;
+    private final PinDescriptions inputs;
+    private final PinDescriptions outputs;
+    private Pins pins;
+
+    /**
+     * Creates a new instance
+     *
+     * @param shapeDescription the description of the shape
+     * @param label            the label
+     * @param inputs           the inputs of the component
+     * @param outputs          the inputs of the component
+     * @throws PinException thrown if a pin is not found
+     */
+<span class="fc" id="L40">    public CustomShape(CustomShapeDescription shapeDescription, String label, PinDescriptions inputs, PinDescriptions outputs) throws PinException {</span>
+<span class="fc" id="L41">        this.label = label;</span>
+<span class="fc" id="L42">        this.shapeDescription = shapeDescription;</span>
+<span class="fc" id="L43">        this.inputs = inputs;</span>
+<span class="fc" id="L44">        this.outputs = outputs;</span>
+
+<span class="fc" id="L46">        initPins();</span>
+<span class="fc" id="L47">    }</span>
+
+    private void initPins() throws PinException {
+<span class="fc" id="L50">        pins = new Pins();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (PinDescription p : outputs)</span>
+<span class="fc" id="L52">            pins.add(new Pin(shapeDescription.getPin(p.getName()).getPos(), p));</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (PinDescription p : inputs)</span>
+<span class="fc" id="L54">            pins.add(new Pin(shapeDescription.getPin(p.getName()).getPos(), p));</span>
+<span class="fc" id="L55">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L59">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L64">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (Drawable d : shapeDescription)</span>
+<span class="fc" id="L70">            d.drawTo(graphic, highLight);</span>
+
+<span class="fc" id="L72">        CustomShapeDescription.TextHolder l = shapeDescription.getLabel();</span>
+<span class="pc bpc" id="L73" title="5 of 6 branches missed.">        if (l != null &amp;&amp; label != null &amp;&amp; !label.isEmpty())</span>
+<span class="nc" id="L74">            l.drawText(graphic, label);</span>
+
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (Pin p : getPins()) {</span>
+            try {
+<span class="fc" id="L78">                CustomShapeDescription.Pin cp = shapeDescription.getPin(p.getName());</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">                if (cp != null &amp;&amp; cp.isShowLabel()) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                    if (p.getDirection() == Pin.Direction.input) {</span>
+<span class="fc" id="L81">                        graphic.drawText(p.getPos().add(4, 0), p.getName(), Orientation.LEFTCENTER, Style.SHAPE_PIN);</span>
+                    } else
+<span class="fc" id="L83">                        graphic.drawText(p.getPos().add(-4, 0), p.getName(), Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+
+                }
+<span class="nc" id="L86">            } catch (PinException e) {</span>
+                // do nothing on an error
+<span class="fc" id="L88">            }</span>
+<span class="fc" id="L89">        }</span>
+<span class="fc" id="L90">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

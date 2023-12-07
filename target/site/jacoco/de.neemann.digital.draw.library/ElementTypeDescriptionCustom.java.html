@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementTypeDescriptionCustom.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.library</a> &gt; <span class="el_source">ElementTypeDescriptionCustom.java</span></div><h1>ElementTypeDescriptionCustom.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.library;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.model.NetList;
+import de.neemann.digital.hdl.hgs.Parser;
+import de.neemann.digital.hdl.hgs.ParserException;
+import de.neemann.digital.hdl.hgs.refs.Reference;
+import de.neemann.digital.hdl.hgs.refs.ReferenceToStruct;
+import de.neemann.digital.hdl.hgs.refs.ReferenceToVar;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.TreeSet;
+
+/**
+ * The description of a nested element.
+ * This is a complete circuit which is used as a element.
+ */
+public final class ElementTypeDescriptionCustom extends ElementTypeDescription {
+    private static final int MAX_DEPTH = 30;
+    private final File file;
+    private final Circuit circuit;
+    private final ResolveGenerics resolveGenerics;
+    private final LibraryInterface library;
+    private String description;
+    private NetList netList;
+    private String declarationDefault;
+
+    /**
+     * Creates a new element
+     *
+     * @param file    the file which is loaded
+     * @param circuit the circuit
+     * @throws PinException PinException
+     */
+    ElementTypeDescriptionCustom(File file, Circuit circuit, ElementLibrary library) throws PinException {
+<span class="fc" id="L48">        super(file.getName(), (ElementFactory) null, circuit.getInputNames());</span>
+<span class="fc" id="L49">        this.file = file;</span>
+<span class="fc" id="L50">        this.circuit = circuit;</span>
+<span class="fc" id="L51">        this.library = library;</span>
+<span class="fc" id="L52">        resolveGenerics = new ResolveGenerics(circuit, library);</span>
+<span class="fc" id="L53">        setShortName(file.getName());</span>
+<span class="fc" id="L54">        addAttribute(Keys.ROTATE);</span>
+<span class="fc" id="L55">        addAttribute(Keys.LABEL);</span>
+<span class="fc" id="L56">        addAttribute(Keys.SHAPE_TYPE);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (isGeneric())</span>
+<span class="fc" id="L58">            addAttribute(Keys.GENERIC);</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Returns the filename
+     * The returned file is opened if the user wants to modify the element
+     *
+     * @return the filename
+     */
+    public File getFile() {
+<span class="nc" id="L68">        return file;</span>
+    }
+
+    /**
+     * @return the elements attributes
+     */
+    public ElementAttributes getAttributes() {
+<span class="fc" id="L75">        return circuit.getAttributes();</span>
+    }
+
+    /**
+     * @return the circuit
+     */
+    public Circuit getCircuit() {
+<span class="fc" id="L82">        return circuit;</span>
+    }
+
+    /**
+     * Returns the resolved circuit if it is a generic circuit
+     *
+     * @param attributes the defining attributes
+     * @return the resolved circuit
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public Circuit getResolvedCircuit(ElementAttributes attributes) throws NodeException, ElementNotFoundException {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (isGeneric())</span>
+<span class="fc" id="L95">            return resolveGenerics.resolveCircuit(attributes).getCircuit();</span>
+        else
+<span class="fc" id="L97">            return circuit;</span>
+    }
+
+    /**
+     * Sets a custom description for this field
+     *
+     * @param description the description
+     */
+    public void setDescription(String description) {
+<span class="fc" id="L106">        this.description = description;</span>
+<span class="fc" id="L107">    }</span>
+
+    @Override
+    public String getDescription(ElementAttributes elementAttributes) {
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (description != null)</span>
+<span class="fc" id="L112">            return description;</span>
+        else
+<span class="nc" id="L114">            return super.getDescription(elementAttributes);</span>
+    }
+
+    /**
+     * Gets a {@link ModelCreator} of this circuit.
+     * Every time this method is called a new {@link ModelCreator} is created.
+     *
+     * @param subName                 name of the circuit, used to name unique elements
+     * @param depth                   recursion depth, used to detect a circuit which contains itself
+     * @param containingVisualElement the containing visual element
+     * @return the {@link ModelCreator}
+     * @throws PinException             PinException
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    ModelCreator getModelCreator(String subName, int depth, VisualElement errorVisualElement, VisualElement containingVisualElement) throws PinException, NodeException, ElementNotFoundException {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (netList == null)</span>
+<span class="fc" id="L131">            netList = new NetList(circuit);</span>
+
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (depth &gt; MAX_DEPTH)</span>
+<span class="nc" id="L134">            throw new NodeException(Lang.get(&quot;err_recursiveNestingAt_N0&quot;, circuit.getOrigin()));</span>
+
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (isGeneric()) {</span>
+<span class="fc" id="L137">            Circuit c = resolveGenerics.resolveCircuit(containingVisualElement.getElementAttributes()).getCircuit();</span>
+
+<span class="fc" id="L139">            return new ModelCreator(c, library, true, new NetList(new NetList(c), errorVisualElement), subName, depth, errorVisualElement);</span>
+        } else
+<span class="fc" id="L141">            return new ModelCreator(circuit, library, true, new NetList(netList, errorVisualElement), subName, depth, errorVisualElement);</span>
+    }
+
+    /**
+     * @return the generics field default value
+     * @throws NodeException NodeException
+     */
+    public String getDeclarationDefault() throws NodeException {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (declarationDefault == null)</span>
+<span class="nc" id="L150">            declarationDefault = createDeclarationDefault(circuit);</span>
+<span class="nc" id="L151">        return declarationDefault;</span>
+    }
+
+    /**
+     * Creates the default for custom element declarations
+     *
+     * @param circuit the circuit
+     * @return the default code template
+     * @throws NodeException NodeException
+     */
+    public static String createDeclarationDefault(Circuit circuit) throws NodeException {
+<span class="nc" id="L162">        TreeSet&lt;String&gt; nameSet = new TreeSet&lt;&gt;();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (VisualElement ve : circuit.getElements()) {</span>
+<span class="nc" id="L164">            String gen = ve.getElementAttributes().get(Keys.GENERIC).trim();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (!gen.isEmpty()) {</span>
+                try {
+<span class="nc" id="L167">                    Parser p = new Parser(gen);</span>
+<span class="nc" id="L168">                    p.enableRefReadCollection();</span>
+<span class="nc" id="L169">                    p.parse(false);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    for (Reference r : p.getRefsRead()) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                        if (r instanceof ReferenceToStruct) {</span>
+<span class="nc" id="L172">                            ReferenceToStruct st = (ReferenceToStruct) r;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                            if (st.getParent() instanceof ReferenceToVar) {</span>
+<span class="nc" id="L174">                                ReferenceToVar var = (ReferenceToVar) st.getParent();</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                                if (var.getName().equals(&quot;args&quot;)) {</span>
+<span class="nc" id="L176">                                    nameSet.add(st.getName());</span>
+                                }
+                            }
+                        }
+<span class="nc" id="L180">                    }</span>
+<span class="nc" id="L181">                } catch (ParserException | IOException e) {</span>
+<span class="nc" id="L182">                    final NodeException ex = new NodeException(Lang.get(&quot;err_evaluatingGenericsCode_N_N&quot;, ve, gen), e);</span>
+<span class="nc" id="L183">                    ex.setOrigin(circuit.getOrigin());</span>
+<span class="nc" id="L184">                    throw ex;</span>
+<span class="nc" id="L185">                }</span>
+            }
+<span class="nc" id="L187">        }</span>
+<span class="nc" id="L188">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        for (String name : nameSet)</span>
+<span class="nc" id="L190">            sb.append(name).append(&quot; := ;\n&quot;);</span>
+<span class="nc" id="L191">        return sb.toString();</span>
+    }
+
+    /**
+     * @return true if the circuit is generic
+     */
+    public boolean isGeneric() {
+<span class="fc" id="L198">        return circuit.getAttributes().get(Keys.IS_GENERIC);</span>
+    }
+
+    @Override
+    public PinDescriptions getInputDescription(ElementAttributes elementAttributes) throws NodeException {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (isGeneric()) {</span>
+            try {
+<span class="fc" id="L205">                Circuit c = resolveGenerics.resolveCircuit(elementAttributes).getCircuit();</span>
+<span class="fc" id="L206">                return new PinDescriptions(c.getInputNames());</span>
+<span class="fc" id="L207">            } catch (Exception e) {</span>
+<span class="fc" id="L208">                return super.getInputDescription(elementAttributes);</span>
+            }
+        } else
+<span class="fc" id="L211">            return super.getInputDescription(elementAttributes);</span>
+    }
+
+    @Override
+    public PinDescriptions getOutputDescriptions(ElementAttributes elementAttributes) throws PinException {
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (isGeneric()) {</span>
+            try {
+<span class="fc" id="L218">                Circuit c = resolveGenerics.resolveCircuit(elementAttributes).getCircuit();</span>
+<span class="fc" id="L219">                return new PinDescriptions(c.getOutputNames());</span>
+<span class="fc" id="L220">            } catch (Exception e) {</span>
+<span class="fc" id="L221">                return super.getOutputDescriptions(elementAttributes);</span>
+            }
+        } else
+<span class="fc" id="L224">            return super.getOutputDescriptions(elementAttributes);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

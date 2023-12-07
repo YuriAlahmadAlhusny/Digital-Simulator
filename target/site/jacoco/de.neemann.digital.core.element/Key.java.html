@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Key.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.element</a> &gt; <span class="el_source">Key.java</span></div><h1>Key.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.element;
+
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+
+/**
+ * Class is used to define the keys used to access the models attributes
+ *
+ * @param &lt;VALUE&gt; the keys value type
+ */
+public class Key&lt;VALUE&gt; {
+    private final String key;
+    private final DefaultFactory&lt;VALUE&gt; defFactory;
+    private String langKey;
+<span class="fc" id="L21">    private boolean groupEditAllowed = false;</span>
+    private Key dependsOn;
+    private CheckEnabled checkEnabled;
+    private boolean isSecondary;
+<span class="fc" id="L25">    private boolean requiresRestart = false;</span>
+<span class="fc" id="L26">    private boolean requiresRepaint = false;</span>
+    private String panelId;
+
+    // Both values are always null in digital.
+    // Both are only used within a custom implemented component.
+    private String name;
+    private String description;
+    private boolean adaptiveIntFormat;
+
+    /**
+     * Creates a new Key.
+     * Use this constructor only if the def value is not mutable!
+     *
+     * @param key the key
+     * @param def the default value
+     */
+    public Key(String key, VALUE def) {
+<span class="fc" id="L43">        this(key, () -&gt; def);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (def == null)</span>
+<span class="nc" id="L45">            throw new NullPointerException();</span>
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * Creates a new Key.
+     * Use this constructor if the def value is mutable!
+     *
+     * @param key        the key
+     * @param defFactory the factory to create a default value
+     */
+<span class="fc" id="L55">    public Key(String key, DefaultFactory&lt;VALUE&gt; defFactory) {</span>
+<span class="fc" id="L56">        this.key = key;</span>
+<span class="fc" id="L57">        langKey = &quot;key_&quot; + key.replace(&quot; &quot;, &quot;&quot;);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (defFactory == null)</span>
+<span class="nc" id="L59">            throw new NullPointerException();</span>
+<span class="fc" id="L60">        this.defFactory = defFactory;</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Allows to shate translations between keys
+     *
+     * @param key the key which translation is to share
+     * @return this for chained calls
+     */
+    Key&lt;VALUE&gt; useTranslationOf(Key key) {
+<span class="fc" id="L70">        langKey = key.langKey;</span>
+<span class="fc" id="L71">        return this;</span>
+    }
+
+    /**
+     * Returns the attributes key
+     *
+     * @return the key
+     */
+    public String getKey() {
+<span class="fc" id="L80">        return key;</span>
+    }
+
+    /**
+     * Returns the attributes display name
+     *
+     * @return the name of the key
+     */
+    public String getName() {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (name != null)</span>
+<span class="nc" id="L90">            return name;</span>
+        else
+<span class="fc" id="L92">            return Lang.get(langKey);</span>
+    }
+
+    /**
+     * @return the default value of this key
+     */
+    public VALUE getDefault() {
+<span class="fc" id="L99">        return defFactory.createDefault();</span>
+    }
+
+    /**
+     * @return The values class
+     */
+    public Class getValueClass() {
+<span class="nc" id="L106">        return getDefault().getClass();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L111">        return getName();</span>
+    }
+
+    /**
+     * @return the keys description
+     */
+    public String getDescription() {
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (description != null)</span>
+<span class="nc" id="L119">            return description;</span>
+        else {
+<span class="fc" id="L121">            String d = Lang.getNull(langKey + &quot;_tt&quot;);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            if (d != null)</span>
+<span class="fc" id="L123">                return d;</span>
+            else
+<span class="fc" id="L125">                return getName();</span>
+        }
+    }
+
+    /**
+     * @return the language key
+     */
+    public String getLangKey() {
+<span class="fc" id="L133">        return langKey;</span>
+    }
+
+    /**
+     * @return true if group edit is allowed
+     */
+    public boolean isGroupEditAllowed() {
+<span class="nc" id="L140">        return groupEditAllowed;</span>
+    }
+
+    /**
+     * Allows this attribute in group edit.
+     *
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; allowGroupEdit() {
+<span class="fc" id="L149">        this.groupEditAllowed = true;</span>
+<span class="fc" id="L150">        return this;</span>
+    }
+
+    /**
+     * Sets the name of this key.
+     * Is not used in Digital at all.
+     * This method can be used to define custom keys in custom java components.
+     *
+     * @param name the name of the key
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setName(String name) {
+<span class="fc" id="L162">        this.name = name;</span>
+<span class="fc" id="L163">        return this;</span>
+    }
+
+    /**
+     * Sets the description of this key.
+     * Is not used in Digital at all.
+     * This method can be used to define custom keys in custom java components.
+     *
+     * @param description the name of the key
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setDescription(String description) {
+<span class="fc" id="L175">        this.description = description;</span>
+<span class="fc" id="L176">        return this;</span>
+    }
+
+    /**
+     * @return returns the key this key depends on
+     */
+    public Key getDependsOn() {
+<span class="nc" id="L183">        return dependsOn;</span>
+    }
+
+    /**
+     * @return true if dependency is inverted
+     */
+    public CheckEnabled getCheckEnabled() {
+<span class="nc" id="L190">        return checkEnabled;</span>
+    }
+
+    /**
+     * Sets a bool dependency for this key
+     *
+     * @param key the key which this key depends on
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setDependsOn(Key&lt;Boolean&gt; key) {
+<span class="pc" id="L200">        return setDependsOn(key, o -&gt; o);</span>
+    }
+
+    /**
+     * Sets the key this key depends on.
+     *
+     * @param key          the key where this key depends on
+     * @param checkEnabled function which determines if the editor is enabled or not
+     * @param &lt;KV&gt;         type of key which this key depends on
+     * @return this for chained calls
+     */
+    public &lt;KV&gt; Key&lt;VALUE&gt; setDependsOn(Key&lt;KV&gt; key, CheckEnabled&lt;KV&gt; checkEnabled) {
+<span class="fc" id="L212">        this.dependsOn = key;</span>
+<span class="fc" id="L213">        this.checkEnabled = checkEnabled;</span>
+<span class="fc" id="L214">        return this;</span>
+    }
+
+    /**
+     * @return true is this is a secondary attribute
+     */
+    public boolean isSecondary() {
+<span class="fc" id="L221">        return isSecondary;</span>
+    }
+
+    /**
+     * Makes this attribute to be a secondary attribute
+     *
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setSecondary() {
+<span class="fc" id="L230">        isSecondary = true;</span>
+<span class="fc" id="L231">        return this;</span>
+    }
+
+    /**
+     * Called if the modification of this setting needs a restart.
+     *
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setRequiresRestart() {
+<span class="fc" id="L240">        requiresRestart = true;</span>
+<span class="fc" id="L241">        return this;</span>
+    }
+
+    /**
+     * @return true if changing this value needs a restart
+     */
+    public boolean getRequiresRestart() {
+<span class="nc" id="L248">        return requiresRestart;</span>
+    }
+
+    /**
+     * Called if this setting needs a repaint.
+     * This means, that the circuit graphics became invalid
+     * if this setting has changed.
+     *
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setRequiresRepaint() {
+<span class="fc" id="L259">        requiresRepaint = true;</span>
+<span class="fc" id="L260">        return this;</span>
+    }
+
+    /**
+     * @return true if changing this value needs a repaint
+     */
+    public boolean getRequiresRepaint() {
+<span class="nc" id="L267">        return requiresRepaint;</span>
+    }
+
+    /**
+     * Enables an adaptive int format in number editors.
+     * This means that the string representation of the number is controlled
+     * by the IntFormat stored in the elements attributes.
+     *
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setAdaptiveIntFormat() {
+<span class="fc" id="L278">        adaptiveIntFormat = true;</span>
+<span class="fc" id="L279">        return this;</span>
+    }
+
+    /**
+     * @return true if adaptive int format is required
+     */
+    public boolean isAdaptiveIntFormat() {
+<span class="nc" id="L286">        return adaptiveIntFormat;</span>
+    }
+
+    /**
+     * Moves this key to the panel with the given id
+     *
+     * @param panelId the panel id
+     * @return this for chained calls
+     */
+    public Key&lt;VALUE&gt; setPanelId(String panelId) {
+<span class="fc" id="L296">        this.panelId = panelId;</span>
+<span class="fc" id="L297">        return this;</span>
+    }
+
+    /**
+     * @return the panel id, null if no panel is set
+     */
+    public String getPanelId() {
+<span class="nc" id="L304">        return panelId;</span>
+    }
+
+    /**
+     * A integer attribute.
+     * Stores additional combo box values
+     */
+    public static class KeyInteger extends Key&lt;Integer&gt; {
+        private int[] values;
+<span class="fc" id="L313">        private int min = Integer.MIN_VALUE;</span>
+<span class="fc" id="L314">        private int max = Integer.MAX_VALUE;</span>
+
+        /**
+         * Creates a new instance
+         *
+         * @param key the key to use
+         * @param def the default value
+         */
+        public KeyInteger(String key, Integer def) {
+<span class="fc" id="L323">            super(key, def);</span>
+<span class="fc" id="L324">        }</span>
+
+        /**
+         * Sets the values to use in the combo box.
+         *
+         * @param values the values
+         * @return this for chained calls
+         */
+        public KeyInteger setComboBoxValues(int... values) {
+<span class="fc" id="L333">            this.values = values;</span>
+<span class="fc" id="L334">            return this;</span>
+        }
+
+        /**
+         * Sets the minimal value which is allowed.
+         *
+         * @param min the minimal value allowed
+         * @return this for chained calls
+         */
+        public KeyInteger setMin(int min) {
+<span class="fc" id="L344">            this.min = min;</span>
+<span class="fc" id="L345">            return this;</span>
+        }
+
+        /**
+         * Sets the maximal value which is allowed.
+         *
+         * @param max the  maximal value allowed
+         * @return this for chained calls
+         */
+        public KeyInteger setMax(int max) {
+<span class="fc" id="L355">            this.max = max;</span>
+<span class="fc" id="L356">            return this;</span>
+        }
+
+        /**
+         * @return the values to show in the combo box
+         */
+        public int[] getComboBoxValues() {
+<span class="nc" id="L363">            return values;</span>
+        }
+
+        /**
+         * @return the min value
+         */
+        public int getMin() {
+<span class="nc" id="L370">            return min;</span>
+        }
+
+        /**
+         * @return the max value
+         */
+        public int getMax() {
+<span class="nc" id="L377">            return max;</span>
+        }
+    }
+
+    /**
+     * A bits attribute.
+     * Stores additional combo box values
+     */
+    public static final class KeyBits extends KeyInteger {
+
+        /**
+         * Creates a new bits key
+         *
+         * @param key the key
+         * @param def the default value
+         */
+        public KeyBits(String key, Integer def) {
+<span class="fc" id="L394">            super(key, def);</span>
+<span class="fc" id="L395">            setMin(1);</span>
+<span class="fc" id="L396">            setMax(64);</span>
+<span class="fc" id="L397">            setComboBoxValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 32);</span>
+<span class="fc" id="L398">            allowGroupEdit();</span>
+<span class="fc" id="L399">        }</span>
+    }
+
+    /**
+     * Stores a file
+     */
+    public static final class KeyFile extends Key&lt;File&gt; {
+
+        private boolean directoryOnly;
+
+        /**
+         * Creates a new file key
+         *
+         * @param key the key
+         * @param def the default file
+         */
+        public KeyFile(String key, File def) {
+<span class="fc" id="L416">            super(key, def);</span>
+<span class="fc" id="L417">            setDirectoryOnly(false);</span>
+<span class="fc" id="L418">        }</span>
+
+        /**
+         * Set the directory only mode
+         *
+         * @param directoryOnly if true you can select only directories
+         * @return this for chained calls
+         */
+        public KeyFile setDirectoryOnly(boolean directoryOnly) {
+<span class="fc" id="L427">            this.directoryOnly = directoryOnly;</span>
+<span class="fc" id="L428">            return this;</span>
+        }
+
+        /**
+         * @return true if you can select only directories
+         */
+        public boolean isDirectoryOnly() {
+<span class="nc" id="L435">            return directoryOnly;</span>
+        }
+    }
+
+    /**
+     * Used to store enum values
+     *
+     * @param &lt;E&gt; the enum type
+     */
+    public static final class KeyEnum&lt;E extends Enum&gt; extends Key&lt;E&gt; {
+        private final E[] values;
+        private final String[] names;
+        private final boolean toString;
+
+        /**
+         * Creates a new emum key
+         *
+         * @param key    the key
+         * @param def    the default value
+         * @param values the possible values
+         */
+        public KeyEnum(String key, E def, E[] values) {
+<span class="fc" id="L457">            this(key, def, values, false);</span>
+<span class="fc" id="L458">        }</span>
+
+        /**
+         * Creates a new emum key
+         *
+         * @param key      the key
+         * @param def      the default value
+         * @param values   the possible values
+         * @param toString if true, the names are not taken from the language file but created by calling toString()
+         */
+        public KeyEnum(String key, E def, E[] values, boolean toString) {
+<span class="fc" id="L469">            super(key, def);</span>
+<span class="fc" id="L470">            this.values = values;</span>
+<span class="fc" id="L471">            this.toString = toString;</span>
+
+<span class="fc" id="L473">            names = new String[values.length];</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">            if (toString)</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">                for (int i = 0; i &lt; values.length; i++)</span>
+<span class="fc" id="L476">                    names[i] = values[i].toString();</span>
+            else
+<span class="fc bfc" id="L478" title="All 2 branches covered.">                for (int i = 0; i &lt; values.length; i++)</span>
+<span class="fc" id="L479">                    names[i] = Lang.get(getLangKey(values[i]));</span>
+<span class="fc" id="L480">            allowGroupEdit();</span>
+<span class="fc" id="L481">        }</span>
+
+        /**
+         * creates the language key for the enum values
+         *
+         * @param value the value
+         * @return the language key
+         */
+        public String getLangKey(E value) {
+<span class="fc" id="L490">            return getLangKey() + &quot;_&quot; + value.name();</span>
+        }
+
+        /**
+         * @return the enums values
+         */
+        public E[] getValues() {
+<span class="fc" id="L497">            return values;</span>
+        }
+
+        /**
+         * @return the enums translated names
+         */
+        public String[] getNames() {
+<span class="nc" id="L504">            return names;</span>
+        }
+
+        /**
+         * @return true if this enum key uses toString to create the display names
+         */
+        public boolean usesToString() {
+<span class="fc" id="L511">            return toString;</span>
+        }
+    }
+
+    /**
+     * A special string key to flag long multi line strings.
+     */
+    public static final class LongString extends Key&lt;String&gt; {
+<span class="fc" id="L519">        private int rows = 6;</span>
+<span class="fc" id="L520">        private int columns = 0;</span>
+<span class="fc" id="L521">        private boolean lineNumbers = false;</span>
+
+        /**
+         * Creates a new Key
+         *
+         * @param key the key
+         */
+        public LongString(String key) {
+<span class="fc" id="L529">            super(key, &quot;&quot;);</span>
+<span class="fc" id="L530">        }</span>
+
+        /**
+         * Creates a new Key
+         *
+         * @param key the key
+         * @param def the default value
+         */
+        public LongString(String key, String def) {
+<span class="fc" id="L539">            super(key, def);</span>
+<span class="fc" id="L540">        }</span>
+
+        /**
+         * @return the rows of the editor field
+         */
+        public int getRows() {
+<span class="nc" id="L546">            return rows;</span>
+        }
+
+        /**
+         * Sets the rows in the editor
+         *
+         * @param rows the number ow rows
+         * @return this for chained calls
+         */
+        public LongString setRows(int rows) {
+<span class="fc" id="L556">            this.rows = rows;</span>
+<span class="fc" id="L557">            return this;</span>
+        }
+
+        /**
+         * @return the coloums of the editor field
+         */
+        public int getColumns() {
+<span class="nc" id="L564">            return columns;</span>
+        }
+
+
+        /**
+         * Sets the columns in the editor
+         *
+         * @param columns the number ow rows
+         * @return this for chained calls
+         */
+        public LongString setColumns(int columns) {
+<span class="fc" id="L575">            this.columns = columns;</span>
+<span class="fc" id="L576">            return this;</span>
+        }
+
+        /**
+         * Sets the line numbers attribute
+         *
+         * @param lineNumbers true if line numbers should be visibla
+         * @return this for chained calls
+         */
+        public LongString setLineNumbers(boolean lineNumbers) {
+<span class="fc" id="L586">            this.lineNumbers = lineNumbers;</span>
+<span class="fc" id="L587">            return this;</span>
+        }
+
+        /**
+         * @return true if line numbers are visible
+         */
+        public boolean getLineNumbers() {
+<span class="nc" id="L594">            return lineNumbers;</span>
+        }
+    }
+
+    /**
+     * Interface to define a dependancy of a key from an other key
+     *
+     * @param &lt;T&gt; the type of the key
+     */
+    public interface CheckEnabled&lt;T&gt; {
+        /**
+         * Returns true if editor is enabled
+         *
+         * @param t the value the editor depends on
+         * @return true if editor is enabled
+         */
+        boolean isEnabled(T t);
+    }
+
+    /**
+     * Used to provide a default value if the value is mutable.
+     *
+     * @param &lt;VALUE&gt; the type of the value
+     */
+    public interface DefaultFactory&lt;VALUE&gt; {
+        /**
+         * Called to create a new default value.
+         *
+         * @return the default value
+         */
+        VALUE createDefault();
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

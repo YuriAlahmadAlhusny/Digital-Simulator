@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SplitPinString.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">SplitPinString.java</span></div><h1>SplitPinString.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import de.neemann.digital.core.Signal;
+
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+/**
+ * Splits the pins string of a signal
+ */
+public class SplitPinString {
+
+<span class="fc" id="L18">    private static final SplitPinString EMPTY = new SplitPinString();</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param s the signal
+     * @return the port pins used
+     */
+    public static SplitPinString create(Signal s) {
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (s.missingPinNumber())</span>
+<span class="fc" id="L28">            return EMPTY;</span>
+<span class="fc" id="L29">        return create(s.getPinNumber());</span>
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param pinStr the pins definition;
+     * @return the port pins used
+     */
+    public static SplitPinString create(String pinStr) {
+<span class="pc bpc" id="L39" title="2 of 4 branches missed.">        if (pinStr == null || pinStr.trim().length() == 0)</span>
+<span class="nc" id="L40">            return EMPTY;</span>
+
+<span class="fc" id="L42">        StringTokenizer st = new StringTokenizer(pinStr, &quot;,;&quot;);</span>
+<span class="fc" id="L43">        ArrayList&lt;String&gt; pins = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        while (st.hasMoreTokens())</span>
+<span class="fc" id="L45">            pins.add(st.nextToken().trim());</span>
+
+<span class="fc" id="L47">        return new PinsArray(pins);</span>
+    }
+
+
+    private SplitPinString() {
+    }
+
+    /**
+     * Returns the pin of a given port
+     *
+     * @param i the port number
+     * @return the pin
+     */
+    public String getPin(int i) {
+<span class="fc" id="L61">        return null;</span>
+    }
+
+    private final static class PinsArray extends SplitPinString {
+        private final ArrayList&lt;String&gt; pins;
+
+<span class="fc" id="L67">        private PinsArray(ArrayList&lt;String&gt; pins) {</span>
+<span class="fc" id="L68">            this.pins = pins;</span>
+<span class="fc" id="L69">        }</span>
+
+        @Override
+        public String getPin(int i) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (i &gt;= pins.size())</span>
+<span class="fc" id="L74">                return null;</span>
+            else
+<span class="fc" id="L76">                return pins.get(i);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

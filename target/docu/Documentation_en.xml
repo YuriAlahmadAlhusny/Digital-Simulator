@@ -1,0 +1,1907 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="elem2html.xslt"?>
+<root titel="Digital" titleImage="file:/C:/Digital-0.29/src/test/resources/../../../distribution/screenshot.png" images="file:/C:/Digital-0.29/src/test/resources/docu/images/" toc="Table of Contents" lang="en" fontFamily="SansSerif" rev="v0.29-38-g48d3e30-dirty" revt="Revision" date="2022-05-23 18:51" datet="Date" general="General" components="Components" lib="Library" static="file:/C:/Digital-0.29/src/test/resources/docu/static_en.xml" library="file:/C:/Digital-0.29/target/docu/library.xml">
+  <settings name="Settings" descr="The following describes the available settings of the simulator.">
+    <main name="Settings" descr="The global settings of the simulator specify, among other
+        things, the language, the symbol form to be used or the paths of external tools.">
+      <attributes name="Attributes">
+        <attr name="Use IEEE 91-1984 shapes">Use IEEE 91-1984 shapes instead of rectangular shapes</attr>
+        <attr name="Language">Language of the GUI. Will only take effect after a restart.</attr>
+        <attr name="Format">Screen format of expressions.</attr>
+        <attr name="Color scheme">Color scheme</attr>
+        <attr name="User Defined Colors">User Defined Colors</attr>
+        <attr name="Component tree view is visible at startup.">If set, the component tree view is enabled at startup.</attr>
+        <attr name="Show Grid">Shows a grid in the main window.</attr>
+        <attr name="Show the number of wires on a bus.">CAUTION: The value is only updated when the simulation starts.</attr>
+        <attr name="No tool tips for components on the main panel.">If set, no tool tips for the components on the main panel are displayed. Especially in a presentation, these tool tips can be very annoying.</attr>
+        <attr name="Wire tool tips">If set, lines are highlighted when the mouse hovers over them.</attr>
+        <attr name="Library">Folder which contains the library with predefined sub circuits. Contains, for example, the components of the 74xx series. You also can add your own circuits by storing them at this location. It must be ensured that the names of all files in this folder and all subfolders are unique.</attr>
+        <attr name="Java library">A jar file containing additional components implemented in Java.</attr>
+        <attr name="ATF15xx Fitter">Path to the fitter for the ATF15xx. Enter the directory which contains the fit15xx.exe files provided by Microchip (former ATMEL).</attr>
+        <attr name="ATMISP">Path to the executable file ATMISP.exe. If set, the ATMISP software can be started automatically!</attr>
+        <attr name="GHDL">Path to the executable ghdl file. Only necessary if you want to use ghdl to simulate components defined with VHDL.</attr>
+        <attr name="IVerilog">Path to the Icarus Verilog installation folder. Only necessary if you want to use iverilog to simulate components defined with Verilog.</attr>
+        <attr name="Toolchain Configuration">Used to configurate an integration of a toolchain. Allows the start of external tools, e.g. to program an FPGA or similar.</attr>
+        <attr name="Menus Font Size [%]">Size of the fonts used in the menu in percent of the default size.</attr>
+        <attr name="Use macOS mouse clicks.">Uses CTRL-click instead of right-click.</attr>
+        <attr name="Use Equals-Key">Use the equal key instead of the plus key. This is always useful if the plus character is not a primary key, but the second assignment of the equals character, e.g. for an American or French keyboard layout.</attr>
+        <attr name="Show dialog for automatic renaming of tunnels.">If set, a dialog for automatically renaming all tunnels of the same name is displayed after a tunnel has been renamed.</attr>
+      </attributes>
+    </main>
+    <circuit name="Circuit specific settings" descr="The circuit specific settings affect the behavior of the
+        currently open circuit.
+        For example, the shape that represents the circuit when it is embedded in other circuits.
+        These settings are stored together with the circuit.">
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Width">Width of symbol if this circuit is used as an component in an other circuit.</attr>
+        <attr name="Background color">Background color of the circuit when it is embedded in another circuit. Is not used for DIL packages.</attr>
+        <attr name="Description">A short description of this element and its usage.</attr>
+        <attr name="Oscillation detection">Number of gate propagation times at which a oscillation is detected if the circuit has not stabilized by then.</attr>
+        <attr name="Modification locked">The circuit is locked. It is possible to configure diodes and FGF-FETs.</attr>
+        <attr name="Shape">The shape to be used for the representation of the circuit in an embedding circuit. In the &quot;Simple&quot; mode, the inputs are displayed on the left and the outputs on the right side of a simple rectangle. With &quot;Layout&quot;, the position of the inputs and outputs and their orientation in the circuit determines the position of the pins. Here it is possible to have pins at the top or the bottom. When selecting &quot;DIL-Chip&quot;, a DIL housing is used to display the circuit. The pin numbers of the inputs and outputs determine the position of the pins in this case.</attr>
+        <attr name="Custom Shape">Import of a SVG file</attr>
+        <attr name="Height">Height of symbol if this circuit is used as an component in an other circuit.</attr>
+        <attr name="Number of DIL pins">Number of pins. A zero means that the number of pins is determined automatically.</attr>
+        <attr name="Content of ROMs">Content of all used ROMs</attr>
+        <attr name="Show measurement values at simulation start">When the simulation is started, a table with the measured values is shown.</attr>
+        <attr name="Show measurement graph at simulation start">When the simulation is started, a graph with the measured values is shown.</attr>
+        <attr name="Show measurement graph in single gate step mode at simulation start">When the simulation is started, a graph with the measured values in the gate step mode is shown. All gate changes are included in the graph.</attr>
+        <attr name="Max number of steps to show">The maximal number of values stored. If the maximum number is reached, the oldest values are discarded.</attr>
+        <attr name="Preload program memory at startup.">When simulating a processor that uses a RAM device as the program memory, it is difficult to start this processor because the RAM contents are always initialized with zeros at the start of the simulation. This setting allows loading data into the program memory at startup. The program memory in the simulation must be marked as such.</attr>
+        <attr name="Program file">File which should be loaded into the program memory at the start of the simulation.</attr>
+        <attr name="Use big endian at import.">Use big endian byte order at import.</attr>
+        <attr name="Skip in Verilog/VHDL export">Skips generating the internals of the circuit in Verilog/VHDL export. The references to the circuit are kept, making it possible to override the implementation.</attr>
+        <attr name="Circuit is generic">Allows to create a generic circuit.</attr>
+      </attributes>
+    </circuit>
+  </settings>
+  <cli heading="Command Line Interface">
+<indent>
+java -cp Digital.jar CLI<indent>
+test -circ [String] [-tests [String]] [-allowMissingInputs] [-verbose]:<indent>
+The first file name specifies the circuit to be tested.
+        If a second file name is specified, the test cases are executed from this file.
+        If no second file name is specified, the tests are executed from the first file.</indent>
+<indent>
+Options:<indent>
+-circ [String(def: )]<indent>
+Name of the file to be tested.</indent>
+</indent>
+<indent>
+[-tests [String(def: )]]<indent>
+Name of a file with test cases.</indent>
+</indent>
+<indent>
+[-allowMissingInputs(def: false)]<indent>
+Allows the lack of inputs in the circuit which are
+        defined in the test case. This can be useful if there are several possible solutions which may
+        depend on different inputs.</indent>
+</indent>
+<indent>
+[-verbose(def: false)]<indent>
+If set, the value table is output in case of an error.</indent>
+</indent>
+</indent>
+</indent>
+<indent>
+svg -dig [String] [-svg [String]] [-ieee] [-LaTeX] [-pinsInMathMode] [-hideTest] [-noShapeFilling] [-smallIO] [-noPinMarker] [-thinnerLines] [-highContrast] [-monochrome]:<indent>
+Can be used to create an SVG file from a circuit.</indent>
+<indent>
+Options:<indent>
+-dig [String(def: )]<indent>
+The file name of the circuit.</indent>
+</indent>
+<indent>
+[-svg [String(def: )]]<indent>
+The name of the SVG file to be written.</indent>
+</indent>
+<indent>
+[-ieee(def: false)]<indent>
+Use the IEEE symbols.</indent>
+</indent>
+<indent>
+[-LaTeX(def: false)]<indent>
+Text is inserted in LaTeX notation. Inkscape is required for further processing.</indent>
+</indent>
+<indent>
+[-pinsInMathMode(def: false)]<indent>
+For pin labels, use math mode even if no indexes are contained.</indent>
+</indent>
+<indent>
+[-hideTest(def: false)]<indent>
+Hide Test Cases</indent>
+</indent>
+<indent>
+[-noShapeFilling(def: false)]<indent>
+Polygons are not filled.</indent>
+</indent>
+<indent>
+[-smallIO(def: false)]<indent>
+Inputs and outputs are represented as small circles.</indent>
+</indent>
+<indent>
+[-noPinMarker(def: false)]<indent>
+The blue and red pin markers on the symbols are omitted.</indent>
+</indent>
+<indent>
+[-thinnerLines(def: false)]<indent>
+If set, the lines are drawn slightly thinner.</indent>
+</indent>
+<indent>
+[-highContrast(def: false)]<indent>
+The wires and the text of the pins are displayed in black.</indent>
+</indent>
+<indent>
+[-monochrome(def: false)]<indent>
+Only gray colors are used.</indent>
+</indent>
+</indent>
+</indent>
+<indent>
+stats -dig [String] [-csv [String]]:<indent>
+Creates a CSV file which contains the circuit statistics.
+        All components used are listed in the CSV file.</indent>
+<indent>
+Options:<indent>
+-dig [String(def: )]<indent>
+File name of the circuit.</indent>
+</indent>
+<indent>
+[-csv [String(def: )]]<indent>
+Name of the CSV file to be created.
+        If this option is missing, the table is written to stdout.</indent>
+</indent>
+</indent>
+</indent>
+</indent>
+  </cli>
+  <lib name="Logic">
+    <element name="And" img="file:/C:/Digital-0.29/target/docu/img/And_en.svg">
+      <descr>Binary AND gate. Returns high only if all inputs are also set high. It is also possible to use buses with several bits as inputs and output. In this case, a bitwise AND is executed. This means that the lowest bits of all inputs are connected with AND and is output as the lowest bit at the output. The same happens with bit 1, bit 2 and so on. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="NAnd" img="file:/C:/Digital-0.29/target/docu/img/NAnd_en.svg">
+      <descr>A combination of AND and NOT. Returns 0 only if all inputs are set to 1. If one of the inputs is set to 0 the output is set to 1. It is also possible to use buses with several bits per input. In this case, the operation is applied to each bit of the inputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="Or" img="file:/C:/Digital-0.29/target/docu/img/Or_en.svg">
+      <descr>Binary OR gate. Returns a 1 if one of the inputs is set to 1. If all inputs are set to 0 the output is also set to 0. It is also possible to use buses with several bits as inputs and output. In this case, a bitwise OR is executed. This means that the lowest bits of all inputs are connected with OR and is output as the lowest bit at the output. The same happens with bit 1, bit 2 and so on. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="NOr" img="file:/C:/Digital-0.29/target/docu/img/NOr_en.svg">
+      <descr>A combination of OR and NOT. Returns a 0 if one of the inputs is set to 1. If all inputs are set to 0 the output is also set to 1. It is also possible to use buses with several bits per input. In this case, the operation is applied to each bit of the inputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="XOr" img="file:/C:/Digital-0.29/target/docu/img/XOr_en.svg">
+      <descr>If two inputs are used, the output is 0 if both input bits are equal. Otherwise the output in set to 1. If more than two inputs are used, it behaves like cascaded XOR gates ( A XOR B XOR C = (A XOR B) XOR C ). It is also possible to use buses with several bits per input. In this case, the operation is applied to each bit of the inputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="XNOr" img="file:/C:/Digital-0.29/target/docu/img/XNOr_en.svg">
+      <descr>A combination of XOR and NOT. The inputs are combined with the XOR operation. The result of this operation is then inverted. It is also possible to use buses with several bits per input. In this case, the operation is applied to each bit of the inputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="In_1">The 1. input value for the logic operation.</pin>
+        <pin name="In_2">The 2. input value for the logic operation.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the logic operation.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="Not" img="file:/C:/Digital-0.29/target/docu/img/Not_en.svg">
+      <descr>Inverts the input value. A 1 becomes a 0 and a 0 becomes 1. It is also possible to use a bus with several bits per input. In this case, the operation is applied to each bit of the inputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The input of the NOT gate.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">The inverted input value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Wide Shape">Uses a wider shape to visualize the gate.</attr>
+      </attributes>
+    </element>
+    <element name="Lookup Table" img="file:/C:/Digital-0.29/target/docu/img/LookUpTable_en.svg">
+      <descr>Gets the output value from a stored table. So this gate can emulate every combinatorial gate. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="0">Input 0. This input in combination with all other inputs defines the address of the stored value to be returned.</pin>
+        <pin name="1">Input 1. This input in combination with all other inputs defines the address of the stored value to be returned.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the stored value at the address set via the inputs.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Inputs">The Number of Inputs used. Every input needs to be connected.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data">The values stored in this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="IO">
+    <element name="Output" img="file:/C:/Digital-0.29/target/docu/img/Out_en.svg">
+      <descr>Can be used to display an output signal in a circuit. This element is also used to connect a circuit to an embedding circuit. In this case the connection is bidirectional. Is also used to assign a pin number, if the code for a CPLD or FPGA is generated. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">This value is used for the output connection.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Description">A short description of this element and its usage.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Pin number">Number of this pin. Used for the representation of a circuit as a DIL package and the pin assignment when programming a CPLD. If there are several bits, all pin numbers can be specified as a comma-separated list.</attr>
+        <attr name="Show in Measurement Graph">Shows the value in the measurement graph.</attr>
+        <attr name="Small Shape">If selected, a smaller shape will be used.</attr>
+      </attributes>
+    </element>
+    <element name="LED" img="file:/C:/Digital-0.29/target/docu/img/LED_en.svg">
+      <descr>A LED can be used to visualize an output value. Accepts a single bit. Lights up if the input is set to 1.</descr>
+      <inputs name="Inputs">
+        <pin name="in">LED Input. LED lights up if the input is set to 1.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Size">The size of the shape in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Input" img="file:/C:/Digital-0.29/target/docu/img/In_en.svg">
+      <descr>Can be used to interactively manipulate an input signal in a circuit with the mouse. This element is also used to connect a circuit to an embedding circuit. In this case the connection is bidirectional. Is also used to assign an pin number, if code for a CPLD or FPGA is generated. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="out">Gives the value which is connected to this input.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Description">A short description of this element and its usage.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. A &quot;Z&quot; means high-z state.</attr>
+        <attr name="Is three-state input">If set the input is allowed to be in high-z state. At the input component this is also allowed if high-z (&quot;Z&quot;) is set as the default value.</attr>
+        <attr name="No zero output.">Avoids zero output. This is especially helpful when setting up relay circuits. Can only be activated if a high-z output is allowed.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Pin number">Number of this pin. Used for the representation of a circuit as a DIL package and the pin assignment when programming a CPLD. If there are several bits, all pin numbers can be specified as a comma-separated list.</attr>
+        <attr name="Show in Measurement Graph">Shows the value in the measurement graph.</attr>
+        <attr name="Small Shape">If selected, a smaller shape will be used.</attr>
+      </attributes>
+    </element>
+    <element name="Clock Input" img="file:/C:/Digital-0.29/target/docu/img/Clock_en.svg">
+      <descr>A clock signal. It's possible to control it by a real-time clock. Depending on the complexity of the circuit, the clock frequency achieved may be less than the selected value. If the frequency is greater than 50Hz, the graphic representation of the circuit will no longer be updated at every clock cycle so that the wire colors will no longer be updated. If the real-time clock is not activated, the clock can be controlled by mouse clicks. Is also used to assign an pin number, if code for a CPLD or FPGA is generated. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="C">Switches between 0 and 1 with the selected clock frequency.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Start real time clock">If enabled the runtime clock is started when the circuit is started</attr>
+        <attr name="Frequency/Hz">The real time frequency used for the real time clock</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Pin number">Number of this pin. Used for the representation of a circuit as a DIL package and the pin assignment when programming a CPLD. If there are several bits, all pin numbers can be specified as a comma-separated list.</attr>
+        <attr name="Small Shape">If selected, a smaller shape will be used.</attr>
+      </attributes>
+    </element>
+    <element name="Button" img="file:/C:/Digital-0.29/target/docu/img/Button_en.svg">
+      <descr>A simple push button which goes back to its original state when it is released.</descr>
+      <outputs name="Outputs">
+        <pin name="out">The output signal of the button.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Active Low">If selected the output is low if the component is active.</attr>
+        <attr name="Map to keyboard">Button is mapped to the keyboard. To use the cursor keys use UP, DOWN, LEFT or RIGHT as label.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Show in Measurement Graph">Shows the value in the measurement graph.</attr>
+      </attributes>
+    </element>
+    <element name="DIP Switch" img="file:/C:/Digital-0.29/target/docu/img/DipSwitch_en.svg">
+      <descr>Simple DIP switch that can output either high or low.</descr>
+      <outputs name="Outputs">
+        <pin name="out">The output value of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Description">A short description of this element and its usage.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Output is High">The default output value of the DIP switch when the simulation starts.</attr>
+      </attributes>
+    </element>
+    <element name="Probe" img="file:/C:/Digital-0.29/target/docu/img/Probe_en.svg">
+      <descr>A measurement value which can be shown in the data graph or measurement table. This component can be used to easily observe values from embedded circuits. Does not affect the simulation.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The measurement value.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Display Mode">Defines whether the value or a counter is to be displayed.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Show in Measurement Graph">Shows the value in the measurement graph.</attr>
+      </attributes>
+    </element>
+    <element name="Data Graph" img="file:/C:/Digital-0.29/target/docu/img/Data_en.svg">
+      <descr>Shows a data plot inside of the circuit panel. You can plot complete clock cycles or single gate changes. Does not affect the simulation.</descr>
+      <attributes name="Attributes">
+        <attr name="Show single gate steps">Shows all single step steps in the graphic.</attr>
+        <attr name="Max number of steps to show">The maximal number of values stored. If the maximum number is reached, the oldest values are discarded.</attr>
+        <attr name="Snap To Grid">If set, the component is aligned with the grid.</attr>
+      </attributes>
+    </element>
+    <element name="Triggered Data Graph" img="file:/C:/Digital-0.29/target/docu/img/ScopeTrigger_en.svg">
+      <descr>Shows a graph of measured values, whereby measured values are only stored if the input signal changes. Storing takes place when the circuit has stabilized. The trigger does not start the measurement like in a real scope, but each trigger event stores a single measurement value for each of the shown signals. As direct input there is only the trigger. The inputs and outputs of the circuit, flip-flops and registers and the probe component can be used as signals. This can be activated in the respective components.</descr>
+      <inputs name="Inputs">
+        <pin name="T">A change at this input causes measured values to be stored.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Trigger">Trigger condition for data recording.</attr>
+        <attr name="Max number of steps to show">The maximal number of values stored. If the maximum number is reached, the oldest values are discarded.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="IO - Displays">
+    <element name="RGB-LED" img="file:/C:/Digital-0.29/target/docu/img/RGBLED_en.svg">
+      <descr>An RGB LED whose color can be controlled via three inputs. At each of the three inputs, a color channel is connected.</descr>
+      <inputs name="Inputs">
+        <pin name="R">The red color channel.</pin>
+        <pin name="G">The green color channel.</pin>
+        <pin name="B">The blue color channel.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Size">The size of the shape in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="LED with two connections." img="file:/C:/Digital-0.29/target/docu/img/PolarityAwareLED_en.svg">
+      <descr>LED with connections for the cathode and the anode. The LED lights up if the anode is connected to high and the cathode is connected to low. This LED cannot be used as a pull-down resistor. It acts solely as a display element. The shown resistor is only meant to symbolize the required series resistor to limit the current.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The anode connection of the LED.</pin>
+        <pin name="C">The cathode connection of the LED.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Button with LED" img="file:/C:/Digital-0.29/target/docu/img/ButtonLED_en.svg">
+      <descr>A simple push button which goes back to its original state when it is released. The push button has an LED which can be switched via an input signal.</descr>
+      <inputs name="Inputs">
+        <pin name="in">Input for controlling the LED.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">The output signal of the button.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Active Low">If selected the output is low if the component is active.</attr>
+        <attr name="Map to keyboard">Button is mapped to the keyboard. To use the cursor keys use UP, DOWN, LEFT or RIGHT as label.</attr>
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Seven-Segment Display" img="file:/C:/Digital-0.29/target/docu/img/Seven-Seg_en.svg">
+      <descr>Seven Segment Display, every segment has its own control input.</descr>
+      <inputs name="Inputs">
+        <pin name="a">This input controls the upper, horizontal line.</pin>
+        <pin name="b">This input controls the upper, right, vertical line.</pin>
+        <pin name="c">This input controls the lower, right, vertical line.</pin>
+        <pin name="d">This input controls the lower horizontal line.</pin>
+        <pin name="e">This input controls the lower, left, vertical line.</pin>
+        <pin name="f">This input controls the upper, left, vertical line.</pin>
+        <pin name="g">This input controls the middle, horizontal line.</pin>
+        <pin name="dp">This input controls the decimal point.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Common Connection">If selected, a common cathode or anode input is also simulated.</attr>
+        <attr name="Common">Kind of common connection.</attr>
+        <attr name="Persistence Of Vision">Specifies the duration of the afterglow. The larger the value, the longer the afterglow duration.</attr>
+      </attributes>
+    </element>
+    <element name="Seven-Segment Hex Display" img="file:/C:/Digital-0.29/target/docu/img/Seven-Seg-Hex_en.svg">
+      <descr>Seven Segment Display with a 4 bit hex input</descr>
+      <inputs name="Inputs">
+        <pin name="d">The value at this input is visualized at the display.</pin>
+        <pin name="dp">This input controls the decimal point.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Size">The size of the shape in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="16-Segment Display" img="file:/C:/Digital-0.29/target/docu/img/SixteenSeg_en.svg">
+      <descr>The LED input has 16 bits which control the segments. The second input controls the decimal point.</descr>
+      <inputs name="Inputs">
+        <pin name="led">16-bit bus for driving the LEDs.</pin>
+        <pin name="dp">This input controls the decimal point.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Size">The size of the shape in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Light Bulb" img="file:/C:/Digital-0.29/target/docu/img/LightBulb_en.svg">
+      <descr>Light bulb with two connections. If a current flows, the bulb lights up! The direction of the current does not matter. The lamp lights when the inputs have different values. The bulb behaves similar to an XOr gate.</descr>
+      <inputs name="Inputs">
+        <pin name="A">Connection</pin>
+        <pin name="B">Connection</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="LED-Matrix" img="file:/C:/Digital-0.29/target/docu/img/LedMatrix_en.svg">
+      <descr>A matrix of LEDs. The LEDs are shown in a separate window. The LEDs of a column of the display are controlled by a data word. At another input, the current column is selected. So a multiplexed display is realized. The LEDs are able to light up indefinitely in the simulation to prevent the display from flickering.</descr>
+      <inputs name="Inputs">
+        <pin name="r-data">The row state of the LEDs of a column. Each bit in this data word represents the state of a row of the current column.</pin>
+        <pin name="c-addr">The number of the current column whose state is currently visible at the other input.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rows">Specifies the number of rows by specifying the number of bits of the row word.</attr>
+        <attr name="Address bits of columns">Addresses the individual columns. Three bits means eight columns.</attr>
+        <attr name="Color">The Color of the element.</attr>
+        <attr name="Avoid Flicker">It is not possible to increase the frequency so much that the flickering disappears. In order to suppress the flickering nevertheless, a &quot;afterglow&quot; can be switched on for the LEDs with this option. If enabled, the LEDs remain on, even if one of the pins changes to high-z. This simulates a frequency above the critical flicker fusion frequency.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="IO - Mechanical">
+    <element name="Rotary Encoder" img="file:/C:/Digital-0.29/target/docu/img/RotEncoder_en.svg">
+      <descr>Rotary knob with rotary encoder. Used to detect rotational movements.</descr>
+      <outputs name="Outputs">
+        <pin name="A">encoder signal A</pin>
+        <pin name="B">encoder signal B</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Stepper Motor, unipolar" img="file:/C:/Digital-0.29/target/docu/img/StepperMotorUnipolar_en.svg">
+      <descr>Unipolar stepper motor with two limit position switches. Full step drive, half step drive and wave drive are supported.</descr>
+      <inputs name="Inputs">
+        <pin name="P0">Phase 0</pin>
+        <pin name="P1">Phase 1</pin>
+        <pin name="P2">Phase 2</pin>
+        <pin name="P3">Phase 3</pin>
+        <pin name="com">Common center coil connection</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="S0">Limit position switch 0, becomes 1 when the motor angle is 0°.</pin>
+        <pin name="S1">Limit position switch 1, becomes 1 when the motor angle is 180°.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted output">If selected the output is inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Stepper Motor, bipolar" img="file:/C:/Digital-0.29/target/docu/img/StepperMotorBipolar_en.svg">
+      <descr>Bipolar stepper motor with two limit position switches. Full step drive, half step drive and wave drive are supported.</descr>
+      <inputs name="Inputs">
+        <pin name="A+">Coil A, positive</pin>
+        <pin name="A-">Coil A, negative</pin>
+        <pin name="B+">Coil B, positive</pin>
+        <pin name="B-">Coil B, negative</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="S0">Limit position switch 0, becomes 1 when the motor angle is 0°.</pin>
+        <pin name="S1">Limit position switch 1, becomes 1 when the motor angle is 180°.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted output">If selected the output is inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="IO - Peripherals">
+    <element name="Keyboard" img="file:/C:/Digital-0.29/target/docu/img/Keyboard_en.svg">
+      <descr>A keyboard that can be used to enter text. This component buffers the input, which can then be read out. A separate window is opened for the text input.</descr>
+      <inputs name="Inputs">
+        <pin name="C">Clock. A rising edge removes the oldest character from the buffer.</pin>
+        <pin name="en">If high, the output D is active and one character is output. It also enables the clock input.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The last typed character, or zero if no character is available. Output is the 16 bit Java char value.</pin>
+        <pin name="av">This output indicates that characters are available. It can be used to trigger an interrupt.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Terminal" img="file:/C:/Digital-0.29/target/docu/img/Terminal_en.svg">
+      <descr>You can write ASCII characters to this terminal. The terminal opens its own window to visualize the output.</descr>
+      <inputs name="Inputs">
+        <pin name="D">The data to write to the terminal</pin>
+        <pin name="C">Clock. A rising edge writes the value at the input to the terminal window.</pin>
+        <pin name="en">A high at this input enables the clock input.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Characters per line">The number of characters shown in a single line.</attr>
+        <attr name="Lines">The number of lines to show.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Telnet" img="file:/C:/Digital-0.29/target/docu/img/Telnet_en.svg">
+      <descr>Allows a Telnet connection to the circuit. It is possible to receive and send characters via Telnet.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The data to be sent.</pin>
+        <pin name="C">Clock input</pin>
+        <pin name="wr">If set, the input data byte is sent.</pin>
+        <pin name="rd">If set, a received byte is output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Data output</pin>
+        <pin name="av">Outputs a one if data is present.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Telnet mode">If set, the Telnet control commands are evaluated. In addition, the server sends the SGA and ECHO commands. If this option is disabled, the server is a simple TCP server.</attr>
+        <attr name="Port">The port to be opened by the server.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="VGA Monitor" img="file:/C:/Digital-0.29/target/docu/img/VGA_en.svg">
+      <descr>Analyzes the incoming video signals and displays the corresponding graphic. Since the simulation cannot run in real time, the pixel clock is required in addition to the video signals.</descr>
+      <inputs name="Inputs">
+        <pin name="R">The red color component</pin>
+        <pin name="G">The green color component</pin>
+        <pin name="B">The blue color component</pin>
+        <pin name="H">The horizontal synchronization signal</pin>
+        <pin name="V">The vertical synchronization signal</pin>
+        <pin name="C">The pixel clock</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="MIDI" img="file:/C:/Digital-0.29/target/docu/img/MIDI_en.svg">
+      <descr>Uses the MIDI system to play notes.</descr>
+      <inputs name="Inputs">
+        <pin name="N">Note</pin>
+        <pin name="V">Volume</pin>
+        <pin name="OnOff">If set, this translates to pressing a keyboard key (key down event), if not set, this translates to releasing the key (key up event).</pin>
+        <pin name="en">Enables the component</pin>
+        <pin name="C">Clock</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="MIDI channel">Selects the MIDI channel to use.</attr>
+        <attr name="MIDI instrument">The MIDI instrument to use.</attr>
+        <attr name="Allow program change">Adds a new input PC. If this input is set to high, the value at input N is used to change the program (instrument).</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Wires">
+    <element name="Ground" img="file:/C:/Digital-0.29/target/docu/img/Ground_en.svg">
+      <descr>A connection to ground. Output is always zero. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="out">Output always returns 0.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Supply voltage" img="file:/C:/Digital-0.29/target/docu/img/VDD_en.svg">
+      <descr>A connection to the supply voltage. Output is always one. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="out">This output always returns 1.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Constant value" img="file:/C:/Digital-0.29/target/docu/img/Const_en.svg">
+      <descr>A component which returns a given value as a simple constant value. The value can be set in the attribute dialog. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="out">Returns the given value as a constant.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Value">The value of the constant.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+      </attributes>
+    </element>
+    <element name="Tunnel" img="file:/C:/Digital-0.29/target/docu/img/Tunnel_en.svg">
+      <descr>Connects components without a wire. All tunnel elements, which have the same net name, are connected together. Works only locally, so it is not possible to connect different circuits. Unnamed tunnels are ignored silently. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The connection to the tunnel.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Net name">All nets with identical name are connected together.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Splitter/Merger" img="file:/C:/Digital-0.29/target/docu/img/Splitter_en.svg">
+      <descr>Splits or creates a wire bundle or a data bus with more than one bit. With a bus it is e.g. possible to generate 16-bit connections without having to route 16 individual wires. All 16 connections can be merged into one wire. The splitter has a direction, meaning it can only transmit signals in one direction. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="0-3">The input bits 0-3.</pin>
+        <pin name="4-7">The input bits 4-7.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="0-7">The output bits 0-7.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Input Splitting">If e.g. four bits, two bits and two further bits are to be used as inputs, this can be configured with &quot;4,2,2&quot;. The number indicates the number of bits. For convenience, the asterisk can be used: 16 bits can be configured with &quot;[Bits]*[Number]&quot; as &quot;1*16&quot;. It is also possible to specify the bits to be used directly and in any order. For example, &quot;4-7,0-3&quot; configures bits 4-7 and 0-3. This notation allows any bit arrangement. The input bits must be specified completely and unambiguously.</attr>
+        <attr name="Output splitting">If e.g. four bits, two bits and two further bits are to be used as outputs, this can be configured with &quot;4,2,2&quot;. The number indicates the number of bits. For convenience, the asterisk can be used: 16 bits can be configured with &quot;[Bits]*[Number]&quot; as &quot;1*16&quot;. It is also possible to specify the bits to be used directly and in any order. For example, &quot;4-7,0-3&quot; configures bits 4-7 and 0-3. This notation allows any bit arrangement. Output bits can also be output several times: &quot;0-7,1-6,4-7&quot;.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Spreading">Configures the spread of the inputs and outputs in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Driver" img="file:/C:/Digital-0.29/target/docu/img/Driver_en.svg">
+      <descr>A driver can be used to connect a signal value to another wire. The driver is controlled by the sel input. If the sel input is low, the output is in high z state. If the sel input is high, the output is set to the input value. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The input value of the driver.</pin>
+        <pin name="sel">Pin to control the driver. If its value is 1 the input is set to the output. If the value is 0, the output is in high z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">If the sel input is 1 the input is given to this output. If the sel input is 0, this output is in high z state.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Driver, inverted select" img="file:/C:/Digital-0.29/target/docu/img/DriverInvSel_en.svg">
+      <descr>A driver can be used to connect a data word to another line. The driver is controlled by the sel input. If the sel input is high, the output is in high z state. If the sel input is low, the output is set to the input value. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The input value of the driver.</pin>
+        <pin name="sel">Pin to control the driver. If its value is 0 the input is given to the output. If the value is 1, the output is in high z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">If the sel input is 1 the input is given to this output. If the sel input is 0, this output is in high z state.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Delay" img="file:/C:/Digital-0.29/target/docu/img/Delay_en.svg">
+      <descr>Delays the signal by one propagation delay time. Delays a signal for an adjustable number of gate delays. All other components in Digital have a gate delay of one propagation delay time. This component can be used to realize any necessary propagation delay.</descr>
+      <inputs name="Inputs">
+        <pin name="in">Input of the signal to be delayed.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">The input signal delayed by one gate delay time.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Duration">Delay time in units of the common gate propagation delay.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pull-Up Resistor" img="file:/C:/Digital-0.29/target/docu/img/PullUp_en.svg">
+      <descr>If a net is in a HighZ state, this resistor pulls the net to high. In any other case this component has no effect.</descr>
+      <outputs name="Outputs">
+        <pin name="out">A &quot;weak high&quot;.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Pull-Down Resistor" img="file:/C:/Digital-0.29/target/docu/img/PullDown_en.svg">
+      <descr>If the net is in a HighZ state, this resistor pulls the net to ground. In any other case this component has no effect.</descr>
+      <outputs name="Outputs">
+        <pin name="out">A &quot;weak low&quot;.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Not Connected" img="file:/C:/Digital-0.29/target/docu/img/NotConnected_en.svg">
+      <descr>This component can be used to set a wire to High-Z. If an input of a logical gate is set to high-Z, the read value is undefined. Note that in reality in many cases excessive current consumption and even damage can occur if a digital input is not set to high or low but remains unconnected.</descr>
+      <outputs name="Outputs">
+        <pin name="out">This output always outputs High-Z.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Plexers">
+    <element name="Multiplexer" img="file:/C:/Digital-0.29/target/docu/img/Multiplexer_en.svg">
+      <descr>A component which uses the value of the sel pin to decide which input value is set to the output. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="sel">This input is used to select the data input which is output.</pin>
+        <pin name="in_0">The 0. data input of the multiplexer.</pin>
+        <pin name="in_1">The 1. data input of the multiplexer.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">The value of the selected input.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Selector Bits">Number of bits used for the selector input.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Demultiplexer" img="file:/C:/Digital-0.29/target/docu/img/Demultiplexer_en.svg">
+      <descr>A component that can output the input value to one of the outputs. The other outputs are set to the default value. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="sel">This pin selects the output to use.</pin>
+        <pin name="in">The value of this input is given to the selected data output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out_0">Data output 0.</pin>
+        <pin name="out_1">Data output 1.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Number of Selector Bits">Number of bits used for the selector input.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+      </attributes>
+    </element>
+    <element name="Decoder" img="file:/C:/Digital-0.29/target/docu/img/Decoder_en.svg">
+      <descr>One selectable output pin is 1, all other outputs are set to 0. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="sel">This input selects the enabled output. The selected output is set to 1. All other outputs are set to 0.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out_0">Output 0. This output is 1 if selected by the sel input.</pin>
+        <pin name="out_1">Output 1. This output is 1 if selected by the sel input.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Number of Selector Bits">Number of bits used for the selector input.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Bit Selector" img="file:/C:/Digital-0.29/target/docu/img/BitSelector_en.svg">
+      <descr>Selects a single bit from a data bus. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The input bus</pin>
+        <pin name="sel">This input selects the bit</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">The selected bit.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Number of Selector Bits">Number of bits used for the selector input.</attr>
+        <attr name="Flip selector position">This option allows you to move te selector pin to the opposite side of the plexer.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Priority Encoder" img="file:/C:/Digital-0.29/target/docu/img/PriorityEncoder_en.svg">
+      <descr>If one of the inputs is set, its number is output. If several inputs are set at the same time, the highest number is output. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in0">The 0. input of the priority encoder.</pin>
+        <pin name="in1">The 1. input of the priority encoder.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="num">Number of the set input.</pin>
+        <pin name="any">If this output is set, at least one of the inputs is set.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Number of Selector Bits">Number of bits used for the selector input.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Flip-Flops">
+    <element name="RS-Flip-flop" img="file:/C:/Digital-0.29/target/docu/img/RS_FF_AS_en.svg">
+      <descr>A component to store a single bit. Provides the functions &quot;set&quot; and &quot;reset&quot; to set or reset the stored bit. If both inputs are switched to one, both outputs also output a one. If both inputs switch back to zero at the same time, the final state is random.</descr>
+      <inputs name="Inputs">
+        <pin name="S">The set input.</pin>
+        <pin name="R">The reset input.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="RS-Flip-flop, clocked" img="file:/C:/Digital-0.29/target/docu/img/RS_FF_en.svg">
+      <descr>A component to store a single bit. Provides the functions &quot;set&quot; and &quot;reset&quot; to set or reset the stored bit. If both inputs (S, R) are set at the rising edge of the clock, the final state is random.</descr>
+      <inputs name="Inputs">
+        <pin name="S">The set input.</pin>
+        <pin name="C">The clock input. A rising edge initiates a state transition.</pin>
+        <pin name="R">The reset input.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="JK-Flip-flop" img="file:/C:/Digital-0.29/target/docu/img/JK_FF_en.svg">
+      <descr>Has the possibility to store (J=K=0), set (J=1, K=0), reset (J=0, K=1) or toggle (J=K=1) the stored value. A change of state takes place only at a rising edge at the clock input C. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="J">The set input of the flip-flop.</pin>
+        <pin name="C">The clock input. A rising edge initiates a state change.</pin>
+        <pin name="K">The reset input of the flip-flop.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="D-Flip-flop" img="file:/C:/Digital-0.29/target/docu/img/D_FF_en.svg">
+      <descr>A component used to store a value. The value on pin D is stored on a rising edge of the clock pin C. The bit width can be selected, which allows to store multiple bits. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="D">Input of the bit to be stored.</pin>
+        <pin name="C">Clock pin to store a value. The value on input D is stored on a rising edge of this pin.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="T-Flip-Flop" img="file:/C:/Digital-0.29/target/docu/img/T_FF_en.svg">
+      <descr>Stores a single bit. Toggles the state on a rising edge at input C.</descr>
+      <inputs name="Inputs">
+        <pin name="T">Enables the toggle function.</pin>
+        <pin name="C">Clock input. A rising edge toggles the output, if input T is set to 1.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Enable Input">If set an enable input (T) is available.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="JK-Flip-flop, asynchronous" img="file:/C:/Digital-0.29/target/docu/img/JK_FF_AS_en.svg">
+      <descr>Has the possibility to store (J=K=0), set (J=1, K=0), reset (J=0, K=1) or toggle (J=K=1) the stored value. A change of state takes place only at a rising edge at the clock input C. There are two additional inputs which set or reset the state immediately without a clock signal. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="Set">asynchronous set. A high value at this input sets the flip-flop.</pin>
+        <pin name="J">The set input of the flip-flop.</pin>
+        <pin name="C">The Clock input. A rising edge initiates a state change.</pin>
+        <pin name="K">The reset input of the flip-flop.</pin>
+        <pin name="Clr">asynchronous clear. A high value at this input clears the flip-flop.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="D-Flip-flop, asynchronous" img="file:/C:/Digital-0.29/target/docu/img/D_FF_AS_en.svg">
+      <descr>A component used to store a value. The value on pin D is stored on a rising edge of the clock pin C. There are two additional inputs which set or reset the state immediately without a clock signal. The bit width can be selected, which allows to store multiple bits. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="Set">asynchronous set. If set to one, all stored bits are set to one.</pin>
+        <pin name="D">Input of the bit to be stored.</pin>
+        <pin name="C">Control pin to store a bit. The bit on input D is stored on a rising edge of this pin.</pin>
+        <pin name="Clr">asynchronous clear. If set to one, all stored bits are set to zero.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+        <pin name="¬Q">Returns the inverted stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="Monoflop" img="file:/C:/Digital-0.29/target/docu/img/Monoflop_en.svg">
+      <descr>The monoflop is set at a rising edge at the clock input. After a configurable delay time, the monoflop will be cleared automatically. The monoflop is retriggerable. It can only be used if there is exactly one clock component present in the circuit. This clock component is used as time base to measure the time delay.</descr>
+      <inputs name="Inputs">
+        <pin name="C">The Clock input. A rising edge sets the monoflop.</pin>
+        <pin name="R">Reset Input. A high value clears the monoflop.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">output</pin>
+        <pin name="¬Q">inverted output</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Pulse Width">The pulse width is measured in clock cycles.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Default">This value is set if the circuit is started. At the demultiplexer, this value is set for the non-selected outputs.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Memory - RAM">
+    <element name="RAM, separated Ports" img="file:/C:/Digital-0.29/target/docu/img/RAMDualPort_en.svg">
+      <descr>A RAM module with separate inputs for storing and output for reading the stored data. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read from or write to.</pin>
+        <pin name="Din">The data to be stored in the RAM.</pin>
+        <pin name="str">If this input is high and when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock input</pin>
+        <pin name="ld">If this input is high the output is activated and the data is visible at the output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The data output pin</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="Block-RAM, separated ports" img="file:/C:/Digital-0.29/target/docu/img/BlockRAMDualPort_en.svg">
+      <descr>A RAM module with separate inputs for storing and output for reading the stored data. This RAM only updates its output on a rising edge of the clock input. This allows the usage of Block RAM on an FPGA. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read from or write to.</pin>
+        <pin name="Din">The data to be stored in the RAM.</pin>
+        <pin name="str">If this input is high and when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock input</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The data output pin</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, bidirectional Port" img="file:/C:/Digital-0.29/target/docu/img/RAMSinglePort_en.svg">
+      <descr>A RAM module with a bidirectional pin for reading and writing the data.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read and write.</pin>
+        <pin name="str">If this input is high when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock</pin>
+        <pin name="ld">If this input is high the output is activated and the data is visible at the output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The bidirectional data connection.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, Chip Select" img="file:/C:/Digital-0.29/target/docu/img/RAMSinglePortSel_en.svg">
+      <descr>A RAM module with a bidirectional connection for reading and writing the data. If the CS input is low, the component is disabled. This allows to build a larger RAM from some smaller RAMs and a address decoder. The write cycle works as follows: By setting CS to high, the component is selected. A rising edge at WE latches the address, and the following falling edge at WE stores the data.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read and write.</pin>
+        <pin name="CS">If this input is high, this RAM is enabled. Otherwise the output is always in high Z state.</pin>
+        <pin name="WE">If set to high the data is written to the RAM.</pin>
+        <pin name="OE">If this input is high, the stored value is output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The bidirectional data connection.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="Register File" img="file:/C:/Digital-0.29/target/docu/img/RegisterFile_en.svg">
+      <descr>Memory with one port that allows to write and two ports that allow to read from the memory simultaneously. Can be used to implement processor registers. Two registers can be read simultaneously and a third can be written. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="Din">The data to be stored in the register Rw.</pin>
+        <pin name="we">If this input is high and when the clock becomes high, the data is stored.</pin>
+        <pin name="Rw">The register into which the data is written.</pin>
+        <pin name="C">Clock</pin>
+        <pin name="Ra">The register which is visible at port a.</pin>
+        <pin name="Rb">The register which is visible at port b.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Da">Output Port a</pin>
+        <pin name="Db">Output Port b</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, Dual Port" img="file:/C:/Digital-0.29/target/docu/img/RAMDualAccess_en.svg">
+      <descr>RAM with one port that allows to write to and read from the RAM, and a second read only port. This second port can be used to give some graphic logic access to the memory contents. In this way, a processor can write to the RAM, and a graphics logic can simultaneously read from the RAM. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="str">If this input is high and when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock</pin>
+        <pin name="ld">If this input is high the output is activated and the data is visible at the output 1D.</pin>
+        <pin name="1A">The address at which port 1 is read or written.</pin>
+        <pin name="1Din">The data to be stored in the RAM.</pin>
+        <pin name="2A">The address used to read via port 2.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="1D">Output Port 1</pin>
+        <pin name="2D">Output Port 2</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="RAM, async." img="file:/C:/Digital-0.29/target/docu/img/RAMAsync_en.svg">
+      <descr>As long as we is set, it is stored. Corresponds to a very simple RAM, where the address and data lines are directly connected to the decoders of the memory cells. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address at which reading or writing takes place.</pin>
+        <pin name="D">The data to be stored.</pin>
+        <pin name="we">Write enable. As long as this input is set to 1, the value applied to D is stored at the address applied to A whenever A or D is changed.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Output of the stored data.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="Graphic RAM" img="file:/C:/Digital-0.29/target/docu/img/GraphicCard_en.svg">
+      <descr>Used to show a bitmap graphic. This element behaves like a RAM. In addition it shows its content on a graphic screen. Every pixel is represented by a memory address. The value stored defines the color of the pixel, using a fixed color palette. There are two screen buffers implemented to support page flipping. The input B selects which buffer is shown. Thus, the total memory size is dx * dy * 2 words. The palette used is structured as follows: The indices 0-9 correspond to the colors white, black, red, green, blue, yellow, cyan, magenta, orange and pink. The indices 32-63 map gray values and the indices 64-127 represent 64 color values each with two bits per color channel. This results in a simple palette that can be addressed with only 7-bit. If the architecture supports a 16-bit index, from Index 0x8000, a high-color mode with 5 bits per color channel can be used, which enables 32768 colors.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read and write.</pin>
+        <pin name="str">If this input is high when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock</pin>
+        <pin name="ld">If this input is high the output is activated and the data is visible at the output.</pin>
+        <pin name="B">Selects the screen buffer to show.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The bidirectional data connection.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Width in pixels">The screen width in pixels.</attr>
+        <attr name="Height in pixels">The screen height in pixels.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Memory - EEPROM">
+    <element name="EEPROM" img="file:/C:/Digital-0.29/target/docu/img/EEPROM_en.svg">
+      <descr>A EEPROM module with a bidirectional connection for reading and writing the data. If the CS input is low, the component is disabled. The data content is stored like in a ROM. It is thus preserved when the simulation is terminated and restarted. The write cycle works as follows: By setting CS to high, the component is selected. A rising edge at WE latches the address, and the following falling edge at WE stores the data.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read and write.</pin>
+        <pin name="CS">If this input is high, this EEPROM is enabled. Otherwise the output is always in high Z state.</pin>
+        <pin name="WE">If set to high the data is written to the EEPROM.</pin>
+        <pin name="OE">If this input is high, the stored value is output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The bidirectional data connection.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Data">The values stored in this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+    <element name="EEPROM, separated Ports" img="file:/C:/Digital-0.29/target/docu/img/EEPROMDualPort_en.svg">
+      <descr>A EEPROM module with separate inputs for storing and output for reading the stored data.</descr>
+      <inputs name="Inputs">
+        <pin name="A">The address to read from or write to.</pin>
+        <pin name="Din">The data to be stored in the EEPROM.</pin>
+        <pin name="str">If this input is high and when the clock becomes high, the data is stored.</pin>
+        <pin name="C">Clock input</pin>
+        <pin name="ld">If this input is high the output is activated and the data is visible at the output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The data output pin</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data">The values stored in this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Memory">
+    <element name="Register" img="file:/C:/Digital-0.29/target/docu/img/Register_en.svg">
+      <descr>A component to store values. The bit width of the data word can be selected. Unlike a D flip-flop, the register provides an input which enables the clock. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="D">Input pin of the data word to be stored.</pin>
+        <pin name="C">Clock input. A rising edge stores the value at the D pin.</pin>
+        <pin name="en">Enable pin. Storing a value works only if this pin is set high.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="Q">Returns the stored value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Program Counter">Makes this register a program counter. The value of this register is returned to the external assembler IDE to mark the current line of code during debugging.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+      </attributes>
+    </element>
+    <element name="ROM" img="file:/C:/Digital-0.29/target/docu/img/ROM_en.svg">
+      <descr>A non-volatile memory component. The stored data can be edited in the attributes dialog. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="A">This pin defines the address of data word to be output.</pin>
+        <pin name="sel">If the input is high, the output is activated. If it is low, the data output is in high Z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The selected data word if the sel input is high.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data">The values stored in this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+        <attr name="Reload at model start">Reloads the HEX file every time the model is started.</attr>
+        <attr name="File">File to be loaded into the ROM.</attr>
+        <attr name="Use big endian at import.">Use big endian byte order at import.</attr>
+      </attributes>
+    </element>
+    <element name="ROM dual port" img="file:/C:/Digital-0.29/target/docu/img/ROMDualPort_en.svg">
+      <descr>A non-volatile memory component. The stored data can be edited in the attributes dialog.</descr>
+      <inputs name="Inputs">
+        <pin name="A1">This pin defines the address of data word to be output on D1.</pin>
+        <pin name="s1">If the input is high, the output D1 is activated. If it is low, the data output is in high Z state.</pin>
+        <pin name="A2">This pin defines the address of data word to be output on D2.</pin>
+        <pin name="s2">If the input is high, the output D2 is activated. If it is low, the data output is in high Z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D1">The selected data word if the s1 input is high.</pin>
+        <pin name="D2">The selected data word if the s2 input is high.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Address Bits">Number of address bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data">The values stored in this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Number Format">The format used to show the numbers.</attr>
+        <attr name="fixed point digits">Number of fractional binary digits</attr>
+        <attr name="Program Memory">Makes this ROM to program memory. So it can be accessed by an external IDE.</attr>
+        <attr name="Reload at model start">Reloads the HEX file every time the model is started.</attr>
+        <attr name="File">File to be loaded into the ROM.</attr>
+        <attr name="Use big endian at import.">Use big endian byte order at import.</attr>
+      </attributes>
+    </element>
+    <element name="Counter" img="file:/C:/Digital-0.29/target/docu/img/Counter_en.svg">
+      <descr>A simple counter component. The clock input increases the counter. Can be reset back to 0 with the clr input. The number of bits can be set in the attribute dialog. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="en">If set to 1 the counter is enabled!</pin>
+        <pin name="C">The clock input. A rising edge increases the counter.</pin>
+        <pin name="clr">Synchronous reset of the counter if set to 1.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the counted value.</pin>
+        <pin name="ovf">Overflow output. This pin is set to 1 if the counter is on its maximal value and the en input is set to 1.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+        <attr name="Program Counter">Makes this register a program counter. The value of this register is returned to the external assembler IDE to mark the current line of code during debugging.</attr>
+      </attributes>
+    </element>
+    <element name="Counter with preset" img="file:/C:/Digital-0.29/target/docu/img/CounterPreset_en.svg">
+      <descr>A counter whose value can be set. In addition, a maximum value and a counting direction can be specified. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="en">If set to 1 the counter is enabled!</pin>
+        <pin name="C">The clock input. A rising edge increases or decreases the counter.</pin>
+        <pin name="dir">Specifies the counting direction. A 0 means upwards.</pin>
+        <pin name="in">This data word is stored in the counter when ld is set.</pin>
+        <pin name="ld">If set, the value at input 'in' is stored in the counter at the next clock signal.</pin>
+        <pin name="clr">Synchronous reset of the counter if set to 1.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the counted value.</pin>
+        <pin name="ovf">Overflow output. It is set to 1 if the 'en' input is set to 1 and if the counter reaches its maximum value when counting up, or has reached 0 when counting down.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Maximum Value">If a zero is entered, the maximum possible value is used (all bits are one).</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Use as measurement value">If set the value is a measurement value and appears in the graph and data table. In addition, a label must be specified that can serve as identification of the value.</attr>
+        <attr name="Program Counter">Makes this register a program counter. The value of this register is returned to the external assembler IDE to mark the current line of code during debugging.</attr>
+      </attributes>
+    </element>
+    <element name="Random Number Generator" img="file:/C:/Digital-0.29/target/docu/img/PRNG_en.svg">
+      <descr>Can be used to generate random numbers. When the simulation is started, the generator is reinitialized so that a new pseudo-random number sequence is generated at each start. The generator can be initialized in the running simulation with a defined seed value to generate a defined pseudo-random number sequence.</descr>
+      <inputs name="Inputs">
+        <pin name="S">New seed value of the generator.</pin>
+        <pin name="se">If set, the random number generator is reinitialized with the new seed value at the next rising clock edge.</pin>
+        <pin name="ne">If set, a new random number is output at the next rising clock edge.</pin>
+        <pin name="C">The clock input.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="R">Output of the pseudorandom number.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Arithmetic">
+    <element name="Adder" img="file:/C:/Digital-0.29/target/docu/img/Add_en.svg">
+      <descr>A component for simple add calculations. Adds the two integer values from input a and input b (a+b). The result will be incremented by one if the carry input is set. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="a">First input to add.</pin>
+        <pin name="b">Second input to add.</pin>
+        <pin name="c_i">Carry input, if set the result is incremented by one.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="s">The result of the addition</pin>
+        <pin name="c_o">Carry output. If set there was an overflow.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Subtract" img="file:/C:/Digital-0.29/target/docu/img/Sub_en.svg">
+      <descr>A component for simple subtractions. Subtracts binary numbers on input a and input b (a-b). If the carry input is set to 1 the result is decremented by 1. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="a">Input a for subtraction.</pin>
+        <pin name="b">Input b for subtraction.</pin>
+        <pin name="c_i">Carry input, if set the result is decremented by one.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="s">Output returns the result of the subtraction.</pin>
+        <pin name="c_o">Output returns 1 if an overflow occurred.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Multiply" img="file:/C:/Digital-0.29/target/docu/img/Mul_en.svg">
+      <descr>A component for multiplication. Multiplies the integer numbers on input pin a and input pin b. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="a">Input a for multiplication.</pin>
+        <pin name="b">Input b for multiplication.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="mul">Output for the result of the multiplication.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Signed Operation">If selected the operation is performed with signed (2th complement) values.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Division" img="file:/C:/Digital-0.29/target/docu/img/Div_en.svg">
+      <descr>A component for division. Divides the integer applied to input a by the integer applied to input b. If the divisor is zero, it is divided by one instead. In signed division, the remainder is always positive.</descr>
+      <inputs name="Inputs">
+        <pin name="a">dividend</pin>
+        <pin name="b">divisor</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="q">quotient</pin>
+        <pin name="r">remainder</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Signed Operation">If selected the operation is performed with signed (2th complement) values.</attr>
+        <attr name="Remainder always positive">If set, the remainder of a signed division is always positive.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Barrel shifter" img="file:/C:/Digital-0.29/target/docu/img/BarrelShifter_en.svg">
+      <descr>A component for bit shifting. Shifts the input value by the number of bits given by the shift input.</descr>
+      <inputs name="Inputs">
+        <pin name="in">Input with bits to be shifted.</pin>
+        <pin name="shift">Input with shift width.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Output with shifted value.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="shift input has sign">shift input data has two complement format</attr>
+        <attr name="Direction">Set direction.</attr>
+        <attr name="Mode">Mode of barrel shifter</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Comparator" img="file:/C:/Digital-0.29/target/docu/img/Comparator_en.svg">
+      <descr>A component for comparing bit values. Compares the binary numbers on input pin a and input pin b and sets the corresponding outputs. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="a">Input a to compare.</pin>
+        <pin name="b">Input b to compare.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="&gt;">Output is 1 if input a is greater than input b</pin>
+        <pin name="=">Output is 1 if input a equals input b</pin>
+        <pin name="&lt;">Output is 1 if input a is less than input b</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Signed Operation">If selected the operation is performed with signed (2th complement) values.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Negation" img="file:/C:/Digital-0.29/target/docu/img/Neg_en.svg">
+      <descr>Negation in the 2th complement Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">Input of the data word to be negated in 2th complement</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Returns the result of the negation in 2th complement.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Sign extender" img="file:/C:/Digital-0.29/target/docu/img/BitExtender_en.svg">
+      <descr>Increases the bit width of a signed value keeping the values sign. If the input is a single bit, this bit will be output on all output bits. Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in">Input value. The input bit width must be smaller than the output bit width!</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Extended input value. The input bit width must be smaller than the output bit width!</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Input Bit Width">The number of output bits must be greater than the number of input bits.</attr>
+        <attr name="Output Bit Width">The number of output bits must be greater than the number of input bits.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Bit counter" img="file:/C:/Digital-0.29/target/docu/img/BitCount_en.svg">
+      <descr>Returns the number of 1-bits in the input value.</descr>
+      <inputs name="Inputs">
+        <pin name="in">The input which 1-bits are counted.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">Outputs the number of 1-bits.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Switches">
+    <element name="Switch" img="file:/C:/Digital-0.29/target/docu/img/Switch_en.svg">
+      <descr>Simple switch. There is no gate delay: A signal change is propagated immediately.</descr>
+      <outputs name="Outputs">
+        <pin name="A1">One of the connections of the switch.</pin>
+        <pin name="B1">One of the connections of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Pole count">Number of poles available.</attr>
+        <attr name="Closed">Sets the initial state of the switch.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Switch behaves like an input">If the model is analyzed, the switch behaves like an input, where &quot;open&quot; corresponds to '0' and &quot;closed&quot; to '1'.</attr>
+      </attributes>
+    </element>
+    <element name="Double Throw Switch" img="file:/C:/Digital-0.29/target/docu/img/SwitchDT_en.svg">
+      <descr>Double Throw Switch. There is no gate delay: A signal change is propagated immediately.</descr>
+      <outputs name="Outputs">
+        <pin name="A1">One of the connections of the switch.</pin>
+        <pin name="B1">One of the connections of the switch.</pin>
+        <pin name="C1">One of the connections of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Pole count">Number of poles available.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Relay" img="file:/C:/Digital-0.29/target/docu/img/Relay_en.svg">
+      <descr>A relay is a switch which can be controlled by a coil. If a current flows through the coil, the switch is closed or opened. There is no flyback diode so the current direction does not matter. The switch is actuated if the inputs have different values. The relay behaves similar to an XOr gate.</descr>
+      <inputs name="Inputs">
+        <pin name="in1">One of the inputs to control the relay.</pin>
+        <pin name="in2">One of the inputs to control the relay.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="A1">One of the connections of the switch.</pin>
+        <pin name="B1">One of the connections of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Pole count">Number of poles available.</attr>
+        <attr name="Relay is normally closed.">If set the relay is closed if the input is low.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Double Throw Relay" img="file:/C:/Digital-0.29/target/docu/img/RelayDT_en.svg">
+      <descr>A relay is a switch which can be controlled by a coil. If a current flows through the coil, the switch is closed or opened. There is no flyback diode so the current direction does not matter. The switch is actuated if the inputs have different values. The relay behaves similar to an XOr gate.</descr>
+      <inputs name="Inputs">
+        <pin name="in1">One of the inputs to control the relay.</pin>
+        <pin name="in2">One of the inputs to control the relay.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="A1">One of the connections of the switch.</pin>
+        <pin name="B1">One of the connections of the switch.</pin>
+        <pin name="C1">One of the connections of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Pole count">Number of poles available.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="P-Channel FET" img="file:/C:/Digital-0.29/target/docu/img/PFET_en.svg">
+      <descr>P-Channel Field Effect Transistor. The bulk is connected to the pos. voltage rail and the transistor is simulated without a body diode.</descr>
+      <inputs name="Inputs">
+        <pin name="G">Gate</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="S">Source</pin>
+        <pin name="D">Drain</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Unidirectional">Unidirectional transistors propagate a signal only from source to drain. They are much faster to simulate than bidirectional transistors. Since there is no feedback from drain to source, in this mode, the transistor can not short the connected wires when it is conducting. Thus, this mode is necessary to simulate certain CMOS circuits.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="N-Channel FET" img="file:/C:/Digital-0.29/target/docu/img/NFET_en.svg">
+      <descr>N-Channel Field Effect Transistor. The bulk is connected to ground and the transistor is simulated without a body diode.</descr>
+      <inputs name="Inputs">
+        <pin name="G">Gate</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">Drain</pin>
+        <pin name="S">Source</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Unidirectional">Unidirectional transistors propagate a signal only from source to drain. They are much faster to simulate than bidirectional transistors. Since there is no feedback from drain to source, in this mode, the transistor can not short the connected wires when it is conducting. Thus, this mode is necessary to simulate certain CMOS circuits.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Fuse" img="file:/C:/Digital-0.29/target/docu/img/Fuse_en.svg">
+      <descr>A fuse used to build a one time programmable memory.</descr>
+      <outputs name="Outputs">
+        <pin name="out1">One of the connections of the switch.</pin>
+        <pin name="out2">One of the connections of the switch.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Programmed">If set a diode is &quot;blown&quot; or &quot;programmed&quot;. At a floating gate FET the floating gate is charged. You can change this setting with the [P] key.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Diode to VDD" img="file:/C:/Digital-0.29/target/docu/img/DiodeForward_en.svg">
+      <descr>A simplified unidirectional diode, used to pull a wire to VDD. It is used to implement a wired OR. So it is necessary to connect a pull down resistor to the diodes output. In the simulation the diode behaves like an active gate with a trivalent truth table: If the input high, the output is also high. In all other cases (input is low or high z) the output is in high z state. So two anti parallel connected diodes can keep each other in high state, which is not possible with real diodes. This is an ideal diode: There is no voltage drop across a forward-biased diode.</descr>
+      <inputs name="Inputs">
+        <pin name="in">If the input is high also the output is high. In all other cases the output is in high z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">If the input is high also the output is high. In all other cases the output is in high z state.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Programmed">If set a diode is &quot;blown&quot; or &quot;programmed&quot;. At a floating gate FET the floating gate is charged. You can change this setting with the [P] key.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Diode to Ground" img="file:/C:/Digital-0.29/target/docu/img/DiodeBackward_en.svg">
+      <descr>A simplified unidirectional diode, used to pull a wire to ground. It is used to implement a wired AND. So it is necessary to connect a pull up resistor to the diodes output. If the input low, the output is also low. In the other cases (input is high or high z) the output is in high z state. So two anti parallel connected diodes can keep each other in low state, which is not possible with real diodes. So this is a ideal diode: There is no voltage drop across a forward-biased diode.</descr>
+      <inputs name="Inputs">
+        <pin name="in">If the input is low also the output is low. In all other cases the output is in high z state.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out">If the input is low also the output is low. In all other cases the output is in high z state.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Programmed">If set a diode is &quot;blown&quot; or &quot;programmed&quot;. At a floating gate FET the floating gate is charged. You can change this setting with the [P] key.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="P-Channel floating gate FET" img="file:/C:/Digital-0.29/target/docu/img/FGPFET_en.svg">
+      <descr>P-Channel Floating Gate Field Effect Transistor. The bulk is connected to ground and the transistor is simulated without a body diode. If there is a charge stored in the floating gate, the fet isn't conducting even if the gate is low.</descr>
+      <inputs name="Inputs">
+        <pin name="G">Gate</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="S">Source</pin>
+        <pin name="D">Drain</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Programmed">If set a diode is &quot;blown&quot; or &quot;programmed&quot;. At a floating gate FET the floating gate is charged. You can change this setting with the [P] key.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="N-Channel floating gate FET" img="file:/C:/Digital-0.29/target/docu/img/FGNFET_en.svg">
+      <descr>N-Channel Floating Gate Field Effect Transistor. The bulk is connected to ground and the transistor is simulated without a body diode. If there is a charge stored in the floating gate, the fet isn't conducting even if the gate is high.</descr>
+      <inputs name="Inputs">
+        <pin name="G">Gate</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">Drain</pin>
+        <pin name="S">Source</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Programmed">If set a diode is &quot;blown&quot; or &quot;programmed&quot;. At a floating gate FET the floating gate is charged. You can change this setting with the [P] key.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Transmission-Gate" img="file:/C:/Digital-0.29/target/docu/img/TransGate_en.svg">
+      <descr>A real transmission-gate is build from only two transistors. Therefore, it is often used to save transistors during implementation on silicon.</descr>
+      <inputs name="Inputs">
+        <pin name="S">control input.</pin>
+        <pin name="¬S">inverted control input</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="A">input A</pin>
+        <pin name="B">input B</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Misc.">
+    <element name="Test case" img="file:/C:/Digital-0.29/target/docu/img/Testcase_en.svg">
+      <descr>Describes a test case. In a test case you can describe how a circuit should behave. It can then be automatically checked whether the behavior of the circuit actually corresponds to this description. If this is not the case, an error message is shown. The help text of the test case editor describes in detail how such a test case can be created. Exportable to VHDL/Verilog.</descr>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Test data">The description of the test case. Details of the syntax can be found in the help dialog of the test data editor.</attr>
+        <attr name="Enabled">Enables or disables this component.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Misc. - Decoration">
+    <element name="Text" img="file:/C:/Digital-0.29/target/docu/img/Text_en.svg">
+      <descr>Shows a text in the circuit. Does not affect the simulation. The text can be changed in the attribute dialog.</descr>
+      <attributes name="Attributes">
+        <attr name="Description">A short description of this element and its usage.</attr>
+        <attr name="Font Size">Sets the font size to use for this text.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Orientation">Position of the coordinate relative to the text.</attr>
+        <attr name="Snap To Grid">If set, the component is aligned with the grid.</attr>
+      </attributes>
+    </element>
+    <element name="Rectangle" img="file:/C:/Digital-0.29/target/docu/img/Rectangle_en.svg">
+      <descr>Shows a rectangle in the circuit. Does not affect the simulation. If a minus sign is used as the heading, the heading is omitted.</descr>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Width">Width in grid units</attr>
+        <attr name="Height">Height in grid units</attr>
+        <attr name="Font Size">Sets the font size to use for this text.</attr>
+        <attr name="Text Inside">Place text inside the rectangle.</attr>
+        <attr name="Text at the bottom">Place text at the bottom of the rectangle.</attr>
+        <attr name="Text on the right">Place text to the right of the rectangle.</attr>
+        <attr name="Snap To Grid">If set, the component is aligned with the grid.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Misc. - Generic">
+    <element name="Generic Initialization" img="file:/C:/Digital-0.29/target/docu/img/GenericInitCode_en.svg">
+      <descr>Code that is executed to start a generic circuit directly. If a generic circuit is to be started directly, such a component must be present. Exportable to VHDL/Verilog.</descr>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Enabled">Enables or disables this component.</attr>
+        <attr name="Generic Parameterization">Statements used to generify a circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Code" img="file:/C:/Digital-0.29/target/docu/img/GenericCode_en.svg">
+      <descr>Code that is executed when a generic circuit is made concrete. Can be used, for example, to add components or wires to a circuit. Exportable to VHDL/Verilog.</descr>
+      <attributes name="Attributes">
+        <attr name="Generic Parameterization">Statements used to generify a circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Misc. - VHDL/Verilog">
+    <element name="External" img="file:/C:/Digital-0.29/target/docu/img/External_en.svg">
+      <descr>Component to execute an external process to calculate the logic function. Is used to specify the behaviour of a component by VHDL or Verilog. The actual simulation of the behavior must be done with an external simulator. At present only the VHDL simulator ghdl and the verilog simulator Icarus Verilog are supported. The label of the component must match the name of the entity or module! Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in"></pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out"></pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Width">Width of symbol if this circuit is used as an component in an other circuit.</attr>
+        <attr name="Inputs">The inputs of the external process. It is a comma-separated list of signal names. For each signal name, a number of bits separated by a colon can be specified. The inputs of an 8-bit adder could thus be described as &quot;a:8,b:8,c_in&quot;.</attr>
+        <attr name="Outputs">The outputs of the external process. It is a comma-separated list of signal names. For each signal name, a number of bits separated by a colon can be specified. The outputs of an 8-bit adder could thus be described as &quot;s:8,c_out&quot;.</attr>
+        <attr name="Program code">The program code to be executed by the external application.</attr>
+        <attr name="Application">Defines which application to use.</attr>
+        <attr name="GHDL Options">Options that are used for all processing steps by GHDL.</attr>
+        <attr name="IVerilog Options">Options that are used for all processing steps by IVerilog.</attr>
+      </attributes>
+    </element>
+    <element name="External File" img="file:/C:/Digital-0.29/target/docu/img/ExternalFile_en.svg">
+      <descr>Component to execute an external process to calculate the logic function. Is used to specify the behaviour of a component by VHDL or Verilog. The actual simulation of the behavior must be done with an external simulator. At present only the VHDL simulator ghdl and the verilog simulator Icarus Verilog are supported. The label of the component must match the name of the entity or module! Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="in"></pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="out"></pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Width">Width of symbol if this circuit is used as an component in an other circuit.</attr>
+        <attr name="Inputs">The inputs of the external process. It is a comma-separated list of signal names. For each signal name, a number of bits separated by a colon can be specified. The inputs of an 8-bit adder could thus be described as &quot;a:8,b:8,c_in&quot;.</attr>
+        <attr name="Outputs">The outputs of the external process. It is a comma-separated list of signal names. For each signal name, a number of bits separated by a colon can be specified. The outputs of an 8-bit adder could thus be described as &quot;s:8,c_out&quot;.</attr>
+        <attr name="Program code">The file containing the program code to be executed by the external application.</attr>
+        <attr name="Application">Defines which application to use.</attr>
+        <attr name="GHDL Options">Options that are used for all processing steps by GHDL.</attr>
+        <attr name="IVerilog Options">Options that are used for all processing steps by IVerilog.</attr>
+      </attributes>
+    </element>
+    <element name="Pin Control" img="file:/C:/Digital-0.29/target/docu/img/PinControl_en.svg">
+      <descr>Control logic for a bidirectional pin. This component is necessary only in the context of VHDL or Verilog generation, in order to create a bidirectional HDL port! If you don't want to use a bidirectional IO-port on an FPGA, don't use this component! The PinControl component cannot be used in an embedded circuit! It is only allowed at the top level circuit! Exportable to VHDL/Verilog.</descr>
+      <inputs name="Inputs">
+        <pin name="wr">The data to be output.</pin>
+        <pin name="oe">Activates the output.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="rd">The data to be read.</pin>
+        <pin name="pin">The connector for the actual pin. Only a single output should be connected here.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+      </attributes>
+    </element>
+  </lib>
+  <lib name="Misc.">
+    <element name="Power" img="file:/C:/Digital-0.29/target/docu/img/PowerSupply_en.svg">
+      <descr>Has no function. Makes sure that VDD and GND are connected. Can be used in 74xx circuits to generate the pins for the voltage supply, which are tested for correct wiring.</descr>
+      <inputs name="Inputs">
+        <pin name="VDD">Must be connected to VDD!</pin>
+        <pin name="GND">Must be connected to GND!</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Bidirectional Splitter" img="file:/C:/Digital-0.29/target/docu/img/BusSplitter_en.svg">
+      <descr>Can be used for data buses and simplifies especially the construction of memory modules in a DIL package, as the implementation of the data bus is simplified.</descr>
+      <inputs name="Inputs">
+        <pin name="OE">When set, the value at the common data terminal D is output to the bit outputs D[i], if not, the bits D[i] are output to the common output D.</pin>
+      </inputs>
+      <outputs name="Outputs">
+        <pin name="D">The common data connection.</pin>
+        <pin name="D0">The data bit 0 of the bus splitter.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Data Bits">Number of data bits used.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+        <attr name="Mirror">Mirrors the component in the circuit.</attr>
+        <attr name="Spreading">Configures the spread of the inputs and outputs in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Reset" img="file:/C:/Digital-0.29/target/docu/img/Reset_en.svg">
+      <descr>The output of this component is held high during the initialisation of the circuit. After the circuit has stabilized the output goes to low. If the output is inverted it behaves the opposite way. Exportable to VHDL/Verilog.</descr>
+      <outputs name="Outputs">
+        <pin name="Reset">Reset Output.</pin>
+      </outputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted output">If selected the output is inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Break" img="file:/C:/Digital-0.29/target/docu/img/Break_en.svg">
+      <descr>If this component is used in the circuit, the &quot;Run To Break&quot; button between &quot;Start&quot; and &quot;Stop&quot; is enabled. This button clocks the circuit until a rising edge on the input of this component is detected. This element can be used for debugging by clocking the circuit to any breakpoint. Also an assembler command BRK can be implemented. This allows to execute a program up to the next BRK command. This function can only be used if the real-time clock is deactivated!</descr>
+      <inputs name="Inputs">
+        <pin name="brk">Stops the fast simulation clocking if a rising edge is detected.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Enabled">Enables or disables this component.</attr>
+        <attr name="Timeout cycles">If this amount of cycles is reached without a break signal, an error is created.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Stop" img="file:/C:/Digital-0.29/target/docu/img/Stop_en.svg">
+      <descr>A rising edge at the input stops the simulation. Has the same effect as pressing the Stop button in the toolbar.</descr>
+      <inputs name="Inputs">
+        <pin name="stop">A rising edge stops the simulation.</pin>
+      </inputs>
+      <attributes name="Attributes">
+        <attr name="Label">The name of this element.</attr>
+        <attr name="Inverted inputs">You can select the inputs that are to be inverted.</attr>
+        <attr name="Rotation">The orientation of the Element in the circuit.</attr>
+      </attributes>
+    </element>
+    <element name="Asynchronous Timing" img="file:/C:/Digital-0.29/target/docu/img/AsyncSeq_en.svg">
+      <descr>Allows configuration of the timing of an asynchronous sequential circuit such as a Muller-pipeline. The circuit must be started in single gate step mode and must be able to reach a stable state at startup. The sequential circuit can then be started interactively or with a reset gate. It is not allowed to use a regular clock component in this mode.</descr>
+      <attributes name="Attributes">
+        <attr name="Start real time clock">If enabled the runtime clock is started when the circuit is started</attr>
+        <attr name="Frequency/Hz">The real time frequency used for the real time clock</attr>
+      </attributes>
+    </element>
+  </lib>
+</root>

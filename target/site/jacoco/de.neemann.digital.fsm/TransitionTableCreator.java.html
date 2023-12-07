@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransitionTableCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">TransitionTableCreator.java</span></div><h1>TransitionTableCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+import de.neemann.digital.analyse.ModelAnalyserInfo;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.ContextMap;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.expression.VariableVisitor;
+import de.neemann.digital.core.Signal;
+import de.neemann.digital.lang.Lang;
+
+import java.util.*;
+
+/**
+ * Creates a transition table from given states and transitions
+ */
+public class TransitionTableCreator {
+    private static final String STATE_VAR = &quot;Z&quot;;
+
+    private final List&lt;State&gt; states;
+    private final List&lt;Transition&gt; transitions;
+    private final HashMap&lt;Movable, TreeMap&lt;String, Integer&gt;&gt; outputValues;
+    private final ArrayList&lt;Signal&gt; inputSignals;
+    private final ArrayList&lt;Signal&gt; outputSignals;
+    private final int initState;
+    private TruthTable truthTable;
+    private int rowsPerState;
+    private ArrayList&lt;Variable&gt; inVars;
+    private int stateBits;
+    private boolean[] transitionSet;
+    private ModelAnalyserInfo modelAnalyserInfo;
+
+    /**
+     * Creates a new instance
+     *
+     * @param fsm the fsm
+     */
+    TransitionTableCreator(FSM fsm) throws FiniteStateMachineException {
+<span class="fc" id="L44">        this(fsm, null);</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param fsm             the fsm
+     * @param stateSignalName the name if the signal indicating the actual state
+     */
+<span class="fc" id="L53">    TransitionTableCreator(FSM fsm, String stateSignalName) throws FiniteStateMachineException {</span>
+<span class="fc" id="L54">        this.states = fsm.getStates();</span>
+<span class="fc" id="L55">        this.transitions = fsm.getTransitions();</span>
+<span class="fc" id="L56">        this.initState = fsm.getInitState();</span>
+<span class="fc" id="L57">        outputValues = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L58">        modelAnalyserInfo = new ModelAnalyserInfo(null);</span>
+<span class="fc" id="L59">        modelAnalyserInfo.setStateSignalName(stateSignalName);</span>
+<span class="fc" id="L60">        inputSignals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L61">        outputSignals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L62">    }</span>
+
+    private TreeMap&lt;String, Integer&gt; getValues(Movable m) throws FiniteStateMachineException {
+<span class="fc" id="L65">        TreeMap&lt;String, Integer&gt; values = outputValues.get(m);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (values == null) {</span>
+<span class="fc" id="L67">            values = new ValueParser(m.getValues()).setModelAnalyzerInfo(modelAnalyserInfo).parse();</span>
+<span class="fc" id="L68">            outputValues.put(m, values);</span>
+        }
+<span class="fc" id="L70">        return values;</span>
+    }
+
+    /**
+     * Creates the transition table
+     *
+     * @return the transition table
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     * @throws ExpressionException         ExpressionException
+     */
+    public TruthTable create() throws FiniteStateMachineException, ExpressionException {
+<span class="fc" id="L81">        stateBits = getStateVarBits();</span>
+
+        // create state variables
+<span class="fc" id="L84">        ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = stateBits - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L86">            final Variable var = new Variable(STATE_VAR + &quot;_&quot; + i + &quot;^n&quot;);</span>
+<span class="fc" id="L87">            vars.add(var);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            boolean initVal = (initState &amp; (1 &lt;&lt; i)) != 0;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            modelAnalyserInfo.setSequentialInitValue(var.getIdentifier(), initVal ? 1 : 0);</span>
+        }
+
+<span class="fc" id="L92">        truthTable = new TruthTable(vars);</span>
+
+        // create the next state result variables
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = stateBits - 1; i &gt;= 0; i--)</span>
+<span class="fc" id="L96">            truthTable.addResult(STATE_VAR + &quot;_&quot; + i + &quot;^{n+1}&quot;);</span>
+
+        // add the output variables
+<span class="fc" id="L99">        TreeSet&lt;String&gt; results = new TreeSet&lt;&gt;();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (State s : states)</span>
+<span class="fc" id="L101">            results.addAll(getValues(s).keySet());</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (Transition t : transitions)</span>
+<span class="fc" id="L103">            results.addAll(getValues(t).keySet());</span>
+
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (String name : results) {</span>
+<span class="fc" id="L106">            truthTable.addResult(name);</span>
+<span class="fc" id="L107">            outputSignals.add(new Signal(name, null));</span>
+<span class="fc" id="L108">        }</span>
+
+        // set all to dc
+<span class="fc" id="L111">        truthTable.modifyValues(v -&gt; (byte) 2);</span>
+
+        // set state output variables
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (State s : states) {</span>
+<span class="fc" id="L115">            int row = s.getNumber();</span>
+<span class="fc" id="L116">            int col = stateBits * 2;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            for (String name : results) {</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                int def = s.isDefaultDC() ? 2 : 0;</span>
+<span class="fc" id="L119">                Integer val = getValues(s).get(name);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                int v = val == null ? def : val;</span>
+<span class="fc" id="L121">                truthTable.setValue(row, col, v);</span>
+<span class="fc" id="L122">                col++;</span>
+<span class="fc" id="L123">            }</span>
+<span class="fc" id="L124">        }</span>
+
+        // set all next state results to &quot;stay is state&quot;
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (State s : states) {</span>
+<span class="fc" id="L128">            int c = stateBits * 2;</span>
+<span class="fc" id="L129">            int row = s.getNumber();</span>
+<span class="fc" id="L130">            int m = row;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            for (int j = 0; j &lt; stateBits; j++) {</span>
+<span class="fc" id="L132">                c--;</span>
+<span class="fc" id="L133">                int aValue = 2;</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                if (!s.isDefaultDC())</span>
+<span class="fc" id="L135">                    aValue = m &amp; 1;</span>
+<span class="fc" id="L136">                truthTable.setValue(row, c, aValue);</span>
+<span class="fc" id="L137">                m &gt;&gt;= 1;</span>
+            }
+<span class="fc" id="L139">        }</span>
+
+        // add the additional input variables
+<span class="fc" id="L142">        VariableVisitor vv = new VariableVisitor();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        for (Transition t : transitions)</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (t.hasCondition())</span>
+<span class="fc" id="L145">                t.getConditionExpression().traverse(vv);</span>
+<span class="fc" id="L146">        inVars = new ArrayList&lt;&gt;(vv.getVariables());</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (Variable v : inVars) {</span>
+<span class="fc" id="L149">            truthTable.addVariable(v);</span>
+<span class="fc" id="L150">            inputSignals.add(new Signal(v.getIdentifier(), null));</span>
+<span class="fc" id="L151">        }</span>
+
+<span class="fc" id="L153">        rowsPerState = 1 &lt;&lt; inVars.size();</span>
+
+<span class="fc" id="L155">        transitionSet = new boolean[truthTable.getRows()];</span>
+
+        // fill in the unconditional transitions
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (Transition t : transitions)</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (!t.hasCondition())</span>
+<span class="fc" id="L160">                fillInTransition(t, results);</span>
+
+<span class="fc" id="L162">        transitionSet = new boolean[truthTable.getRows()];</span>
+
+        // fill in the conditional transitions
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (Transition t : transitions)</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            if (t.hasCondition())</span>
+<span class="fc" id="L167">                fillInTransition(t, results);</span>
+
+<span class="fc" id="L169">        modelAnalyserInfo.setInOut(inputSignals, outputSignals);</span>
+<span class="fc" id="L170">        truthTable.setModelAnalyzerInfo(modelAnalyserInfo);</span>
+<span class="fc" id="L171">        return truthTable;</span>
+    }
+
+    private void fillInTransition(Transition t, TreeSet&lt;String&gt; results) throws ExpressionException, FiniteStateMachineException {
+<span class="fc" id="L175">        int startState = t.getStartState().getNumber();</span>
+<span class="fc" id="L176">        int startRow = startState * rowsPerState;</span>
+<span class="fc" id="L177">        ContextMap c = new ContextMap();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (int r = 0; r &lt; rowsPerState; r++) {</span>
+<span class="fc" id="L179">            int m = 1 &lt;&lt; (inVars.size() - 1);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            for (Variable v : inVars) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">                c.set(v, (r &amp; m) != 0);</span>
+<span class="fc" id="L182">                m &gt;&gt;= 1;</span>
+<span class="fc" id="L183">            }</span>
+<span class="fc bfc" id="L184" title="All 4 branches covered.">            if (!t.hasCondition() || t.getConditionExpression().calculate(c)) {</span>
+<span class="fc" id="L185">                int col = stateBits * 2 + inVars.size();</span>
+<span class="fc" id="L186">                int row = startRow + r;</span>
+
+<span class="fc" id="L188">                checkRow(row, t);  // allow only deterministic transitions</span>
+
+                // fill in transition
+<span class="fc" id="L191">                int mask = t.getTargetState().getNumber();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">                for (int j = 0; j &lt; stateBits; j++) {</span>
+<span class="fc" id="L193">                    col--;</span>
+<span class="fc" id="L194">                    truthTable.setValue(row, col, mask &amp; 1);</span>
+<span class="fc" id="L195">                    mask &gt;&gt;= 1;</span>
+                }
+
+                // fill in output state, if any
+<span class="fc" id="L199">                final TreeMap&lt;String, Integer&gt; valueMap = getValues(t);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                if (!valueMap.isEmpty()) {</span>
+<span class="fc" id="L201">                    col = stateBits * 2 + inVars.size();</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                    for (String name : results) {</span>
+<span class="fc" id="L203">                        Integer val = valueMap.get(name);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                        if (val != null)</span>
+<span class="fc" id="L205">                            truthTable.setValue(row, col, val);</span>
+<span class="fc" id="L206">                        col++;</span>
+<span class="fc" id="L207">                    }</span>
+                }
+            }
+        }
+<span class="fc" id="L211">    }</span>
+
+    private void checkRow(int row, Transition t) throws FiniteStateMachineException {
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (transitionSet[row])</span>
+<span class="fc" id="L215">            throw new FiniteStateMachineException(Lang.get(&quot;err_notDeterministic_N&quot;, t.toString()));</span>
+<span class="fc" id="L216">        transitionSet[row] = true;</span>
+<span class="fc" id="L217">    }</span>
+
+    private int getStateVarBits() throws FiniteStateMachineException {
+<span class="fc" id="L220">        HashSet&lt;Integer&gt; numbers = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L221">        int maxNumber = 0;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (State s : states) {</span>
+<span class="fc" id="L223">            final int n = s.getNumber();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (n &gt; maxNumber)</span>
+<span class="fc" id="L225">                maxNumber = n;</span>
+
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (numbers.contains(n))</span>
+<span class="fc" id="L228">                throw new FiniteStateMachineException(Lang.get(&quot;err_fsmNumberUsedTwice_N&quot;, n));</span>
+<span class="fc" id="L229">            numbers.add(n);</span>
+<span class="fc" id="L230">        }</span>
+
+<span class="fc" id="L232">        int n = 1;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        while ((1 &lt;&lt; n) &lt;= maxNumber) n++;</span>
+<span class="fc" id="L234">        return n;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

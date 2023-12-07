@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Button.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">Button.java</span></div><h1>Button.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.lang.Lang;
+
+import javax.swing.*;
+import java.awt.event.KeyEvent;
+
+/**
+ * The Button
+ */
+public class Button implements Element {
+
+    /**
+     * The Button description
+     */
+<span class="fc" id="L26">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(Button.class)</span>
+<span class="fc" id="L27">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L28">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.ACTIVE_LOW)</span>
+<span class="fc" id="L30">            .addAttribute(Keys.MAP_TO_KEY)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.ADD_VALUE_TO_GRAPH);</span>
+
+    private final ObservableValue output;
+    private final String label;
+    private final boolean invert;
+    private final boolean mapToKey;
+    private final boolean showInGraph;
+    private boolean pressed;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+<span class="fc" id="L45">    public Button(ElementAttributes attributes) {</span>
+<span class="fc" id="L46">        output = new ObservableValue(&quot;out&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L47">        label = attributes.get(Keys.LABEL);</span>
+<span class="fc" id="L48">        invert = attributes.get(Keys.ACTIVE_LOW);</span>
+<span class="fc" id="L49">        mapToKey = attributes.get(Keys.MAP_TO_KEY);</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        output.setValue(invert ? 1 : 0);</span>
+<span class="fc" id="L51">        showInGraph = attributes.get(Keys.ADD_VALUE_TO_GRAPH);</span>
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="nc" id="L56">        throw new NodeException(Lang.get(&quot;err_noInputsAvailable&quot;));</span>
+    }
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L61">        return output.asList();</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L66">        model.addSignal(new Signal(label, output)</span>
+<span class="fc" id="L67">                .setShowInGraph(showInGraph));</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (mapToKey) {</span>
+<span class="nc" id="L69">            final KeyStroke keyStroke = KeyStroke.getKeyStroke(label.trim());</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">            if (keyStroke != null &amp;&amp; keyStroke.getKeyCode() != KeyEvent.VK_UNDEFINED)</span>
+<span class="nc" id="L71">                model.addButtonToMap(this, keyStroke.getKeyCode());</span>
+        }
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Sets the buttons state
+     *
+     * @param pressed true if pressed
+     */
+    public void setPressed(boolean pressed) {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (pressed != this.pressed) {</span>
+<span class="nc" id="L82">            this.pressed = pressed;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (pressed ^ invert) {</span>
+<span class="nc" id="L84">                output.setValue(1);</span>
+            } else {
+<span class="nc" id="L86">                output.setValue(0);</span>
+            }
+        }
+<span class="nc" id="L89">    }</span>
+
+    /**
+     * @return true if pressed
+     */
+    public boolean isPressed() {
+<span class="nc" id="L95">        return pressed;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

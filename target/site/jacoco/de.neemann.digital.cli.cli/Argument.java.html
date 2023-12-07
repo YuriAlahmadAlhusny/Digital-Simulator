@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Argument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.cli.cli</a> &gt; <span class="el_source">Argument.java</span></div><h1>Argument.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.cli.cli;
+
+import de.neemann.digital.lang.Lang;
+
+/**
+ * A command cline argument
+ *
+ * @param &lt;T&gt; the type of the argument
+ */
+public class Argument&lt;T&gt; extends ArgumentBase&lt;T&gt; {
+    private final String name;
+    private final boolean optional;
+    private T value;
+    private boolean isSet;
+
+    /**
+     * Creates a new argument
+     *
+     * @param name     the name of the argument
+     * @param def      the default value
+     * @param optional true if argument is optional
+     */
+<span class="fc" id="L28">    public Argument(String name, T def, boolean optional) {</span>
+<span class="fc" id="L29">        this.name = name;</span>
+<span class="fc" id="L30">        this.optional = optional;</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (def == null)</span>
+<span class="nc" id="L32">            throw new NullPointerException();</span>
+<span class="fc" id="L33">        value = def;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public T get() {
+<span class="fc" id="L38">        return value;</span>
+    }
+
+    @Override
+    public void setString(String val) throws CLIException {
+<span class="fc" id="L43">        value = (T) fromString(val, value);</span>
+<span class="fc" id="L44">        isSet = true;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Creates a value from a string
+     *
+     * @param val      the value as a string
+     * @param defValue the default value
+     * @return the value converted to the type of the default value
+     * @throws CLIException CLIException
+     */
+    public static Object fromString(String val, Object defValue) throws CLIException {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (defValue instanceof String)</span>
+<span class="fc" id="L57">            return val;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        else if (defValue instanceof Boolean)</span>
+<span class="fc bfc" id="L59" title="All 3 branches covered.">            switch (val.toLowerCase()) {</span>
+                case &quot;yes&quot;:
+                case &quot;1&quot;:
+                case &quot;true&quot;:
+<span class="fc" id="L63">                    return true;</span>
+                case &quot;no&quot;:
+                case &quot;0&quot;:
+                case &quot;false&quot;:
+<span class="fc" id="L67">                    return false;</span>
+                default:
+<span class="fc" id="L69">                    throw new CLIException(Lang.get(&quot;cli_notABool_N&quot;, val), 106);</span>
+            }
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        else if (defValue instanceof Integer) {</span>
+            try {
+<span class="fc" id="L73">                return Integer.parseInt(val);</span>
+<span class="fc" id="L74">            } catch (NumberFormatException e) {</span>
+<span class="fc" id="L75">                throw new CLIException(Lang.get(&quot;cli_notANumber_N&quot;, val), e);</span>
+            }
+        } else
+<span class="nc" id="L78">            throw new CLIException(Lang.get(&quot;cli_invalidType_N&quot;, defValue.getClass().getSimpleName()), 203);</span>
+    }
+
+    @Override
+    public boolean isSet() {
+<span class="fc" id="L83">        return isSet;</span>
+    }
+
+    @Override
+    public String getDescription(String command) {
+<span class="fc" id="L88">        return Lang.get(&quot;cli_help_&quot; + command + &quot;_&quot; + name);</span>
+    }
+
+    @Override
+    public String getName() {
+<span class="fc" id="L93">        return name;</span>
+    }
+
+    @Override
+    public boolean isOptional() {
+<span class="fc" id="L98">        return optional;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

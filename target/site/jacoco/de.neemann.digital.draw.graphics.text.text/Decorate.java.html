@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Decorate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics.text.text</a> &gt; <span class="el_source">Decorate.java</span></div><h1>Decorate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics.text.text;
+
+/**
+ * Decorates a text fragment
+ */
+public class Decorate implements Text {
+
+    /**
+     * Adds a MATH decoration to the given text.
+     * If the text is already decorated the text is returned directly.
+     *
+     * @param t the text to decorate
+     * @return the decorated text
+     */
+    public static Text math(Text t) {
+<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        if (t instanceof Decorate) {</span>
+<span class="nc" id="L22">            Decorate d = (Decorate) t;</span>
+<span class="nc bnc" id="L23" title="All 2 branches missed.">            if (d.getStyle() == Style.MATH)</span>
+<span class="nc" id="L24">                return t;</span>
+        }
+<span class="fc" id="L26">        return new Decorate(t, Style.MATH);</span>
+    }
+
+
+    /**
+     * The different styles
+     */
+<span class="fc" id="L33">    public enum Style {</span>
+        /**
+         * Normal
+         */
+<span class="fc" id="L37">        NORMAL,</span>
+        /**
+         * overline
+         */
+<span class="fc" id="L41">        OVERLINE,</span>
+        /**
+         * Math mode
+         */
+<span class="fc" id="L45">        MATH</span>
+    }
+
+    private Text content;
+    private final Style style;
+
+    /**
+     * Creates a new decorator
+     *
+     * @param content the content to decorate
+     * @param style   the decoration style
+     */
+<span class="fc" id="L57">    public Decorate(Text content, Style style) {</span>
+<span class="fc" id="L58">        this.content = content;</span>
+<span class="fc" id="L59">        this.style = style;</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * @return the content
+     */
+    public Text getContent() {
+<span class="fc" id="L66">        return content;</span>
+    }
+
+    /**
+     * @return the docoration style
+     */
+    public Style getStyle() {
+<span class="fc" id="L73">        return style;</span>
+    }
+
+    @Override
+    public Text simplify() {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (style.equals(Style.NORMAL))</span>
+<span class="nc" id="L79">            return content;</span>
+        else
+<span class="nc" id="L81">            return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L86">        return &quot;Decorate{&quot; + content + &quot;, &quot; + style + '}';</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

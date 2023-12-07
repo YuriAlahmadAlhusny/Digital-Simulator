@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.neemann.digital.analyse.DependencyAnalyserTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.945 s - in de.neemann.digital.analyse.DependencyAnalyserTest

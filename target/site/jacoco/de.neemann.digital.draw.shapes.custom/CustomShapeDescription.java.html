@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomShapeDescription.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes.custom</a> &gt; <span class="el_source">CustomShapeDescription.java</span></div><h1>CustomShapeDescription.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes.custom;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.lang.Lang;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+
+/**
+ * Is intended to be stored in a file.
+ */
+public final class CustomShapeDescription implements Iterable&lt;CustomShapeDescription.Holder&gt; {
+
+    private final HashMap&lt;String, Pin&gt; pins;
+    private final ArrayList&lt;Holder&gt; drawables;
+    private final TextHolder label;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L36">    private CustomShapeDescription(HashMap&lt;String, Pin&gt; pins, ArrayList&lt;Holder&gt; drawables, TextHolder label) {</span>
+<span class="fc" id="L37">        this.pins = pins;</span>
+<span class="fc" id="L38">        this.drawables = drawables;</span>
+<span class="fc" id="L39">        this.label = label;</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * Returns the position of the given pin.
+     *
+     * @param name the name of the pin
+     * @return the position of the pin
+     * @throws PinException thrown if pin is not found
+     */
+    Pin getPin(String name) throws PinException {
+<span class="fc" id="L50">        final Pin pin = pins.get(name);</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (pin == null)</span>
+<span class="fc" id="L52">            throw new PinException(Lang.get(&quot;err_customShapeHasNoPin_N&quot;, name));</span>
+<span class="fc" id="L53">        return pin;</span>
+    }
+
+    @Override
+    public Iterator&lt;Holder&gt; iterator() {
+<span class="fc" id="L58">        return drawables.iterator();</span>
+    }
+
+    /**
+     * Transforms this custom shape
+     *
+     * @param tr the transformation
+     */
+    public void transform(Transform tr) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (Holder h : drawables)</span>
+<span class="fc" id="L68">            h.transform(tr);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (Pin p : pins.values())</span>
+<span class="fc" id="L70">            p.transform(tr);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (label != null)</span>
+<span class="fc" id="L72">            label.transform(tr);</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * @return the number of pins in this shape
+     */
+    public int getPinCount() {
+<span class="fc" id="L79">        return pins.size();</span>
+    }
+
+    /**
+     * @return the TextHolder used to draw the label, maybe null
+     */
+    public TextHolder getLabel() {
+<span class="fc" id="L86">        return label;</span>
+    }
+
+    /**
+     * @return the dfined pins
+     */
+    public Collection&lt;Pin&gt; getPins() {
+<span class="fc" id="L93">        return pins.values();</span>
+    }
+
+    /**
+     * @return true if shape is empty
+     */
+    public boolean isEmpty() {
+<span class="pc bpc" id="L100" title="3 of 4 branches missed.">        return drawables.isEmpty() &amp;&amp; pins.isEmpty();</span>
+    }
+
+    /**
+     * Checks the compatibility of this shape to the given circuit
+     *
+     * @param circuit the circuit
+     * @throws PinException PinException
+     */
+    public void checkCompatibility(Circuit circuit) throws PinException {
+<span class="fc" id="L110">        final ObservableValues outputNames = circuit.getOutputNames();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (ObservableValue out : outputNames)</span>
+<span class="fc" id="L112">            getPin(out.getName());</span>
+<span class="fc" id="L113">        final PinDescription[] inputNames = circuit.getInputNames();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (PinDescription in : inputNames)</span>
+<span class="fc" id="L115">            getPin(in.getName());</span>
+
+<span class="fc" id="L117">        int pinsNum = outputNames.size() + inputNames.length;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (pinsNum != pins.size())</span>
+<span class="fc" id="L119">            throw new PinException(Lang.get(&quot;err_morePinsDefinedInSVGAsNeeded&quot;));</span>
+<span class="fc" id="L120">    }</span>
+
+    /*
+     * Two CustomShapeDescriptions are equal if and only if they are both empty!
+     */
+    @Override
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (this == o) return true;</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="nc" id="L130">        CustomShapeDescription customShapeDescription = (CustomShapeDescription) o;</span>
+
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        return customShapeDescription.isEmpty() &amp;&amp; isEmpty();</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (isEmpty())</span>
+<span class="nc" id="L138">            return 0;</span>
+<span class="nc" id="L139">        return super.hashCode();</span>
+    }
+
+    private interface Transformable {
+        void transform(Transform tr);
+    }
+
+    interface Holder extends Drawable, Transformable {
+    }
+
+    /**
+     * Stores a line.
+     */
+    public static final class LineHolder implements Holder {
+        private Vector p1;
+        private Vector p2;
+        private final int thickness;
+        private final Color color;
+
+<span class="fc" id="L158">        private LineHolder(Vector p1, Vector p2, int thickness, Color color) {</span>
+<span class="fc" id="L159">            this.p1 = p1;</span>
+<span class="fc" id="L160">            this.p2 = p2;</span>
+<span class="fc" id="L161">            this.thickness = thickness;</span>
+<span class="fc" id="L162">            this.color = color;</span>
+<span class="fc" id="L163">        }</span>
+
+        @Override
+        public void drawTo(Graphic graphic, Style highLight) {
+<span class="nc" id="L167">            graphic.drawLine(p1, p2, Style.NORMAL.deriveStyle(thickness, false, color));</span>
+<span class="nc" id="L168">        }</span>
+
+        /**
+         * @return first coordinate
+         */
+        public VectorInterface getP1() {
+<span class="fc" id="L174">            return p1;</span>
+        }
+
+        /**
+         * @return second coordinate
+         */
+        public VectorInterface getP2() {
+<span class="fc" id="L181">            return p2;</span>
+        }
+
+        @Override
+        public void transform(Transform tr) {
+<span class="nc" id="L186">            p1 = p1.transform(tr).round();</span>
+<span class="nc" id="L187">            p2 = p2.transform(tr).round();</span>
+<span class="nc" id="L188">        }</span>
+    }
+
+    /**
+     * Stores a circle
+     */
+    public static final class CircleHolder implements Holder {
+        private Vector p1;
+        private Vector p2;
+        private final int thickness;
+        private final Color color;
+        private final boolean filled;
+
+
+<span class="fc" id="L202">        private CircleHolder(Vector p1, Vector p2, int thickness, Color color, boolean filled) {</span>
+<span class="fc" id="L203">            this.p1 = p1;</span>
+<span class="fc" id="L204">            this.p2 = p2;</span>
+<span class="fc" id="L205">            this.thickness = thickness;</span>
+<span class="fc" id="L206">            this.color = color;</span>
+<span class="fc" id="L207">            this.filled = filled;</span>
+<span class="fc" id="L208">        }</span>
+
+        @Override
+        public void drawTo(Graphic graphic, Style highLight) {
+<span class="nc" id="L212">            graphic.drawCircle(p1, p2, Style.NORMAL.deriveStyle(thickness, filled, color));</span>
+<span class="nc" id="L213">        }</span>
+
+        /**
+         * @return first coordinate
+         */
+        public VectorInterface getP1() {
+<span class="fc" id="L219">            return p1;</span>
+        }
+
+        /**
+         * @return second coordinate
+         */
+        public VectorInterface getP2() {
+<span class="fc" id="L226">            return p2;</span>
+        }
+
+        @Override
+        public void transform(Transform tr) {
+<span class="nc" id="L231">            p1 = p1.transform(tr).round();</span>
+<span class="nc" id="L232">            p2 = p2.transform(tr).round();</span>
+<span class="nc" id="L233">        }</span>
+    }
+
+    /**
+     * Stores a polygon
+     */
+    public static final class PolygonHolder implements Holder {
+        private Polygon poly;
+        private final int thickness;
+        private final boolean filled;
+        private final Color color;
+
+<span class="fc" id="L245">        private PolygonHolder(Polygon poly, int thickness, boolean filled, Color color) {</span>
+<span class="fc" id="L246">            this.poly = poly;</span>
+<span class="fc" id="L247">            this.thickness = thickness;</span>
+<span class="fc" id="L248">            this.filled = filled;</span>
+<span class="fc" id="L249">            this.color = color;</span>
+<span class="fc" id="L250">        }</span>
+
+        @Override
+        public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L254">            graphic.drawPolygon(poly, Style.NORMAL.deriveStyle(thickness, filled, color));</span>
+<span class="fc" id="L255">        }</span>
+
+        /**
+         * @return the stored polygon
+         */
+        public Polygon getPolygon() {
+<span class="fc" id="L261">            return poly;</span>
+        }
+
+        @Override
+        public void transform(Transform tr) {
+<span class="fc" id="L266">            poly = poly.transform(tr);</span>
+<span class="fc" id="L267">        }</span>
+    }
+
+    /**
+     * Stores a text
+     */
+    public static final class TextHolder implements Holder {
+        private Vector p1;
+        private Vector p2;
+        private final String text;
+        private final Orientation orientation;
+        private final int size;
+        private final Color color;
+
+<span class="fc" id="L281">        private TextHolder(Vector p1, Vector p2, String text, Orientation orientation, int size, Color color) {</span>
+<span class="fc" id="L282">            this.p1 = p1;</span>
+<span class="fc" id="L283">            this.p2 = p2;</span>
+<span class="fc" id="L284">            this.text = text;</span>
+<span class="fc" id="L285">            this.orientation = orientation;</span>
+<span class="fc" id="L286">            this.size = size;</span>
+<span class="fc" id="L287">            this.color = color;</span>
+<span class="fc" id="L288">        }</span>
+
+        @Override
+        public void drawTo(Graphic graphic, Style highLight) {
+<span class="nc" id="L292">            drawText(graphic, text);</span>
+<span class="nc" id="L293">        }</span>
+
+        /**
+         * Draws the given text to the given graphic instance
+         *
+         * @param graphic the graphic instance to draw to
+         * @param text    the text to draw
+         */
+        public void drawText(Graphic graphic, String text) {
+<span class="nc" id="L302">            graphic.drawText(p1, p2, text, orientation,</span>
+                    Style.NORMAL
+<span class="nc" id="L304">                            .deriveFontStyle(size, true)</span>
+<span class="nc" id="L305">                            .deriveColor(color));</span>
+<span class="nc" id="L306">        }</span>
+
+        @Override
+        public void transform(Transform tr) {
+<span class="fc" id="L310">            p1 = p1.transform(tr).round();</span>
+<span class="fc" id="L311">            p2 = p2.transform(tr).round();</span>
+<span class="fc" id="L312">        }</span>
+
+        /**
+         * @return the text position
+         */
+        public Vector getPos() {
+<span class="fc" id="L318">            return p1;</span>
+        }
+
+        /**
+         * @return the font size
+         */
+        public int getFontSize() {
+<span class="fc" id="L325">            return size;</span>
+        }
+
+        /**
+         * @return the text string
+         */
+        public String getText() {
+<span class="fc" id="L332">            return text;</span>
+        }
+    }
+
+    /**
+     * Describes a pin position
+     */
+    public static final class Pin implements Transformable {
+        private Vector pos;
+        private boolean showLabel;
+
+<span class="fc" id="L343">        private Pin(Vector pos, boolean showLabel) {</span>
+<span class="fc" id="L344">            this.pos = pos;</span>
+<span class="fc" id="L345">            this.showLabel = showLabel;</span>
+<span class="fc" id="L346">        }</span>
+
+        boolean isShowLabel() {
+<span class="fc" id="L349">            return showLabel;</span>
+        }
+
+        /**
+         * @return the position of the pin
+         */
+        public Vector getPos() {
+<span class="fc" id="L356">            return pos;</span>
+        }
+
+        @Override
+        public void transform(Transform tr) {
+<span class="fc" id="L361">            pos = pos.transform(tr).round();</span>
+<span class="fc" id="L362">        }</span>
+    }
+
+    /**
+     * Used to build a custom shape description
+     */
+    public static final class Builder {
+        private final HashMap&lt;String, Pin&gt; pins;
+        private final ArrayList&lt;Holder&gt; drawables;
+        private TextHolder label;
+
+        /**
+         * Creates a new builder
+         */
+<span class="fc" id="L376">        public Builder() {</span>
+<span class="fc" id="L377">            pins = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L378">            drawables = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L379">        }</span>
+
+        /**
+         * Sets the label positioning info.
+         *
+         * @param pos0            pos0
+         * @param pos1            pos1
+         * @param textOrientation textOrientation
+         * @param fontSize        fontSize
+         * @param filled          filled
+         * @return this for chained calls
+         */
+        public Builder setLabel(Vector pos0, Vector pos1, Orientation textOrientation, int fontSize, Color filled) {
+<span class="fc" id="L392">            label = new TextHolder(pos0, pos1, &quot;&quot;, textOrientation, fontSize, filled);</span>
+<span class="fc" id="L393">            return this;</span>
+        }
+
+        /**
+         * Adds a pin to this shape description
+         *
+         * @param name      the name of the pin
+         * @param pos       the pins position
+         * @param showLabel if true the label of the pin is shown
+         * @return this for chained calls
+         */
+        public Builder addPin(String name, Vector pos, boolean showLabel) {
+<span class="fc" id="L405">            pins.put(name, new Pin(pos, showLabel));</span>
+<span class="fc" id="L406">            return this;</span>
+        }
+
+
+        /**
+         * Adds a polygon to the shape
+         *
+         * @param p1        starting point of the line
+         * @param p2        ending point of the line
+         * @param thickness the line thickness
+         * @param color     the color to use
+         * @return this for chained calls
+         */
+        public Builder addLine(Vector p1, Vector p2, int thickness, Color color) {
+<span class="fc" id="L420">            drawables.add(new LineHolder(p1, p2, thickness, color));</span>
+<span class="fc" id="L421">            return this;</span>
+        }
+
+        /**
+         * Adds a circle to the shape
+         *
+         * @param p1        upper left corner of the circles bounding box
+         * @param p2        lower right corner of the circles bounding box
+         * @param thickness the line thickness
+         * @param color     the color to use
+         * @param filled    true if filled
+         * @return this for chained calls
+         */
+        public Builder addCircle(Vector p1, Vector p2, int thickness, Color color, boolean filled) {
+<span class="fc" id="L435">            drawables.add(new CircleHolder(p1, p2, thickness, color, filled));</span>
+<span class="fc" id="L436">            return this;</span>
+        }
+
+        /**
+         * Adds a polygon to the shape
+         *
+         * @param poly      the polygon to add
+         * @param thickness the line thickness
+         * @param color     the color to use
+         * @param filled    true if filled
+         * @return this for chained calls
+         */
+        public Builder addPolygon(Polygon poly, int thickness, Color color, boolean filled) {
+<span class="fc" id="L449">            drawables.add(new PolygonHolder(poly, thickness, filled, color));</span>
+<span class="fc" id="L450">            return this;</span>
+        }
+
+        /**
+         * Adds a text to the shape
+         *
+         * @param p1          position
+         * @param p2          second position to determin the base line orientation
+         * @param text        the text to draw
+         * @param orientation the orientation of the text
+         * @param size        the font size
+         * @param color       the text color
+         * @return this for chained calls
+         */
+        public Builder addText(Vector p1, Vector p2, String text, Orientation orientation, int size, Color color) {
+<span class="fc" id="L465">            drawables.add(new TextHolder(p1, p2, text, orientation, size, color));</span>
+<span class="fc" id="L466">            return this;</span>
+        }
+
+        /**
+         * @return the {@link CustomShapeDescription}
+         */
+        public CustomShapeDescription build() {
+<span class="fc" id="L473">            return new CustomShapeDescription(pins, drawables, label);</span>
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

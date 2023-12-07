@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionModifier.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression.modify</a> &gt; <span class="el_source">ExpressionModifier.java</span></div><h1>ExpressionModifier.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression.modify;
+
+import de.neemann.digital.analyse.expression.Expression;
+
+/**
+ * Interface to implement an expression modifier
+ */
+public interface ExpressionModifier {
+    /**
+     * The identity modification
+     */
+<span class="fc" id="L17">    ExpressionModifier IDENTITY = expression -&gt; expression;</span>
+
+    /**
+     * Modifies the given expression with the given modifier
+     *
+     * @param expression the expression to modify
+     * @param modifier   the modifier to use
+     * @return the modified expression
+     */
+    static Expression modifyExpression(Expression expression, ExpressionModifier modifier) {
+<span class="fc" id="L27">        expression.modify(modifier);</span>
+<span class="fc" id="L28">        return modifier.modify(expression);</span>
+    }
+
+    /**
+     * Modifies the given expression with the given modifiers
+     *
+     * @param expression the expression to modify
+     * @param modifiers  the modifiers to use
+     * @return the modified expression
+     */
+    static Expression modifyExpression(Expression expression, ExpressionModifier... modifiers) {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (ExpressionModifier m : modifiers)</span>
+<span class="fc" id="L40">            expression = modifyExpression(expression, m);</span>
+<span class="fc" id="L41">        return expression;</span>
+    }
+
+    /**
+     * Modifies an expression.
+     * Don't recurse! Recursion is done by calling {@link Expression#modify(ExpressionModifier)}
+     * Don't call this method directly. Call {@link ExpressionModifier#modifyExpression(Expression, ExpressionModifier)} instead!
+     *
+     * @param expression the expression to modify
+     * @return the modified expression
+     */
+    Expression modify(Expression expression);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

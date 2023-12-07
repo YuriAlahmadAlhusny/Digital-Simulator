@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Probe.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">Probe.java</span></div><h1>Probe.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.ValueFormatter;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The measurement Probe
+ */
+public class Probe implements Element {
+
+    /**
+     * The Probe description
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L26">            = new ElementTypeDescription(&quot;Probe&quot;, Probe.class, input(&quot;in&quot;))</span>
+<span class="fc" id="L27">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L28">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.INT_FORMAT)</span>
+<span class="fc" id="L30">            .addAttribute(Keys.PROBE_MODE)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.ADD_VALUE_TO_GRAPH);</span>
+
+    private final String label;
+    private final ValueFormatter formatter;
+    private final boolean showInGraph;
+    private final ProbeMode mode;
+    private ObservableValue value;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     */
+<span class="fc" id="L44">    public Probe(ElementAttributes attributes) {</span>
+<span class="fc" id="L45">        label = attributes.get(Keys.LABEL);</span>
+<span class="fc" id="L46">        formatter = attributes.getValueFormatter();</span>
+<span class="fc" id="L47">        showInGraph = attributes.get(Keys.ADD_VALUE_TO_GRAPH);</span>
+<span class="fc" id="L48">        mode = attributes.get(Keys.PROBE_MODE);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (mode == ProbeMode.VALUE)</span>
+<span class="fc" id="L54">            value = inputs.get(0);</span>
+        else
+<span class="nc" id="L56">            value = new Counter(label, inputs.get(0).checkBits(1, null, 0), mode).value;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * @return the value to show
+     */
+    public ObservableValue getValue() {
+<span class="nc" id="L63">        return value;</span>
+    }
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L68">        return ObservableValues.EMPTY_LIST;</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L73">        model.addSignal(new Signal(label, value).setShowInGraph(showInGraph).setFormat(formatter).setTestOutput());</span>
+<span class="fc" id="L74">        model.registerGlobalValue(label, value);</span>
+<span class="fc" id="L75">    }</span>
+
+    private static final class Counter implements Observer {
+        private final ObservableValue in;
+        private final ObservableValue value;
+        private final ProbeMode mode;
+<span class="nc" id="L81">        private boolean last = false;</span>
+        private long counter;
+
+<span class="nc" id="L84">        private Counter(String label, ObservableValue value, ProbeMode mode) {</span>
+<span class="nc" id="L85">            this.in = value;</span>
+<span class="nc" id="L86">            this.value = new ObservableValue(label, 64);</span>
+<span class="nc" id="L87">            value.addObserver(this);</span>
+<span class="nc" id="L88">            this.mode = mode;</span>
+<span class="nc" id="L89">        }</span>
+
+        @Override
+        public void hasChanged() {
+<span class="nc" id="L93">            boolean now = in.getBool();</span>
+<span class="nc" id="L94">            boolean inc = false;</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">            switch (mode) {</span>
+                case UP:
+<span class="nc bnc" id="L97" title="All 2 branches missed.">                    inc = !last &amp; now;</span>
+<span class="nc" id="L98">                    break;</span>
+                case DOWN:
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                    inc = last &amp; !now;</span>
+<span class="nc" id="L101">                    break;</span>
+                case BOTH:
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                    inc = last != now;</span>
+                    break;
+            }
+<span class="nc" id="L106">            last = now;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (inc)</span>
+<span class="nc" id="L108">                value.setValue(++counter);</span>
+<span class="nc" id="L109">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

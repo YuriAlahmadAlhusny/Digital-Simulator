@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Vector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">Vector.java</span></div><h1>Vector.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Represents a 2D Vector
+ */
+public class Vector implements VectorInterface {
+
+    /**
+     * the x coordinate
+     */
+    public final int x;
+    /**
+     * the y coordinate
+     */
+    public final int y;
+
+    /**
+     * Creates a new instance
+     *
+     * @param x x
+     * @param y y
+     */
+<span class="fc" id="L31">    public Vector(int x, int y) {</span>
+<span class="fc" id="L32">        this.x = x;</span>
+<span class="fc" id="L33">        this.y = y;</span>
+<span class="fc" id="L34">    }</span>
+
+    /**
+     * Creates a copy of the given vector
+     *
+     * @param pos the vector to copy
+     */
+    public Vector(VectorInterface pos) {
+<span class="fc" id="L42">        this(pos.getX(), pos.getY());</span>
+<span class="fc" id="L43">    }</span>
+
+
+    /**
+     * Returns a new vector
+     * shorthand for new Vector(x,y)
+     *
+     * @param x x
+     * @param y y
+     * @return the vector
+     */
+    public static Vector vec(int x, int y) {
+<span class="fc" id="L55">        return new Vector(x, y);</span>
+    }
+
+
+    /**
+     * returns the minimum vector from the given vectors.
+     *
+     * @param p the vectors to evaluate
+     * @return the minimum
+     */
+    public static Vector min(VectorInterface... p) {
+<span class="fc" id="L66">        int x = p[0].getX();</span>
+<span class="fc" id="L67">        int y = p[0].getY();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (int i = 1; i &lt; p.length; i++) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (p[i].getX() &lt; x) x = p[i].getX();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (p[i].getY() &lt; y) y = p[i].getY();</span>
+        }
+<span class="fc" id="L72">        return new Vector(x, y);</span>
+    }
+
+    /**
+     * returns the maximim vector from the given vectors.
+     *
+     * @param p the vectors to evaluate
+     * @return the maximum
+     */
+    public static Vector max(VectorInterface... p) {
+<span class="fc" id="L82">        int x = p[0].getX();</span>
+<span class="fc" id="L83">        int y = p[0].getY();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 1; i &lt; p.length; i++) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (p[i].getX() &gt; x) x = p[i].getX();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (p[i].getY() &gt; y) y = p[i].getY();</span>
+        }
+<span class="fc" id="L88">        return new Vector(x, y);</span>
+    }
+
+    /**
+     * returns the width of the given vectors.
+     *
+     * @param p the vectors
+     * @return max(p)-min(p)
+     */
+    public static Vector width(VectorInterface... p) {
+<span class="fc" id="L98">        int x1 = p[0].getX();</span>
+<span class="fc" id="L99">        int y1 = p[0].getY();</span>
+<span class="fc" id="L100">        int x2 = x1;</span>
+<span class="fc" id="L101">        int y2 = y1;</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (int i = 1; i &lt; p.length; i++) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (p[i].getX() &lt; x1) x1 = p[i].getX();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (p[i].getY() &lt; y1) y1 = p[i].getY();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (p[i].getX() &gt; x2) x2 = p[i].getX();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (p[i].getY() &gt; y2) y2 = p[i].getY();</span>
+        }
+<span class="fc" id="L108">        return new Vector(x2 - x1, y2 - y1);</span>
+    }
+
+    @Override
+    public Vector add(VectorInterface a) {
+<span class="fc" id="L113">        return new Vector(x + a.getX(), y + a.getY());</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this+(x,y)
+     *
+     * @param x x
+     * @param y y
+     * @return this+(x,y)
+     */
+    public Vector add(int x, int y) {
+<span class="fc" id="L124">        return new Vector(this.x + x, this.y + y);</span>
+    }
+
+    /**
+     * Adds an offset to every vector in the given list
+     *
+     * @param vectors the original vectors
+     * @param offs    the offset
+     * @return the new list
+     */
+    public static List&lt;Vector&gt; add(List&lt;Vector&gt; vectors, Vector offs) {
+<span class="fc" id="L135">        ArrayList&lt;Vector&gt; newVec = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (Vector v : vectors)</span>
+<span class="fc" id="L137">            newVec.add(v.add(offs));</span>
+<span class="fc" id="L138">        return newVec;</span>
+    }
+
+    @Override
+    public Vector sub(VectorInterface a) {
+<span class="fc" id="L143">        return new Vector(x - a.getX(), y - a.getY());</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this*a
+     *
+     * @param a a
+     * @return this*a
+     */
+    public Vector mul(int a) {
+<span class="fc" id="L153">        return new Vector(x * a, y * a);</span>
+    }
+
+    /**
+     * Creates a new vector which has the value this*a
+     *
+     * @param a a
+     * @return this*a
+     */
+    public VectorFloat mul(float a) {
+<span class="fc" id="L163">        return new VectorFloat(x * a, y * a);</span>
+    }
+
+    @Override
+    public Vector div(int d) {
+<span class="fc" id="L168">        return new Vector(x / d, y / d);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L173">        return &quot;(x=&quot; + x</span>
+                + &quot;, y=&quot; + y
+                + ')';
+    }
+
+    /**
+     * Checks if this vector is inside the given bounding box
+     *
+     * @param min upper left corner
+     * @param max lower right corner
+     * @return true is inside
+     */
+    public boolean inside(Vector min, Vector max) {
+<span class="nc bnc" id="L186" title="All 8 branches missed.">        return min.x &lt;= x &amp;&amp; x &lt;= max.x &amp;&amp; min.y &lt;= y &amp;&amp; y &lt;= max.y;</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L194">        Vector vector = (Vector) o;</span>
+
+<span class="fc bfc" id="L196" title="All 4 branches covered.">        return x == vector.x &amp;&amp; y == vector.y;</span>
+
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L202">        int result = x;</span>
+<span class="fc" id="L203">        result = 31 * result + y;</span>
+<span class="fc" id="L204">        return result;</span>
+    }
+
+    /**
+     * @return true if this vector is (0,0)
+     */
+    public boolean isZero() {
+<span class="nc bnc" id="L211" title="All 4 branches missed.">        return x == 0 &amp;&amp; y == 0;</span>
+    }
+
+    @Override
+    public VectorFloat norm() {
+<span class="fc" id="L216">        float l = (float) Math.sqrt(x * x + y * y);</span>
+<span class="fc" id="L217">        return new VectorFloat(x / l, y / l);</span>
+    }
+
+    @Override
+    public int getX() {
+<span class="fc" id="L222">        return x;</span>
+    }
+
+    @Override
+    public int getY() {
+<span class="fc" id="L227">        return y;</span>
+    }
+
+    @Override
+    public float getXFloat() {
+<span class="fc" id="L232">        return x;</span>
+    }
+
+    @Override
+    public float getYFloat() {
+<span class="fc" id="L237">        return y;</span>
+    }
+
+    @Override
+    public VectorInterface transform(Transform tr) {
+<span class="fc" id="L242">        return tr.transform(this);</span>
+    }
+
+    @Override
+    public Vector round() {
+<span class="fc" id="L247">        return this;</span>
+    }
+
+    @Override
+    public float len() {
+<span class="fc" id="L252">        return (float) Math.sqrt(x * x + y * y);</span>
+    }
+
+    @Override
+    public VectorFloat toFloat() {
+<span class="fc" id="L257">        return new VectorFloat(x, y);</span>
+    }
+
+    @Override
+    public Vector getOrthogonal() {
+<span class="fc" id="L262">        return new Vector(y, -x);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

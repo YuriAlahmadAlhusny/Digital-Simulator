@@ -1,0 +1,1337 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Digital,default,CLI,6,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.hdl.printer,CodePrinterStr,42,28,4,2,10,11,4,4,1,4
+Digital,de.neemann.digital.hdl.printer,CodePrinter,17,243,6,26,3,64,6,26,0,16
+Digital,de.neemann.digital.core.io,MIDIHelper,184,72,17,9,33,24,16,7,5,5
+Digital,de.neemann.digital.core.io,InValue,56,67,10,8,13,18,10,7,3,5
+Digital,de.neemann.digital.core.io,RotEncoder,10,50,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.core.io,In.new ElementTypeDescription() {...},2,18,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.core.io,DipSwitch,3,47,1,1,1,13,2,4,1,4
+Digital,de.neemann.digital.core.io,CommonConnectionType,0,24,0,0,0,3,0,1,0,1
+Digital,de.neemann.digital.core.io,MIDIHelper.SynthesizerMock.new MidiChannel() {...},42,0,0,0,27,0,27,0,27,0
+Digital,de.neemann.digital.core.io,Out.new ElementTypeDescription() {...},2,19,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.core.io,Ground,10,45,0,0,1,12,1,4,1,4
+Digital,de.neemann.digital.core.io,NotConnected,10,39,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.core.io,MIDIHelper.RealSynthesizer,24,25,2,2,5,9,4,3,2,3
+Digital,de.neemann.digital.core.io,RGBLED,0,72,0,0,0,15,0,5,0,5
+Digital,de.neemann.digital.core.io,Probe.Counter,80,0,12,0,19,0,9,0,2,0
+Digital,de.neemann.digital.core.io,VDD,10,45,0,0,1,12,1,4,1,4
+Digital,de.neemann.digital.core.io,ProbeMode,0,44,0,0,0,5,0,1,0,1
+Digital,de.neemann.digital.core.io,MIDIHelper.SynthesizerMock,77,0,0,0,5,0,4,0,4,0
+Digital,de.neemann.digital.core.io,MIDI,40,161,10,4,8,30,6,8,0,7
+Digital,de.neemann.digital.core.io,ButtonLED,0,36,0,0,0,10,0,3,0,3
+Digital,de.neemann.digital.core.io,Probe,22,87,1,1,2,20,2,5,1,5
+Digital,de.neemann.digital.core.io,PowerSupply,0,108,2,6,0,16,2,8,0,6
+Digital,de.neemann.digital.core.io,DipSwitch.new ElementTypeDescription() {...},2,18,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.core.io,StepperMotorBipolar,68,83,20,0,19,12,13,3,3,3
+Digital,de.neemann.digital.core.io,LightBulb,0,49,0,0,0,12,0,5,0,5
+Digital,de.neemann.digital.core.io,Const,10,51,0,0,1,13,1,4,1,4
+Digital,de.neemann.digital.core.io,In,3,145,1,5,1,38,2,7,1,5
+Digital,de.neemann.digital.core.io,Out.SevenSegTypeDescription,157,122,4,2,10,13,3,3,0,3
+Digital,de.neemann.digital.core.io,PinControl,0,148,0,2,0,25,0,7,0,6
+Digital,de.neemann.digital.core.io,MIDI.new ElementTypeDescription() {...},0,86,0,2,0,13,0,3,0,2
+Digital,de.neemann.digital.core.io,Button,54,85,10,2,11,19,9,4,3,4
+Digital,de.neemann.digital.core.io,StepperMotorUnipolar,212,1313,48,0,34,19,31,4,7,4
+Digital,de.neemann.digital.core.io,Out,7,303,1,7,1,61,1,14,0,11
+Digital,de.neemann.digital.gui.components.table,BuilderExpressionCreator.new ExpressionListener() {...},6,49,1,3,2,10,1,4,0,3
+Digital,de.neemann.digital.gui.components.table,AllSolutionsDialog.new WindowAdapter() {...},21,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table,AllSolutionsDialog.new ToolTipAction() {...},26,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.SizeSequentialBidirectionalAction,137,0,8,0,22,0,6,0,2,0
+Digital,de.neemann.digital.gui.components.table,ExpressionComponent,192,0,14,0,55,0,15,0,8,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.CenterDefaultTableCellRenderer,63,0,8,0,14,0,6,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableReorderManager.new MouseAdapter() {...},26,0,4,0,6,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog,1685,0,46,0,296,0,54,0,31,0
+Digital,de.neemann.digital.gui.components.table,ReorderInputs,17,171,3,17,5,32,4,10,1,3
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerStore,13,70,3,5,3,17,3,7,0,6
+Digital,de.neemann.digital.gui.components.table,TableDialog.SizeAction,32,0,0,0,7,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.TextExportAction,57,0,2,0,15,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.FileExportActionConfirm,35,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.HardwareToolTipAction,51,0,0,0,11,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.StringDefaultTableCellRenderer,39,0,0,0,11,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,CheckResultListener,35,68,4,8,3,19,4,7,0,4
+Digital,de.neemann.digital.gui.components.table,PlainTextExpressionListener,37,0,0,0,10,0,4,0,4,0
+Digital,de.neemann.digital.gui.components.table,AllSolutionsDialog,153,0,10,0,31,0,9,0,4,0
+Digital,de.neemann.digital.gui.components.table,ExpressionCreator.Job,4,88,1,1,1,18,1,6,0,6
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerCSVCondensed.Result,15,259,4,36,3,59,4,21,0,5
+Digital,de.neemann.digital.gui.components.table,ProgressDialog,87,0,0,0,17,0,5,0,5,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.OutputExpressionListener,108,0,5,0,22,0,7,0,4,0
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerJK,19,123,4,8,3,26,4,6,0,4
+Digital,de.neemann.digital.gui.components.table,ReorderOutputs,19,82,3,7,5,17,4,5,1,3
+Digital,de.neemann.digital.gui.components.table,TableDialog.CalculationTableModelListener,10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},25,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},14,0,0,0,3,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},14,0,0,0,3,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},17,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},22,0,2,0,3,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},25,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,2,0,3,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},19,0,2,0,3,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},14,0,0,0,3,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new TableDialog.FileExportActionConfirm() {...},20,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},66,0,4,0,13,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new TableDialog.FileExportActionConfirm() {...},20,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new TableDialog.FileExportAction() {...},24,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},61,0,2,0,10,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new TableDialog.TextExportAction() {...},18,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new TableDialog.TextExportAction() {...},13,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},30,0,2,0,8,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},87,0,4,0,16,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},30,0,2,0,8,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},67,0,2,0,17,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},26,0,0,0,7,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},67,0,2,0,17,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new ToolTipAction() {...},26,0,0,0,7,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.new MouseAdapter() {...},43,0,4,0,6,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableDialog.FileExportAction,62,0,4,0,18,0,6,0,4,0
+Digital,de.neemann.digital.gui.components.table,LaTeXExpressionListener,0,51,1,1,0,13,1,4,0,4
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerCSVCondensed,0,125,1,7,0,20,1,7,0,4
+Digital,de.neemann.digital.gui.components.table,ShowStringDialog,137,0,4,0,29,0,6,0,4,0
+Digital,de.neemann.digital.gui.components.table,ShowStringDialog.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,ShowStringDialog.new ToolTipAction() {...},24,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerStore.Result,9,15,0,0,1,6,1,3,1,3
+Digital,de.neemann.digital.gui.components.table,BuilderExpressionCreator,18,33,2,2,4,12,3,2,1,2
+Digital,de.neemann.digital.gui.components.table,ExpressionCreator,41,262,5,19,9,49,6,14,1,7
+Digital,de.neemann.digital.gui.components.table,TableDialog.SetAction,75,0,8,0,17,0,6,0,2,0
+Digital,de.neemann.digital.gui.components.table,TableReorderManager,203,0,28,0,52,0,20,0,6,0
+Digital,de.neemann.digital.gui.components.table,ExpressionListenerOptimizeJK,7,75,1,7,2,24,1,7,0,4
+Digital,de.neemann.digital.gui.components.table,TableDialog.SizeSequentialAction,112,0,6,0,20,0,5,0,2,0
+Digital,de.neemann.digital.core.switching,SwitchDT,33,164,2,10,6,30,5,12,4,7
+Digital,de.neemann.digital.core.switching,FGNFET,0,56,0,4,0,14,0,5,0,3
+Digital,de.neemann.digital.core.switching,RelayDT,12,105,0,4,3,21,3,9,3,7
+Digital,de.neemann.digital.core.switching,PFET,0,50,0,4,0,13,0,5,0,3
+Digital,de.neemann.digital.core.switching,PlainSwitchDT,4,320,5,31,1,50,6,20,1,7
+Digital,de.neemann.digital.core.switching,NFET,7,148,0,8,2,33,2,15,2,11
+Digital,de.neemann.digital.core.switching,PlainSwitch,6,253,5,19,2,52,7,19,2,11
+Digital,de.neemann.digital.core.switching,Switch,33,246,3,17,6,44,6,16,4,8
+Digital,de.neemann.digital.core.switching,PlainSwitch.RealSwitch,0,41,0,0,0,15,0,8,0,8
+Digital,de.neemann.digital.core.switching,FGPFET,0,60,0,6,0,14,0,6,0,3
+Digital,de.neemann.digital.core.switching,PlainSwitch.Unidirectional,0,34,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.core.switching,Switch.new NodeInterface() {...},5,14,0,0,1,3,1,2,1,2
+Digital,de.neemann.digital.core.switching,Relay,12,120,0,4,3,23,3,9,3,7
+Digital,de.neemann.digital.core.switching,TransGate,30,147,5,9,3,25,6,10,1,8
+Digital,de.neemann.digital.core.switching,PlainSwitch.SwitchModel,1,2,0,0,1,1,1,1,1,1
+Digital,de.neemann.digital.core.switching,PlainSwitch.UniDirectionalSwitch,0,51,0,6,0,16,0,9,0,6
+Digital,de.neemann.digital.core.switching,Fuse,4,55,0,2,2,12,1,7,1,6
+Digital,de.neemann.digital.hdl.hgs.refs,ReferenceToFunc,38,40,2,4,4,10,3,4,1,3
+Digital,de.neemann.digital.hdl.hgs.refs,ReferenceToStruct,36,71,2,4,4,16,4,5,2,4
+Digital,de.neemann.digital.hdl.hgs.refs,Reference,5,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.hdl.hgs.refs,ReferenceToArray,36,76,6,6,3,18,6,4,0,4
+Digital,de.neemann.digital.hdl.hgs.refs,ReferenceToVar,3,31,0,0,1,10,1,5,1,5
+Digital,de.neemann.digital.core.flipflops,FlipflopJKAsync,0,121,0,4,0,23,0,6,0,4
+Digital,de.neemann.digital.core.flipflops,Monoflop,10,148,2,14,1,39,2,12,0,6
+Digital,de.neemann.digital.core.flipflops,FlipflopRSAsync,0,150,0,12,0,37,0,11,0,5
+Digital,de.neemann.digital.core.flipflops,FlipflopT.new ElementTypeDescription() {...},0,47,0,2,0,4,0,3,0,2
+Digital,de.neemann.digital.core.flipflops,FlipflopBit,49,117,4,8,12,22,5,10,3,6
+Digital,de.neemann.digital.core.flipflops,FlipflopJK,15,121,0,14,5,24,4,11,4,4
+Digital,de.neemann.digital.core.flipflops,FlipflopD,23,235,1,7,4,55,2,18,1,15
+Digital,de.neemann.digital.core.flipflops,FlipflopDAsync,0,111,0,4,0,20,0,6,0,4
+Digital,de.neemann.digital.core.flipflops,FlipflopT,6,111,0,14,2,24,2,11,2,4
+Digital,de.neemann.digital.core.flipflops,FlipflopRS,0,119,1,11,0,26,1,9,0,4
+Digital,de.neemann.digital,StringList,15,32,0,2,5,10,3,3,3,2
+Digital,de.neemann.digital,FileLocator,161,153,28,20,30,32,25,9,4,6
+Digital,de.neemann.digital,XStreamValid,0,335,3,3,0,50,3,3,0,3
+Digital,de.neemann.digital.draw.elements,ElementOrder.SwapModification,40,0,0,0,11,0,3,0,3,0
+Digital,de.neemann.digital.draw.elements,Circuit,612,802,102,60,126,168,71,53,16,27
+Digital,de.neemann.digital.draw.elements,WireMerger.OrientationHandlerVertical,0,27,0,0,0,4,0,4,0,4
+Digital,de.neemann.digital.draw.elements,Wire.new Movable() {...},19,0,0,0,4,0,3,0,3,0
+Digital,de.neemann.digital.draw.elements,Wire.new Movable() {...},19,0,0,0,4,0,3,0,3,0
+Digital,de.neemann.digital.draw.elements,DotCreator.Dot,3,22,0,0,1,8,1,3,1,3
+Digital,de.neemann.digital.draw.elements,WireMerger,5,120,1,10,1,25,1,9,0,4
+Digital,de.neemann.digital.draw.elements,PinException,3,28,0,0,1,10,1,3,1,3
+Digital,de.neemann.digital.draw.elements,Circuit.TestCase,33,42,6,2,6,11,6,6,3,5
+Digital,de.neemann.digital.draw.elements,Pin,3,45,1,1,1,14,1,8,0,8
+Digital,de.neemann.digital.draw.elements,Pins,13,85,1,5,1,20,1,9,0,7
+Digital,de.neemann.digital.draw.elements,Tunnel,3,29,0,0,1,11,1,5,1,5
+Digital,de.neemann.digital.draw.elements,WireMerger.SimpleWire,0,62,0,10,0,14,0,8,0,3
+Digital,de.neemann.digital.draw.elements,Wire.Orientation,0,34,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.elements,Wire,396,483,81,65,48,75,60,38,12,12
+Digital,de.neemann.digital.draw.elements,WireMerger.OrientationHandlerHorizontal,0,27,0,0,0,4,0,4,0,4
+Digital,de.neemann.digital.draw.elements,ElementOrder,149,0,8,0,24,0,9,0,5,0
+Digital,de.neemann.digital.draw.elements,IOState,15,26,0,0,3,9,3,5,3,5
+Digital,de.neemann.digital.draw.elements,WireConsistencyChecker,2,148,3,10,1,37,3,8,0,4
+Digital,de.neemann.digital.draw.elements,ElementOrder.Entry,9,0,0,0,4,0,1,0,1,0
+Digital,de.neemann.digital.draw.elements,VisualElement,432,404,38,34,69,92,35,38,12,25
+Digital,de.neemann.digital.draw.elements,DotCreator,0,117,0,12,0,24,0,9,0,3
+Digital,de.neemann.digital.draw.elements,Circuit.new ObservableValue() {...},15,8,0,0,3,1,3,1,3,1
+Digital,de.neemann.digital.draw.elements,WireMerger.WireContainer,0,114,0,12,0,26,0,11,0,5
+Digital,de.neemann.digital.draw.elements,Circuit.RectContainer,15,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.lang,Lang.InstanceHolder,0,6,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.lang,Lang,80,228,7,31,11,59,7,26,1,13
+Digital,de.neemann.digital.hdl.verilog2,VerilogGenerator,101,229,9,23,16,43,8,17,2,7
+Digital,de.neemann.digital.hdl.verilog2,VerilogRenaming,5,639,2,36,2,27,2,25,0,7
+Digital,de.neemann.digital.hdl.verilog2,VerilogTestBenchCreator.LineListenerVerilog,10,255,2,25,4,51,2,18,0,6
+Digital,de.neemann.digital.hdl.verilog2,VerilogTestBenchCreator,71,735,10,37,10,126,10,20,0,6
+Digital,de.neemann.digital.hdl.verilog2,VerilogCreator,157,847,19,83,24,157,17,52,2,15
+Digital,de.neemann.digital.hdl.verilog2,VerilogLibrary,53,58,3,3,10,18,4,4,2,3
+Digital,de.neemann.digital.analyse.parser,Tokenizer,0,276,3,60,0,80,3,46,0,11
+Digital,de.neemann.digital.analyse.parser,Tokenizer.Token,0,154,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.analyse.parser,Parser,0,311,2,43,0,60,2,33,0,10
+Digital,de.neemann.digital.analyse.parser,ParseException,0,4,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.draw.graphics.text.text,Decorate.Style,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.draw.graphics.text.text,ExpressionToText,17,211,1,23,4,45,2,16,1,5
+Digital,de.neemann.digital.draw.graphics.text.text,Blank,2,7,0,0,1,2,1,2,1,2
+Digital,de.neemann.digital.draw.graphics.text.text,Simple,2,19,1,1,1,7,1,4,0,4
+Digital,de.neemann.digital.draw.graphics.text.text,Index,29,75,7,5,7,18,5,10,1,8
+Digital,de.neemann.digital.draw.graphics.text.text,Decorate,19,41,5,1,6,9,4,5,1,5
+Digital,de.neemann.digital.draw.graphics.text.text,Sentence,7,113,3,9,2,24,3,11,0,8
+Digital,de.neemann.digital.draw.graphics.text.text,Character,2,19,0,0,1,5,1,3,1,3
+Digital,de.neemann.digital.gui.state,State.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.state,State,76,0,6,0,21,0,12,0,9,0
+Digital,de.neemann.digital.gui.state,StateManager,30,0,4,0,11,0,7,0,5,0
+Digital,de.neemann.digital.builder.ATF150x,PL,24,72,2,6,2,12,2,7,1,4
+Digital,de.neemann.digital.builder.ATF150x,ATFDialog.1.new WindowAdapter() {...},30,0,2,0,8,0,4,0,3,0
+Digital,de.neemann.digital.builder.ATF150x,ATFDevice,86,1704,0,0,13,54,5,5,5,5
+Digital,de.neemann.digital.builder.ATF150x,ATFDialog.1.new OSExecute.ProcessCallback() {...},56,0,0,0,12,0,5,0,5,0
+Digital,de.neemann.digital.builder.ATF150x,CreateCHN,60,0,0,0,12,0,4,0,4,0
+Digital,de.neemann.digital.builder.ATF150x,ATF150xCuplExporter,11,42,0,0,2,11,1,3,1,3
+Digital,de.neemann.digital.builder.ATF150x,ATFDialog,149,0,6,0,32,0,7,0,4,0
+Digital,de.neemann.digital.builder.ATF150x,ATFDialog.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.builder.ATF150x,ATFDialog.new ToolTipAction() {...},73,0,2,0,15,0,3,0,2,0
+Digital,de.neemann.digital.toolchain,Configuration,226,703,31,66,33,151,32,45,5,23
+Digital,de.neemann.digital.toolchain,Configuration.ExecuteAction,24,0,0,0,7,0,2,0,2,0
+Digital,de.neemann.digital.toolchain,Command,12,24,3,3,4,5,6,4,3,4
+Digital,de.neemann.digital.toolchain,Configuration.Port,19,32,2,4,2,8,2,5,0,2
+Digital,de.neemann.digital.toolchain,Configuration.PortsArray,0,20,0,0,0,5,0,3,0,3
+Digital,de.neemann.digital.toolchain,ConfigCache,5,55,1,3,1,13,1,4,0,3
+Digital,de.neemann.digital.toolchain,Configuration.DefaultIOInterface,69,0,4,0,13,0,5,0,3,0
+Digital,de.neemann.digital.toolchain,FileToCreate,18,37,3,5,4,11,4,9,1,8
+Digital,de.neemann.digital.toolchain,Configuration.ModelAccess,14,30,1,2,1,6,1,3,0,2
+Digital,de.neemann.digital.hdl.model2.clock,ClockInfo,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.hdl.model2.clock,ClockIntegratorGeneric,2,81,0,6,1,17,1,7,1,4
+Digital,de.neemann.digital.gui.remote,RemoteSever,65,0,2,0,20,0,4,0,3,0
+Digital,de.neemann.digital.gui.remote,RemoteException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.gui.remote,DigitalHandler,107,0,11,0,26,0,11,0,3,0
+Digital,de.neemann.digital.core.extern,ApplicationVerilogStdIO,138,276,12,32,25,67,14,18,2,6
+Digital,de.neemann.digital.core.extern,ApplicationIVerilog,334,0,32,0,80,0,22,0,6,0
+Digital,de.neemann.digital.core.extern,ApplicationVerilogStdIO.ParseException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.core.extern,Application.Type,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.core.extern,ApplicationVHDLStdIO.ParseException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.core.extern,ApplicationIVerilog.IVerilogProcessInterface,45,0,6,0,12,0,6,0,3,0
+Digital,de.neemann.digital.core.extern,External,166,71,8,0,34,19,11,2,7,2
+Digital,de.neemann.digital.core.extern,VHDLTokenizer.TokenizerException,0,4,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.core.extern,Options,28,139,3,27,5,33,7,18,4,5
+Digital,de.neemann.digital.core.extern,Application,49,9,7,1,13,2,10,1,5,1
+Digital,de.neemann.digital.core.extern,ProcessStarter.CouldNotStartProcessException,0,5,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.core.extern,VerilogTokenizer.TokenizerException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.core.extern,VHDLTokenizer.Token,0,84,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.core.extern,VHDLTokenizer,73,300,15,56,11,81,13,40,1,14
+Digital,de.neemann.digital.core.extern,VerilogTokenizer,119,185,43,38,34,49,29,29,1,8
+Digital,de.neemann.digital.core.extern,ApplicationGHDL,214,0,12,0,61,0,12,0,6,0
+Digital,de.neemann.digital.core.extern,ExternalFile.new ElementTypeDescription() {...},0,25,0,0,0,3,0,3,0,3
+Digital,de.neemann.digital.core.extern,ApplicationGHDL.GHDLProcessInterface,41,0,4,0,12,0,5,0,3,0
+Digital,de.neemann.digital.core.extern,ApplicationVHDLStdIO,92,224,6,17,13,57,7,13,1,6
+Digital,de.neemann.digital.core.extern,ApplicationGeneric,61,0,4,0,12,0,6,0,4,0
+Digital,de.neemann.digital.core.extern,External.new ElementTypeDescription() {...},0,25,0,0,0,3,0,3,0,3
+Digital,de.neemann.digital.core.extern,VerilogTokenizer.Token,0,194,0,0,0,3,0,1,0,1
+Digital,de.neemann.digital.core.extern,ProcessStarter.ReaderThread,38,0,2,0,12,0,4,0,3,0
+Digital,de.neemann.digital.core.extern,PortDefinition,31,148,2,10,6,26,4,13,3,8
+Digital,de.neemann.digital.core.extern,ExternalFile,31,32,0,0,7,13,1,2,1,2
+Digital,de.neemann.digital.core.extern,Port,5,86,1,6,3,23,1,9,0,6
+Digital,de.neemann.digital.core.extern,ProcessStarter,106,80,12,12,20,17,7,9,1,3
+Digital,de.neemann.digital.core.element,PinDescription.Direction,20,34,8,0,1,2,5,1,1,1
+Digital,de.neemann.digital.core.element,ElementTypeDescription,35,237,4,14,7,49,4,26,1,20
+Digital,de.neemann.digital.core.element,Keys,32,1565,9,3,1,343,10,4,4,4
+Digital,de.neemann.digital.core.element,ImmutableList.new Iterator() {...},4,39,1,3,1,5,1,4,0,3
+Digital,de.neemann.digital.core.element,Key.KeyInteger,9,26,0,0,3,10,3,4,3,4
+Digital,de.neemann.digital.core.element,Element,0,2,0,0,0,2,0,2,0,2
+Digital,de.neemann.digital.core.element,PinInfo,5,131,1,5,2,35,2,19,1,17
+Digital,de.neemann.digital.core.element,Key.LongString,9,43,0,0,3,13,3,5,3,5
+Digital,de.neemann.digital.core.element,Rotation,7,31,3,5,1,8,4,4,1,3
+Digital,de.neemann.digital.core.element,ElementAttributes,204,290,46,48,46,69,36,38,10,17
+Digital,de.neemann.digital.core.element,PinDescription.PullResistor,0,44,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.core.element,PinDescriptions,12,29,1,3,1,9,1,4,0,3
+Digital,de.neemann.digital.core.element,PinDescription,0,2,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.core.element,Key,45,147,4,6,13,45,14,21,10,20
+Digital,de.neemann.digital.core.element,Key.KeyFile,3,14,0,0,1,5,1,2,1,2
+Digital,de.neemann.digital.core.element,ImmutableList,72,74,0,2,18,17,18,10,18,9
+Digital,de.neemann.digital.core.element,Key.KeyBits,0,89,0,0,0,6,0,1,0,1
+Digital,de.neemann.digital.core.element,Keys.InstanceHolder,18,62,2,8,3,10,2,5,0,2
+Digital,de.neemann.digital.core.element,Key.KeyEnum,3,84,0,6,1,16,1,8,1,5
+Digital,de.neemann.digital.builder.tt2,OSExecute,185,0,12,0,45,0,15,0,9,0
+Digital,de.neemann.digital.builder.tt2,TT2Exporter,51,922,6,72,7,158,7,51,1,18
+Digital,de.neemann.digital.builder.tt2,OSExecute.WaitThread,33,0,4,0,13,0,4,0,2,0
+Digital,de.neemann.digital.builder.tt2,TT2Exporter.ProdInput,16,43,3,5,3,11,2,5,0,3
+Digital,de.neemann.digital.builder.tt2,TT2Exporter.StateSet,27,91,6,9,5,23,5,11,2,6
+Digital,de.neemann.digital.builder.tt2,RotationByteArrayOutputStream,6,115,1,7,1,21,1,8,0,5
+Digital,de.neemann.digital.builder.tt2,StartATF150xFitter,113,0,4,0,25,0,8,0,6,0
+Digital,de.neemann.digital.builder.tt2,OSExecute.StreamReader,60,0,2,0,17,0,5,0,4,0
+Digital,de.neemann.digital.gui.components.tree,LibraryTreeModel,208,0,16,0,46,0,23,0,15,0
+Digital,de.neemann.digital.gui.components.tree,LibraryTreeModel.Container,91,0,12,0,20,0,11,0,5,0
+Digital,de.neemann.digital.gui.components.tree,SelectTree,125,0,20,0,26,0,13,0,3,0
+Digital,de.neemann.digital.gui.components.tree,SelectTree.new MouseAdapter() {...},87,0,8,0,13,0,6,0,2,0
+Digital,de.neemann.digital.gui.components.tree,SelectTree.MyCellRenderer,33,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.analyse.expression.modify,NAnd,0,47,0,6,0,9,0,5,0,2
+Digital,de.neemann.digital.analyse.expression.modify,TwoInputs.Twoer,66,0,4,0,11,0,5,0,3,0
+Digital,de.neemann.digital.analyse.expression.modify,TwoInputs,78,0,8,0,11,0,8,0,4,0
+Digital,de.neemann.digital.analyse.expression.modify,ThreeInputs.Three,105,0,4,0,15,0,5,0,3,0
+Digital,de.neemann.digital.analyse.expression.modify,ExpressionModifier,0,34,0,2,0,6,0,5,0,4
+Digital,de.neemann.digital.analyse.expression.modify,NOr,0,47,0,6,0,9,0,5,0,2
+Digital,de.neemann.digital.analyse.expression.modify,ThreeInputs,54,0,8,0,11,0,6,0,2,0
+Digital,de.neemann.digital.core.wiring.bus,DataBus,18,137,2,17,2,27,2,12,0,4
+Digital,de.neemann.digital.core.wiring.bus,SingleBusHandler,0,43,0,0,0,10,0,5,0,5
+Digital,de.neemann.digital.core.wiring.bus,CommonBusValue,18,103,0,6,3,26,1,13,1,10
+Digital,de.neemann.digital.core.wiring.bus,ConnectedBusHandler,12,146,0,10,1,33,1,16,1,11
+Digital,de.neemann.digital.core.wiring.bus,AbstractBusHandler,0,173,0,20,0,38,0,15,0,4
+Digital,de.neemann.digital.core.wiring.bus,BusModelStateObserver,0,262,1,25,0,57,1,20,0,8
+Digital,de.neemann.digital.core.wiring.bus,AbstractBusHandler.State,0,34,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.builder.Gal16v8,CuplExporter.CuplBuilder,0,37,0,0,0,9,0,3,0,3
+Digital,de.neemann.digital.builder.Gal16v8,Gal16v8JEDECExporter,14,355,1,21,1,47,1,15,0,5
+Digital,de.neemann.digital.builder.Gal16v8,CuplExporter,30,429,5,21,6,80,5,22,1,13
+Digital,de.neemann.digital.builder.Gal16v8,BuilderCollectorGAL,5,92,1,5,1,28,1,12,0,10
+Digital,de.neemann.digital.builder.Gal16v8,CuplExporter.NotAllowedVariablesVisitor,12,218,1,7,1,16,1,7,0,4
+Digital,de.neemann.gui,ErrorMessage.ErrorDialog,147,0,2,0,34,0,4,0,3,0
+Digital,de.neemann.gui,ErrorMessage.ErrorDialog.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.gui,InfoDialog.Manifest,143,0,4,0,27,0,8,0,6,0
+Digital,de.neemann.gui,Screen.InstanceHolder,0,6,0,0,0,1,0,1,0,1
+Digital,de.neemann.gui,Mouse,14,0,2,0,3,0,2,0,1,0
+Digital,de.neemann.gui,LineBreaker,13,260,2,31,6,67,4,23,2,8
+Digital,de.neemann.gui,ErrorMessage,156,0,18,0,42,0,19,0,10,0
+Digital,de.neemann.gui,ToolTipAction,227,0,20,0,61,0,28,0,18,0
+Digital,de.neemann.gui,IconCreator,142,42,7,3,20,11,6,5,1,5
+Digital,de.neemann.gui,MyFileChooser,26,0,2,0,9,0,4,0,3,0
+Digital,de.neemann.gui,Mouse.new Mouse() {...},28,0,8,0,4,0,8,0,4,0
+Digital,de.neemann.gui,Mouse.new Mouse() {...},22,0,4,0,4,0,6,0,4,0
+Digital,de.neemann.gui,WindowSizeStorage,74,0,4,0,16,0,6,0,4,0
+Digital,de.neemann.gui,Screen,261,91,39,5,44,27,29,6,7,6
+Digital,de.neemann.gui,WindowSizeStorage.new ComponentAdapter() {...},28,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.gui,ClosingWindowListener,142,0,20,0,44,0,16,0,6,0
+Digital,de.neemann.gui,Screen.ScaleIcon,66,0,0,0,16,0,4,0,4,0
+Digital,de.neemann.gui,InfoDialog.new AbstractAction() {...},25,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.gui,InfoDialog.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.gui,ConfirmDialogBuilder,102,0,2,0,25,0,9,0,8,0
+Digital,de.neemann.gui,ToolTipAction.new JMenuItem() {...},12,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.gui,ToolTipAction.new JButton() {...},12,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.gui,ClosingWindowListener.new ClosingWindowListener.GUICloser() {...},27,0,2,0,7,0,5,0,4,0
+Digital,de.neemann.gui,InfoDialog,341,0,16,0,73,0,17,0,9,0
+Digital,de.neemann.digital.undo,Modifications,31,0,2,0,9,0,5,0,4,0
+Digital,de.neemann.digital.undo,ModifyException,0,9,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.undo,UndoManager,39,285,8,26,13,69,9,25,2,15
+Digital,de.neemann.digital.undo,Modifications.Builder,11,35,3,3,2,10,3,3,0,3
+Digital,de.neemann.digital.draw.shapes,ButtonShape.new InteractorInterface() {...},32,0,0,0,7,0,7,0,7,0
+Digital,de.neemann.digital.draw.shapes,DiodeBackwardShape,4,83,1,1,1,15,2,3,1,3
+Digital,de.neemann.digital.draw.shapes,InputShape,118,202,16,12,21,30,11,10,1,6
+Digital,de.neemann.digital.draw.shapes,ClockShape,54,198,1,3,7,31,2,4,1,3
+Digital,de.neemann.digital.draw.shapes,VDDShape,13,62,1,1,2,12,2,3,1,3
+Digital,de.neemann.digital.draw.shapes,RAMShape.new Interactor() {...},42,6,4,0,8,1,3,1,1,1
+Digital,de.neemann.digital.draw.shapes,GroundShape,13,46,1,1,2,8,2,3,1,3
+Digital,de.neemann.digital.draw.shapes,ProbeShape,19,86,3,7,4,19,4,6,1,4
+Digital,de.neemann.digital.draw.shapes,SwitchShape,51,167,5,7,4,21,5,5,1,3
+Digital,de.neemann.digital.draw.shapes,DataShape.new OrderMerger() {...},0,12,0,0,0,2,0,2,0,2
+Digital,de.neemann.digital.draw.shapes,Shape,0,1,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.shapes,DipSwitchShape,35,118,5,3,8,30,6,4,2,4
+Digital,de.neemann.digital.draw.shapes,ShapeFactory.CreatorSimple,0,31,0,0,0,8,0,2,0,2
+Digital,de.neemann.digital.draw.shapes,RAMShape,0,64,0,2,0,16,0,5,0,4
+Digital,de.neemann.digital.draw.shapes,LayoutShape.PinPos,2,41,1,3,0,9,1,3,0,2
+Digital,de.neemann.digital.draw.shapes,ButtonLEDShape,49,103,12,4,7,17,10,3,2,3
+Digital,de.neemann.digital.draw.shapes,InputShape.InputInteractor,185,6,24,0,37,1,17,1,5,1
+Digital,de.neemann.digital.draw.shapes,SevenSegShape,70,271,9,15,6,39,9,13,2,8
+Digital,de.neemann.digital.draw.shapes,FuseShape,11,199,1,1,3,23,2,4,1,4
+Digital,de.neemann.digital.draw.shapes,RotEncoderShape,5,136,0,0,1,24,1,4,1,4
+Digital,de.neemann.digital.draw.shapes,ShapeFactory.ExternCreator.new GenericShape() {...},0,17,0,0,0,2,0,2,0,2
+Digital,de.neemann.digital.draw.shapes,SevenSegShape.PersistenceOfVision,34,0,6,0,10,0,6,0,3,0
+Digital,de.neemann.digital.draw.shapes,RelayShape,28,249,4,10,6,41,5,7,1,4
+Digital,de.neemann.digital.draw.shapes,OutputShape,73,167,7,7,12,33,6,10,0,9
+Digital,de.neemann.digital.draw.shapes,DiodeForewardShape,4,83,1,1,1,15,2,3,1,3
+Digital,de.neemann.digital.draw.shapes,DataShape,4,170,1,7,1,27,2,9,1,6
+Digital,de.neemann.digital.draw.shapes,SplitterShape,2,239,0,10,1,27,1,8,1,3
+Digital,de.neemann.digital.draw.shapes,AsyncClockShape,2,67,1,1,1,16,2,4,1,4
+Digital,de.neemann.digital.draw.shapes,DiodeShape,84,0,2,0,15,0,5,0,4,0
+Digital,de.neemann.digital.draw.shapes,DILShape.ShapePinMap,32,190,9,19,7,41,8,14,0,8
+Digital,de.neemann.digital.draw.shapes,PullDownShape,2,70,0,0,1,12,1,3,1,3
+Digital,de.neemann.digital.draw.shapes,ConstShape,2,57,0,0,1,10,1,3,1,3
+Digital,de.neemann.digital.draw.shapes,RGBLEDShape,55,168,5,3,11,23,6,4,3,3
+Digital,de.neemann.digital.draw.shapes,SevenSegShape.PersistenceHandler,56,0,6,0,11,0,7,0,4,0
+Digital,de.neemann.digital.draw.shapes,NotConnectedShape,2,57,0,0,1,8,1,3,1,3
+Digital,de.neemann.digital.draw.shapes,ScopeShape,2,99,0,0,1,24,1,4,1,4
+Digital,de.neemann.digital.draw.shapes,SevenSegHexShape,53,123,8,4,11,13,6,6,1,5
+Digital,de.neemann.digital.draw.shapes,ButtonShape,34,122,2,2,7,24,3,3,1,3
+Digital,de.neemann.digital.draw.shapes,ClockShape.new Interactor() {...},28,0,2,0,5,0,4,0,3,0
+Digital,de.neemann.digital.draw.shapes,LayoutShape,73,434,9,29,11,60,10,16,1,4
+Digital,de.neemann.digital.draw.shapes,ResetShape,2,117,1,1,1,20,2,3,1,3
+Digital,de.neemann.digital.draw.shapes,SwitchShape.new Interactor() {...},33,0,4,0,5,0,5,0,3,0
+Digital,de.neemann.digital.draw.shapes,LEDShape,27,128,8,4,6,21,7,4,1,4
+Digital,de.neemann.digital.draw.shapes,FETShapeP,0,86,0,0,0,13,0,3,0,3
+Digital,de.neemann.digital.draw.shapes,PinControlShape,2,144,0,2,1,20,1,4,1,3
+Digital,de.neemann.digital.draw.shapes,DemuxerShape,2,215,0,16,1,26,1,11,1,3
+Digital,de.neemann.digital.draw.shapes,TestCaseShape,6,82,2,2,2,20,2,5,0,5
+Digital,de.neemann.digital.draw.shapes,GenericCodeShape,7,123,2,11,3,28,3,10,1,4
+Digital,de.neemann.digital.draw.shapes,DILShape,17,317,2,4,2,42,3,5,1,4
+Digital,de.neemann.digital.draw.shapes,TunnelShape,26,79,4,2,6,17,4,5,1,5
+Digital,de.neemann.digital.draw.shapes,RelayDTShape,49,306,6,10,7,38,7,6,2,3
+Digital,de.neemann.digital.draw.shapes,RectShape,144,146,40,8,7,29,25,4,2,3
+Digital,de.neemann.digital.draw.shapes,ShapeFactory.ExternCreator,0,24,0,0,0,5,0,2,0,2
+Digital,de.neemann.digital.draw.shapes,TransGateShape,20,162,2,2,4,30,3,5,1,5
+Digital,de.neemann.digital.draw.shapes,FETShape,77,107,6,4,15,26,8,6,3,6
+Digital,de.neemann.digital.draw.shapes,LayoutShape.PinList,59,150,6,8,8,34,5,10,0,8
+Digital,de.neemann.digital.draw.shapes,DipSwitchShape.new Interactor() {...},24,0,0,0,4,0,3,0,3,0
+Digital,de.neemann.digital.draw.shapes,FETShapeN,0,86,0,0,0,13,0,3,0,3
+Digital,de.neemann.digital.draw.shapes,SevenSegShape.CommonConnection,0,50,0,12,0,8,0,8,0,2
+Digital,de.neemann.digital.draw.shapes,BreakShape,4,106,1,1,2,18,2,4,1,4
+Digital,de.neemann.digital.draw.shapes,ShapeFactory,14,991,2,22,1,147,2,34,0,23
+Digital,de.neemann.digital.draw.shapes,GenericShape,39,621,14,74,8,98,12,48,1,15
+Digital,de.neemann.digital.draw.shapes,MuxerShape,2,189,0,8,1,23,1,7,1,3
+Digital,de.neemann.digital.draw.shapes,Interactor,3,3,0,0,3,1,3,1,3,1
+Digital,de.neemann.digital.draw.shapes,SevenShape,38,125,2,4,6,25,2,6,0,5
+Digital,de.neemann.digital.draw.shapes,TextShape,22,93,4,6,5,20,4,5,1,3
+Digital,de.neemann.digital.draw.shapes,SwitchDTShape,53,233,5,9,4,27,5,6,1,3
+Digital,de.neemann.digital.draw.shapes,PullUpShape,2,73,0,0,1,15,1,3,1,3
+Digital,de.neemann.digital.draw.shapes,RotEncoderShape.new InteractorInterface() {...},124,0,14,0,25,0,13,0,6,0
+Digital,de.neemann.digital.draw.shapes,BusSplitterShape,2,258,0,6,1,29,1,6,1,3
+Digital,de.neemann.digital.draw.shapes,StepperMotorShape,40,299,5,5,8,38,6,5,2,4
+Digital,de.neemann.digital.draw.shapes,SwitchDTShape.new Interactor() {...},33,0,4,0,5,0,5,0,3,0
+Digital,de.neemann.digital.draw.shapes,LightBulbShape,64,111,14,2,9,17,9,5,1,5
+Digital,de.neemann.digital.draw.shapes,ObservableValueReader,0,1,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.shapes,CustomCircuitShapeType,0,54,0,0,0,6,0,1,0,1
+Digital,de.neemann.digital.draw.shapes,DriverShape,2,174,0,10,1,26,1,9,1,4
+Digital,de.neemann.digital.draw.shapes,MissingShape,66,24,8,0,15,6,6,2,2,2
+Digital,de.neemann.digital.draw.shapes,GenericInitCodeShape,8,75,2,2,3,18,3,3,1,3
+Digital,de.neemann.digital.draw.shapes,DelayShape,2,92,0,0,1,15,1,3,1,3
+Digital,de.neemann.digital.draw.shapes,PolarityAwareLEDShape,122,236,21,5,17,34,14,4,1,4
+Digital,de.neemann.digital.draw.shapes,BitSelShape,4,94,1,3,1,17,2,4,1,3
+Digital,de.neemann.digital.draw.shapes,SixteenShape,37,221,6,6,6,43,6,6,1,5
+Digital,de.neemann.digital.draw.shapes,FGFETShapeN,14,119,1,1,1,18,1,4,0,4
+Digital,de.neemann.digital.draw.shapes,FGFETShapeP,14,112,1,1,1,17,1,3,0,3
+Digital,de.neemann.digital.draw.graphics.linemerger,GraphicLineCollector.PolygonSet,4,161,1,21,1,35,2,14,1,4
+Digital,de.neemann.digital.draw.graphics.linemerger,GraphicLineCollector,0,53,0,4,0,15,0,8,0,6
+Digital,de.neemann.digital.draw.graphics.linemerger,GraphicSkipLines,0,43,0,0,0,15,0,8,0,8
+Digital,de.neemann.digital.builder,BuilderCollector,0,104,0,4,0,24,0,10,0,8
+Digital,de.neemann.digital.builder,PinMapException,0,8,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.builder,PinMap,64,551,15,65,10,99,14,44,0,18
+Digital,de.neemann.digital.builder,BuilderException,9,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.builder,CleanNameBuilder,2,130,2,10,1,29,2,13,0,9
+Digital,de.neemann.digital.builder,ExpressionToFileExporter,73,0,2,0,17,0,7,0,6,0
+Digital,de.neemann.digital.builder,CleanNameBuilder.new PinMap() {...},0,14,0,0,0,2,0,2,0,2
+Digital,de.neemann.digital.builder,PinMap.Pin,0,9,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.builder,CleanNameBuilder.SimpleFilter,0,44,1,15,0,6,1,8,0,1
+Digital,de.neemann.digital.cli,StatsExport,25,61,1,1,3,11,1,2,0,2
+Digital,de.neemann.digital.cli,CommandLineTester,34,148,3,11,7,37,3,10,0,6
+Digital,de.neemann.digital.cli,CircuitLoader,8,60,0,0,2,14,1,7,1,7
+Digital,de.neemann.digital.cli,CommandLineTester.TestCommand,10,112,0,4,2,18,0,5,0,3
+Digital,de.neemann.digital.cli,SVGExport,66,64,2,2,9,8,3,2,2,1
+Digital,de.neemann.digital.cli,CSVWriter,8,106,6,16,0,26,6,9,0,4
+Digital,de.neemann.digital.cli,Main,21,22,2,0,9,5,2,1,1,1
+Digital,de.neemann.digital.fsm.gui,FSMFrame.ExportAction,113,0,4,0,24,0,5,0,3,0
+Digital,de.neemann.digital.fsm.gui,FSMComponent.new ComponentAdapter() {...},14,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMComponent.new ToolTipAction() {...},42,0,4,0,9,0,4,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new AbstractAction() {...},37,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},27,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},34,0,4,0,6,0,4,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new WindowAdapter() {...},16,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new AbstractAction() {...},41,0,4,0,11,0,5,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},33,0,0,0,5,0,3,0,3,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},27,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMComponent.new MouseAdapter() {...},321,0,34,0,56,0,23,0,6,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.StateListener,45,0,4,0,9,0,6,0,4,0
+Digital,de.neemann.digital.fsm.gui,OptimizerDialog.SwingListener,31,0,0,0,8,0,5,0,5,0
+Digital,de.neemann.digital.fsm.gui,OptimizerDialog.new ToolTipAction() {...},15,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame,1009,0,34,0,199,0,42,0,25,0
+Digital,de.neemann.digital.fsm.gui,OptimizerDialog,130,0,0,0,20,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},30,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},44,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},25,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMFrame.new ToolTipAction() {...},32,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.fsm.gui,FSMComponent,767,0,24,0,143,0,25,0,13,0
+Digital,de.neemann.digital.hdl.hgs,Value.HGSArrayList,0,28,0,0,0,9,0,5,0,5
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionPrintln,24,4,2,0,4,2,2,1,1,1
+Digital,de.neemann.digital.hdl.hgs,Statements,0,44,0,4,0,11,0,6,0,4
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionInt,0,10,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Value.HGSMapMap,0,18,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionIdentifier,0,67,1,17,0,13,1,10,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionAbs,0,24,0,2,0,5,0,3,0,2
+Digital,de.neemann.digital.hdl.hgs,ParserException,0,4,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionIsPresent,0,18,0,0,0,6,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionLoadFile,38,4,0,0,5,2,1,1,1,1
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionPrintf,0,12,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Parser.StructLiteral,0,44,0,2,0,9,0,4,0,3
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionBitsNeeded,0,11,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Parser,117,1111,15,114,22,242,18,117,3,54
+Digital,de.neemann.digital.hdl.hgs,Tokenizer,65,638,17,125,17,186,16,91,1,20
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionFormat,0,8,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionRound,6,17,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionPanic,11,54,2,6,2,11,2,4,0,2
+Digital,de.neemann.digital.hdl.hgs,HGSArray,10,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionLog,18,20,1,1,1,6,1,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionCeil,6,18,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionFloat,0,10,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Value,226,496,38,108,15,83,33,61,0,21
+Digital,de.neemann.digital.hdl.hgs,Parser.ExpressionWithLine,0,21,0,0,0,8,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,HGSMap,5,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.hdl.hgs,Context,78,612,14,44,13,115,15,40,2,24
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionSplitString,24,4,2,0,5,2,2,1,1,1
+Digital,de.neemann.digital.hdl.hgs,HGSEvalException,8,27,2,2,3,7,3,3,1,3
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionOutput,0,7,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionMax,0,71,1,13,0,16,1,8,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionRandom,0,23,0,0,0,5,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Parser.StatementWithLine,0,22,0,0,0,10,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionLoadHex,37,53,3,3,4,11,3,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionFloor,6,18,1,1,1,4,1,2,0,2
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionPrint,0,24,0,2,0,5,0,3,0,2
+Digital,de.neemann.digital.hdl.hgs,Tokenizer.Token,0,572,0,2,0,29,0,12,0,11
+Digital,de.neemann.digital.hdl.hgs,Context.FunctionMin,0,71,0,14,0,16,0,9,0,2
+Digital,de.neemann.digital.gui.components.data,ScopeTrigger.Trigger,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.gui.components.data,GraphComponent.new MouseAdapter() {...},43,0,0,0,11,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.data,GraphComponent.new ComponentAdapter() {...},21,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,ScopeTrigger.ScopeModelStateObserver.new WindowAdapter() {...},16,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,ValueTableObserver,5,128,4,12,1,21,4,10,0,6
+Digital,de.neemann.digital.gui.components.data,GraphComponent,131,0,6,0,36,0,14,0,11,0
+Digital,de.neemann.digital.gui.components.data,ScopeTrigger.ScopeModelStateObserver,145,6,14,0,20,1,9,1,2,1
+Digital,de.neemann.digital.gui.components.data,DummyElement,1,63,0,0,1,23,1,4,1,4
+Digital,de.neemann.digital.gui.components.data,GraphDialog.ExportAction,91,0,2,0,20,0,4,0,3,0
+Digital,de.neemann.digital.gui.components.data,ScopeTrigger.new OrderMerger() {...},12,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},24,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new WindowAdapter() {...},21,0,0,0,5,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new OrderMerger() {...},9,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},46,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},31,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog.new ToolTipAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.data,GraphDialog,397,0,10,0,81,0,15,0,10,0
+Digital,de.neemann.digital.gui.components.data,ScopeTrigger,115,72,15,0,21,17,12,5,4,5
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter,79,183,5,16,10,33,7,10,2,4
+Digital,de.neemann.digital.draw.graphics.text.formatter,PlainTextFormatter,6,151,3,21,2,28,4,10,1,1
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.OverlineFragment,25,130,3,3,2,19,3,2,0,2
+Digital,de.neemann.digital.draw.graphics.text.formatter,SVGFormatter,30,148,6,22,5,31,6,13,0,3
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.IndexFragment,80,113,12,8,11,25,10,2,0,2
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.TextFragment,0,37,0,0,0,9,0,2,0,2
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.Fragment,0,35,0,0,0,13,0,5,0,5
+Digital,de.neemann.digital.draw.graphics.text.formatter,LaTeXFormatter,24,296,9,55,9,66,9,34,0,5
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.FormatterException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.draw.graphics.text.formatter,GraphicsFormatter.SentenceFragment,0,108,0,8,0,24,0,9,0,5
+Digital,de.neemann.digital.analyse,DetermineJKStateMachine.AsIterable,0,13,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.analyse,SubstituteLibrary.SubstituteGeneric,13,95,1,7,1,18,1,6,0,3
+Digital,de.neemann.digital.analyse,ModelAnalyserInfo,85,162,17,17,19,33,13,19,4,11
+Digital,de.neemann.digital.analyse,SplitPinString.PinsArray,0,20,0,2,0,6,0,3,0,2
+Digital,de.neemann.digital.analyse,TruthTableTableModel,262,0,22,0,59,0,30,0,19,0
+Digital,de.neemann.digital.analyse,SubstituteLibrary,25,332,13,51,9,61,14,25,1,6
+Digital,de.neemann.digital.analyse,MinimizerQuineMcCluskey,0,51,0,4,0,12,0,5,0,3
+Digital,de.neemann.digital.analyse,ModelAnalyserInfo.Bus,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.analyse,SubstituteLibrary.AllowSetAttributes,37,38,2,2,2,12,2,3,0,3
+Digital,de.neemann.digital.analyse,ModelAnalyser,149,1177,26,92,21,203,25,56,1,21
+Digital,de.neemann.digital.analyse,DetermineJKStateMachine.AsIterable.SingleItemIterator,5,24,1,3,2,8,2,4,1,3
+Digital,de.neemann.digital.analyse,TruthTable,236,593,25,48,46,111,26,51,9,31
+Digital,de.neemann.digital.analyse,SplitPinString,2,48,2,6,1,11,2,6,0,4
+Digital,de.neemann.digital.analyse,TruthTable.Result,4,19,0,0,2,8,1,4,1,4
+Digital,de.neemann.digital.analyse,BoolTableExpanded,4,108,0,8,1,23,1,9,1,5
+Digital,de.neemann.digital.analyse,CycleDetector.Node,4,17,0,0,1,6,1,2,1,2
+Digital,de.neemann.digital.analyse,DependencyAnalyser,14,170,1,19,1,37,1,15,0,6
+Digital,de.neemann.digital.analyse,ModelAnalyser.new NodeWithoutDelay() {...},0,23,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.analyse,ModelAnalyser.new BitSetter() {...},0,19,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.analyse,ModelAnalyser.new BitSetter() {...},0,17,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.analyse,ModelAnalyser.new NodeWithoutDelay() {...},0,33,0,0,0,5,0,2,0,2
+Digital,de.neemann.digital.analyse,ModelAnalyser.new NodeWithoutDelay() {...},0,22,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.analyse,TruthTableConverter,43,0,2,0,12,0,5,0,4,0
+Digital,de.neemann.digital.analyse,SubstituteLibrary.SubstituteGenericHGSParser,6,61,0,2,2,14,0,3,0,2
+Digital,de.neemann.digital.analyse,DetermineJKStateMachine,16,267,3,37,1,58,3,27,0,10
+Digital,de.neemann.digital.analyse,CycleDetector,59,172,11,21,7,42,8,14,2,4
+Digital,de.neemann.digital.analyse,TruthTable.DummyBitSetter,1,4,0,0,1,2,1,1,1,1
+Digital,de.neemann.digital.analyse,MinimizerQuineMcCluskeyExam.ExpressionListenerEnsureMinimal,11,75,1,7,1,18,1,6,0,3
+Digital,de.neemann.digital.analyse,SubstituteLibrary.Matcher,0,22,0,2,0,7,0,3,0,2
+Digital,de.neemann.digital.analyse,CycleDetector.CycleException,0,7,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.analyse,AnalyseException,4,4,0,0,2,2,1,1,1,1
+Digital,de.neemann.digital.analyse,SubstituteLibrary.SubstituteMatching,2,41,1,3,1,10,1,4,0,3
+Digital,de.neemann.digital.analyse,CSVImporter,6,247,3,37,1,55,4,21,1,4
+Digital,de.neemann.digital.analyse,CSVImporter.Generator,0,120,0,14,0,25,0,10,0,3
+Digital,de.neemann.digital.analyse,LabelNumbering,0,109,0,12,0,20,0,9,0,3
+Digital,de.neemann.digital.analyse,MinimizerQuineMcCluskeyExam,0,23,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.gui.release,CheckForNewRelease,108,0,12,0,30,0,12,0,6,0
+Digital,de.neemann.digital.gui.release,ReleaseInfo,61,0,0,0,18,0,4,0,4,0
+Digital,de.neemann.digital.core.arithmetic,BarrelShifter,3,235,0,16,1,47,1,14,1,6
+Digital,de.neemann.digital.core.arithmetic,BarrelShifterMode,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.core.arithmetic,Div,3,218,1,11,1,40,2,11,1,6
+Digital,de.neemann.digital.core.arithmetic,BitExtender,10,104,1,1,1,23,1,6,0,6
+Digital,de.neemann.digital.core.arithmetic,BitCount,3,74,0,0,1,15,1,6,1,6
+Digital,de.neemann.digital.core.arithmetic,PRNG,0,159,2,6,0,31,2,8,0,6
+Digital,de.neemann.digital.core.arithmetic,Comparator,3,257,0,22,1,42,1,17,1,6
+Digital,de.neemann.digital.core.arithmetic,Sub,2,155,1,13,0,26,1,12,0,6
+Digital,de.neemann.digital.core.arithmetic,Mul,25,127,2,4,3,26,3,8,1,7
+Digital,de.neemann.digital.core.arithmetic,Add,5,246,1,9,1,39,2,14,1,10
+Digital,de.neemann.digital.core.arithmetic,Neg,3,70,0,0,1,15,1,6,1,6
+Digital,de.neemann.digital.core.arithmetic,BitExtender.new NodeWithoutDelay() {...},0,44,0,2,0,6,0,3,0,2
+Digital,de.neemann.digital.core.arithmetic,LeftRightFormat,0,24,0,0,0,3,0,1,0,1
+Digital,de.neemann.digital.draw.shapes.custom.svg,TransformParser,28,199,2,11,3,50,2,9,0,3
+Digital,de.neemann.digital.draw.shapes.custom.svg,Context,21,587,5,49,11,130,6,58,1,32
+Digital,de.neemann.digital.draw.shapes.custom.svg,SvgException,5,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.draw.shapes.custom.svg,SvgImporter,102,1056,13,62,21,159,13,40,1,11
+Digital,de.neemann.digital.draw.shapes.custom.svg,SvgTemplate,383,0,4,0,42,0,8,0,6,0
+Digital,de.neemann.gui.language,Resources,0,87,0,0,0,24,0,10,0,10
+Digital,de.neemann.gui.language,Resources.MapEntryConverter,0,72,0,4,0,22,0,6,0,4
+Digital,de.neemann.gui.language,Bundle,20,131,2,4,6,23,3,4,1,3
+Digital,de.neemann.gui.language,Language,48,32,12,0,6,12,9,6,3,6
+Digital,de.neemann.digital.hdl.model2.expression,Expression,1,16,0,4,1,3,1,4,1,2
+Digital,de.neemann.digital.hdl.model2.expression,ExprNot,11,41,0,2,3,14,1,6,1,5
+Digital,de.neemann.digital.hdl.model2.expression,ExprNot.OptimizeNotNot,7,15,1,3,1,5,1,3,0,2
+Digital,de.neemann.digital.hdl.model2.expression,ExprVarRange,5,45,1,1,1,12,1,6,0,6
+Digital,de.neemann.digital.hdl.model2.expression,ExprVar,10,23,2,2,2,9,2,4,0,4
+Digital,de.neemann.digital.hdl.model2.expression,ExprConstant,0,68,0,8,0,17,0,12,0,8
+Digital,de.neemann.digital.hdl.model2.expression,ExprOperate,27,106,2,10,5,26,2,11,1,6
+Digital,de.neemann.digital.hdl.model2.expression,ExprOperate.Operation,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.builder.jedec,FuseMapFiller,43,167,4,16,4,42,4,10,0,4
+Digital,de.neemann.digital.builder.jedec,FuseMap,0,110,0,6,0,23,0,10,0,7
+Digital,de.neemann.digital.builder.jedec,FuseMapFiller.MapEntry,0,26,0,6,0,9,0,5,0,2
+Digital,de.neemann.digital.builder.jedec,FuseMapFillerException,0,4,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.builder.jedec,JedecWriter,0,204,0,12,0,43,0,14,0,8
+Digital,de.neemann.digital.builder.Gal22v10,Gal22v10CuplExporter,8,124,0,0,2,10,1,3,1,3
+Digital,de.neemann.digital.builder.Gal22v10,Gal22v10JEDECExporter,14,401,1,13,1,36,1,11,0,5
+Digital,de.neemann.digital.fsm,FSM.MovingState,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.fsm,Optimizer.ThreadRunner,2,68,0,6,1,19,0,5,0,2
+Digital,de.neemann.digital.fsm,Transition,557,311,38,26,74,55,29,21,7,11
+Digital,de.neemann.digital.fsm,TransitionTableCreator,2,700,2,70,0,126,2,42,0,8
+Digital,de.neemann.digital.fsm,FiniteStateMachineException,5,4,0,0,2,2,1,1,1,1
+Digital,de.neemann.digital.fsm,Optimizer,26,418,7,19,9,69,8,20,2,13
+Digital,de.neemann.digital.fsm,Permute.PermPull,22,143,1,11,11,41,2,11,1,6
+Digital,de.neemann.digital.fsm,FSMDemos,724,0,4,0,105,0,10,0,8,0
+Digital,de.neemann.digital.fsm,Optimizer.ComplexityListener.ComplexityVisitorL,0,17,0,2,0,4,0,3,0,2
+Digital,de.neemann.digital.fsm,ValueParser,26,138,3,13,2,34,3,10,0,4
+Digital,de.neemann.digital.fsm,State,277,147,23,13,49,40,23,17,10,12
+Digital,de.neemann.digital.fsm,Permute,0,80,0,6,0,20,0,7,0,4
+Digital,de.neemann.digital.fsm,Movable,148,155,16,10,24,41,13,18,3,15
+Digital,de.neemann.digital.fsm,Movable.Property,0,104,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.fsm,FSM,609,330,88,26,117,69,70,23,23,13
+Digital,de.neemann.digital.fsm,WaitGroup,23,34,4,4,8,11,6,4,3,3
+Digital,de.neemann.digital.fsm,Optimizer.ComplexityListener,19,25,1,1,2,7,2,2,1,2
+Digital,de.neemann.digital.fsm,Permute.PermListenerException,8,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.fsm,State.new MouseMovable() {...},57,0,4,0,12,0,6,0,4,0
+Digital,de.neemann.digital.fsm,Permute.Divider,28,0,2,0,9,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.table.hardware,GenerateFile,156,0,10,0,34,0,9,0,4,0
+Digital,de.neemann.digital.gui.components.table.hardware,GenerateCUPL,156,0,16,0,34,0,12,0,4,0
+Digital,de.neemann.digital.gui,NumberingWizard,124,0,6,0,29,0,8,0,5,0
+Digital,de.neemann.digital.gui,Main.RunModelState,41,0,0,0,10,0,3,0,3,0
+Digital,de.neemann.digital.gui,Settings,50,98,12,0,8,26,8,3,2,3
+Digital,de.neemann.digital.gui,LibrarySelector.new ToolTipAction() {...},24,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui,ExportZipAction,286,0,22,0,55,0,18,0,7,0
+Digital,de.neemann.digital.gui,Main.CreateTestCaseAction,31,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui,SettingsBase,67,64,4,2,15,18,4,5,1,5
+Digital,de.neemann.digital.gui,Main.MainBuilder,67,0,0,0,23,0,12,0,12,0
+Digital,de.neemann.digital.gui,SaveAsHelper,111,126,11,9,27,26,11,5,4,2
+Digital,de.neemann.digital.gui,WindowManager.FrameHolder,80,0,8,0,19,0,10,0,6,0
+Digital,de.neemann.digital.gui,DocumentationLocator.OpenPDFAction,55,0,6,0,13,0,6,0,3,0
+Digital,de.neemann.digital.gui,SearchTextField.new FocusListener() {...},14,0,0,0,5,0,3,0,3,0
+Digital,de.neemann.digital.gui,Main,3759,62,220,0,718,20,183,2,73,2
+Digital,de.neemann.digital.gui,Main.UpdateViewAtEvent,50,0,7,0,12,0,8,0,3,0
+Digital,de.neemann.digital.gui,Main.ModelKeyListener,45,0,6,0,10,0,8,0,5,0
+Digital,de.neemann.digital.gui,StatsDialog,74,0,0,0,14,0,1,0,1,0
+Digital,de.neemann.digital.gui,InsertAction,156,0,6,0,35,0,10,0,7,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},55,0,6,0,13,0,5,0,2,0
+Digital,de.neemann.digital.gui,Main.new State() {...},64,0,2,0,14,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new State() {...},36,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.AddressPicker,42,0,8,0,8,0,7,0,3,0
+Digital,de.neemann.digital.gui,Main.UpdateViewPeriodic,52,0,3,0,10,0,6,0,4,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},59,0,0,0,14,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},31,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},24,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,NumberingWizard.new WindowAdapter() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},28,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.gui,Main.new AbstractAction() {...},26,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},54,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},55,0,0,0,9,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},29,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},82,0,0,0,16,0,3,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},28,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.gui,Settings.SettingsHolder,0,6,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},21,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},21,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},76,0,12,0,14,0,8,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},22,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},74,0,12,0,14,0,8,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},244,0,18,0,44,0,11,0,2,0
+Digital,de.neemann.digital.gui,LibrarySelector,137,0,12,0,28,0,10,0,4,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},15,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},88,0,14,0,15,0,9,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},92,0,10,0,26,0,7,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},56,0,6,0,14,0,5,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},15,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},15,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},108,0,4,0,20,0,5,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},51,0,6,0,8,0,6,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},51,0,6,0,8,0,6,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},108,0,4,0,20,0,5,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},28,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},23,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},31,0,0,0,10,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},32,0,4,0,6,0,4,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},31,0,2,0,9,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},122,0,9,0,18,0,8,0,3,0
+Digital,de.neemann.digital.gui,Main.new AbstractAction() {...},20,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new AbstractAction() {...},15,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new DocumentListener() {...},60,0,2,0,11,0,5,0,4,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},18,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui,WindowManager.InstanceHolderClass,6,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.gui,FileHistory.FileOpenEntry,27,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui,WindowManager,53,0,2,0,14,0,6,0,5,0
+Digital,de.neemann.digital.gui,Main.ExportAction,88,0,4,0,19,0,5,0,3,0
+Digital,de.neemann.digital.gui,WindowManager.FrameHolder.new AbstractAction() {...},17,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui,WindowManager.FrameHolder.new WindowAdapter() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},24,0,2,0,5,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},73,0,2,0,15,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new WindowAdapter() {...},52,0,2,0,10,0,3,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},35,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},47,0,8,0,9,0,7,0,3,0
+Digital,de.neemann.digital.gui,Main.new ToolTipAction() {...},22,0,4,0,5,0,4,0,2,0
+Digital,de.neemann.digital.gui,Main.RunToBreakRunnable,96,0,10,0,21,0,8,0,3,0
+Digital,de.neemann.digital.gui,SearchTextField,38,0,4,0,8,0,4,0,2,0
+Digital,de.neemann.digital.gui,Main.WaitForBreak,49,0,6,0,16,0,7,0,4,0
+Digital,de.neemann.digital.gui,DigitalUncaughtExceptionHandler,244,0,12,0,66,0,12,0,6,0
+Digital,de.neemann.digital.gui,InsertHistory.WrapperAction,46,0,0,0,12,0,3,0,3,0
+Digital,de.neemann.digital.gui,Main.ExportGifAction,94,0,4,0,20,0,5,0,3,0
+Digital,de.neemann.digital.gui,InsertAction.new JMenuItem() {...},13,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui,InsertHistory,190,0,22,0,48,0,19,0,8,0
+Digital,de.neemann.digital.gui,DocumentationLocator,181,0,22,0,29,0,14,0,3,0
+Digital,de.neemann.digital.gui,ProgramMemoryLoader,21,156,3,16,3,27,3,11,0,4
+Digital,de.neemann.digital.gui,Main.UpdateViewMicroStep,65,0,6,0,13,0,6,0,3,0
+Digital,de.neemann.digital.gui,FileHistory,229,0,30,0,52,0,25,0,10,0
+Digital,de.neemann.digital.gui,Main.ModelClosedObserver,53,0,5,0,11,0,8,0,5,0
+Digital,de.neemann.digital.gui,TextSearchFilter,25,0,4,0,5,0,4,0,2,0
+Digital,de.neemann.digital.cli.cli,NamedCommand,0,9,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.cli.cli,ArgumentKey,29,34,1,1,6,10,4,5,3,5
+Digital,de.neemann.digital.cli.cli,Muxer,0,135,0,8,0,25,0,10,0,6
+Digital,de.neemann.digital.cli.cli,Argument,19,110,2,9,2,25,2,12,0,8
+Digital,de.neemann.digital.cli.cli,BasicCommand,3,478,1,45,1,93,1,29,0,7
+Digital,de.neemann.digital.cli.cli,CLIException,25,29,4,0,8,10,4,4,2,4
+Digital,de.neemann.digital.cli.cli,ArgumentBase,1,125,2,8,0,21,2,9,0,6
+Digital,de.neemann.digital.analyse.quinemc.primeselector,PrimeSelector,0,2,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.analyse.quinemc.primeselector,LargestFirst,0,64,0,10,0,19,0,7,0,2
+Digital,de.neemann.digital.analyse.quinemc.primeselector,BruteForce,127,0,16,0,28,0,11,0,3,0
+Digital,de.neemann.digital.analyse.quinemc.primeselector,BruteForceGetAll,5,157,1,19,1,36,1,13,0,4
+Digital,de.neemann.digital.analyse.quinemc.primeselector,PrimeSelectorDefault,0,36,0,4,0,10,0,5,0,3
+Digital,de.neemann.digital.gui.components.terminal,TerminalDialog.new ToolTipAction() {...},22,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.terminal,TerminalDialog.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.terminal,TerminalDialog,202,0,8,0,40,0,9,0,4,0
+Digital,de.neemann.digital.gui.components.terminal,ConsoleTerminal,4,22,1,1,1,7,2,2,1,2
+Digital,de.neemann.digital.gui.components.terminal,CharDeleter,0,71,1,7,0,18,1,7,0,4
+Digital,de.neemann.digital.gui.components.terminal,Terminal,11,113,2,10,2,27,3,10,1,6
+Digital,de.neemann.digital.gui.components.terminal,KeyboardDialog,139,0,4,0,26,0,6,0,4,0
+Digital,de.neemann.digital.gui.components.terminal,Keyboard,51,126,13,3,9,29,10,6,2,6
+Digital,de.neemann.digital.gui.components.terminal,TerminalDialog.MyTerminal,79,0,6,0,15,0,8,0,5,0
+Digital,de.neemann.digital.gui.components.terminal,KeyboardDialog.new KeyAdapter() {...},56,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.core.extern.handler,StdIOInterface,474,0,46,0,112,0,35,0,11,0
+Digital,de.neemann.digital.builder.circuit,CircuitBuilder.ReplaceOutputByTunnel,0,44,3,3,0,13,3,2,0,2
+Digital,de.neemann.digital.builder.circuit,CircuitBuilder.FindLUTVisitor,0,22,0,4,0,7,0,5,0,3
+Digital,de.neemann.digital.builder.circuit,CircuitBuilder,307,2208,26,168,42,399,25,100,2,26
+Digital,de.neemann.digital.builder.circuit,FragmentExpression.ConstExpression,0,21,0,0,0,6,0,2,0,2
+Digital,de.neemann.digital.builder.circuit,FragmentVariable,4,51,0,0,1,17,1,9,1,9
+Digital,de.neemann.digital.builder.circuit,Box,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.builder.circuit,FragmentExpression.FragmentHolder,0,6,0,0,0,3,0,1,0,1
+Digital,de.neemann.digital.builder.circuit,FragmentVisualElement,0,211,1,15,0,46,1,20,0,13
+Digital,de.neemann.digital.builder.circuit,FragmentSameInValue,0,119,0,4,0,25,0,9,0,7
+Digital,de.neemann.digital.builder.circuit,FragmentExpression,0,570,0,42,0,102,0,36,0,15
+Digital,de.neemann.digital.draw.model,ModelEntry,47,202,4,20,4,51,5,15,1,7
+Digital,de.neemann.digital.draw.model,InverterConfig.new NodeWithoutDelay() {...},0,26,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.draw.model,RealTimeClock.RealTimeRunner,68,0,6,0,13,0,7,0,4,0
+Digital,de.neemann.digital.draw.model,AsyncSequentialClock.RealTimeRunner.new Runnable() {...},16,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.draw.model,RealTimeClock,93,0,11,0,23,0,11,0,5,0
+Digital,de.neemann.digital.draw.model,RealTimeClock.ThreadRunner,63,0,2,0,13,0,5,0,4,0
+Digital,de.neemann.digital.draw.model,Net,94,488,19,51,13,103,18,41,2,22
+Digital,de.neemann.digital.draw.model,RealTimeClock.FrequencyCalculator,85,0,4,0,19,0,4,0,2,0
+Digital,de.neemann.digital.draw.model,InverterConfig.Builder,0,25,1,1,0,6,1,3,0,3
+Digital,de.neemann.digital.draw.model,InverterConfig,26,109,7,13,5,24,8,11,3,6
+Digital,de.neemann.digital.draw.model,AsyncSequentialClock,62,0,9,0,17,0,8,0,3,0
+Digital,de.neemann.digital.draw.model,AsyncSequentialClock.RealTimeRunner,30,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.draw.model,NetList,19,529,3,68,3,112,3,46,0,13
+Digital,de.neemann.digital.draw.model,ModelCreator,84,694,14,90,12,146,12,55,2,13
+Digital,de.neemann.digital.gui.components.graphics,VGADialog.MyComponent,109,0,4,0,15,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.graphics,VGADialog,37,0,0,0,11,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.graphics,GraphicComponent,329,0,30,0,61,0,21,0,6,0
+Digital,de.neemann.digital.gui.components.graphics,GraphicCard,119,254,16,12,22,55,18,11,7,8
+Digital,de.neemann.digital.gui.components.graphics,LedMatrixComponent,170,0,16,0,33,0,11,0,3,0
+Digital,de.neemann.digital.gui.components.graphics,VGA.SyncDetector,0,93,1,19,0,21,1,13,0,4
+Digital,de.neemann.digital.gui.components.graphics,MoveFocusTo,36,0,2,0,14,0,6,0,5,0
+Digital,de.neemann.digital.gui.components.graphics,VGA.VideoId,86,61,18,0,5,9,11,2,2,2
+Digital,de.neemann.digital.gui.components.graphics,LedMatrix,71,138,9,3,11,28,8,6,2,6
+Digital,de.neemann.digital.gui.components.graphics,GraphicDialog,43,0,0,0,11,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.graphics,VGA.VideoMode,63,74,8,0,7,15,7,2,3,2
+Digital,de.neemann.digital.gui.components.graphics,LedMatrixDialog,44,0,0,0,11,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.graphics,VGA,243,1192,25,1,44,95,19,8,6,8
+Digital,de.neemann.digital.core.io.telnet,Telnet,37,187,7,3,7,35,5,7,0,7
+Digital,de.neemann.digital.core.io.telnet,ByteBuffer,62,25,9,1,16,9,9,3,4,3
+Digital,de.neemann.digital.core.io.telnet,ServerHolder,0,42,1,3,0,10,1,4,0,3
+Digital,de.neemann.digital.core.io.telnet,Server,42,50,5,1,14,15,9,6,6,6
+Digital,de.neemann.digital.core.io.telnet,Server.ClientThread,109,0,8,0,42,0,7,0,3,0
+Digital,de.neemann.digital.core.io.telnet,Server.ServerThread,24,9,0,0,8,3,1,1,1,1
+Digital,de.neemann.digital.draw.library,ElementTypeDescriptionCustom,156,194,18,14,31,41,13,16,3,10
+Digital,de.neemann.digital.draw.library,ResolveGenerics.Args,4,69,4,6,0,15,4,6,0,5
+Digital,de.neemann.digital.draw.library,ElementLibraryFolder,23,316,8,32,6,62,8,19,1,6
+Digital,de.neemann.digital.draw.library,CustomElement,14,19,0,0,3,5,3,3,3,3
+Digital,de.neemann.digital.draw.library,ElementLibrary.PopulateMapVisitor,0,111,0,12,0,24,0,9,0,3
+Digital,de.neemann.digital.draw.library,ResolveGenerics.Globals,8,31,1,1,1,9,1,4,0,4
+Digital,de.neemann.digital.draw.library,GenericInitCode,1,21,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.draw.library,ResolveGenerics,137,627,14,66,30,136,10,46,0,14
+Digital,de.neemann.digital.draw.library,GenericCode,1,17,0,0,1,7,1,4,1,4
+Digital,de.neemann.digital.draw.library,ResolveGenerics.AddComponent,3,103,1,3,2,21,1,3,0,2
+Digital,de.neemann.digital.draw.library,ResolveGenerics.AddComponent.new Context() {...},0,13,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.draw.library,JarComponentManager.AdditionalShape,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.draw.library,ResolveGenerics.CircuitHolder,6,104,0,10,3,19,1,9,1,4
+Digital,de.neemann.digital.draw.library,JarComponentManager,42,86,2,2,6,22,2,5,0,5
+Digital,de.neemann.digital.draw.library,ElementLibraryFolder.ScanCounter,0,20,0,0,0,6,0,4,0,4
+Digital,de.neemann.digital.draw.library,ElementNotFoundException,5,4,0,0,2,2,1,1,1,1
+Digital,de.neemann.digital.draw.library,ElementLibrary.ElementContainer,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.draw.library,ResolveGenerics.AddWire,0,50,0,0,0,7,0,2,0,2
+Digital,de.neemann.digital.draw.library,NumStringComparator,0,98,0,20,0,26,0,13,0,3
+Digital,de.neemann.digital.draw.library,LibraryNode,279,280,34,30,64,67,36,31,16,19
+Digital,de.neemann.digital.draw.library,NumStringComparator.ParseNumber,0,37,0,4,0,6,0,3,0,1
+Digital,de.neemann.digital.draw.library,NumStringComparator.InstanceHolder,0,6,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.library,InvalidNodeException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.draw.library,ElementLibrary,313,882,37,47,65,244,37,42,10,27
+Digital,de.neemann.digital.draw.library,ResolveGenerics.SetCircuitFunc,16,18,6,0,2,6,4,3,1,3
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap,66,691,26,62,5,96,26,36,1,16
+Digital,de.neemann.digital.gui.components.karnaugh,MapLayout,92,45,18,4,20,10,14,5,4,4
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapComponent,1241,0,60,0,168,0,42,0,12,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapDialog,170,0,16,0,35,0,13,0,5,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap.Cover,15,167,7,19,2,31,7,16,1,9
+Digital,de.neemann.digital.gui.components.karnaugh,VarRectList.VarRect,88,0,10,0,15,0,12,0,7,0
+Digital,de.neemann.digital.gui.components.karnaugh,VarRectList,65,0,4,0,16,0,6,0,4,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapDialog.MyDefaultListCellRenderer,48,0,4,0,11,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap.VarState,20,50,5,9,3,10,5,6,1,3
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapDialog.new AbstractAction() {...},48,0,4,0,8,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap.Header,0,87,0,8,0,15,0,10,0,6
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap.Cell,6,135,0,14,2,27,2,15,2,8
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMap.Pos,6,21,0,0,2,8,2,3,2,3
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapDialog.MyComboBoxModel,35,0,2,0,12,0,9,0,8,0
+Digital,de.neemann.digital.gui.components.karnaugh,KarnaughMapComponent.MyMouseAdapter,129,0,14,0,23,0,12,0,5,0
+Digital,de.neemann.digital.gui.components.modification,ModifyMoveAndRotElement,34,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.modification,ModifyDeleteRect,21,0,0,0,7,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModificationOfWire,48,0,6,0,11,0,6,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModifyInsertWires.LocalWire,11,0,0,0,4,0,1,0,1,0
+Digital,de.neemann.digital.gui.components.modification,ModifyDeleteElement,19,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.modification,ModifyAttribute,13,27,0,0,3,5,1,2,1,2
+Digital,de.neemann.digital.gui.components.modification,ModifyInsertWires,87,0,7,0,15,0,8,0,4,0
+Digital,de.neemann.digital.gui.components.modification,ModifyMoveSelected.new TransformRotate() {...},22,0,0,0,3,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModifyCircuitAttributes,17,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModifyMeasurementOrdering,16,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModifyAttributes,26,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.modification,ModifyInsertWire,45,0,4,0,10,0,6,0,4,0
+Digital,de.neemann.digital.gui.components.modification,ModifyInsertElement,29,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.components.modification,ModifyMoveSelected,171,0,18,0,40,0,14,0,5,0
+Digital,de.neemann.digital.gui.components.modification,ModifyDeleteWire,14,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.modification,ModificationOfVisualElement,62,40,10,2,10,10,8,2,2,2
+Digital,de.neemann.digital.gui.components.modification,ModifyMoveWire,24,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.testing.parser,ValueAppenderBits,0,55,0,6,0,11,0,5,0,2
+Digital,de.neemann.digital.testing.parser,Tokenizer,30,511,8,108,7,144,7,79,1,17
+Digital,de.neemann.digital.testing.parser,VirtualSignal.new ObservableValue() {...},11,18,0,0,3,2,1,2,1,2
+Digital,de.neemann.digital.testing.parser,LineEmitterSimple,0,113,0,6,0,18,0,6,0,3
+Digital,de.neemann.digital.testing.parser,Tokenizer.Token,0,520,0,12,0,28,0,27,0,21
+Digital,de.neemann.digital.testing.parser,ModelInitializer.InitSignal,13,22,1,1,1,8,1,2,0,2
+Digital,de.neemann.digital.testing.parser,OperatorPrecedence,0,98,0,2,0,6,0,4,0,3
+Digital,de.neemann.digital.testing.parser,TestRow,3,40,0,0,1,14,1,6,1,6
+Digital,de.neemann.digital.testing.parser,ModelInitializer.InitMemory,13,60,1,6,1,11,1,6,0,3
+Digital,de.neemann.digital.testing.parser,ModelInitializer.InitProgramMemory,16,33,2,5,2,8,2,5,0,3
+Digital,de.neemann.digital.testing.parser,VirtualSignal,0,21,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.testing.parser,LineEmitterList,0,44,0,4,0,11,0,6,0,4
+Digital,de.neemann.digital.testing.parser,ModelInitializer,0,57,0,2,0,12,0,6,0,5
+Digital,de.neemann.digital.testing.parser,Parser,128,837,10,52,11,200,10,67,0,35
+Digital,de.neemann.digital.testing.parser,Context,0,152,2,24,0,34,2,18,0,7
+Digital,de.neemann.digital.testing.parser,LineEmitterRepeat,8,43,1,3,1,11,1,3,0,2
+Digital,de.neemann.digital.testing.parser,ParserException,5,4,0,0,2,2,1,1,1,1
+Digital,de.neemann.digital.testing.parser,LineEmitterWhile,0,23,0,2,0,7,0,3,0,2
+Digital,de.neemann.digital.core.memory,RAMSinglePort,0,82,0,0,0,22,0,4,0,4
+Digital,de.neemann.digital.core.memory,DataField,85,310,10,32,20,75,14,30,6,17
+Digital,de.neemann.digital.core.memory,RAMAsync,23,156,0,2,8,32,7,7,7,6
+Digital,de.neemann.digital.core.memory,DataFieldConverter,6,230,1,25,2,62,1,17,0,5
+Digital,de.neemann.digital.core.memory,RAMDualPort,13,278,0,14,5,69,4,25,4,18
+Digital,de.neemann.digital.core.memory,Register,18,176,0,8,6,36,6,13,6,9
+Digital,de.neemann.digital.core.memory,RegisterFile,22,256,1,7,8,43,8,9,7,6
+Digital,de.neemann.digital.core.memory,EEPROMDualPort,36,67,4,0,7,18,4,3,2,3
+Digital,de.neemann.digital.core.memory,Counter,34,222,4,16,6,44,5,15,3,7
+Digital,de.neemann.digital.core.memory,RAMDualAccess,23,281,1,13,8,55,8,12,7,6
+Digital,de.neemann.digital.core.memory,LookUpTable.new ElementTypeDescription() {...},0,41,0,2,0,6,0,3,0,2
+Digital,de.neemann.digital.core.memory,RAMSinglePortSel,27,216,0,10,10,43,8,11,8,6
+Digital,de.neemann.digital.core.memory,ROMDualPort,33,123,2,0,9,29,3,5,2,5
+Digital,de.neemann.digital.core.memory,ROM,53,189,4,4,10,51,4,16,1,15
+Digital,de.neemann.digital.core.memory,RAMInterface,2,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.core.memory,LookUpTable,0,113,0,6,0,26,0,9,0,6
+Digital,de.neemann.digital.core.memory,CounterPreset,43,331,1,29,8,65,4,22,3,8
+Digital,de.neemann.digital.core.memory,BlockRAMDualPort,23,180,0,6,8,37,7,9,7,6
+Digital,de.neemann.digital.core.memory,EEPROM,23,301,3,21,8,62,10,19,7,10
+Digital,de.neemann.digital.core.pld,PullUp,1,33,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.core.pld,DiodeForward,27,127,4,12,3,33,3,14,0,9
+Digital,de.neemann.digital.core.pld,PullDown.PullObservableValue,0,14,0,0,0,5,0,2,0,2
+Digital,de.neemann.digital.core.pld,Diode,111,12,10,0,24,3,11,1,6,1
+Digital,de.neemann.digital.core.pld,PullDown,1,33,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.core.pld,DiodeBackward,0,37,0,4,0,7,0,5,0,3
+Digital,de.neemann.digital.core.basic,XOr,0,36,0,2,0,8,0,4,0,3
+Digital,de.neemann.digital.core.basic,FanIn,0,63,0,2,0,13,0,8,0,7
+Digital,de.neemann.digital.core.basic,FanIn.FanInDescription,0,74,0,2,0,14,0,4,0,3
+Digital,de.neemann.digital.core.basic,Function,0,18,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.core.basic,NOr,0,18,0,0,0,4,0,3,0,3
+Digital,de.neemann.digital.core.basic,NAnd,0,18,0,0,0,4,0,3,0,3
+Digital,de.neemann.digital.core.basic,XNOr,0,18,0,0,0,4,0,3,0,3
+Digital,de.neemann.digital.core.basic,And,0,36,0,2,0,8,0,4,0,3
+Digital,de.neemann.digital.core.basic,Or,0,36,0,2,0,8,0,4,0,3
+Digital,de.neemann.digital.core.basic,Not,8,72,0,0,3,16,3,6,3,6
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionEditor.new ToolTipAction() {...},31,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionEditor.new ToolTipAction() {...},46,0,2,0,12,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog,373,0,10,0,73,0,11,0,6,0
+Digital,de.neemann.digital.gui.components.testing,TestAllDialog.StateRenderer,44,0,6,0,15,0,5,0,1,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.new ToolTipAction() {...},54,0,2,0,10,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.new ToolTipAction() {...},65,0,6,0,11,0,5,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.ValueRenderer,42,0,6,0,12,0,5,0,1,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.new ToolTipAction() {...},24,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.new ToolTipAction() {...},50,0,4,0,10,0,4,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.ValueTableHolder,18,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.NumberRenderer,26,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionEditor,65,0,2,0,15,0,6,0,5,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog.ClosingWindowListener,10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestAllDialog,136,0,2,0,28,0,7,0,6,0
+Digital,de.neemann.digital.gui.components.testing,TestAllDialog.new KeyAdapter() {...},29,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,TestCaseDescriptionDialog,259,0,14,0,51,0,13,0,6,0
+Digital,de.neemann.digital.gui.components.testing,TestAllDialog.new MouseAdapter() {...},29,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.new ToolTipAction() {...},52,0,2,0,8,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.new ToolTipAction() {...},45,0,2,0,7,0,3,0,2,0
+Digital,de.neemann.digital.gui.components.testing,ValueTableDialog.new MouseAdapter() {...},67,0,10,0,9,0,8,0,3,0
+Digital,de.neemann.digital.gui.components.testing,TestAllDialog.FileModel,83,0,6,0,24,0,14,0,11,0
+Digital,de.neemann.digital.hdl.vhdl2,VHDLTestBenchCreator,59,680,7,33,7,117,7,20,0,7
+Digital,de.neemann.digital.hdl.vhdl2,VHDLTestBenchCreator.LineListenerVHDL.new Separator() {...},0,19,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.hdl.vhdl2,VHDLGenerator,101,192,9,21,16,37,8,16,2,7
+Digital,de.neemann.digital.hdl.vhdl2,VHDLLibrary,28,53,1,3,4,17,1,4,0,3
+Digital,de.neemann.digital.hdl.vhdl2,Separator,0,85,0,10,0,23,0,10,0,5
+Digital,de.neemann.digital.hdl.vhdl2,VHDLCreator,138,869,17,83,21,163,15,53,1,16
+Digital,de.neemann.digital.hdl.vhdl2,VHDLTestBenchCreator.LineListenerVHDL,27,166,2,15,5,36,2,11,0,3
+Digital,de.neemann.digital.hdl.vhdl2,VHDLRenaming,0,534,1,30,0,29,1,21,0,5
+Digital,de.neemann.digital.hdl.model2.optimizations,NodeSorterExpressionBased,50,189,13,31,8,36,9,17,2,2
+Digital,de.neemann.digital.hdl.model2.optimizations,NameConstantSignals,0,44,1,5,0,9,1,4,0,2
+Digital,de.neemann.digital.hdl.model2.optimizations,MergeConstants,0,109,0,12,0,27,0,9,0,3
+Digital,de.neemann.digital.hdl.model2.optimizations,NodeSorterExpressionBased.DependsAtLeastOnOneOf,0,31,0,6,0,10,0,6,0,3
+Digital,de.neemann.digital.hdl.model2.optimizations,ReplaceOneToMany,0,115,0,8,0,27,0,7,0,3
+Digital,de.neemann.digital.hdl.model2.optimizations,MergeAssignments,4,221,2,30,1,44,3,19,1,5
+Digital,de.neemann.digital.hdl.model2.optimizations,MergeAssignments.CheckVarRangeVisitor,3,21,1,3,1,8,1,3,0,2
+Digital,de.neemann.digital.hdl.model2.optimizations,NodeSorterExpressionBased.DependsOnlyOn,0,31,0,6,0,10,0,6,0,3
+Digital,de.neemann.digital.hdl.model2.optimizations,OptimizeExpressions,0,29,0,4,0,9,0,4,0,2
+Digital,de.neemann.digital.hdl.model2.optimizations,RemoveConstantSignals,10,59,6,8,3,14,4,6,0,3
+Digital,de.neemann.digital.hdl.model2.optimizations,InlineManyToOne,0,54,1,9,0,16,1,6,0,2
+Digital,de.neemann.digital.hdl.model2,HDLModel.GenericsCache,29,0,0,0,7,0,4,0,4,0
+Digital,de.neemann.digital.hdl.model2,HDLCircuit.DefaultNetNaming,0,101,0,10,0,15,0,8,0,3
+Digital,de.neemann.digital.hdl.model2,HDLModel.RenameSingleCheck,0,32,0,2,0,9,0,3,0,2
+Digital,de.neemann.digital.hdl.model2,HDLNodeCustom,5,17,0,0,1,5,1,3,1,3
+Digital,de.neemann.digital.hdl.model2,HDLNet,123,255,19,31,15,70,18,30,1,21
+Digital,de.neemann.digital.hdl.model2,HDLCircuit.new HDLPort() {...},0,21,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.hdl.model2,HDLNodeBuildIn,13,103,1,9,1,18,1,10,0,6
+Digital,de.neemann.digital.hdl.model2,HDLCircuit,76,1173,17,105,16,243,20,79,3,35
+Digital,de.neemann.digital.hdl.model2,HDLPort,32,147,3,13,4,45,5,23,2,18
+Digital,de.neemann.digital.hdl.model2,HDLModel.ObservableValuesBitsProvider,0,12,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.hdl.model2,HDLNode,28,218,2,20,4,55,4,25,2,15
+Digital,de.neemann.digital.hdl.model2,HDLNodeBuildIn.InputAssignment,0,41,0,2,0,14,0,7,0,6
+Digital,de.neemann.digital.hdl.model2,HDLPort.Direction,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.hdl.model2,HDLException,16,0,0,0,7,0,3,0,3,0
+Digital,de.neemann.digital.hdl.model2,HDLNodeSplitterOneToMany,74,46,2,4,12,8,5,4,4,2
+Digital,de.neemann.digital.hdl.model2,HDLNodeSplitterManyToOne.SplitterAssignment,0,62,0,2,0,17,0,8,0,7
+Digital,de.neemann.digital.hdl.model2,HDLNodeSplitterManyToOne,2,167,1,13,1,34,1,12,0,6
+Digital,de.neemann.digital.hdl.model2,HDLModel,180,497,12,36,25,94,11,27,1,12
+Digital,de.neemann.digital.hdl.model2,HDLNodeAssignment,13,55,0,0,3,18,1,8,1,8
+Digital,de.neemann.digital.draw.shapes.ieee,IEEEOrShape,18,183,2,4,2,25,2,6,0,5
+Digital,de.neemann.digital.draw.shapes.ieee,IEEENotShape,33,99,2,4,7,19,3,4,1,3
+Digital,de.neemann.digital.draw.shapes.ieee,IEEEXOrShape,20,205,3,3,2,28,3,6,0,6
+Digital,de.neemann.digital.draw.shapes.ieee,IEEEAndShape,5,118,1,1,1,21,1,5,0,5
+Digital,de.neemann.digital.draw.shapes.ieee,IEEEGenericShape,49,144,2,8,5,22,3,7,1,4
+Digital,de.neemann.digital.core.stats,Statistics.Index,88,67,16,4,12,19,12,4,3,3
+Digital,de.neemann.digital.core.stats,Countable,2,2,0,0,1,1,1,1,1,1
+Digital,de.neemann.digital.core.stats,Statistics.MyTableModel,11,81,2,12,6,21,6,15,5,6
+Digital,de.neemann.digital.core.stats,Statistics,29,109,7,11,5,20,5,8,0,4
+Digital,de.neemann.digital.core.stats,Statistics.Counter,0,22,0,0,0,8,0,4,0,4
+Digital,de.neemann.digital.testing,Transitions,4,359,4,46,1,72,4,29,0,8
+Digital,de.neemann.digital.testing,FolderTestRunner.TestRunner,82,111,7,7,15,27,5,5,0,3
+Digital,de.neemann.digital.testing,TestCaseElement,1,22,0,0,1,9,1,4,1,4
+Digital,de.neemann.digital.testing,TestExecutor,81,551,12,56,10,108,11,40,0,17
+Digital,de.neemann.digital.testing,TestResult,13,225,6,22,4,40,6,17,1,8
+Digital,de.neemann.digital.testing,FolderTestRunner.FileToTest.Status,0,44,0,0,0,5,0,1,0,1
+Digital,de.neemann.digital.testing,MatchedValue,28,22,4,0,6,5,4,2,2,2
+Digital,de.neemann.digital.testing,LineListenerResolveDontCare,0,120,0,16,0,24,0,10,0,2
+Digital,de.neemann.digital.testing,UnitTester.TestException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.testing,FolderTestRunner.FileToTest,9,35,0,0,3,13,3,5,3,5
+Digital,de.neemann.digital.testing,TestingDataException,5,4,0,0,2,2,1,1,1,1
+Digital,de.neemann.digital.testing,TestCaseDescription,47,111,9,9,10,34,11,12,4,10
+Digital,de.neemann.digital.testing,UnitTester,24,123,4,12,4,27,6,14,2,10
+Digital,de.neemann.digital.testing,FolderTestRunner,5,96,4,6,1,19,4,7,0,6
+Digital,de.neemann.digital.testing,TestExecutor.new TestResultListener() {...},1,37,0,2,1,8,1,3,1,2
+Digital,de.neemann.digital.testing,Transitions.Trans,0,9,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.testing,TestExecutor.TestSignal,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.hdl.verilog2.lib,VerilogTemplate.Module,23,87,1,1,5,21,4,4,3,4
+Digital,de.neemann.digital.hdl.verilog2.lib,VerilogTemplate,60,169,6,12,8,39,6,9,1,5
+Digital,de.neemann.digital.gui.tutorial,InitialTutorial,621,0,60,0,112,0,54,0,24,0
+Digital,de.neemann.digital.gui.tutorial,InitialTutorial.Step,15,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.tutorial,InitialTutorial.new WindowAdapter() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.tutorial,InitialTutorial.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.core.wiring,Decoder,5,126,0,2,2,23,2,7,2,6
+Digital,de.neemann.digital.core.wiring,Splitter.Ports,9,385,1,29,1,66,1,23,0,9
+Digital,de.neemann.digital.core.wiring,Break,0,70,0,0,0,19,0,9,0,9
+Digital,de.neemann.digital.core.wiring,Multiplexer.new ElementTypeDescription() {...},0,62,0,2,0,7,0,3,0,2
+Digital,de.neemann.digital.core.wiring,BusSplitter,0,304,0,22,0,57,0,17,0,6
+Digital,de.neemann.digital.core.wiring,DriverInvSel,0,31,0,0,0,10,0,3,0,3
+Digital,de.neemann.digital.core.wiring,Splitter.SplitterTypeDescription,0,18,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.core.wiring,Splitter.Port,0,74,0,4,0,14,0,7,0,5
+Digital,de.neemann.digital.core.wiring,PriorityEncoder.new ElementTypeDescription() {...},0,49,0,2,0,6,0,3,0,2
+Digital,de.neemann.digital.core.wiring,Reset,10,58,0,2,1,15,1,6,1,5
+Digital,de.neemann.digital.core.wiring,Stop,3,42,1,1,1,12,1,6,0,6
+Digital,de.neemann.digital.core.wiring,Driver,3,108,0,4,1,25,1,9,1,7
+Digital,de.neemann.digital.core.wiring,AsyncSeq,15,43,1,3,2,14,3,5,2,4
+Digital,de.neemann.digital.core.wiring,BitSelector,0,108,0,2,0,21,0,7,0,6
+Digital,de.neemann.digital.core.wiring,Multiplexer,3,109,0,2,1,21,1,6,1,5
+Digital,de.neemann.digital.core.wiring,Splitter,9,473,1,29,1,76,1,24,0,10
+Digital,de.neemann.digital.core.wiring,PriorityEncoder,5,127,0,6,2,26,2,9,2,6
+Digital,de.neemann.digital.core.wiring,Splitter.new NodeWithoutDelay() {...},0,58,0,0,0,7,0,2,0,2
+Digital,de.neemann.digital.core.wiring,Splitter.new NodeWithoutDelay() {...},0,58,0,0,0,7,0,2,0,2
+Digital,de.neemann.digital.core.wiring,Splitter.new NodeWithoutDelay() {...},0,58,0,0,0,7,0,2,0,2
+Digital,de.neemann.digital.core.wiring,Splitter.new NodeWithoutDelay() {...},0,33,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.core.wiring,Clock,15,92,1,3,2,26,3,8,2,7
+Digital,de.neemann.digital.core.wiring,Demultiplexer,7,171,0,2,2,28,2,7,2,6
+Digital,de.neemann.digital.core.wiring,Delay,0,141,0,12,0,31,0,12,0,6
+Digital,de.neemann.digital.hdl.hgs.function,JavaClass.MyMethod,82,175,4,22,10,37,4,11,0,2
+Digital,de.neemann.digital.hdl.hgs.function,JavaClass.MethodMap,2,26,1,1,0,7,1,2,0,2
+Digital,de.neemann.digital.hdl.hgs.function,FirstClassFunctionCall.ReturnException,0,10,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs.function,Function,18,41,2,4,1,8,2,4,0,3
+Digital,de.neemann.digital.hdl.hgs.function,JavaClass,14,56,1,5,1,10,1,4,0,2
+Digital,de.neemann.digital.hdl.hgs.function,FirstClassFunctionCall,7,48,0,2,2,10,0,4,0,3
+Digital,de.neemann.digital.hdl.hgs.function,Func,0,12,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs.function,FirstClassFunction,0,15,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.hdl.hgs.function,JavaClass.MethodCall,0,19,0,0,0,5,0,2,0,2
+Digital,de.neemann.digital.hdl.hgs.function,InnerFunction,0,9,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.analyse.expression,VariableVisitor,0,22,0,2,0,7,0,4,0,3
+Digital,de.neemann.digital.analyse.expression,ContextFiller.new BitSetter() {...},0,19,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.analyse.expression,Operation.And,0,37,0,4,0,8,0,8,0,6
+Digital,de.neemann.digital.analyse.expression,ComplexityVisitor,0,20,0,2,0,6,0,4,0,3
+Digital,de.neemann.digital.analyse.expression,Constant,0,39,0,0,0,12,0,8,0,8
+Digital,de.neemann.digital.analyse.expression,Operation.Or,0,37,0,4,0,8,0,8,0,6
+Digital,de.neemann.digital.analyse.expression,ContextFiller,6,63,0,0,1,16,1,8,1,8
+Digital,de.neemann.digital.analyse.expression,Operation,20,284,3,32,3,61,5,31,2,16
+Digital,de.neemann.digital.analyse.expression,NamedExpression,32,20,0,0,4,7,4,4,4,4
+Digital,de.neemann.digital.analyse.expression,BitSetter,0,56,0,6,0,11,0,6,0,3
+Digital,de.neemann.digital.analyse.expression,ContextMap,12,28,1,1,1,8,1,3,0,3
+Digital,de.neemann.digital.analyse.expression,Expression,0,1,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.analyse.expression,Not,14,118,3,15,2,28,5,17,2,11
+Digital,de.neemann.digital.analyse.expression,Equals,0,79,0,6,0,18,0,5,0,2
+Digital,de.neemann.digital.analyse.expression,ComplexityInclNotVisitor,0,17,0,0,0,5,0,3,0,3
+Digital,de.neemann.digital.analyse.expression,Variable,0,146,3,13,0,27,3,20,0,15
+Digital,de.neemann.digital.analyse.expression,ExpressionException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.analyse.expression,Operation.XOr,13,38,0,8,4,4,3,7,3,3
+Digital,de.neemann.digital.gui.components.expression,ExpressionDialog,91,0,0,0,14,0,1,0,1,0
+Digital,de.neemann.digital.gui.components.expression,ExpressionDialog.new ToolTipAction() {...},24,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components.expression,ExpressionDialog.new ToolTipAction() {...},97,0,4,0,18,0,4,0,2,0
+Digital,de.neemann.digital.testing.parser.functions,Function,0,9,0,0,0,4,0,2,0,2
+Digital,de.neemann.digital.testing.parser.functions,SignExtend,17,54,2,4,1,10,2,3,0,2
+Digital,de.neemann.digital.testing.parser.functions,IfThenElse,0,33,0,4,0,6,0,4,0,2
+Digital,de.neemann.digital.testing.parser.functions,Random,0,27,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.gui.components,ConstraintsBuilder,155,0,0,0,45,0,11,0,11,0
+Digital,de.neemann.digital.gui.components,AttributeDialog.EditorHolder,61,0,0,0,21,0,5,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseDispatcher,276,0,30,0,46,0,22,0,7,0
+Digital,de.neemann.digital.gui.components,EditorFactory.InputSelectDialog.new AbstractAction() {...},16,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.RomHolder,72,0,6,0,13,0,7,0,4,0
+Digital,de.neemann.digital.gui.components,EditorFactory.new KeyAdapter() {...},40,0,12,0,8,0,8,0,2,0
+Digital,de.neemann.digital.gui.components,AttributeDialog.new WindowAdapter() {...},10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,AttributeDialog.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,AttributeDialog.new AbstractAction() {...},25,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.SearchResult,15,0,0,0,6,0,3,0,3,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor,25,0,0,0,7,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,CopiedElementLabelRenamer.LabelClass,5,57,5,5,0,12,5,5,0,5
+Digital,de.neemann.digital.gui.components,CircuitScrollPanel,258,0,22,0,51,0,20,0,9,0
+Digital,de.neemann.digital.gui.components,DataEditor.new ToolTipAction() {...},37,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,DataEditor.new ToolTipAction() {...},32,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,DataEditor.new ToolTipAction() {...},108,0,4,0,18,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,DataEditor.new ToolTipAction() {...},48,0,0,0,9,0,3,0,3,0
+Digital,de.neemann.digital.gui.components,DataEditor.new AbstractAction() {...},28,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,DataEditor.new ToolTipAction() {...},23,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,DataEditor.new WindowAdapter() {...},18,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ROMManagerEditor,52,0,0,0,12,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,ItemPicker.MyListModel,17,0,0,0,7,0,5,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerRun,141,0,12,0,32,0,15,0,9,0
+Digital,de.neemann.digital.gui.components,AttributeDialog,641,0,68,0,140,0,60,0,26,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.MySpinnerModel,63,0,2,0,11,0,8,0,7,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.SchemeEditor.new ToolTipAction() {...},14,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.SchemeEditor.new ToolTipAction() {...},22,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,TextLineNumber,512,0,30,0,127,0,40,0,25,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerMoveSelected,248,0,16,0,45,0,17,0,9,0
+Digital,de.neemann.digital.gui.components,CopiedElementLabelRenamer.PresentIndex,0,34,1,1,0,10,1,4,0,4
+Digital,de.neemann.digital.gui.components,ElementOrderer.new ToolTipAction() {...},62,0,8,0,10,0,6,0,2,0
+Digital,de.neemann.digital.gui.components,ElementOrderer.new AbstractAction() {...},16,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ElementOrderer.new ToolTipAction() {...},67,0,10,0,8,0,7,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.StringEditor,156,0,8,0,33,0,10,0,6,0
+Digital,de.neemann.digital.gui.components,EditorFactory.InverterConfigEditor.new ToolTipAction() {...},99,0,6,0,17,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,ItemPicker,125,0,6,0,27,0,9,0,6,0
+Digital,de.neemann.digital.gui.components,ElementOrderer.new ToolTipAction() {...},50,0,6,0,8,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ROMManagerEditor.new ToolTipAction() {...},25,0,0,0,7,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ROMManagerEditor.new ToolTipAction() {...},65,0,4,0,15,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,ElementHelpDialog.new ToolTipAction() {...},46,0,0,0,9,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.SchemeEditor.PresetAction,45,0,2,0,8,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,WindowPosManager,84,0,8,0,23,0,10,0,6,0
+Digital,de.neemann.digital.gui.components,DataEditor.MyEditor,70,0,0,0,18,0,5,0,5,0
+Digital,de.neemann.digital.gui.components,EditorFactory.FileEditor.new AbstractAction() {...},35,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerMoveWire,148,0,4,0,37,0,9,0,7,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog,645,0,32,0,115,0,34,0,18,0
+Digital,de.neemann.digital.gui.components,EditorPanel,85,0,0,0,18,0,8,0,8,0
+Digital,de.neemann.digital.gui.components,ProbeDialog,235,0,21,0,46,0,16,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerInsertCopied,297,0,40,0,62,0,29,0,9,0
+Digital,de.neemann.digital.gui.components,EditorFactory.InputSelectDialog,131,0,6,0,27,0,6,0,3,0
+Digital,de.neemann.digital.gui.components,EditorFactory.InValueEditor,146,0,2,0,18,0,7,0,6,0
+Digital,de.neemann.digital.gui.components,EditorFactory.StringEditor.new MouseAdapter() {...},39,0,2,0,10,0,6,0,5,0
+Digital,de.neemann.digital.gui.components,EditorFactory.StringEditor.new ToolTipAction() {...},91,0,4,0,19,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.StringEditor.new ToolTipAction() {...},71,0,2,0,16,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseController,74,0,4,0,25,0,15,0,13,0
+Digital,de.neemann.digital.gui.components,EditorFactory.BooleanEditor,53,0,0,0,13,0,7,0,7,0
+Digital,de.neemann.digital.gui.components,EditorFactory.DataFieldEditor,64,0,2,0,16,0,7,0,6,0
+Digital,de.neemann.digital.gui.components,EditorFactory.IntegerEditor,215,0,18,0,39,0,15,0,6,0
+Digital,de.neemann.digital.gui.components,Editor.EditorParseException,8,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ElementHelpDialog.MyURLStreamHandlerFactory.new URLStreamHandler() {...},11,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ColorEditor.new JButton() {...},22,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ColorEditor.new AbstractAction() {...},43,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent,3467,127,346,0,667,29,250,3,77,3
+Digital,de.neemann.digital.gui.components,SingleValueDialog.Format,23,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CustomShapeEditor.new ToolTipAction() {...},61,0,4,0,13,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CustomShapeEditor.new ToolTipAction() {...},60,0,4,0,13,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,ElementHelpDialog.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CustomShapeEditor.new ToolTipAction() {...},16,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ProbeDialog.SignalTableModel,160,0,20,0,32,0,23,0,13,0
+Digital,de.neemann.digital.gui.components,DataEditor.MyTableModel,257,0,20,0,47,0,24,0,14,0
+Digital,de.neemann.digital.gui.components,EditorFactory.DataFieldEditor.new ToolTipAction() {...},100,0,6,0,16,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerInsertElement,117,0,8,0,32,0,13,0,9,0
+Digital,de.neemann.digital.gui.components,EditorFactory,196,0,6,0,41,0,9,0,6,0
+Digital,de.neemann.digital.gui.components,ElementOrderer,166,0,2,0,30,0,5,0,4,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerWireRect,306,0,26,0,66,0,23,0,10,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.new MouseAdapter() {...},31,0,6,0,5,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerNormal,209,0,33,0,44,0,24,0,7,0
+Digital,de.neemann.digital.gui.components,DataEditor.PasteHandler,114,0,16,0,30,0,11,0,3,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.new AbstractAction() {...},16,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.new ToolTipAction() {...},28,0,4,0,5,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.new ToolTipAction() {...},28,0,4,0,5,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.InverterConfigEditor,48,0,2,0,13,0,6,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerMoveElement,180,0,12,0,41,0,14,0,8,0
+Digital,de.neemann.digital.gui.components,DataEditor.MyRenderer,35,0,0,0,8,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ElementOrderer.MyListModel,105,0,4,0,24,0,11,0,9,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.ColorButton.new AbstractAction() {...},39,0,2,0,6,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.SchemeEditor,168,0,6,0,27,0,4,0,1,0
+Digital,de.neemann.digital.gui.components,CopiedElementLabelRenamer.MinIndex,0,17,1,1,0,7,1,3,0,3
+Digital,de.neemann.digital.gui.components,ElementOrderer.ListOrder,9,33,0,0,2,9,2,3,2,3
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerResizeRect,426,0,34,0,74,0,23,0,6,0
+Digital,de.neemann.digital.gui.components,EditorFactory.IntegerEditor.IntegerValue,23,0,2,0,7,0,4,0,3,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.SearchResult.State,34,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog,174,0,6,0,30,0,7,0,4,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ApplicationTypeEditor.new ToolTipAction() {...},150,0,12,0,28,0,9,0,3,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ApplicationTypeEditor.new AbstractAction() {...},15,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,BehavioralFixtureCreator,369,0,22,0,68,0,17,0,6,0
+Digital,de.neemann.digital.gui.components,TextLineNumber.new Runnable() {...},41,0,4,0,9,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CustomShapeEditor,123,0,6,0,29,0,9,0,6,0
+Digital,de.neemann.digital.gui.components,ROMEditorDialog.ROMModel,133,0,6,0,29,0,15,0,12,0
+Digital,de.neemann.digital.gui.components,EditorFactory.LongEditor,172,0,4,0,23,0,8,0,6,0
+Digital,de.neemann.digital.gui.components,CopiedElementLabelRenamer,0,165,3,21,0,38,3,12,0,3
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerWireDiag,140,0,12,0,30,0,13,0,7,0
+Digital,de.neemann.digital.gui.components,DataEditor,503,0,30,0,104,0,26,0,11,0
+Digital,de.neemann.digital.gui.components,ElementHelpDialog,870,0,75,0,165,0,55,0,16,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ApplicationTypeEditor,80,0,4,0,18,0,5,0,3,0
+Digital,de.neemann.digital.gui.components,ItemPicker.new MouseAdapter() {...},14,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,ItemPicker.new AbstractAction() {...},10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ItemPicker.new AbstractAction() {...},10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitTransferable,104,0,12,0,26,0,11,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitModifierPostClosed,0,44,1,3,0,12,1,5,0,4
+Digital,de.neemann.digital.gui.components,ElementHelpDialog.ImageConnection,39,0,2,0,10,0,4,0,3,0
+Digital,de.neemann.digital.gui.components,EditorFactory.LanguageEditor,34,0,0,0,10,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.new AbstractAction() {...},19,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.EnumEditor,54,0,2,0,14,0,6,0,5,0
+Digital,de.neemann.digital.gui.components,LabelGenerator,0,56,0,2,0,9,0,3,0,2
+Digital,de.neemann.digital.gui.components,CopiedElementLabelRenamer.LabelInstance,2,102,2,8,1,23,2,9,0,6
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerWizard,43,0,2,0,12,0,4,0,3,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.new AbstractAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.new JSpinner() {...},11,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.new AbstractAction() {...},14,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.new WindowAdapter() {...},15,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.PlusMinusAction,93,0,12,0,18,0,8,0,2,0
+Digital,de.neemann.digital.gui.components,SingleValueDialog.MyDocumentListener,32,0,0,0,13,0,5,0,5,0
+Digital,de.neemann.digital.gui.components,BehavioralFixtureCreator.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,BehavioralFixtureCreator.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,OrderMerger,0,63,0,12,0,19,0,9,0,3
+Digital,de.neemann.digital.gui.components,TransformHolder,27,0,0,0,8,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,ColorSchemeEditor.ColorButton,69,0,2,0,14,0,4,0,3,0
+Digital,de.neemann.digital.gui.components,ProbeDialog.new WindowAdapter() {...},21,0,0,0,5,0,3,0,3,0
+Digital,de.neemann.digital.gui.components,ProbeDialog.new OrderMerger() {...},12,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,ProbeDialog.new ToolTipAction() {...},46,0,0,0,9,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.FileEditor,81,0,2,0,18,0,6,0,5,0
+Digital,de.neemann.digital.gui.components,Editor,3,0,0,0,2,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.LabelEditor,101,0,2,0,21,0,9,0,8,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},13,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ComponentAdapter() {...},14,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},42,0,4,0,7,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},18,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.ColorEditor,49,0,0,0,11,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},12,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new WindowAdapter() {...},23,0,4,0,4,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},48,0,4,0,9,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},37,0,0,0,5,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},42,0,6,0,8,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},29,0,4,0,6,0,4,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitScrollPanel.new ComponentAdapter() {...},14,0,2,0,4,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.RotationEditor,66,0,0,0,10,0,5,0,5,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},34,0,2,0,7,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},86,0,6,0,13,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},31,0,2,0,7,0,3,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},66,0,8,0,13,0,6,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},64,0,6,0,14,0,5,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},68,0,10,0,10,0,7,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},55,0,0,0,10,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},108,0,8,0,24,0,6,0,2,0
+Digital,de.neemann.digital.gui.components,ElementOrderer.OrderInterface,5,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.new ToolTipAction() {...},36,0,0,0,10,0,2,0,2,0
+Digital,de.neemann.digital.gui.components,EditorFactory.MidiInstrumentEditor,38,0,0,0,12,0,4,0,4,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerSelect,400,0,30,0,78,0,27,0,12,0
+Digital,de.neemann.digital.gui.components,CircuitComponent.MouseControllerWireSplit,138,0,4,0,31,0,8,0,6,0
+Digital,de.neemann.digital.gui.components,ElementHelpDialog.MyURLStreamHandlerFactory,56,0,4,0,15,0,6,0,4,0
+Digital,de.neemann.digital.core.memory.importer,ByteArrayFromValueArray,0,60,0,2,0,15,0,4,0,3
+Digital,de.neemann.digital.core.memory.importer,LogisimReader,32,156,4,18,4,40,4,11,0,4
+Digital,de.neemann.digital.core.memory.importer,Importer,20,57,1,1,2,12,1,3,0,3
+Digital,de.neemann.digital.core.memory.importer,BinReader,9,24,0,2,3,9,1,3,1,2
+Digital,de.neemann.digital.core.memory.importer,MultiValueArray.Builder,8,65,1,6,1,13,1,7,0,4
+Digital,de.neemann.digital.core.memory.importer,MultiValueArray,0,54,0,0,0,13,0,4,0,4
+Digital,de.neemann.digital.core.memory.importer,IntelHexReader,33,178,5,16,5,40,5,12,0,6
+Digital,de.neemann.digital.core.memory.importer,DataFieldValueArray,0,30,0,0,0,8,0,4,0,4
+Digital,de.neemann.digital.core.memory.importer,MultiValueArray.ValueArrayException,0,4,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.draw.gif,GifExporter,268,0,6,0,57,0,12,0,9,0
+Digital,de.neemann.digital.draw.gif,GifSequenceWriter,196,0,8,0,45,0,9,0,5,0
+Digital,de.neemann.digital.draw.gif,GifExporter.new WindowAdapter() {...},10,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.draw.gif,GifExporter.new ToolTipAction() {...},11,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.core.memory.rom,ROMManger,53,47,9,5,11,12,9,6,4,4
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.Pin,0,23,0,0,0,8,0,4,0,4
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.LineHolder,29,21,0,0,5,8,2,3,2,3
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.Builder,0,110,0,0,0,17,0,8,0,8
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription,41,157,15,15,7,31,10,16,2,9
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.PolygonHolder,0,38,0,0,0,11,0,4,0,4
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.CircleHolder,30,24,0,0,5,9,2,3,2,3
+Digital,de.neemann.digital.draw.shapes.custom,CustomShapeDescription.TextHolder,24,45,0,0,6,14,2,5,2,5
+Digital,de.neemann.digital.draw.shapes.custom,CustomShape,15,152,7,13,3,27,6,9,1,4
+Digital,de.neemann.digital.data,Value,13,192,1,31,4,52,2,30,1,13
+Digital,de.neemann.digital.data,Value.Type,0,44,0,0,0,5,0,1,0,1
+Digital,de.neemann.digital.data,DataPlotter,376,524,54,45,62,80,48,16,12,2
+Digital,de.neemann.digital.data,Value.State,0,34,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.data,DataPlotter.new Runnable() {...},25,0,0,0,3,0,2,0,2,0
+Digital,de.neemann.digital.data,DataPlotter.new Runnable() {...},0,15,0,0,0,3,0,2,0,2
+Digital,de.neemann.digital.data,ValueTable.ColumnInfo,12,34,6,4,4,9,5,3,0,2
+Digital,de.neemann.digital.data,DataPlotter.LastState,12,10,3,1,3,4,2,2,0,2
+Digital,de.neemann.digital.data,ValueTable,115,445,10,36,20,77,11,35,4,19
+Digital,de.neemann.digital.data,ValueTableModel,108,0,10,0,32,0,18,0,13,0
+Digital,de.neemann.digital.analyse.expression.format,FormatterException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.analyse.expression.format,FormatToExpression,9,294,1,5,2,37,3,13,2,11
+Digital,de.neemann.digital.analyse.expression.format,FormatToTable,0,120,0,8,0,25,0,13,0,9
+Digital,de.neemann.digital.analyse.expression.format,FormatToTableLatex,0,69,0,2,0,14,0,9,0,8
+Digital,de.neemann.digital.analyse.format,TruthTableFormatterLaTeX,4,202,2,20,2,34,2,14,0,4
+Digital,de.neemann.digital.analyse.format,TruthTableFormatterTestCase.Type,0,34,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.analyse.format,TruthTableFormatterTestCase,4,294,3,27,2,59,3,19,0,5
+Digital,de.neemann.digital.analyse.format,TruthTableFormatterHex,8,68,1,7,1,16,1,5,0,2
+Digital,de.neemann.digital.analyse.format,TruthTableFormatterCSV,0,129,0,12,0,23,0,9,0,3
+Digital,de.neemann.digital.core,ModelEventType,0,104,0,0,0,11,0,1,0,1
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterAscii,2,19,0,0,1,3,1,2,1,2
+Digital,de.neemann.digital.core,IntFormat,6,386,1,19,0,55,1,21,0,12
+Digital,de.neemann.digital.core,NodeException.ItemConcatenation,86,0,6,0,18,0,7,0,4,0
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterDefault,29,41,4,6,6,8,7,5,4,3
+Digital,de.neemann.digital.core,NodeWithoutDelay,0,16,0,0,0,6,0,3,0,3
+Digital,de.neemann.digital.core,Value,48,129,5,9,11,32,7,12,3,9
+Digital,de.neemann.digital.core,SyncAccess,0,5,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.core,Observable,15,55,3,5,2,14,4,9,2,7
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterOctal,8,58,2,2,1,11,2,4,1,3
+Digital,de.neemann.digital.core,Bits.NumberFormatException,0,18,0,0,0,2,0,1,0,1
+Digital,de.neemann.digital.core,NodeException,151,56,29,3,32,16,20,6,5,5
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterViewEdit,6,28,1,3,2,9,2,5,1,4
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterBinary,0,59,0,4,0,13,0,5,0,3
+Digital,de.neemann.digital.core,BacktrackException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.core,NodeException.Item,33,0,2,0,8,0,4,0,3,0
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterHex,8,63,2,2,1,12,2,5,1,4
+Digital,de.neemann.digital.core,Model.BreakInfo,18,15,0,0,7,6,3,2,3,2
+Digital,de.neemann.digital.core,Node,8,48,1,3,2,18,2,9,1,8
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterFixedPoint,40,328,4,6,6,15,6,8,4,5
+Digital,de.neemann.digital.core,SpeedTest,140,0,8,0,28,0,6,0,2,0
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterFloat,61,135,20,18,14,29,17,11,3,4
+Digital,de.neemann.digital.core,Signal,21,133,3,17,4,35,7,25,4,18
+Digital,de.neemann.digital.core,IntFormat.ValueFormatterDecimal,0,39,0,4,0,10,0,6,0,4
+Digital,de.neemann.digital.core,Bits,30,334,3,58,4,80,3,39,0,11
+Digital,de.neemann.digital.core,ErrorDetector,0,26,0,4,0,8,0,6,0,4
+Digital,de.neemann.digital.core,Model.State,0,44,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.core,ModelEvent,35,65,8,0,5,17,6,5,2,5
+Digital,de.neemann.digital.core,BurnException,21,22,3,1,6,7,5,2,3,2
+Digital,de.neemann.digital.core,GlobalValues,72,0,2,0,15,0,7,0,6,0
+Digital,de.neemann.digital.core,SyncAccess.new SyncAccess() {...},4,7,0,0,2,3,1,2,1,2
+Digital,de.neemann.digital.core,Model.new SyncAccess() {...},27,0,0,0,7,0,3,0,3,0
+Digital,de.neemann.digital.core,ObservableValues,2,72,1,5,1,15,1,9,0,7
+Digital,de.neemann.digital.core,BitsException,14,24,0,0,4,6,2,3,2,3
+Digital,de.neemann.digital.core,ExceptionWithOrigin,59,40,18,4,16,15,11,7,1,6
+Digital,de.neemann.digital.core,Model.BreakDetector,26,64,2,4,1,16,2,4,0,3
+Digital,de.neemann.digital.core,ObservableValue,108,285,12,22,20,64,11,40,4,30
+Digital,de.neemann.digital.core,ObservableValues.Builder,0,45,0,0,0,13,0,7,0,7
+Digital,de.neemann.digital.core,ValueFormatter,2,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.core,Model,409,1087,86,135,92,253,70,112,15,56
+Digital,de.neemann.digital.analyse.quinemc,TableRows.RowIterator,4,48,1,9,1,12,1,7,0,3
+Digital,de.neemann.digital.analyse.quinemc,TableReducer,0,83,0,6,0,26,0,8,0,5
+Digital,de.neemann.digital.analyse.quinemc,TableRows.InnerList,15,33,2,0,3,9,2,6,1,6
+Digital,de.neemann.digital.analyse.quinemc,BoolTable,0,3,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.analyse.quinemc,IndependentChecker.BoolTableRemoveVar,8,60,1,1,1,12,1,3,0,3
+Digital,de.neemann.digital.analyse.quinemc,BoolTableByteArray,80,119,10,8,20,25,9,13,3,9
+Digital,de.neemann.digital.analyse.quinemc,BoolTableBoolArray,0,27,0,0,0,9,0,5,0,5
+Digital,de.neemann.digital.analyse.quinemc,QuineMcCluskey,29,630,2,74,5,124,5,53,3,17
+Digital,de.neemann.digital.analyse.quinemc,BoolTableExpression,6,27,0,0,2,7,0,3,0,3
+Digital,de.neemann.digital.analyse.quinemc,QuineMcCluskeyExam,0,176,0,26,0,43,0,16,0,3
+Digital,de.neemann.digital.analyse.quinemc,IndependentChecker,6,114,4,10,2,26,4,7,0,4
+Digital,de.neemann.digital.analyse.quinemc,TableRows,74,84,6,6,16,20,6,11,3,8
+Digital,de.neemann.digital.analyse.quinemc,ThreeStateValue,9,78,3,11,3,21,3,13,0,7
+Digital,de.neemann.digital.analyse.quinemc,TableRow,4,327,3,33,1,70,3,33,0,18
+Digital,de.neemann.digital.hdl.vhdl2.entities,VHDLTemplate.Entity,14,69,0,2,2,19,0,7,0,6
+Digital,de.neemann.digital.hdl.vhdl2.entities,VHDLTemplateFunctions.Generic,21,40,3,3,2,8,3,4,0,3
+Digital,de.neemann.digital.hdl.vhdl2.entities,VHDLTemplate,55,184,1,13,6,37,2,13,1,7
+Digital,de.neemann.digital.hdl.vhdl2.entities,VHDLTemplateFunctions,5,88,1,9,1,19,1,11,0,7
+Digital,de.neemann.digital.draw.graphics,Polygon.CurveTo,3,146,0,0,1,24,1,6,1,6
+Digital,de.neemann.digital.draw.graphics,TextFormatSVG,5,19,0,2,3,5,0,3,0,2
+Digital,de.neemann.digital.draw.graphics,SVGTokenizer.TokenizerException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.draw.graphics,Transform.new Transform() {...},0,19,0,0,0,5,0,5,0,5
+Digital,de.neemann.digital.draw.graphics,TextFormatLaTeX,3,158,1,19,2,41,1,14,0,5
+Digital,de.neemann.digital.draw.graphics,ColorStyleHighContrast,36,0,10,0,7,0,7,0,2,0
+Digital,de.neemann.digital.draw.graphics,Orientation,6,152,2,4,0,21,2,6,0,5
+Digital,de.neemann.digital.draw.graphics,Polygon.MoveTo,0,35,0,0,0,6,0,4,0,4
+Digital,de.neemann.digital.draw.graphics,TransformMatrix,0,286,2,8,0,29,2,15,0,12
+Digital,de.neemann.digital.draw.graphics,Graphic,3,38,0,0,2,9,2,6,2,6
+Digital,de.neemann.digital.draw.graphics,Graphic.Flag,0,64,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.graphics,SVGSettings,7,108,0,0,3,29,2,2,2,2
+Digital,de.neemann.digital.draw.graphics,GraphicMinMax,18,261,4,18,1,55,5,22,1,15
+Digital,de.neemann.digital.draw.graphics,ColorScheme.ColorSchemes,127,62,13,1,15,10,9,3,2,3
+Digital,de.neemann.digital.draw.graphics,Vector,53,415,14,32,3,57,11,40,3,25
+Digital,de.neemann.digital.draw.graphics,Polygon,63,606,14,58,13,121,14,53,1,30
+Digital,de.neemann.digital.draw.graphics,Transform,0,91,0,0,0,5,0,3,0,3
+Digital,de.neemann.digital.draw.graphics,SVGTokenizer.Token,0,44,0,0,0,5,0,1,0,1
+Digital,de.neemann.digital.draw.graphics,PolygonParser,127,1193,20,68,24,180,18,58,0,23
+Digital,de.neemann.digital.draw.graphics,ColorKey,0,164,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.graphics,ColorScheme,38,212,6,2,7,48,7,6,4,5
+Digital,de.neemann.digital.draw.graphics,TransformRotate,0,132,0,4,0,20,0,7,0,4
+Digital,de.neemann.digital.draw.graphics,PolygonConverter,15,27,1,1,4,8,2,3,1,3
+Digital,de.neemann.digital.draw.graphics,VectorFloat,51,192,4,6,4,28,8,18,4,17
+Digital,de.neemann.digital.draw.graphics,GraphicTransform,0,68,0,0,0,13,0,6,0,6
+Digital,de.neemann.digital.draw.graphics,Export,37,55,1,1,8,15,2,2,1,2
+Digital,de.neemann.digital.draw.graphics,Polygon.ClosePath,7,4,0,0,4,2,3,2,3,2
+Digital,de.neemann.digital.draw.graphics,Style,18,385,7,3,3,93,4,19,0,18
+Digital,de.neemann.digital.draw.graphics,SVGSettings.SettingsHolder,6,0,0,0,1,0,1,0,1,0
+Digital,de.neemann.digital.draw.graphics,ColorScheme.Builder,32,31,2,0,4,9,3,4,2,4
+Digital,de.neemann.digital.draw.graphics,GraphicSwing,86,311,11,31,16,70,10,22,2,9
+Digital,de.neemann.digital.draw.graphics,TextFormatLaTeX.FontSize,0,9,0,0,0,4,0,1,0,1
+Digital,de.neemann.digital.draw.graphics,GraphicsImage,3,137,2,2,1,26,3,3,1,3
+Digital,de.neemann.digital.draw.graphics,PolygonParser.ParserException,9,0,0,0,4,0,2,0,2,0
+Digital,de.neemann.digital.draw.graphics,ColorStyleMonochrome,31,0,0,0,6,0,2,0,2,0
+Digital,de.neemann.digital.draw.graphics,TransformTranslate,8,61,0,0,1,10,1,6,1,6
+Digital,de.neemann.digital.draw.graphics,Polygon.QuadTo,22,89,0,0,4,15,2,5,2,5
+Digital,de.neemann.digital.draw.graphics,Style.Builder,0,144,0,0,0,41,0,12,0,12
+Digital,de.neemann.digital.draw.graphics,Polygon.LineTo,0,51,0,0,0,12,0,7,0,7
+Digital,de.neemann.digital.draw.graphics,GraphicSVG,139,797,21,46,40,120,24,35,4,19
+Digital,de.neemann.digital.draw.graphics,VectorInterface,0,12,0,0,0,1,0,1,0,1
+Digital,de.neemann.digital.draw.graphics,SVGTokenizer,76,403,7,70,7,78,8,45,1,13
+Digital,de.neemann.digital.draw.graphics.text,ParseException,4,0,0,0,2,0,1,0,1,0
+Digital,de.neemann.digital.draw.graphics.text,Parser,37,354,4,46,4,77,4,35,0,11

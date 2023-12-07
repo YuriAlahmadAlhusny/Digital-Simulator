@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GenerateCUPL.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table.hardware</a> &gt; <span class="el_source">GenerateCUPL.java</span></div><h1>GenerateCUPL.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table.hardware;
+
+import de.neemann.digital.analyse.ModelAnalyserInfo;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.modify.ExpressionModifier;
+import de.neemann.digital.builder.Gal16v8.CuplExporter;
+import de.neemann.digital.gui.components.table.BuilderExpressionCreator;
+import de.neemann.digital.gui.components.table.ExpressionListenerStore;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.MyFileChooser;
+
+import javax.swing.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * Creates CUPL code.
+ * The {@link GenerateFile} class is not usable for CUPL creation because CUPL files needed to be stored
+ * in a separate folder. Here you will find the creation of this new folder.
+ */
+public class GenerateCUPL implements HardwareDescriptionGenerator {
+    private CuplExporterFactory cuplExporterFactory;
+    private String menuPath;
+
+    /**
+     * Creates e new instance
+     *
+     * @param cuplExporterFactory the CUPL exporter
+     * @param menuPath            the gui menu path
+     */
+<span class="nc" id="L37">    public GenerateCUPL(CuplExporterFactory cuplExporterFactory, String menuPath) {</span>
+<span class="nc" id="L38">        this.cuplExporterFactory = cuplExporterFactory;</span>
+<span class="nc" id="L39">        this.menuPath = menuPath;</span>
+<span class="nc" id="L40">    }</span>
+
+    @Override
+    public String getMenuPath() {
+<span class="nc" id="L44">        return menuPath;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="nc" id="L49">        return Lang.get(&quot;menu_table_createCUPL_tt&quot;);</span>
+    }
+
+    @Override
+    public void generate(JDialog parent, File circuitFile, TruthTable table, ExpressionListenerStore expressions) throws Exception {
+        File cuplPath;
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (circuitFile == null) {</span>
+<span class="nc" id="L56">            JFileChooser fc = new MyFileChooser();</span>
+<span class="nc" id="L57">            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);</span>
+<span class="nc" id="L58">            fc.setDialogTitle(Lang.get(&quot;msg_selectAnEmptyFolder&quot;));</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (fc.showSaveDialog(parent) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L60">                cuplPath = fc.getSelectedFile();</span>
+<span class="nc" id="L61">                circuitFile = cuplPath;</span>
+            } else {
+<span class="nc" id="L63">                return;</span>
+            }
+<span class="nc" id="L65">        } else {</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (circuitFile.isDirectory()) {</span>
+<span class="nc" id="L67">                cuplPath = circuitFile;</span>
+            } else {
+<span class="nc" id="L69">                String name = circuitFile.getName();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">                if (name.length() &gt; 3 &amp;&amp; name.charAt(name.length() - 4) == '.')</span>
+<span class="nc" id="L71">                    name = name.substring(0, name.length() - 4);</span>
+<span class="nc" id="L72">                cuplPath = new File(circuitFile.getParentFile(), &quot;CUPL_&quot; + name);</span>
+            }
+        }
+
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (!cuplPath.mkdirs())</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (!cuplPath.exists())</span>
+<span class="nc" id="L78">                throw new IOException(Lang.get(&quot;err_couldNotCreateFolder_N0&quot;, cuplPath.getPath()));</span>
+
+<span class="nc" id="L80">        File f = new File(cuplPath, &quot;CUPL.PLD&quot;);</span>
+<span class="nc" id="L81">        CuplExporter cuplExporter = cuplExporterFactory.create();</span>
+<span class="nc" id="L82">        cuplExporter.setProjectName(circuitFile.getName());</span>
+<span class="nc" id="L83">        final ModelAnalyserInfo modelAnalyzerInfo = table.getModelAnalyzerInfo();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (modelAnalyzerInfo != null)</span>
+<span class="nc" id="L85">            cuplExporter.getPinMapping().addAll(modelAnalyzerInfo.getPins());</span>
+<span class="nc" id="L86">        new BuilderExpressionCreator(cuplExporter.getBuilder(), ExpressionModifier.IDENTITY).create(expressions);</span>
+<span class="nc" id="L87">        try (FileOutputStream out = new FileOutputStream(f)) {</span>
+<span class="nc" id="L88">            cuplExporter.writeTo(out);</span>
+        }
+<span class="nc" id="L90">    }</span>
+
+    /**
+     * Interface used to create a {@link CuplExporter}
+     */
+    public interface CuplExporterFactory {
+        /**
+         * @return the created cupl exporter
+         */
+        CuplExporter create();
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

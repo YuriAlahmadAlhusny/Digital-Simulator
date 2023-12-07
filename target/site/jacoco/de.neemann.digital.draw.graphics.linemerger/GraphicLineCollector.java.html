@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphicLineCollector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics.linemerger</a> &gt; <span class="el_source">GraphicLineCollector.java</span></div><h1>GraphicLineCollector.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics.linemerger;
+
+import de.neemann.digital.draw.graphics.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+
+/**
+ * Merges all single lines which are drawn to polygons.
+ * Needed to create a nicer svg export because of the creation of longer strokes
+ * instead of single lines.
+ */
+public class GraphicLineCollector extends Graphic {
+    private final HashMap&lt;Style, PolygonSet&gt; polys;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L25">    public GraphicLineCollector() {</span>
+<span class="fc" id="L26">        this.polys = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public void drawLine(VectorInterface p1, VectorInterface p2, Style style) {
+<span class="fc" id="L31">        PolygonSet polyList = polys.get(style);</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (polyList == null) {</span>
+<span class="fc" id="L33">            polyList = new PolygonSet(style);</span>
+<span class="fc" id="L34">            polys.put(style, polyList);</span>
+        }
+<span class="fc" id="L36">        polyList.add(p1, p2);</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public void drawPolygon(Polygon p, Style style) {
+<span class="fc" id="L41">    }</span>
+
+    @Override
+    public void drawCircle(VectorInterface p1, VectorInterface p2, Style style) {
+<span class="fc" id="L45">    }</span>
+
+    @Override
+    public void drawText(VectorInterface p1, VectorInterface p2, VectorInterface p3, String text, Orientation orientation, Style style) {
+<span class="fc" id="L49">    }</span>
+
+    private static final class PolygonSet implements Iterable&lt;Polygon&gt; {
+        private final ArrayList&lt;Polygon&gt; polyList;
+        private final Style style;
+
+<span class="fc" id="L55">        private PolygonSet(Style style) {</span>
+<span class="fc" id="L56">            this.style = style;</span>
+<span class="fc" id="L57">            this.polyList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L58">        }</span>
+
+        private void add(VectorInterface p1, VectorInterface p2) {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (Polygon p : polyList) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (p.addLine(p1, p2)) {</span>
+<span class="fc" id="L63">                    tryMerge(p);</span>
+<span class="fc" id="L64">                    return;</span>
+                }
+<span class="fc" id="L66">            }</span>
+<span class="fc" id="L67">            Polygon p = new Polygon(false).add(p1).add(p2);</span>
+<span class="fc" id="L68">            polyList.add(p);</span>
+<span class="fc" id="L69">        }</span>
+
+        @Override
+        public Iterator&lt;Polygon&gt; iterator() {
+<span class="nc" id="L73">            return polyList.iterator();</span>
+        }
+
+        private void tryMerge(Polygon p1) {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            for (Polygon p2 : polyList)</span>
+<span class="pc bpc" id="L78" title="1 of 6 branches missed.">                if (p1 != p2 &amp;&amp; !p1.isClosed() &amp;&amp; !p2.isClosed()) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                    if (p1.getLast().equals(p2.getFirst())) {</span>
+<span class="fc" id="L80">                        p1.append(p2);</span>
+<span class="fc" id="L81">                        polyList.remove(p2);</span>
+<span class="fc" id="L82">                        return;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                    } else if (p2.getLast().equals(p1.getFirst())) {</span>
+<span class="fc" id="L84">                        p2.append(p1);</span>
+<span class="fc" id="L85">                        polyList.remove(p1);</span>
+<span class="fc" id="L86">                        return;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                    } else if (p1.getLast().equals(p2.getLast())) {</span>
+<span class="fc" id="L88">                        p1.append(p2.reverse());</span>
+<span class="fc" id="L89">                        polyList.remove(p2);</span>
+<span class="fc" id="L90">                        return;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                    } else if (p1.getFirst().equals(p2.getFirst())) {</span>
+<span class="fc" id="L92">                        polyList.remove(p1);</span>
+<span class="fc" id="L93">                        polyList.remove(p2);</span>
+<span class="fc" id="L94">                        polyList.add(p1.reverse().append(p2));</span>
+<span class="fc" id="L95">                        return;</span>
+                    }
+                }
+<span class="fc" id="L98">        }</span>
+
+        public void drawTo(Graphic gr) {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            for (Polygon p : polyList)</span>
+<span class="fc" id="L102">                gr.drawPolygon(p, style);</span>
+<span class="fc" id="L103">        }</span>
+    }
+
+    /**
+     * Draws the polygons to the given {@link Graphic} instance
+     *
+     * @param gr the {@link Graphic} instace to use
+     */
+    public void drawTo(Graphic gr) {
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (PolygonSet p : polys.values())</span>
+<span class="fc" id="L113">            p.drawTo(gr);</span>
+<span class="fc" id="L114">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SwitchDTShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">SwitchDTShape.java</span></div><h1>SwitchDTShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.switching.SwitchDT;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.gui.components.CircuitComponent;
+
+import java.awt.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The switch shape
+ */
+public class SwitchDTShape implements Shape {
+
+    private final PinDescriptions outputs;
+    private final String label;
+    private final int poles;
+    private boolean closed;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the attributes
+     * @param inputs     the inputs
+     * @param outputs    the outputs
+     */
+<span class="fc" id="L46">    public SwitchDTShape(ElementAttributes attributes, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L47">        this.outputs = outputs;</span>
+<span class="fc" id="L48">        closed = attributes.get(Keys.CLOSED);</span>
+<span class="fc" id="L49">        poles = attributes.get(Keys.POLES);</span>
+<span class="fc" id="L50">        label = attributes.getLabel();</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L55">        Pins pins = new Pins();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (int p = 0; p &lt; poles; p++) {</span>
+<span class="fc" id="L57">            pins</span>
+<span class="fc" id="L58">                    .add(new Pin(new Vector(0, SIZE * 2 * p), outputs.get(p * 3)))</span>
+<span class="fc" id="L59">                    .add(new Pin(new Vector(SIZE * 2, SIZE * 2 * p), outputs.get(p * 3 + 1)))</span>
+<span class="fc" id="L60">                    .add(new Pin(new Vector(SIZE * 2, SIZE + SIZE * 2 * p), outputs.get(p * 3 + 2)));</span>
+        }
+<span class="fc" id="L62">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L67">        return new Interactor() {</span>
+            @Override
+            public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                closed = !closed;</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                if (ioState != null)</span>
+<span class="nc" id="L72">                    modelSync.modify(() -&gt; ((SwitchDT) element).setClosed(closed));</span>
+<span class="nc" id="L73">            }</span>
+        };
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L79">        int yOffs = 0;</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int p = 0; p &lt; poles; p++)</span>
+<span class="fc" id="L82">            graphic.drawPolygon(new Polygon(false)</span>
+<span class="fc" id="L83">                    .add(SIZE * 2, p * SIZE * 2 + SIZE)</span>
+<span class="fc" id="L84">                    .add(SIZE * 2 - SIZE2 / 2, p * SIZE * 2 + SIZE)</span>
+<span class="fc" id="L85">                    .add(SIZE * 2 - SIZE2 / 2, p * SIZE * 2 + SIZE2 + 2), Style.NORMAL);</span>
+
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (closed) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            for (int p = 0; p &lt; poles; p++)</span>
+<span class="nc" id="L89">                graphic.drawLine(</span>
+                        new Vector(0, 2 * SIZE * p),
+                        new Vector(SIZE * 2, 2 * SIZE * p), Style.NORMAL);
+        } else {
+<span class="fc" id="L93">            yOffs = -SIZE2 / 2;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            for (int p = 0; p &lt; poles; p++)</span>
+<span class="fc" id="L95">                graphic.drawLine(</span>
+                        new Vector(0, 2 * SIZE * p),
+                        new Vector(SIZE * 2 - 4, 2 * SIZE * p - yOffs * 2), Style.NORMAL);
+        }
+<span class="fc" id="L99">        graphic.drawLine(</span>
+                new Vector(SIZE, -yOffs + (poles - 1) * 2 * SIZE),
+                new Vector(SIZE, -yOffs - SIZE), Style.DASH);
+<span class="fc" id="L102">        graphic.drawLine(</span>
+                new Vector(SIZE2, -yOffs - SIZE),
+                new Vector(SIZE + SIZE2, -yOffs - SIZE), Style.THIN);
+
+<span class="pc bpc" id="L106" title="2 of 4 branches missed.">        if (label != null &amp;&amp; label.length() &gt; 0)</span>
+<span class="nc" id="L107">            graphic.drawText(</span>
+                    new Vector(SIZE, 4 + (poles - 1) * 2 * SIZE + SIZE),
+                    label, Orientation.CENTERTOP, Style.SHAPE_PIN);
+<span class="fc" id="L110">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

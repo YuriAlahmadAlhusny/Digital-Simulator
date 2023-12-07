@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Statistics.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.stats</a> &gt; <span class="el_source">Statistics.java</span></div><h1>Statistics.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.stats;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.Observer;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.wiring.bus.CommonBusValue;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.lang.Lang;
+
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.TreeMap;
+
+/**
+ * Creates the circuit statistics.
+ */
+public class Statistics {
+    private final TreeMap&lt;Index, Counter&gt; map;
+
+    /**
+     * Creates a new statistics.
+     *
+     * @param model the model to count.
+     * @throws PinException PinException
+     */
+<span class="fc" id="L37">    public Statistics(Model model) throws PinException {</span>
+<span class="fc" id="L38">        HashSet&lt;CommonBusValue&gt; cbvs = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L39">        map = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (Node n : model) {</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (n instanceof Countable) {</span>
+<span class="fc" id="L42">                count(new Index((Countable) n));</span>
+            } else
+<span class="fc" id="L44">                count(new Index(n.getClass().getSimpleName()));</span>
+
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">            if (n instanceof Element) {</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">                for (ObservableValue ov : ((Element) n).getOutputs()) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">                    for (Observer o : ov.getObservers()) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">                        if (o instanceof CommonBusValue)</span>
+<span class="nc" id="L50">                            cbvs.add((CommonBusValue) o);</span>
+<span class="fc" id="L51">                    }</span>
+<span class="fc" id="L52">                }</span>
+            }
+<span class="fc" id="L54">        }</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        for (CommonBusValue cbv : cbvs) {</span>
+<span class="nc" id="L56">            PinDescription.PullResistor r = cbv.getResistor();</span>
+<span class="nc bnc" id="L57" title="All 4 branches missed.">            if (r == PinDescription.PullResistor.pullDown || r == PinDescription.PullResistor.pullUp)</span>
+<span class="nc" id="L58">                count(new Index(r.name(), cbv.getBits()));</span>
+<span class="nc" id="L59">        }</span>
+<span class="fc" id="L60">    }</span>
+
+    private void count(Index i) {
+<span class="fc" id="L63">        Counter counter = map.computeIfAbsent(i, index -&gt; new Counter(i));</span>
+<span class="fc" id="L64">        counter.inc();</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * Creates the table model needed to represent the results
+     *
+     * @return the table model
+     */
+    public TableModel getTableModel() {
+<span class="fc" id="L73">        return new MyTableModel(new ArrayList&lt;&gt;(map.values()));</span>
+    }
+
+    private static final class Index implements Comparable&lt;Index&gt; {
+        private final String name;
+        private final int bits;
+        private final int inputs;
+        private final int addrBits;
+
+<span class="nc" id="L82">        private Index(String name, int bits) {</span>
+<span class="nc" id="L83">            this.name = name;</span>
+<span class="nc" id="L84">            this.bits = bits;</span>
+<span class="nc" id="L85">            this.inputs = 0;</span>
+<span class="nc" id="L86">            this.addrBits = 0;</span>
+<span class="nc" id="L87">        }</span>
+
+<span class="fc" id="L89">        private Index(String name) {</span>
+<span class="fc" id="L90">            this.name = name;</span>
+<span class="fc" id="L91">            this.bits = 0;</span>
+<span class="fc" id="L92">            this.inputs = 0;</span>
+<span class="fc" id="L93">            this.addrBits = 0;</span>
+<span class="fc" id="L94">        }</span>
+
+<span class="fc" id="L96">        private Index(Countable countable) {</span>
+<span class="fc" id="L97">            this.name = countable.getClass().getSimpleName();</span>
+<span class="fc" id="L98">            this.bits = countable.getDataBits();</span>
+<span class="fc" id="L99">            this.inputs = countable.getInputsCount();</span>
+<span class="fc" id="L100">            this.addrBits = countable.getAddrBits();</span>
+<span class="fc" id="L101">        }</span>
+
+        @Override
+        public int compareTo(Index index) {
+<span class="fc" id="L105">            int c = name.compareTo(index.name);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (c != 0) return c;</span>
+<span class="fc" id="L107">            c = inputs - index.inputs;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            if (c != 0) return c;</span>
+<span class="fc" id="L109">            c = bits - index.bits;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            if (c != 0) return c;</span>
+<span class="fc" id="L111">            return addrBits - index.addrBits;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if (this == o) return true;</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="nc" id="L118">            Index index = (Index) o;</span>
+<span class="nc bnc" id="L119" title="All 6 branches missed.">            return bits == index.bits</span>
+                    &amp;&amp; inputs == index.inputs
+                    &amp;&amp; addrBits == index.addrBits
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                    &amp;&amp; name.equals(index.name);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L127">            return Objects.hash(name, bits, inputs, addrBits);</span>
+        }
+    }
+
+    private static final class Counter {
+        private final Index index;
+        private int counter;
+
+<span class="fc" id="L135">        private Counter(Index index) {</span>
+<span class="fc" id="L136">            this.index = index;</span>
+<span class="fc" id="L137">            this.counter = 0;</span>
+<span class="fc" id="L138">        }</span>
+
+        private Index getIndex() {
+<span class="fc" id="L141">            return index;</span>
+        }
+
+        private int getCounter() {
+<span class="fc" id="L145">            return counter;</span>
+        }
+
+        private void inc() {
+<span class="fc" id="L149">            counter++;</span>
+<span class="fc" id="L150">        }</span>
+    }
+
+    private static final class MyTableModel implements TableModel {
+
+        private final ArrayList&lt;Counter&gt; counters;
+
+<span class="fc" id="L157">        private MyTableModel(ArrayList&lt;Counter&gt; counters) {</span>
+<span class="fc" id="L158">            this.counters = counters;</span>
+<span class="fc" id="L159">        }</span>
+
+        @Override
+        public int getRowCount() {
+<span class="fc" id="L163">            return counters.size();</span>
+        }
+
+        @Override
+        public int getColumnCount() {
+<span class="fc" id="L168">            return 5;</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="fc bfc" id="L173" title="All 5 branches covered.">            switch (i) {</span>
+                case 0:
+<span class="fc" id="L175">                    return Lang.get(&quot;stat_part&quot;);</span>
+                case 1:
+<span class="fc" id="L177">                    return Lang.get(&quot;stat_inputs&quot;);</span>
+                case 2:
+<span class="fc" id="L179">                    return Lang.get(&quot;stat_bits&quot;);</span>
+                case 3:
+<span class="fc" id="L181">                    return Lang.get(&quot;stat_addrBits&quot;);</span>
+                default:
+<span class="fc" id="L183">                    return Lang.get(&quot;stat_number&quot;);</span>
+            }
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int i) {
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (i == 0) return String.class;</span>
+<span class="nc" id="L190">            else return Integer.class;</span>
+        }
+
+        @Override
+        public boolean isCellEditable(int i, int i1) {
+<span class="nc" id="L195">            return false;</span>
+        }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+<span class="fc" id="L200">            Counter c = counters.get(row);</span>
+<span class="fc bfc" id="L201" title="All 5 branches covered.">            switch (col) {</span>
+                case 0:
+<span class="fc" id="L203">                    return c.getIndex().name;</span>
+                case 1:
+<span class="fc" id="L205">                    return checkNull(c.getIndex().inputs);</span>
+                case 2:
+<span class="fc" id="L207">                    return checkNull(c.getIndex().bits);</span>
+                case 3:
+<span class="fc" id="L209">                    return checkNull(c.getIndex().addrBits);</span>
+                default:
+<span class="fc" id="L211">                    return checkNull(c.getCounter());</span>
+            }
+        }
+
+        private Object checkNull(int i) {
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            if (i == 0)</span>
+<span class="fc" id="L217">                return null;</span>
+<span class="fc" id="L218">            return i;</span>
+        }
+
+        @Override
+        public void setValueAt(Object o, int i, int i1) {
+<span class="nc" id="L223">        }</span>
+
+        @Override
+        public void addTableModelListener(TableModelListener tableModelListener) {
+<span class="nc" id="L227">        }</span>
+
+        @Override
+        public void removeTableModelListener(TableModelListener tableModelListener) {
+<span class="nc" id="L231">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

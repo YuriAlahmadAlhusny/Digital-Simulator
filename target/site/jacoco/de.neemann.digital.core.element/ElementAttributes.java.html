@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementAttributes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.element</a> &gt; <span class="el_source">ElementAttributes.java</span></div><h1>ElementAttributes.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.element;
+
+import de.neemann.digital.FileLocator;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.hdl.hgs.HGSMap;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Describes one concrete Part.
+ * Its a Key value list, which is used to store the different elements attributes.
+ */
+public class ElementAttributes implements HGSMap {
+    private static final String PROGRAM_MEMORY = &quot;PROGRAM MEMORY&quot;;
+
+    private HashMap&lt;String, Object&gt; attributes;
+    private transient ArrayList&lt;AttributeListener&gt; listeners;
+    private transient HashMap&lt;String, Object&gt; cache;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L31">    public ElementAttributes() {</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Creates a deep copy of the given attributes
+     *
+     * @param proto the ElementAttributes to copy
+     */
+<span class="fc" id="L39">    public ElementAttributes(ElementAttributes proto) {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (proto.attributes != null) {</span>
+<span class="fc" id="L41">            attributes = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            for (Map.Entry&lt;String, Object&gt; e : proto.attributes.entrySet()) {</span>
+<span class="fc" id="L43">                attributes.put(e.getKey(), e.getValue());</span>
+<span class="fc" id="L44">            }</span>
+        }
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * Gets a value from the map.
+     * If the value is not present the default value is returned
+     *
+     * @param key     the key
+     * @param &lt;VALUE&gt; the type of the value
+     * @return the value
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public &lt;VALUE&gt; VALUE get(Key&lt;VALUE&gt; key) {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (attributes == null)</span>
+<span class="fc" id="L59">            return key.getDefault();</span>
+        else {
+<span class="fc" id="L61">            VALUE value = (VALUE) attributes.get(key.getKey());</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (value == null)</span>
+<span class="fc" id="L63">                return key.getDefault();</span>
+
+            // needed to fix files with int constants!
+<span class="fc bfc" id="L66" title="All 6 branches covered.">            if ((key == Keys.VALUE || key == Keys.DEFAULT) &amp;&amp; value instanceof Integer) {</span>
+<span class="fc" id="L67">                value = (VALUE) Long.valueOf(((Integer) value).longValue());</span>
+<span class="fc" id="L68">                attributes.put(key.getKey(), value);</span>
+            }
+
+            // needed to fix files with int pin numbers!
+<span class="fc bfc" id="L72" title="All 4 branches covered.">            if (key == Keys.PINNUMBER &amp;&amp; value instanceof Integer) {</span>
+<span class="fc" id="L73">                value = (VALUE) value.toString();</span>
+<span class="fc" id="L74">                attributes.put(key.getKey(), value);</span>
+            }
+
+            // needed to fix files with int pin numbers!
+<span class="pc bpc" id="L78" title="3 of 4 branches missed.">            if (key == Keys.LAST_DATA_FILE &amp;&amp; value instanceof String) {</span>
+<span class="nc" id="L79">                value = (VALUE) new File(value.toString());</span>
+<span class="nc" id="L80">                attributes.put(key.getKey(), value);</span>
+            }
+
+<span class="fc" id="L83">            return value;</span>
+        }
+    }
+
+    /**
+     * Checks if a value is present.
+     *
+     * @param key     the key
+     * @param &lt;VALUE&gt; the type of the value
+     * @return true if value is present
+     */
+    public &lt;VALUE&gt; boolean contains(Key&lt;VALUE&gt; key) {
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (attributes == null)</span>
+<span class="nc" id="L96">            return false;</span>
+        else
+<span class="fc" id="L98">            return attributes.containsKey(key.getKey());</span>
+    }
+
+    /**
+     * Sets a value
+     *
+     * @param key     the key
+     * @param value   the value
+     * @param &lt;VALUE&gt; the type of the value
+     * @return this to chain calls
+     */
+    public &lt;VALUE&gt; ElementAttributes set(Key&lt;VALUE&gt; key, VALUE value) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (value != get(key)) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (value.equals(key.getDefault())) {</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                if (attributes != null) {</span>
+<span class="fc" id="L113">                    attributes.remove(key.getKey());</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                    if (attributes.isEmpty())</span>
+<span class="fc" id="L115">                        attributes = null;</span>
+                }
+            } else {
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (attributes == null)</span>
+<span class="fc" id="L119">                    attributes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L120">                attributes.put(key.getKey(), value);</span>
+            }
+<span class="fc" id="L122">            fireValueChanged();</span>
+        }
+<span class="fc" id="L124">        return this;</span>
+    }
+
+    private void fireValueChanged() {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (listeners != null)</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            for (AttributeListener l : listeners)</span>
+<span class="fc" id="L130">                l.attributeChanged();</span>
+<span class="fc" id="L131">    }</span>
+
+    /**
+     * Adds a listener to this class
+     *
+     * @param listener the listener
+     */
+    public void addListener(AttributeListener listener) {
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (listeners == null)</span>
+<span class="fc" id="L140">            listeners = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        if (!listeners.contains(listener))</span>
+<span class="fc" id="L142">            listeners.add(listener);</span>
+<span class="fc" id="L143">    }</span>
+
+    /**
+     * removes a listener to this class
+     *
+     * @param listener the listener
+     */
+    public void removeListener(AttributeListener listener) {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (listeners != null)</span>
+<span class="nc" id="L152">            listeners.remove(listener);</span>
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * Returns the bits count stored in this attributes.
+     * Its a short hand for get(AttributeKey.BITS)
+     *
+     * @return the number of bits
+     */
+    public int getBits() {
+<span class="fc" id="L162">        return get(Keys.BITS);</span>
+    }
+
+    /**
+     * Returns the label stored in this attributes.
+     * Its a short hand for get(AttributeKey.LABEL)
+     *
+     * @return the label
+     */
+    public String getLabel() {
+<span class="fc" id="L172">        return get(Keys.LABEL);</span>
+    }
+
+    /**
+     * @return true if this is flagged as program memory.
+     */
+    public boolean isProgramMemory() {
+<span class="pc bpc" id="L179" title="1 of 4 branches missed.">        return getLabel().contains(PROGRAM_MEMORY) || get(Keys.IS_PROGRAM_MEMORY);</span>
+    }
+
+    /**
+     * @return the int number format
+     */
+    public ValueFormatter getValueFormatter() {
+<span class="fc" id="L186">        return get(Keys.INT_FORMAT).createFormatter(this);</span>
+    }
+
+    /**
+     * Sets the bit count to this map.
+     * Shorthand for set(AttributeKey.BITS, bits);
+     *
+     * @param bits the number of bits
+     * @return this tp chain calls
+     */
+    public ElementAttributes setBits(int bits) {
+<span class="fc" id="L197">        set(Keys.BITS, bits);</span>
+<span class="fc" id="L198">        return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L203">        return &quot;ElementAttributes{&quot;</span>
+                + &quot;attributes=&quot; + attributes
+                + '}';
+    }
+
+    /**
+     * @return true if map is empty
+     */
+    public boolean isEmpty() {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (attributes == null)</span>
+<span class="nc" id="L213">            return true;</span>
+<span class="nc" id="L214">        return attributes.isEmpty();</span>
+    }
+
+    /**
+     * Gets a file stored in the map
+     *
+     * @param key  the file key
+     * @param root the projects main folder
+     * @return the file
+     */
+    public File getFile(Key&lt;File&gt; key, File root) {
+<span class="nc" id="L225">        File f = get(key);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (root != null)</span>
+<span class="nc" id="L227">            f = new FileLocator(f).setLibraryRoot(root).locate();</span>
+<span class="nc" id="L228">        return f;</span>
+    }
+
+    /**
+     * Gets a file stored directly in the map.
+     * Intended to be used as a convenient function in the gui context.
+     * Not intended to be used in the model creation context.
+     *
+     * @param fileKey the file key
+     * @return the file
+     */
+    public File getFile(String fileKey) {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (attributes != null) {</span>
+<span class="nc" id="L241">            Object f = attributes.get(fileKey);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">            if (f != null)</span>
+<span class="nc" id="L243">                return new File(f.toString().trim());</span>
+        }
+<span class="nc" id="L245">        return null;</span>
+    }
+
+    /**
+     * Stores a file directly in the map
+     *
+     * @param fileKey the key
+     * @param file    the file
+     */
+    public void setFile(String fileKey, File file) {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (file == null) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            if (attributes != null)</span>
+<span class="nc" id="L257">                attributes.remove(fileKey);</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        } else if (!file.equals(getFile(fileKey))) {</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            if (attributes == null)</span>
+<span class="nc" id="L260">                attributes = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L261">            attributes.put(fileKey, file.getPath());</span>
+<span class="nc" id="L262">            fireValueChanged();</span>
+        }
+<span class="nc" id="L264">    }</span>
+
+    /**
+     * Apply the given attributes to this set
+     *
+     * @param elementAttributes the attributes to copy, maybe null
+     */
+    public void getValuesFrom(ElementAttributes elementAttributes) {
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (elementAttributes == null)</span>
+<span class="nc" id="L273">            return;</span>
+
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (attributes != null)</span>
+<span class="nc" id="L276">            attributes.clear();</span>
+        else
+<span class="nc" id="L278">            attributes = new HashMap&lt;&gt;();</span>
+
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (elementAttributes.attributes != null)</span>
+<span class="nc" id="L281">            attributes.putAll(elementAttributes.attributes);</span>
+
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (attributes.isEmpty())</span>
+<span class="nc" id="L284">            attributes = null;</span>
+<span class="nc" id="L285">        fireValueChanged();</span>
+<span class="nc" id="L286">    }</span>
+
+    @Override
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        if (this == o) return true;</span>
+<span class="nc bnc" id="L291" title="All 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="nc" id="L293">        ElementAttributes that = (ElementAttributes) o;</span>
+
+<span class="nc bnc" id="L295" title="All 4 branches missed.">        return attributes != null ? attributes.equals(that.attributes) : that.attributes == null;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        return attributes != null ? attributes.hashCode() : 0;</span>
+    }
+
+    /**
+     * Checks if the values in both attributes are equal
+     *
+     * @param key     the key
+     * @param other   the other attribute set
+     * @param &lt;VALUE&gt; the type og the value
+     * @return true if both values are equal
+     */
+    public &lt;VALUE&gt; boolean equalsKey(Key&lt;VALUE&gt; key, ElementAttributes other) {
+<span class="nc" id="L312">        return get(key).equals(other.get(key));</span>
+    }
+
+    /**
+     * @return an integer pin number
+     */
+    public int getIntPinNumber() {
+<span class="fc" id="L319">        String pin = get(Keys.PINNUMBER);</span>
+        try {
+<span class="fc" id="L321">            return Integer.parseInt(pin);</span>
+<span class="fc" id="L322">        } catch (NumberFormatException e) {</span>
+<span class="fc" id="L323">            return 0;</span>
+        }
+    }
+
+    @Override
+    public Object hgsMapGet(String key) {
+<span class="fc" id="L329">        Key k = Keys.getKeyByName(key);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        if (k == null) {</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">            if (attributes == null)</span>
+<span class="nc" id="L332">                return null;</span>
+            else
+<span class="fc" id="L334">                return attributes.get(key);</span>
+        } else
+<span class="fc" id="L336">            return get(k);</span>
+    }
+
+    /**
+     * Adds a value to the instance specific cache
+     *
+     * @param key   key
+     * @param value value
+     */
+    public void putToCache(String key, Object value) {
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (cache == null)</span>
+<span class="fc" id="L347">            cache = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L348">        cache.put(key, value);</span>
+<span class="fc" id="L349">    }</span>
+
+    /**
+     * Requests a value from the cache
+     *
+     * @param key the key
+     * @return the value
+     */
+    public Object getFromCache(String key) {
+<span class="fc bfc" id="L358" title="All 2 branches covered.">        if (cache == null)</span>
+<span class="fc" id="L359">            return null;</span>
+<span class="fc" id="L360">        return cache.get(key);</span>
+    }
+
+    /**
+     * Removes an entry from the cache.
+     *
+     * @param key the key to remove
+     * @return the previous value associated with key, or null if there was no mapping for key.
+     */
+    public Object removeFromCache(String key) {
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (cache == null)</span>
+<span class="fc" id="L371">            return null;</span>
+<span class="fc" id="L372">        return cache.remove(key);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

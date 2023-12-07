@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StepperMotorBipolar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">StepperMotorBipolar.java</span></div><h1>StepperMotorBipolar.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * The bipolar stepper motor
+ */
+public class StepperMotorBipolar extends StepperMotorUnipolar {
+
+    /**
+     * The bipolar motor description
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L26">            = new ElementTypeDescription(StepperMotorBipolar.class, input(&quot;A+&quot;), input(&quot;A-&quot;), input(&quot;B+&quot;), input(&quot;B-&quot;))</span>
+<span class="fc" id="L27">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L28">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.INVERT_OUTPUT);</span>
+
+    private ObservableValue aPlus;
+    private ObservableValue aMinus;
+    private ObservableValue bPlus;
+    private ObservableValue bMinus;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the motors attributes
+     */
+    public StepperMotorBipolar(ElementAttributes attr) {
+<span class="fc" id="L42">        super(attr);</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L47">        aPlus = inputs.get(0).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L48">        aMinus = inputs.get(1).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L49">        bPlus = inputs.get(2).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L50">        bMinus = inputs.get(3).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    protected boolean reverse() {
+<span class="nc" id="L55">        return false;</span>
+    }
+
+    @Override
+    protected int getState() {
+<span class="nc" id="L60">        int a = getCoilState(aPlus, aMinus);</span>
+<span class="nc" id="L61">        int b = getCoilState(bPlus, bMinus);</span>
+
+<span class="nc" id="L63">        int state = 0;</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (a &lt; 0)</span>
+<span class="nc" id="L65">            state |= 1;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (a &gt; 0)</span>
+<span class="nc" id="L67">            state |= 4;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (b &lt; 0)</span>
+<span class="nc" id="L69">            state |= 2;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (b &gt; 0)</span>
+<span class="nc" id="L71">            state |= 8;</span>
+
+<span class="nc" id="L73">        return state;</span>
+    }
+
+    private int getCoilState(ObservableValue aPlus, ObservableValue aMinus) {
+<span class="nc bnc" id="L77" title="All 4 branches missed.">        if (!aPlus.isHighZ() &amp;&amp; !aMinus.isHighZ()) {</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">            if (aPlus.getBool() &amp;&amp; !aMinus.getBool())</span>
+<span class="nc" id="L79">                return 1;</span>
+<span class="nc bnc" id="L80" title="All 4 branches missed.">            if (!aPlus.getBool() &amp;&amp; aMinus.getBool())</span>
+<span class="nc" id="L81">                return -1;</span>
+        }
+<span class="nc" id="L83">        return 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

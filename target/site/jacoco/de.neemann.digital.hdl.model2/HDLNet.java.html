@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLNet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLNet.java</span></div><h1>HDLNet.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.hdl.model2.expression.ExprConstant;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.lang.Lang;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+/**
+ * Represents a net.
+ * A net can have only one input and several outputs.
+ */
+public class HDLNet implements Printable, HasName {
+    private final boolean userNamed;
+    private final ArrayList&lt;HDLPort&gt; inputs;
+    private final ArrayList&lt;HDLPort&gt; inOutputs;
+    private String name;
+    private HDLPort output;
+<span class="fc" id="L25">    private boolean needsVariable = true;</span>
+    private boolean isInput;
+
+    /**
+     * Creates a new net
+     *
+     * @param name the nets name
+     */
+<span class="fc" id="L33">    public HDLNet(String name) {</span>
+<span class="fc" id="L34">        this.name = name;</span>
+<span class="fc" id="L35">        inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L36">        inOutputs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        userNamed = name != null;</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * @return true if this net is named by a tunnel
+     */
+    public boolean isUserNamed() {
+<span class="fc" id="L44">        return userNamed;</span>
+    }
+
+    /**
+     * Adds a port to this net.
+     *
+     * @param hdlPort the port to add
+     * @throws HDLException HDLException
+     */
+    public void addPort(HDLPort hdlPort) throws HDLException {
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">        switch (hdlPort.getDirection()) {</span>
+            case OUT:
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">                if (output != null) {</span>
+<span class="nc" id="L57">                    String netName = name;</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">                    if (netName == null)</span>
+<span class="nc" id="L59">                        netName = Lang.get(&quot;err_unnamedNet&quot;);</span>
+<span class="nc" id="L60">                    throw new HDLException(Lang.get(&quot;err_hdlMultipleOutputsConnectedToNet_N_N_N&quot;, netName, output, hdlPort));</span>
+                }
+<span class="fc" id="L62">                output = hdlPort;</span>
+<span class="fc" id="L63">                break;</span>
+            case IN:
+<span class="fc" id="L65">                inputs.add(hdlPort);</span>
+<span class="fc" id="L66">                break;</span>
+            case INOUT:
+<span class="fc" id="L68">                inOutputs.add(hdlPort);</span>
+                break;
+        }
+<span class="fc" id="L71">    }</span>
+
+    /**
+     * @return the inputs which are connected to this net.
+     */
+    public ArrayList&lt;HDLPort&gt; getInputs() {
+<span class="fc" id="L77">        return inputs;</span>
+    }
+
+    /**
+     * @return the output which defines the nets value
+     */
+    public HDLPort getOutput() {
+<span class="fc" id="L84">        return output;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L89">        return name + &quot; (&quot; + output + &quot; &quot; + inputs + &quot;)&quot;;</span>
+    }
+
+    void fixBits() throws HDLException {
+<span class="fc" id="L93">        int bits = 0;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (output == null) {</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (inOutputs.isEmpty())</span>
+<span class="nc" id="L96">                throw new HDLException(&quot;no output connected to net&quot;);</span>
+            else {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">                for (HDLPort p : inOutputs) {</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                    if (p.getBits() &gt; 0) {</span>
+<span class="fc" id="L100">                        bits = p.getBits();</span>
+<span class="fc" id="L101">                        break;</span>
+                    }
+<span class="nc" id="L103">                }</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                if (bits == 0)</span>
+<span class="nc" id="L105">                    throw new HDLException(&quot;no bit number set for inOutputs &quot; + inOutputs);</span>
+            }
+        } else {
+<span class="fc" id="L108">            bits = output.getBits();</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (bits == 0)</span>
+<span class="nc" id="L110">                throw new HDLException(&quot;no bit number set for output &quot; + output.getName());</span>
+        }
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (HDLPort i : inputs)</span>
+<span class="fc" id="L114">            i.setBits(bits);</span>
+
+<span class="fc" id="L116">    }</span>
+
+    /**
+     * @return the constant if this net is a constant, null otherwise
+     */
+    public ExprConstant isConstant() {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (output == null)</span>
+<span class="fc" id="L123">            return null;</span>
+<span class="fc" id="L124">        return ExprConstant.isConstant(output.getParent());</span>
+    }
+
+    /**
+     * Removes the given port from this net.
+     *
+     * @param p the port to remove
+     */
+    public void remove(HDLPort p) {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (p == output) {</span>
+<span class="nc" id="L134">            output = null;</span>
+        } else
+<span class="fc" id="L136">            inputs.remove(p);</span>
+<span class="fc" id="L137">    }</span>
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L141">        out.print(name).print(&quot;-&gt;&quot;).print(inputs.size());</span>
+<span class="fc" id="L142">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L146">        return name;</span>
+    }
+
+    /**
+     * Sets the name of the net
+     *
+     * @param name the name to use
+     */
+    public void setName(String name) {
+<span class="fc" id="L155">        this.name = name;</span>
+<span class="fc" id="L156">    }</span>
+
+    void setIsInput(String name) {
+<span class="fc" id="L159">        this.needsVariable = false;</span>
+<span class="fc" id="L160">        this.isInput = true;</span>
+<span class="fc" id="L161">        this.name = name;</span>
+<span class="fc" id="L162">    }</span>
+
+    /**
+     * @return true if tins net represents a nodes input
+     */
+    public boolean isInput() {
+<span class="fc" id="L168">        return isInput;</span>
+    }
+
+    /**
+     * @return true if this net needs a temp variable to represent the value
+     */
+    public boolean needsVariable() {
+<span class="fc" id="L175">        return needsVariable;</span>
+    }
+
+    void setIsOutput(String name, boolean singleRead) {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (singleRead) {</span>
+<span class="fc" id="L180">            this.name = name;</span>
+<span class="fc" id="L181">            needsVariable = false;</span>
+        } else
+<span class="fc" id="L183">            this.name = name + &quot;_temp&quot;;</span>
+<span class="fc" id="L184">    }</span>
+
+    /**
+     * @return the number of bits on this net
+     * @throws HDLException HDLException
+     */
+    public int getBits() throws HDLException {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (output != null)</span>
+<span class="fc" id="L192">            return output.getBits();</span>
+
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        for (HDLPort p : inOutputs) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">            if (p.getBits() &gt; 0) {</span>
+<span class="fc" id="L196">                return p.getBits();</span>
+            }
+<span class="nc" id="L198">        }</span>
+<span class="nc" id="L199">        throw new HDLException(&quot;no bit number set for inOutputs &quot; + inOutputs);</span>
+    }
+
+    /**
+     * @return true if this is a clock net
+     */
+    public boolean isClock() {
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (output == null)</span>
+<span class="nc" id="L207">            return false;</span>
+<span class="fc" id="L208">        return output.isClock();</span>
+    }
+
+    /**
+     * resets the output of this net
+     */
+    public void resetOutput() {
+<span class="fc" id="L215">        output = null;</span>
+<span class="fc" id="L216">        name = null;</span>
+<span class="fc" id="L217">    }</span>
+
+
+    /**
+     * Renames this net.
+     *
+     * @param renaming the renaming algorithm
+     */
+    public void rename(HDLModel.Renaming renaming) {
+<span class="fc" id="L226">        name = renaming.checkName(name);</span>
+<span class="fc" id="L227">    }</span>
+
+    /**
+     * @return true if this is a inOut net
+     */
+    public boolean isInOutNet() {
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        return !inOutputs.isEmpty();</span>
+    }
+
+    /**
+     * Checks whether a PinControl component is used correctly.
+     *
+     * @throws HDLException thrown if PinControl us used the wrong way
+     */
+    public void checkPinControlUsage() throws HDLException {
+<span class="pc bpc" id="L242" title="1 of 4 branches missed.">        if (output == null &amp;&amp; inOutputs.size() &gt; 0) {</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">            if (inputs.size() &gt; 1)</span>
+<span class="nc" id="L244">                throw new HDLException(&quot;multiple components connected to PinControl output&quot;);</span>
+<span class="pc bpc" id="L245" title="3 of 4 branches missed.">            if (inputs.size() == 1 &amp;&amp; inputs.get(0).getParent() != null)</span>
+<span class="nc" id="L246">                throw new HDLException(&quot;only a single output is allowed on a PinControl component&quot;);</span>
+        }
+<span class="fc" id="L248">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

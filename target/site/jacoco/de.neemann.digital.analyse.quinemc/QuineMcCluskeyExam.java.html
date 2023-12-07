@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuineMcCluskeyExam.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.quinemc</a> &gt; <span class="el_source">QuineMcCluskeyExam.java</span></div><h1>QuineMcCluskeyExam.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.quinemc;
+
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.quinemc.primeselector.PrimeSelector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
+
+/**
+ * Not as efficient as {@link QuineMcCluskey} but it shows all possible solutions.
+ * Needed for exam correction.
+ * It does not throw away all primes which are not necessary but tries to find the primes
+ * which are necessary. So is is possible to find all possible solutions.
+ * Works only if there are not more than 4 variables.
+ * &lt;p&gt;
+ */
+public class QuineMcCluskeyExam extends QuineMcCluskey {
+<span class="fc" id="L27">    private static final Logger LOGGER = LoggerFactory.getLogger(QuineMcCluskeyExam.class);</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param variables the variables to use
+     */
+    public QuineMcCluskeyExam(List&lt;Variable&gt; variables) {
+<span class="fc" id="L35">        super(variables);</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Simplify the primes
+     *
+     * @param primeSelector the prime selector to use
+     */
+    @Override
+    public void simplifyPrimes(PrimeSelector primeSelector) {
+<span class="fc" id="L45">        ArrayList&lt;TableRow&gt; primes = getPrimes();</span>
+<span class="fc" id="L46">        ArrayList&lt;TableRow&gt; primesAvail = new ArrayList&lt;&gt;(primes);</span>
+<span class="fc" id="L47">        primes.clear();</span>
+
+<span class="fc" id="L49">        TreeSet&lt;Integer&gt; termIndices = new TreeSet&lt;&gt;();</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (TableRow r : primesAvail)</span>
+<span class="fc" id="L51">            termIndices.addAll(r.getSource());</span>
+
+        // Nach primtermen suchen, welche einen index exclusiv enthalten
+        // Diese müssen in jedem Falle enthalten sein!
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int pr : termIndices) {</span>
+
+<span class="fc" id="L57">            TableRow foundPrime = null;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (TableRow tr : primesAvail) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                if (tr.getSource().contains(pr)) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                    if (foundPrime == null) {</span>
+<span class="fc" id="L61">                        foundPrime = tr;</span>
+                    } else {
+<span class="fc" id="L63">                        foundPrime = null;</span>
+<span class="fc" id="L64">                        break;</span>
+                    }
+                }
+<span class="fc" id="L67">            }</span>
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (foundPrime != null) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                if (!primes.contains(foundPrime))</span>
+<span class="fc" id="L71">                    primes.add(foundPrime);</span>
+            }
+<span class="fc" id="L73">        }</span>
+<span class="fc" id="L74">        primesAvail.removeAll(primes);</span>
+
+        // Die, Indices die wir schon haben können raus;
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (TableRow pr : primes) {</span>
+<span class="fc" id="L78">            termIndices.removeAll(pr.getSource());</span>
+<span class="fc" id="L79">        }</span>
+
+<span class="fc" id="L81">        LOGGER.debug(&quot;residual primes &quot; + primesAvail.size());</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!termIndices.isEmpty()) {</span>
+
+            //Die noch übrigen Terme durchsuchen ob sie schon komplett dabei sind;
+<span class="fc" id="L86">            Iterator&lt;TableRow&gt; it = primesAvail.iterator();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L88">                TableRow tr = it.next();</span>
+<span class="fc" id="L89">                boolean needed = false;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                for (int i : tr.getSource()) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                    if (termIndices.contains(i)) {</span>
+<span class="fc" id="L92">                        needed = true;</span>
+<span class="fc" id="L93">                        break;</span>
+                    }
+<span class="fc" id="L95">                }</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                if (!needed) {</span>
+<span class="fc" id="L97">                    it.remove();</span>
+                }
+<span class="fc" id="L99">            }</span>
+
+<span class="fc" id="L101">            primeSelector.select(primes, primesAvail, termIndices);</span>
+        }
+<span class="fc" id="L103">        LOGGER.debug(&quot;final primes &quot; + primes.size());</span>
+<span class="fc" id="L104">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

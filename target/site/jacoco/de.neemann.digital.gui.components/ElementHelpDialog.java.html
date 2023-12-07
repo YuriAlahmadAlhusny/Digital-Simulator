@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementHelpDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">ElementHelpDialog.java</span></div><h1>ElementHelpDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/**
+ * Simple Dialog to show an elements help text.
+ * &lt;p/&gt;
+ */
+public class ElementHelpDialog extends JDialog {
+    private static final int IMAGE_SCALE = 2;
+
+    private static final int MAX_WIDTH = 600;
+    private static final int MAX_HEIGHT = 800;
+    private final boolean showKeys;
+
+    private JPanel buttons;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parents frame
+     * @param elementType       the type of the element
+     * @param elementAttributes the attributes of this element
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    public ElementHelpDialog(Window parent, ElementTypeDescription elementType, ElementAttributes elementAttributes) throws NodeException, PinException {
+<span class="nc" id="L55">        this(parent, elementType, elementAttributes, false);</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent            the parents frame
+     * @param elementType       the type of the element
+     * @param elementAttributes the attributes of this element
+     * @param showKeys          shows the key strings
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    public ElementHelpDialog(Window parent, ElementTypeDescription elementType, ElementAttributes elementAttributes, boolean showKeys) throws NodeException, PinException {
+<span class="nc" id="L69">        super(parent, Lang.get(&quot;attr_help&quot;), ModalityType.MODELESS);</span>
+<span class="nc" id="L70">        this.showKeys = showKeys;</span>
+<span class="nc" id="L71">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L72">        StringWriter w = new StringWriter();</span>
+        try {
+<span class="nc" id="L74">            writeDetailedDescription(w, elementType, elementAttributes);</span>
+<span class="nc" id="L75">        } catch (IOException e) {</span>
+            // can not happen because of writing to memory
+<span class="nc" id="L77">        }</span>
+<span class="nc" id="L78">        init(parent, w.toString());</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent       the parents dialog
+     * @param library      the elements library
+     * @param shapeFactory the shape factory used to create the PNGs
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    public ElementHelpDialog(JFrame parent, ElementLibrary library, ShapeFactory shapeFactory) throws NodeException, PinException {
+<span class="nc" id="L91">        super(parent, Lang.get(&quot;attr_help&quot;), true);</span>
+<span class="nc" id="L92">        showKeys = false;</span>
+<span class="nc" id="L93">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L94">        MyURLStreamHandlerFactory.setShapeFactory(shapeFactory);</span>
+<span class="nc" id="L95">        StringWriter w = new StringWriter();</span>
+        try {
+<span class="nc" id="L97">            w.write(&quot;&lt;html&gt;&lt;body&gt;&quot;);</span>
+<span class="nc" id="L98">            writeFullHTMLDocumentation(w, library, description -&gt; &quot;image:&quot; + description.getName() + &quot;.png&quot;);</span>
+<span class="nc" id="L99">            w.write(&quot;&lt;/body&gt;&lt;/html&gt;&quot;);</span>
+<span class="nc" id="L100">        } catch (IOException e) {</span>
+            // can not happen because of writing to memory
+<span class="nc" id="L102">        }</span>
+<span class="nc" id="L103">        init(parent, w.toString());</span>
+
+<span class="nc" id="L105">        buttons.add(</span>
+<span class="nc" id="L106">                new ToolTipAction(Lang.get(&quot;btn_openInBrowser&quot;)) {</span>
+                    @Override
+                    public void actionPerformed(ActionEvent actionEvent) {
+                        try {
+<span class="nc" id="L110">                            File tmp = Files.createTempDirectory(&quot;digital&quot;).toFile();</span>
+<span class="nc" id="L111">                            exportHTMLDocumentation(tmp, library);</span>
+<span class="nc" id="L112">                            File index = new File(tmp, &quot;index.html&quot;);</span>
+<span class="nc" id="L113">                            openWebpage(index.toURI());</span>
+<span class="nc" id="L114">                        } catch (IOException | PinException | NodeException e) {</span>
+<span class="nc" id="L115">                            new ErrorMessage(Lang.get(&quot;err_openingDocumentation&quot;)).addCause(e).show(ElementHelpDialog.this);</span>
+<span class="nc" id="L116">                        }</span>
+<span class="nc" id="L117">                    }</span>
+<span class="nc" id="L118">                }.setToolTip(Lang.get(&quot;btn_openInBrowser_tt&quot;)).createJButton(), 0);</span>
+<span class="nc" id="L119">    }</span>
+
+    private void init(Component parent, String description) {
+<span class="nc" id="L122">        JEditorPane editorPane = new JEditorPane(&quot;text/html&quot;, description);</span>
+<span class="nc" id="L123">        editorPane.setEditable(false);</span>
+<span class="nc" id="L124">        editorPane.setCaretPosition(0);</span>
+<span class="nc" id="L125">        editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);</span>
+
+<span class="nc" id="L127">        editorPane.addHyperlinkListener(hyperlinkEvent -&gt; {</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            if (HyperlinkEvent.EventType.ACTIVATED == hyperlinkEvent.getEventType()) {</span>
+<span class="nc" id="L129">                String desc = hyperlinkEvent.getDescription();</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">                if (desc == null || !desc.startsWith(&quot;#&quot;)) return;</span>
+<span class="nc" id="L131">                desc = desc.substring(1);</span>
+<span class="nc" id="L132">                editorPane.scrollToReference(desc);</span>
+            }
+<span class="nc" id="L134">        });</span>
+
+<span class="nc" id="L136">        getContentPane().add(new JScrollPane(editorPane));</span>
+
+<span class="nc" id="L138">        buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="nc" id="L139">        buttons.add(new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L142">                dispose();</span>
+<span class="nc" id="L143">            }</span>
+        }));
+<span class="nc" id="L145">        getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L147">        pack();</span>
+<span class="nc" id="L148">        Dimension r = getSize();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (r.width &gt; MAX_WIDTH) r.width = MAX_WIDTH;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (r.height &gt; MAX_HEIGHT) r.height = MAX_HEIGHT;</span>
+<span class="nc" id="L151">        setSize(Screen.getInstance().scale(r));</span>
+<span class="nc" id="L152">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * Creates a full HTML documentation of all elements
+     *
+     * @param library      the library which parts are documented
+     * @param imageHandler the imageHandler creates the url to get the image representing a concrete part
+     * @throws IOException   IOException
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    private void writeFullHTMLDocumentation(Writer w, ElementLibrary library, ImageHandler imageHandler) throws IOException, NodeException, PinException {
+<span class="nc" id="L165">        ArrayList&lt;String&gt; chapter = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L167">        String actPath = null;</span>
+<span class="nc" id="L168">        StringWriter content = new StringWriter();</span>
+<span class="nc" id="L169">        int chapNum = 0;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (ElementLibrary.ElementContainer e : library) {</span>
+<span class="nc" id="L171">            String p = e.getTreePath();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            if (!p.equals(actPath)) {</span>
+<span class="nc" id="L173">                actPath = p;</span>
+<span class="nc" id="L174">                chapter.add(actPath);</span>
+<span class="nc" id="L175">                chapNum++;</span>
+<span class="nc" id="L176">                content.append(&quot;&lt;h2&gt;&quot;).append(Integer.toString(chapNum)).append(&quot;. &lt;a name=\&quot;&quot;).append(actPath).append(&quot;\&quot;&gt;&quot;).append(actPath).append(&quot;&lt;/a&gt;&lt;/h2&gt;\n&quot;);</span>
+<span class="nc" id="L177">                content.append(&quot;&lt;hr/&gt;\n&quot;);</span>
+            }
+<span class="nc" id="L179">            String url = imageHandler.getUrl(e.getDescription());</span>
+<span class="nc" id="L180">            BufferedImage bi = MyURLStreamHandlerFactory.getImage(e.getDescription().getName());</span>
+<span class="nc" id="L181">            content.append(&quot;&lt;center&gt;&lt;img src=\&quot;&quot;)</span>
+<span class="nc" id="L182">                    .append(url)</span>
+<span class="nc" id="L183">                    .append(&quot;\&quot; width=\&quot;&quot;).append(Integer.toString(bi.getWidth() / IMAGE_SCALE))</span>
+<span class="nc" id="L184">                    .append(&quot;\&quot; height=\&quot;&quot;).append(Integer.toString(bi.getHeight() / IMAGE_SCALE))</span>
+<span class="nc" id="L185">                    .append(&quot;\&quot;/&gt;&lt;/center&gt;\n&quot;);</span>
+<span class="nc" id="L186">            writeHTMLDescription(content, e.getDescription(), new ElementAttributes());</span>
+<span class="nc" id="L187">            content.append(&quot;&lt;hr/&gt;\n&quot;);</span>
+<span class="nc" id="L188">        }</span>
+<span class="nc" id="L189">        content.flush();</span>
+
+<span class="nc" id="L191">        w.append(&quot;&lt;h1&gt;&quot;).append(Lang.get(&quot;digital&quot;)).append(&quot;&lt;/h1&gt;\n&quot;);</span>
+<span class="nc" id="L192">        w.append(&quot;&lt;h2&gt;&quot;).append(Lang.get(&quot;tableOfContent&quot;)).append(&quot;&lt;/h2&gt;\n&quot;);</span>
+<span class="nc" id="L193">        chapNum = 0;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        for (String chap : chapter) {</span>
+<span class="nc" id="L195">            chapNum++;</span>
+<span class="nc" id="L196">            w.append(Integer.toString(chapNum)).append(&quot;. &lt;a href=\&quot;#&quot;).append(chap).append(&quot;\&quot;&gt;&quot;).append(chap).append(&quot;&lt;/a&gt;&lt;br/&gt;\n&quot;);</span>
+<span class="nc" id="L197">        }</span>
+
+<span class="nc" id="L199">        w.write(content.toString());</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Creates a detailed human readable description of this element
+     *
+     * @param et                the element to describe
+     * @param elementAttributes the actual attributes of the element to describe
+     */
+    private void writeDetailedDescription(Writer w, ElementTypeDescription et, ElementAttributes elementAttributes) throws IOException, NodeException, PinException {
+<span class="nc" id="L209">        w.write(&quot;&lt;html&gt;&lt;body&gt;&quot;);</span>
+<span class="nc" id="L210">        writeHTMLDescription(w, et, elementAttributes);</span>
+<span class="nc" id="L211">        w.write(&quot;&lt;/body&gt;&lt;/html&gt;&quot;);</span>
+<span class="nc" id="L212">    }</span>
+
+    /**
+     * Adds the description of the given element to the given StringBuilder.
+     *
+     * @param w                 the StringBuilder to use
+     * @param et                the element to describe
+     * @param elementAttributes the actual attributes of the element to describe
+     * @throws IOException   IOException
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    private void writeHTMLDescription(Writer w, ElementTypeDescription et, ElementAttributes elementAttributes) throws IOException, NodeException, PinException {
+<span class="nc" id="L225">        String translatedName = et.getTranslatedName();</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (translatedName.endsWith(&quot;.dig&quot;))</span>
+<span class="nc" id="L227">            translatedName = new File(translatedName).getName();</span>
+<span class="nc" id="L228">        w.append(&quot;&lt;h3&gt;&quot;).append(escapeHTML(translatedName)).append(&quot;&lt;/h3&gt;\n&quot;);</span>
+
+<span class="nc" id="L230">        String descr = et.getDescription(elementAttributes);</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (showKeys)</span>
+<span class="nc" id="L232">            descr += &quot; (&quot; + Lang.get(&quot;msg_keyAsGenericAttribute&quot;, et.getName()) + &quot;)&quot;;</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (!descr.equals(translatedName))</span>
+<span class="nc" id="L234">            w.append(&quot;&lt;p&gt;&quot;).append(escapeHTML(descr)).append(&quot;&lt;/p&gt;\n&quot;);</span>
+
+<span class="nc" id="L236">        PinDescriptions inputs = et.getInputDescription(elementAttributes);</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">        if (inputs != null &amp;&amp; inputs.size() &gt; 0) {</span>
+<span class="nc" id="L238">            w.append(&quot;&lt;h4&gt;&quot;).append(Lang.get(&quot;elem_Help_inputs&quot;)).append(&quot;:&lt;/h4&gt;\n&lt;dl&gt;\n&quot;);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            for (PinDescription i : inputs)</span>
+<span class="nc" id="L240">                writeEntry(w, i.getName(), i.getDescription());</span>
+<span class="nc" id="L241">            w.append(&quot;&lt;/dl&gt;\n&quot;);</span>
+        }
+
+<span class="nc" id="L244">        PinDescriptions outputs = et.getOutputDescriptions(elementAttributes);</span>
+<span class="nc bnc" id="L245" title="All 4 branches missed.">        if (outputs != null &amp;&amp; outputs.size() &gt; 0) {</span>
+<span class="nc" id="L246">            w.append(&quot;&lt;h4&gt;&quot;).append(Lang.get(&quot;elem_Help_outputs&quot;)).append(&quot;:&lt;/h4&gt;\n&lt;dl&gt;\n&quot;);</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            for (PinDescription i : outputs) {</span>
+<span class="nc" id="L248">                final String description = i.getDescription();</span>
+<span class="nc" id="L249">                writeEntry(w, i.getName(), description);</span>
+<span class="nc" id="L250">            }</span>
+<span class="nc" id="L251">            w.append(&quot;&lt;/dl&gt;\n&quot;);</span>
+        }
+
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (et.getAttributeList().size() &gt; 0) {</span>
+<span class="nc" id="L255">            w.append(&quot;&lt;h4&gt;&quot;).append(Lang.get(&quot;elem_Help_attributes&quot;)).append(&quot;:&lt;/h4&gt;\n&lt;dl&gt;\n&quot;);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (Key&lt;?&gt; k : et.getAttributeList())</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                if (!k.isSecondary())</span>
+<span class="nc" id="L258">                    writeEntry(w, k);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            for (Key&lt;?&gt; k : et.getAttributeList())</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                if (k.isSecondary())</span>
+<span class="nc" id="L261">                    writeEntry(w, k);</span>
+<span class="nc" id="L262">            w.append(&quot;&lt;/dl&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L264">    }</span>
+
+    private void writeEntry(Writer w, String name, String description) throws IOException {
+<span class="nc" id="L267">        w.append(&quot;&lt;dt&gt;&lt;i&gt;&quot;).append(escapeHTML(name)).append(&quot;&lt;/i&gt;&lt;/dt&gt;\n&quot;);</span>
+<span class="nc bnc" id="L268" title="All 6 branches missed.">        if (description != null &amp;&amp; description.length() &gt; 0 &amp;&amp; !name.equals(description))</span>
+<span class="nc" id="L269">            w.append(&quot;&lt;dd&gt;&quot;).append(escapeHTML(description)).append(&quot;&lt;/dd&gt;\n&quot;);</span>
+<span class="nc" id="L270">    }</span>
+
+    private void writeEntry(Writer w, Key&lt;?&gt; key) throws IOException {
+<span class="nc" id="L273">        final String name = key.getName();</span>
+<span class="nc" id="L274">        final String description = key.getDescription();</span>
+<span class="nc" id="L275">        w.append(&quot;&lt;dt&gt;&lt;i&gt;&quot;).append(escapeHTML(name)).append(&quot;&lt;/i&gt;&lt;/dt&gt;\n&quot;);</span>
+<span class="nc bnc" id="L276" title="All 6 branches missed.">        if (description != null &amp;&amp; description.length() &gt; 0 &amp;&amp; !name.equals(description)) {</span>
+<span class="nc" id="L277">            w.append(&quot;&lt;dd&gt;&quot;).append(escapeHTML(description));</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            if (showKeys) {</span>
+<span class="nc" id="L279">                String keyName = key.getKey();</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">                if (keyName.contains(&quot; &quot;))</span>
+<span class="nc" id="L281">                    keyName = &quot;'&quot; + keyName + &quot;'&quot;;</span>
+<span class="nc" id="L282">                w.append(&quot; (&quot;).append(Lang.get(&quot;msg_keyAsGenericAttribute&quot;, keyName)).append(')');</span>
+            }
+<span class="nc" id="L284">            w.append(&quot;&lt;/dd&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L286">    }</span>
+
+    /**
+     * @return factory which catches 'image' protocol requests to deliver images via an URL.
+     */
+    public static URLStreamHandlerFactory createURLStreamHandlerFactory() {
+<span class="nc" id="L292">        return new MyURLStreamHandlerFactory();</span>
+
+    }
+
+    private static class MyURLStreamHandlerFactory implements URLStreamHandlerFactory {
+
+<span class="nc" id="L298">        private static final HashMap&lt;String, BufferedImage&gt; IMAGE_MAP = new HashMap&lt;&gt;();</span>
+        private static ShapeFactory shapeFactory;
+
+        public static void setShapeFactory(ShapeFactory shapeFactory) {
+<span class="nc" id="L302">            MyURLStreamHandlerFactory.shapeFactory = shapeFactory;</span>
+<span class="nc" id="L303">            IMAGE_MAP.clear();</span>
+<span class="nc" id="L304">        }</span>
+
+        @Override
+        public URLStreamHandler createURLStreamHandler(String protocol) {
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            if (protocol.equals(&quot;image&quot;))</span>
+<span class="nc" id="L309">                return new URLStreamHandler() {</span>
+                    @Override
+                    protected URLConnection openConnection(URL u) {
+<span class="nc" id="L312">                        return new ImageConnection(u);</span>
+                    }
+                };
+            else
+<span class="nc" id="L316">                return null;</span>
+        }
+
+        static BufferedImage getImage(String name) {
+<span class="nc" id="L320">            BufferedImage bi = IMAGE_MAP.get(name);</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">            if (bi == null) {</span>
+<span class="nc" id="L322">                final float scale = IMAGE_SCALE * Screen.getInstance().getScaling();</span>
+<span class="nc" id="L323">                bi = new VisualElement(name)</span>
+<span class="nc" id="L324">                        .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L325">                        .getBufferedImage(0.75 * scale, (int) (250 * scale));</span>
+<span class="nc" id="L326">                IMAGE_MAP.put(name, bi);</span>
+            }
+<span class="nc" id="L328">            return bi;</span>
+        }
+    }
+
+    private static class ImageConnection extends URLConnection {
+
+        ImageConnection(URL url) {
+<span class="nc" id="L335">            super(url);</span>
+<span class="nc" id="L336">        }</span>
+
+        @Override
+        public void connect() {
+<span class="nc" id="L340">        }</span>
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+<span class="nc" id="L344">            String path = url.getPath();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            if (path.endsWith(&quot;.png&quot;))</span>
+<span class="nc" id="L346">                path = path.substring(0, path.length() - 4);</span>
+<span class="nc" id="L347">            BufferedImage bi = MyURLStreamHandlerFactory.getImage(path);</span>
+<span class="nc" id="L348">            ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L349">            ImageIO.write(bi, &quot;png&quot;, baos);</span>
+<span class="nc" id="L350">            return new ByteArrayInputStream(baos.toByteArray());</span>
+        }
+    }
+
+    private interface ImageHandler {
+        String getUrl(ElementTypeDescription description) throws IOException, PinException, NodeException;
+    }
+
+    /**
+     * Writes the html documentation to a file
+     *
+     * @param targetPath the target folder to store the documentation
+     * @param library    the library to use
+     * @throws IOException   IOException
+     * @throws PinException  PinException
+     * @throws NodeException NodeException
+     */
+    private void exportHTMLDocumentation(File targetPath, ElementLibrary library) throws IOException, NodeException, PinException {
+<span class="nc" id="L368">        File images = new File(targetPath, &quot;img&quot;);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        if (!images.mkdir())</span>
+<span class="nc" id="L370">            throw new IOException(&quot;could not create image folder &quot; + images);</span>
+<span class="nc" id="L371">        try (BufferedWriter w =</span>
+                     new BufferedWriter(
+                             new OutputStreamWriter(
+                                     new FileOutputStream(
+                                             new File(targetPath, &quot;index.html&quot;)), StandardCharsets.UTF_8))) {
+<span class="nc" id="L376">            w.write(&quot;&lt;!DOCTYPE html&gt;\n&quot;</span>
+                    + &quot;&lt;html&gt;\n&quot;
+                    + &quot;&lt;head&gt;\n&quot;
+                    + &quot;&lt;meta http-equiv=\&quot;Content-Type\&quot; content=\&quot;text/html\&quot; charset=\&quot;utf-8\&quot;/&gt;\n&quot;
+                    + &quot;&lt;/head&gt;\n&lt;body&gt;\n&quot;);
+
+<span class="nc" id="L382">            writeFullHTMLDocumentation(w, library, description -&gt; {</span>
+<span class="nc" id="L383">                BufferedImage bi = MyURLStreamHandlerFactory.getImage(description.getName());</span>
+<span class="nc" id="L384">                final String filename = description.getName().replace('\\', '_').replace('/', '_').replace(':', '_');</span>
+<span class="nc" id="L385">                ImageIO.write(bi, &quot;png&quot;, new File(images, filename + &quot;.png&quot;));</span>
+<span class="nc" id="L386">                return &quot;img/&quot; + filename + &quot;.png&quot;;</span>
+            });
+<span class="nc" id="L388">            w.write(&quot;&lt;/body&gt;\n&lt;/html&gt;&quot;);</span>
+        }
+<span class="nc" id="L390">    }</span>
+
+    private static void openWebpage(URI uri) throws IOException {
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;</span>
+<span class="nc bnc" id="L394" title="All 4 branches missed.">        if (desktop != null &amp;&amp; desktop.isSupported(Desktop.Action.BROWSE))</span>
+<span class="nc" id="L395">            desktop.browse(uri);</span>
+        else
+<span class="nc" id="L397">            throw new IOException(&quot;could not open browser&quot;);</span>
+<span class="nc" id="L398">    }</span>
+
+    private static String escapeHTML(String text) {
+<span class="nc" id="L401">        StringBuilder sb = new StringBuilder(text.length() * 2);</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="nc" id="L403">            char c = text.charAt(i);</span>
+<span class="nc bnc" id="L404" title="All 5 branches missed.">            switch (c) {</span>
+                case '&lt;':
+<span class="nc" id="L406">                    sb.append(&quot;&amp;lt;&quot;);</span>
+<span class="nc" id="L407">                    break;</span>
+                case '&gt;':
+<span class="nc" id="L409">                    sb.append(&quot;&amp;gt;&quot;);</span>
+<span class="nc" id="L410">                    break;</span>
+                case '&amp;':
+<span class="nc" id="L412">                    sb.append(&quot;&amp;amp;&quot;);</span>
+<span class="nc" id="L413">                    break;</span>
+                case '&quot;':
+<span class="nc" id="L415">                    sb.append(&quot;&amp;quot;&quot;);</span>
+<span class="nc" id="L416">                    break;</span>
+                default:
+<span class="nc" id="L418">                    sb.append(c);</span>
+            }
+        }
+<span class="nc" id="L421">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

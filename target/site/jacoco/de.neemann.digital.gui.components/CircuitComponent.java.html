@@ -1,0 +1,2858 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CircuitComponent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">CircuitComponent.java</span></div><h1>CircuitComponent.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.io.Const;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.InValue;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.switching.Switch;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.library.*;
+import de.neemann.digital.draw.model.Net;
+import de.neemann.digital.draw.model.NetList;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.draw.shapes.InputShape;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.gui.components.data.DummyElement;
+import de.neemann.digital.gui.components.modification.*;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseElement;
+import de.neemann.digital.undo.*;
+import de.neemann.gui.*;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+import static de.neemann.digital.gui.components.modification.ModificationOfVisualElement.getToolTipName;
+
+/**
+ * Component which shows the circuit.
+ * ToDo: refactoring of repaint logic. Its to complex now.
+ * ToDo: class is to large, move the MouseController classes to their own package
+ */
+public class CircuitComponent extends JComponent implements ChangedListener, LibraryListener {
+    /**
+     * The delete icon, also used from {@link de.neemann.digital.gui.components.terminal.TerminalDialog}
+     */
+<span class="fc" id="L62">    public static final Icon ICON_DELETE = IconCreator.create(&quot;delete.png&quot;);</span>
+    /**
+     * The copy icon, also used from {@link de.neemann.digital.gui.components.terminal.TerminalDialog}
+     */
+<span class="fc" id="L66">    public static final Icon ICON_COPY = IconCreator.create(&quot;edit-copy.png&quot;);</span>
+<span class="fc" id="L67">    private static final Icon ICON_UNDO = IconCreator.create(&quot;edit-undo.png&quot;);</span>
+<span class="fc" id="L68">    private static final Icon ICON_REDO = IconCreator.create(&quot;edit-redo.png&quot;);</span>
+<span class="fc" id="L69">    private static final ArrayList&lt;Key&gt; ATTR_LIST = new ArrayList&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L72">        ATTR_LIST.add(Keys.LABEL);</span>
+<span class="fc" id="L73">        ATTR_LIST.add(Keys.WIDTH);</span>
+<span class="fc" id="L74">        ATTR_LIST.add(Keys.SHAPE_TYPE);</span>
+<span class="fc" id="L75">        ATTR_LIST.add(Keys.CUSTOM_SHAPE);</span>
+<span class="fc" id="L76">        ATTR_LIST.add(Keys.HEIGHT);</span>
+<span class="fc" id="L77">        ATTR_LIST.add(Keys.PINCOUNT);</span>
+<span class="fc" id="L78">        ATTR_LIST.add(Keys.BACKGROUND_COLOR);</span>
+<span class="fc" id="L79">        ATTR_LIST.add(Keys.DESCRIPTION);</span>
+<span class="fc" id="L80">        ATTR_LIST.add(Keys.OSCILLATION_DETECTION_COUNTER);</span>
+<span class="fc" id="L81">        ATTR_LIST.add(Keys.LOCKED_MODE);</span>
+<span class="fc" id="L82">        ATTR_LIST.add(Keys.ROMMANAGER);</span>
+<span class="fc" id="L83">        ATTR_LIST.add(Keys.SHOW_DATA_TABLE);</span>
+<span class="fc" id="L84">        ATTR_LIST.add(Keys.SHOW_DATA_GRAPH);</span>
+<span class="fc" id="L85">        ATTR_LIST.add(Keys.SHOW_DATA_GRAPH_MICRO);</span>
+<span class="fc" id="L86">        ATTR_LIST.add(Keys.SETTINGS_MAX_STEP_COUNT);</span>
+<span class="fc" id="L87">        ATTR_LIST.add(Keys.PRELOAD_PROGRAM);</span>
+<span class="fc" id="L88">        ATTR_LIST.add(Keys.PROGRAM_TO_PRELOAD);</span>
+<span class="fc" id="L89">        ATTR_LIST.add(Keys.BIG_ENDIAN_SETTING);</span>
+<span class="fc" id="L90">        ATTR_LIST.add(Keys.SKIP_HDL);</span>
+<span class="fc" id="L91">        ATTR_LIST.add(Keys.IS_GENERIC);</span>
+    }
+
+    /**
+     * @return returns the list of circuit attributes
+     */
+    public static ArrayList&lt;Key&gt; getAttrList() {
+<span class="fc" id="L98">        return ATTR_LIST;</span>
+    }
+
+    private static final String DEL_ACTION = &quot;myDelAction&quot;;
+    private static final int MOUSE_BORDER_SMALL = 10;
+    private static final int MOUSE_BORDER_LARGE = 50;
+
+<span class="fc" id="L105">    private static final int DRAG_DISTANCE = (int) (SIZE2 * Screen.getInstance().getScaling());</span>
+
+    private final Main parent;
+    private final ElementLibrary library;
+    private final HashSet&lt;Drawable&gt; highLighted;
+    private final ToolTipAction deleteAction;
+    private final MouseController mouseNormal;
+    private final MouseControllerInsertElement mouseInsertElement;
+    private final MouseControllerMoveElement mouseMoveElement;
+    private final MouseControllerMoveWire mouseMoveWire;
+    private final MouseControllerWireDiag mouseWireDiag;
+    private final MouseControllerWireRect mouseWireRect;
+    private final MouseControllerWireSplit mouseWireSplit;
+    private final MouseControllerSelect mouseSelect;
+    private final MouseControllerMoveSelected mouseMoveSelected;
+    private final MouseController mouseRun;
+    private final MouseControllerInsertCopied mouseInsertList;
+    private final MouseControllerResizeRect mouseResizeRect;
+    private final Cursor moveCursor;
+    private final ToolTipAction copyAction;
+    private final ToolTipAction cutAction;
+    private final ToolTipAction pasteAction;
+    private final ToolTipAction rotateAction;
+    private final ToolTipAction undoAction;
+    private final ToolTipAction redoAction;
+    private final UndoManager&lt;Circuit&gt; undoManager;
+<span class="nc" id="L131">    private final Mouse mouse = Mouse.getMouse();</span>
+
+    private MouseController activeMouseController;
+<span class="nc" id="L134">    private AffineTransform transform = new AffineTransform();</span>
+    private Vector lastMousePos;
+<span class="nc" id="L136">    private SyncAccess modelSync = SyncAccess.NOSYNC;</span>
+    private boolean isManualScale;
+<span class="nc" id="L138">    private boolean graphicHasChangedFlag = true;</span>
+<span class="nc" id="L139">    private boolean hadFocusAtClick = true;</span>
+<span class="nc" id="L140">    private boolean lockMessageShown = false;</span>
+<span class="nc" id="L141">    private boolean antiAlias = true;</span>
+<span class="nc" id="L142">    private double lastScaleX = 0;</span>
+
+<span class="nc" id="L144">    private Style highLightStyle = Style.HIGHLIGHT;</span>
+    private Circuit shallowCopy;
+    private CircuitScrollPanel circuitScrollPanel;
+    private TutorialListener tutorialListener;
+<span class="nc" id="L148">    private boolean toolTipHighlighted = false;</span>
+    private NetList toolTipNetList;
+    private String lastUsedTunnelName;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent       the parent window
+     * @param library      the library used to edit the attributes of the elements
+     * @param shapeFactory the shapeFactory used for copied elements
+     */
+<span class="nc" id="L159">    public CircuitComponent(Main parent, ElementLibrary library, ShapeFactory shapeFactory) {</span>
+<span class="nc" id="L160">        this.parent = parent;</span>
+<span class="nc" id="L161">        this.library = library;</span>
+<span class="nc" id="L162">        highLighted = new HashSet&lt;&gt;();</span>
+
+<span class="nc" id="L164">        rotateAction = new ToolTipAction(Lang.get(&quot;menu_rotate&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L167">                activeMouseController.rotate();</span>
+<span class="nc" id="L168">            }</span>
+<span class="nc" id="L169">        }.setEnabledChain(false).setAccelerator(&quot;R&quot;).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L171">        cutAction = createCutAction(shapeFactory);</span>
+<span class="nc" id="L172">        copyAction = createCopyAction(shapeFactory);</span>
+<span class="nc" id="L173">        pasteAction = createPasteAction(shapeFactory);</span>
+
+<span class="nc" id="L175">        deleteAction = new ToolTipAction(Lang.get(&quot;menu_delete&quot;), ICON_DELETE) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L178">                activeMouseController.delete();</span>
+<span class="nc" id="L179">            }</span>
+<span class="nc" id="L180">        }.setToolTip(Lang.get(&quot;menu_delete_tt&quot;));</span>
+
+<span class="nc" id="L182">        undoAction = new ToolTipAction(Lang.get(&quot;menu_undo&quot;), ICON_UNDO) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L185">                undo();</span>
+<span class="nc" id="L186">            }</span>
+<span class="nc" id="L187">        }.setToolTipProvider(this::getUndoToolTip).setToolTip(Lang.get(&quot;menu_undo_tt&quot;)).setAcceleratorCTRLplus('Z').enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L189">        redoAction = new ToolTipAction(Lang.get(&quot;menu_redo&quot;), ICON_REDO) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L192">                redo();</span>
+<span class="nc" id="L193">            }</span>
+<span class="nc" id="L194">        }.setToolTipProvider(this::getRedoToolTip).setToolTip(Lang.get(&quot;menu_redo_tt&quot;)).setAcceleratorCTRLplus('Y').enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L196">        new ToolTipAction(&quot;Escape&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L199">                activeMouseController.escapePressed();</span>
+<span class="nc" id="L200">            }</span>
+<span class="nc" id="L201">        }.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L203">        new ToolTipAction(&quot;flipWire&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                if (activeMouseController instanceof MouseControllerWireRect)</span>
+<span class="nc" id="L207">                    ((MouseControllerWireRect) activeMouseController).flipWire();</span>
+<span class="nc" id="L208">            }</span>
+<span class="nc" id="L209">        }.setAccelerator(&quot;F&quot;).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L211">        new ToolTipAction(&quot;splitWire&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                if (activeMouseController == mouseNormal) {</span>
+<span class="nc" id="L215">                    Vector pos = getPosVector(lastMousePos.x, lastMousePos.y);</span>
+<span class="nc" id="L216">                    Wire w = getCircuit().getWireAt(pos, SIZE2);</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                    if (w != null)</span>
+<span class="nc" id="L218">                        mouseWireSplit.activate(w, pos);</span>
+                }
+<span class="nc" id="L220">            }</span>
+<span class="nc" id="L221">        }.setAccelerator(&quot;S&quot;).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L223">        createAdditionalShortcuts(shapeFactory);</span>
+
+<span class="nc" id="L225">        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), DEL_ACTION);</span>
+<span class="nc" id="L226">        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), DEL_ACTION);</span>
+<span class="nc" id="L227">        getActionMap().put(DEL_ACTION, deleteAction);</span>
+
+<span class="nc" id="L229">        setFocusable(true);</span>
+
+<span class="nc" id="L231">        addMouseWheelListener(e -&gt; {</span>
+<span class="nc" id="L232">            Vector pos = getPosVector(e);</span>
+<span class="nc" id="L233">            double f = Math.pow(0.9, e.getWheelRotation());</span>
+<span class="nc" id="L234">            transform.translate(pos.x, pos.y);</span>
+<span class="nc" id="L235">            transform.scale(f, f);</span>
+<span class="nc" id="L236">            transform.translate(-pos.x, -pos.y);</span>
+<span class="nc" id="L237">            isManualScale = true;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">            if (circuitScrollPanel != null)</span>
+<span class="nc" id="L239">                circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L240">            graphicHasChanged();</span>
+<span class="nc" id="L241">        });</span>
+
+<span class="nc" id="L243">        addComponentListener(new ComponentAdapter() {</span>
+            @Override
+            public void componentResized(ComponentEvent componentEvent) {
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                if (!isManualScale)</span>
+<span class="nc" id="L247">                    fitCircuit();</span>
+<span class="nc" id="L248">            }</span>
+        });
+
+<span class="nc" id="L251">        Cursor normalCursor = new Cursor(Cursor.DEFAULT_CURSOR);</span>
+<span class="nc" id="L252">        moveCursor = new Cursor(Cursor.MOVE_CURSOR);</span>
+<span class="nc" id="L253">        mouseNormal = new MouseControllerNormal(normalCursor);</span>
+<span class="nc" id="L254">        mouseInsertElement = new MouseControllerInsertElement(normalCursor);</span>
+<span class="nc" id="L255">        mouseInsertList = new MouseControllerInsertCopied(normalCursor);</span>
+<span class="nc" id="L256">        mouseMoveElement = new MouseControllerMoveElement(normalCursor);</span>
+<span class="nc" id="L257">        mouseMoveWire = new MouseControllerMoveWire(normalCursor);</span>
+<span class="nc" id="L258">        mouseWireRect = new MouseControllerWireRect(normalCursor);</span>
+<span class="nc" id="L259">        mouseWireDiag = new MouseControllerWireDiag(normalCursor);</span>
+<span class="nc" id="L260">        mouseWireSplit = new MouseControllerWireSplit(normalCursor);</span>
+<span class="nc" id="L261">        mouseSelect = new MouseControllerSelect(new Cursor(Cursor.CROSSHAIR_CURSOR));</span>
+<span class="nc" id="L262">        mouseMoveSelected = new MouseControllerMoveSelected(moveCursor);</span>
+<span class="nc" id="L263">        mouseRun = new MouseControllerRun(normalCursor);</span>
+<span class="nc" id="L264">        mouseResizeRect = new MouseControllerResizeRect(normalCursor);</span>
+
+<span class="nc" id="L266">        undoManager = new UndoManager&lt;&gt;(new Circuit());</span>
+<span class="nc" id="L267">        addListener(this);</span>
+
+<span class="nc" id="L269">        MouseDispatcher dispatcher = new MouseDispatcher();</span>
+<span class="nc" id="L270">        addMouseMotionListener(dispatcher);</span>
+<span class="nc" id="L271">        addMouseListener(dispatcher);</span>
+
+<span class="nc" id="L273">        enableFavoritePositions();</span>
+
+<span class="nc" id="L275">        mouseNormal.activate();</span>
+
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (parent != null) {</span>
+<span class="nc" id="L278">            parent.addWindowListener(new WindowAdapter() {</span>
+                @Override
+                public void windowDeactivated(WindowEvent e) {
+<span class="nc bnc" id="L281" title="All 4 branches missed.">                    if (!(activeMouseController instanceof MouseControllerWizard || activeMouseController == mouseSelect))</span>
+<span class="nc" id="L282">                        activeMouseController.escapePressed();</span>
+<span class="nc" id="L283">                }</span>
+            });
+        }
+
+<span class="nc" id="L287">        setToolTipText(&quot;&quot;);</span>
+<span class="nc" id="L288">    }</span>
+
+    private void enableFavoritePositions() {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        for (int j = 0; j &lt;= 9; j++) {</span>
+<span class="nc" id="L292">            final int i = j;</span>
+<span class="nc" id="L293">            final Key&lt;TransformHolder&gt; key = new Key&lt;&gt;(&quot;view&quot; + i, TransformHolder::new);</span>
+<span class="nc" id="L294">            new ToolTipAction(&quot;CTRL+&quot; + i) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L297">                    ElementAttributes attr = new ElementAttributes(getCircuit().getAttributes());</span>
+<span class="nc" id="L298">                    attr.set(key, new TransformHolder(transform));</span>
+<span class="nc" id="L299">                    modify(new ModifyCircuitAttributes(attr));</span>
+<span class="nc" id="L300">                }</span>
+<span class="nc" id="L301">            }.setAcceleratorCTRLplus((char) ('0' + i)).enableAcceleratorIn(this);</span>
+<span class="nc" id="L302">            new ToolTipAction(&quot;&quot; + i) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L305">                    TransformHolder transformHolder = getCircuit().getAttributes().get(key);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">                    if (!transformHolder.isIdentity()) {</span>
+<span class="nc" id="L307">                        transform = transformHolder.createAffineTransform();</span>
+<span class="nc" id="L308">                        isManualScale = true;</span>
+<span class="nc" id="L309">                        graphicHasChanged();</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">                        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L311">                            circuitScrollPanel.transformChanged(transform);</span>
+                    }
+<span class="nc" id="L313">                }</span>
+<span class="nc" id="L314">            }.setAccelerator(KeyStroke.getKeyStroke((char) ('0' + i), 0)).enableAcceleratorIn(this);</span>
+        }
+<span class="nc" id="L316">    }</span>
+
+    private void createAdditionalShortcuts(ShapeFactory shapeFactory) {
+<span class="nc" id="L319">        new ToolTipAction(&quot;diagWire&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L322" title="All 2 branches missed.">                if (activeMouseController instanceof MouseControllerWireDiag)</span>
+<span class="nc" id="L323">                    ((MouseControllerWireDiag) activeMouseController).rectangularWire();</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">                else if (activeMouseController instanceof MouseControllerWireRect)</span>
+<span class="nc" id="L325">                    ((MouseControllerWireRect) activeMouseController).diagonalWire();</span>
+<span class="nc" id="L326">            }</span>
+<span class="nc" id="L327">        }.setAccelerator(&quot;D&quot;).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L329">        new ToolTipAction(&quot;selectAll&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L332" title="All 2 branches missed.">                if (activeMouseController == mouseNormal) {</span>
+<span class="nc" id="L333">                    GraphicMinMax gr = new GraphicMinMax();</span>
+<span class="nc" id="L334">                    getCircuit().drawTo(gr);</span>
+<span class="nc bnc" id="L335" title="All 4 branches missed.">                    if (gr.getMin() != null &amp;&amp; gr.getMax() != null) {</span>
+<span class="nc" id="L336">                        mouseSelect.activate(gr.getMin(), gr.getMax());</span>
+<span class="nc" id="L337">                        mouseSelect.release();</span>
+                    }
+                }
+<span class="nc" id="L340">            }</span>
+<span class="nc" id="L341">        }.setAcceleratorCTRLplus('A').enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L343">        new ToolTipAction(&quot;duplicate&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L346">                ArrayList&lt;Movable&gt; elements = getSelectedElements(shapeFactory);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                if (elements != null) {</span>
+<span class="nc" id="L348">                    activeMouseController.escapePressed();</span>
+<span class="nc" id="L349">                    ArrayList&lt;Movable&gt; copiedElements = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">                    for (Movable m : elements) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">                        if (m instanceof Wire)</span>
+<span class="nc" id="L352">                            copiedElements.add(new Wire((Wire) m));</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">                        else if (m instanceof VisualElement)</span>
+<span class="nc" id="L354">                            copiedElements.add(new VisualElement((VisualElement) m));</span>
+<span class="nc" id="L355">                    }</span>
+<span class="nc" id="L356">                    setPartsToInsert(copiedElements, null);</span>
+                }
+<span class="nc" id="L358">            }</span>
+<span class="nc" id="L359">        }.setAcceleratorCTRLplus('D').enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L361">        new ToolTipAction(&quot;insertTunnel&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L364" title="All 2 branches missed.">                if (activeMouseController == mouseNormal) {</span>
+<span class="nc" id="L365">                    VisualElement tunnel =</span>
+<span class="nc" id="L366">                            new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="nc" id="L367">                                    .setShapeFactory(shapeFactory);</span>
+<span class="nc" id="L368">                    setPartToInsert(tunnel);</span>
+                }
+<span class="nc" id="L370">            }</span>
+<span class="nc" id="L371">        }.setAccelerator(&quot;T&quot;).enableAcceleratorIn(this);</span>
+
+<span class="nc" id="L373">        ToolTipAction plus = new PlusMinusAction(1).setAccelerator(&quot;PLUS&quot;).enableAcceleratorIn(this);</span>
+<span class="nc" id="L374">        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD, 0), plus);</span>
+
+<span class="nc" id="L376">        ToolTipAction minus = new PlusMinusAction(-1).setAccelerator(&quot;MINUS&quot;).enableAcceleratorIn(this);</span>
+<span class="nc" id="L377">        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, 0), minus);</span>
+
+<span class="nc" id="L379">        new ToolTipAction(Lang.get(&quot;menu_programDiode&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) { // is allowed also if locked!
+<span class="nc" id="L382">                VisualElement ve = getActualVisualElement();</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">                if (ve != null) {</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">                    if (CircuitComponent.this.library.isProgrammable(ve.getElementName())) {</span>
+<span class="nc" id="L385">                        boolean blown = ve.getElementAttributes().get(Keys.BLOWN);</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                        modify(new ModifyAttribute&lt;&gt;(ve, Keys.BLOWN, !blown));</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                    } else if (ve.equalsDescription(Switch.DESCRIPTION)) {</span>
+<span class="nc" id="L388">                        boolean closed = ve.getElementAttributes().get(Keys.CLOSED);</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                        modify(new ModifyAttribute&lt;&gt;(ve, Keys.CLOSED, !closed));</span>
+                    }
+                }
+<span class="nc" id="L392">            }</span>
+<span class="nc" id="L393">        }.setAccelerator(&quot;P&quot;).enableAcceleratorIn(this);</span>
+<span class="nc" id="L394">    }</span>
+
+    private ToolTipAction createPasteAction(ShapeFactory shapeFactory) {
+<span class="nc" id="L397">        return new ToolTipAction(Lang.get(&quot;menu_paste&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                if (!isLocked()) {</span>
+<span class="nc" id="L401">                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+                    try {
+<span class="nc" id="L403">                        Object data = clipboard.getData(DataFlavor.stringFlavor);</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                        if (data instanceof String) {</span>
+<span class="nc" id="L405">                            Vector posVector = getPosVector(lastMousePos.x, lastMousePos.y);</span>
+<span class="nc" id="L406">                            ArrayList&lt;Movable&gt; elements = CircuitTransferable.createList(data, shapeFactory);</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">                            if (elements != null)</span>
+<span class="nc" id="L408">                                setPartsToInsert(elements, posVector);</span>
+                        }
+<span class="nc" id="L410">                    } catch (Exception e1) {</span>
+<span class="nc" id="L411">                        e1.printStackTrace();</span>
+<span class="nc" id="L412">                        SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_clipboardContainsNoImportableData&quot;)).setComponent(CircuitComponent.this));</span>
+<span class="nc" id="L413">                    }</span>
+                }
+<span class="nc" id="L415">            }</span>
+<span class="nc" id="L416">        }.setAcceleratorCTRLplus('V').enableAcceleratorIn(this);</span>
+    }
+
+    private ToolTipAction createCutAction(ShapeFactory shapeFactory) {
+<span class="nc" id="L420">        return new ToolTipAction(Lang.get(&quot;menu_cut&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                if (!isLocked()) {</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">                    if (activeMouseController instanceof MouseControllerSelect) {</span>
+<span class="nc" id="L425">                        MouseControllerSelect mcs = ((MouseControllerSelect) activeMouseController);</span>
+<span class="nc" id="L426">                        Vector min = Vector.min(mcs.corner1, mcs.corner2);</span>
+<span class="nc" id="L427">                        Vector max = Vector.max(mcs.corner1, mcs.corner2);</span>
+<span class="nc" id="L428">                        ArrayList&lt;Movable&gt; elements = getCircuit().copyElementsToMove(min, max, shapeFactory);</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                        if (elements != null) {</span>
+<span class="nc" id="L430">                            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+<span class="nc" id="L431">                            clipboard.setContents(new CircuitTransferable(elements), null);</span>
+<span class="nc" id="L432">                            modify(new ModifyDeleteRect(min, max));</span>
+<span class="nc" id="L433">                            activeMouseController.escapePressed();</span>
+                        }
+                    }
+                }
+<span class="nc" id="L437">            }</span>
+<span class="nc" id="L438">        }.setEnabledChain(false).setAcceleratorCTRLplus('X').enableAcceleratorIn(this);</span>
+    }
+
+    private ToolTipAction createCopyAction(ShapeFactory shapeFactory) {
+<span class="nc" id="L442">        return new ToolTipAction(Lang.get(&quot;menu_copy&quot;), ICON_COPY) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L445">                ArrayList&lt;Movable&gt; elements = getSelectedElements(shapeFactory);</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">                if (elements != null) {</span>
+<span class="nc" id="L447">                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+<span class="nc" id="L448">                    clipboard.setContents(new CircuitTransferable(elements), null);</span>
+<span class="nc" id="L449">                    activeMouseController.escapePressed();</span>
+                }
+<span class="nc" id="L451">            }</span>
+<span class="nc" id="L452">        }.setEnabledChain(false).setAcceleratorCTRLplus('C').enableAcceleratorIn(this);</span>
+    }
+
+    private ArrayList&lt;Movable&gt; getSelectedElements(ShapeFactory shapeFactory) {
+<span class="nc" id="L456">        ArrayList&lt;Movable&gt; elements = null;</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">        if (activeMouseController instanceof MouseControllerSelect) {</span>
+<span class="nc" id="L458">            MouseControllerSelect mcs = ((MouseControllerSelect) activeMouseController);</span>
+<span class="nc" id="L459">            elements = getCircuit().copyElementsToMove(Vector.min(mcs.corner1, mcs.corner2), Vector.max(mcs.corner1, mcs.corner2), shapeFactory);</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">        } else if (activeMouseController instanceof MouseControllerMoveElement) {</span>
+<span class="nc" id="L461">            MouseControllerMoveElement mcme = ((MouseControllerMoveElement) activeMouseController);</span>
+<span class="nc" id="L462">            elements = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L463">            elements.add(mcme.visualElement);</span>
+        }
+<span class="nc" id="L465">        return elements;</span>
+    }
+
+
+    /**
+     * Opens the attribute editor
+     */
+    public void editCircuitAttributes() {
+<span class="nc" id="L473">        ElementAttributes modifiedAttributes =</span>
+<span class="nc" id="L474">                new AttributeDialog(parent, ATTR_LIST, getCircuit().getAttributes())</span>
+<span class="nc" id="L475">                        .setDialogTitle(Lang.get(&quot;menu_editAttributes&quot;))</span>
+<span class="nc" id="L476">                        .showDialog();</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">        if (modifiedAttributes != null)</span>
+<span class="nc" id="L478">            modify(new ModifyCircuitAttributes(modifiedAttributes));</span>
+<span class="nc" id="L479">    }</span>
+
+    /**
+     * Apply a modification
+     *
+     * @param modification the modification
+     */
+    public void modify(Modification&lt;Circuit&gt; modification) {
+        try {
+<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (modification != null) {</span>
+<span class="nc" id="L489">                toolTipNetList = null;</span>
+<span class="nc" id="L490">                undoManager.apply(modification);</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">                if (tutorialListener != null)</span>
+<span class="nc" id="L492">                    tutorialListener.modified(modification);</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">                if (circuitScrollPanel != null)</span>
+<span class="nc" id="L494">                    circuitScrollPanel.sizeChanged();</span>
+            }
+<span class="nc" id="L496">        } catch (ModifyException e) {</span>
+<span class="nc" id="L497">            throw new RuntimeException(&quot;internal error in modify&quot;, e);</span>
+<span class="nc" id="L498">        }</span>
+<span class="nc" id="L499">    }</span>
+
+    /**
+     * invalidates the image buffer and calls repaint();
+     */
+    public void graphicHasChanged() {
+<span class="nc" id="L505">        graphicHasChangedFlag = true;</span>
+<span class="nc" id="L506">        repaint();</span>
+<span class="nc" id="L507">    }</span>
+
+    /**
+     * undo last action
+     */
+    private void undo() {
+<span class="nc bnc" id="L513" title="All 2 branches missed.">        if (activeMouseController != mouseNormal)</span>
+<span class="nc" id="L514">            activeMouseController.escapePressed();</span>
+        else {
+<span class="nc bnc" id="L516" title="All 4 branches missed.">            if (!isLocked() &amp;&amp; undoManager.undoAvailable()) {</span>
+                try {
+<span class="nc" id="L518">                    undoManager.undo();</span>
+<span class="nc" id="L519">                } catch (ModifyException e) {</span>
+<span class="nc" id="L520">                    throw new RuntimeException(&quot;internal error in undo&quot;, e);</span>
+<span class="nc" id="L521">                }</span>
+            }
+        }
+<span class="nc" id="L524">    }</span>
+
+    private String getUndoToolTip() {
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (undoManager.undoAvailable())</span>
+<span class="nc" id="L528">            return Lang.get(&quot;mod_undo_N&quot;, undoManager.getUndoModification().toString());</span>
+        else
+<span class="nc" id="L530">            return Lang.get(&quot;menu_undo_tt&quot;);</span>
+    }
+
+    /**
+     * redo last undo
+     */
+    private void redo() {
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (activeMouseController != mouseNormal)</span>
+<span class="nc" id="L538">            activeMouseController.escapePressed();</span>
+        else {
+<span class="nc bnc" id="L540" title="All 4 branches missed.">            if (!isLocked() &amp;&amp; undoManager.redoAvailable()) {</span>
+                try {
+<span class="nc" id="L542">                    undoManager.redo();</span>
+<span class="nc" id="L543">                } catch (ModifyException e) {</span>
+<span class="nc" id="L544">                    throw new RuntimeException(&quot;internal error in redo&quot;, e);</span>
+<span class="nc" id="L545">                }</span>
+            }
+        }
+<span class="nc" id="L548">    }</span>
+
+    private String getRedoToolTip() {
+<span class="nc bnc" id="L551" title="All 2 branches missed.">        if (undoManager.redoAvailable())</span>
+<span class="nc" id="L552">            return Lang.get(&quot;mod_redo_N&quot;, undoManager.getRedoModification().toString());</span>
+        else
+<span class="nc" id="L554">            return Lang.get(&quot;menu_redo_tt&quot;);</span>
+    }
+
+    /**
+     * save the circuit
+     *
+     * @param filename the filename
+     * @throws IOException IOException
+     */
+    public void save(File filename) throws IOException {
+<span class="nc" id="L564">        getCircuit().save(filename);</span>
+        try {
+<span class="nc" id="L566">            undoManager.applyWithoutHistory(circuit -&gt; circuit.setOrigin(filename));</span>
+<span class="nc" id="L567">        } catch (ModifyException e) {</span>
+<span class="nc" id="L568">            throw new RuntimeException(&quot;internal error in save&quot;, e);</span>
+<span class="nc" id="L569">        }</span>
+<span class="nc" id="L570">        undoManager.saved();</span>
+<span class="nc" id="L571">    }</span>
+
+    /**
+     * @return the main frame
+     */
+    public Main getMain() {
+<span class="nc" id="L577">        return parent;</span>
+    }
+
+    @Override
+    public String getToolTipText(MouseEvent event) {
+<span class="nc bnc" id="L582" title="All 2 branches missed.">        if (toolTipHighlighted) {</span>
+<span class="nc" id="L583">            toolTipHighlighted = false;</span>
+<span class="nc" id="L584">            removeHighLighted();</span>
+        }
+
+<span class="nc" id="L587">        Circuit circuit = getCircuitOrShallowCopy();</span>
+
+<span class="nc" id="L589">        Vector pos = getPosVector(event);</span>
+<span class="nc" id="L590">        VisualElement ve = circuit.getElementAt(pos);</span>
+<span class="nc bnc" id="L591" title="All 2 branches missed.">        if (ve != null) {</span>
+<span class="nc" id="L592">            Pin p = ve.getPinAt(raster(pos));</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">            if (p != null)</span>
+<span class="nc" id="L594">                return createPinToolTip(p);</span>
+
+<span class="nc bnc" id="L596" title="All 2 branches missed.">            if (Settings.getInstance().get(Keys.SETTINGS_NOTOOLTIPS))</span>
+<span class="nc" id="L597">                return null;</span>
+
+            try {
+<span class="nc" id="L600">                ElementTypeDescription etd = library.getElementType(ve.getElementName());</span>
+<span class="nc" id="L601">                String tt = etd.getDescription(ve.getElementAttributes());</span>
+<span class="nc" id="L602">                final String pin = ve.getElementAttributes().get(Keys.PINNUMBER);</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">                if (pin.length() &gt; 0)</span>
+<span class="nc" id="L604">                    tt += &quot; (&quot; + Lang.get(&quot;msg_pin_N&quot;, pin) + &quot;)&quot;;</span>
+<span class="nc" id="L605">                return checkToolTip(tt);</span>
+<span class="nc" id="L606">            } catch (ElementNotFoundException e) {</span>
+<span class="nc" id="L607">                return null;</span>
+            }
+        }
+
+<span class="nc" id="L611">        Wire w = circuit.getWireAt(pos, (int) (SIZE2 / transform.getScaleX()));</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">        if (w != null) {</span>
+<span class="nc" id="L613">            ObservableValue v = w.getValue();</span>
+<span class="nc bnc" id="L614" title="All 2 branches missed.">            if (v != null)</span>
+<span class="nc" id="L615">                return v.getValueString();</span>
+            else {
+<span class="nc bnc" id="L617" title="All 2 branches missed.">                if (Settings.getInstance().get(Keys.SETTINGS_WIRETOOLTIP))</span>
+<span class="nc bnc" id="L618" title="All 6 branches missed.">                    if (highLighted == null || highLighted.isEmpty() || toolTipHighlighted) {</span>
+                        try {
+<span class="nc bnc" id="L620" title="All 2 branches missed.">                            if (toolTipNetList == null)</span>
+<span class="nc" id="L621">                                toolTipNetList = new NetList(getCircuit());</span>
+<span class="nc" id="L622">                            Net n = toolTipNetList.getNetOfPos(w.p1);</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">                            if (n != null) {</span>
+<span class="nc" id="L624">                                removeHighLighted();</span>
+<span class="nc" id="L625">                                addHighLighted(n.getWires());</span>
+<span class="nc" id="L626">                                toolTipHighlighted = true;</span>
+                            }
+<span class="nc" id="L628">                        } catch (PinException e) {</span>
+<span class="nc" id="L629">                            e.printStackTrace();</span>
+<span class="nc" id="L630">                        }</span>
+                    }
+            }
+        }
+
+<span class="nc" id="L635">        return null;</span>
+    }
+
+    private String createPinToolTip(Pin p) {
+<span class="nc" id="L639">        String text = p.getName();</span>
+<span class="nc" id="L640">        final String des = p.getDescription();</span>
+<span class="nc bnc" id="L641" title="All 4 branches missed.">        if (des != null &amp;&amp; des.length() &gt; 0) {</span>
+<span class="nc" id="L642">            text += &quot;: &quot; + des;</span>
+        }
+<span class="nc" id="L644">        String pinNumber = p.getPinNumber();</span>
+<span class="nc bnc" id="L645" title="All 4 branches missed.">        if (pinNumber != null &amp;&amp; pinNumber.length() &gt; 0)</span>
+<span class="nc" id="L646">            text += &quot; (&quot; + Lang.get(&quot;msg_pin_N&quot;, pinNumber) + &quot;)&quot;;</span>
+<span class="nc" id="L647">        return checkToolTip(text);</span>
+    }
+
+    private String checkToolTip(String tt) {
+<span class="nc bnc" id="L651" title="All 4 branches missed.">        if (tt != null &amp;&amp; tt.length() == 0)</span>
+<span class="nc" id="L652">            return null;</span>
+        else
+<span class="nc" id="L654">            return new LineBreaker().toHTML().breakLines(tt);</span>
+    }
+
+    /**
+     * @return the delete action to put it to the toolbar
+     */
+    public ToolTipAction getDeleteAction() {
+<span class="nc" id="L661">        return deleteAction;</span>
+    }
+
+    /**
+     * @return the cut action
+     */
+    public ToolTipAction getCutAction() {
+<span class="nc" id="L668">        return cutAction;</span>
+    }
+
+    /**
+     * @return the copy action
+     */
+    public ToolTipAction getCopyAction() {
+<span class="nc" id="L675">        return copyAction;</span>
+    }
+
+    /**
+     * @return the paste action
+     */
+    public ToolTipAction getPasteAction() {
+<span class="nc" id="L682">        return pasteAction;</span>
+    }
+
+    /**
+     * @return the rotate action
+     */
+    public ToolTipAction getRotateAction() {
+<span class="nc" id="L689">        return rotateAction;</span>
+    }
+
+    /**
+     * Sets the edit mode and resets the circuit
+     *
+     * @param runMode   true if running, false if editing
+     * @param modelSync used to access the running model
+     */
+    public void setModeAndReset(boolean runMode, SyncAccess modelSync) {
+<span class="nc" id="L699">        this.modelSync = modelSync;</span>
+<span class="nc bnc" id="L700" title="All 2 branches missed.">        if (runMode) {</span>
+<span class="nc" id="L701">            redoAction.setEnabled(false);</span>
+<span class="nc" id="L702">            undoAction.setEnabled(false);</span>
+<span class="nc" id="L703">            mouseRun.activate();</span>
+        } else {
+<span class="nc" id="L705">            enableUndoRedo();</span>
+<span class="nc" id="L706">            mouseNormal.activate();</span>
+<span class="nc" id="L707">            getCircuit().clearState();</span>
+        }
+<span class="nc" id="L709">        requestFocusInWindow();</span>
+
+<span class="nc bnc" id="L711" title="All 2 branches missed.">        if (tutorialListener != null)</span>
+<span class="nc" id="L712">            tutorialListener.modified(null);</span>
+<span class="nc" id="L713">    }</span>
+
+    private void enableUndoRedo() {
+<span class="nc" id="L716">        redoAction.setEnabled(undoManager.redoAvailable());</span>
+<span class="nc" id="L717">        undoAction.setEnabled(undoManager.undoAvailable());</span>
+<span class="nc" id="L718">    }</span>
+
+    /**
+     * @return the highlighted elements
+     */
+    public Collection&lt;Drawable&gt; getHighLighted() {
+<span class="nc" id="L724">        return highLighted;</span>
+    }
+
+    /**
+     * Adds a drawable to the highlighted list
+     *
+     * @param drawable the drawable to add
+     * @param &lt;T&gt;      type of drawable
+     */
+    public &lt;T extends Drawable&gt; void addHighLighted(T drawable) {
+<span class="nc bnc" id="L734" title="All 2 branches missed.">        if (drawable != null) {</span>
+<span class="nc" id="L735">            highLighted.add(drawable);</span>
+<span class="nc" id="L736">            graphicHasChanged();</span>
+        }
+<span class="nc" id="L738">    }</span>
+
+    /**
+     * Add a list of drawables to high light
+     *
+     * @param drawables the list of drawables
+     */
+    public void addHighLighted(Collection&lt;? extends Drawable&gt; drawables) {
+<span class="nc bnc" id="L746" title="All 2 branches missed.">        if (drawables != null) {</span>
+<span class="nc" id="L747">            highLighted.addAll(drawables);</span>
+<span class="nc" id="L748">            graphicHasChanged();</span>
+        }
+<span class="nc" id="L750">    }</span>
+
+    /**
+     * Adds all the wires representing the given value to the highlighted list
+     *
+     * @param values the value
+     */
+    public void addHighLightedWires(ImmutableList&lt;ObservableValue&gt; values) {
+<span class="nc bnc" id="L758" title="All 2 branches missed.">        if (values == null) return;</span>
+
+<span class="nc" id="L760">        HashSet&lt;ObservableValue&gt; ov = new HashSet&lt;&gt;(values);</span>
+<span class="nc bnc" id="L761" title="All 2 branches missed.">        for (Wire w : getCircuit().getWires())</span>
+<span class="nc bnc" id="L762" title="All 2 branches missed.">            if (ov.contains(w.getValue()))</span>
+<span class="nc" id="L763">                addHighLighted(w);</span>
+<span class="nc" id="L764">    }</span>
+
+    /**
+     * remove all highlighted elements
+     */
+    public void removeHighLighted() {
+<span class="nc bnc" id="L770" title="All 2 branches missed.">        if (!highLighted.isEmpty()) {</span>
+<span class="nc" id="L771">            highLighted.clear();</span>
+<span class="nc" id="L772">            highLightStyle = Style.HIGHLIGHT;</span>
+<span class="nc" id="L773">            graphicHasChanged();</span>
+        }
+
+<span class="nc" id="L776">    }</span>
+
+    /**
+     * Sets the style used to highlight components
+     *
+     * @param highLightStyle the style to highlight components
+     */
+    public void setHighLightStyle(Style highLightStyle) {
+<span class="nc" id="L784">        this.highLightStyle = highLightStyle;</span>
+<span class="nc" id="L785">    }</span>
+
+    /**
+     * @return the actual highlighted style
+     */
+    public Style getHighLightStyle() {
+<span class="nc" id="L791">        return highLightStyle;</span>
+    }
+
+    /**
+     * Adds the given element to insert to the circuit
+     *
+     * @param element the element to insert
+     */
+    public void setPartToInsert(VisualElement element) {
+<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (element.equalsDescription(Tunnel.DESCRIPTION)) {</span>
+<span class="nc bnc" id="L801" title="All 2 branches missed.">            if (lastUsedTunnelName != null) {</span>
+<span class="nc" id="L802">                CopiedElementLabelRenamer.LabelInstance li =</span>
+                        CopiedElementLabelRenamer.LabelInstance.
+<span class="nc" id="L804">                                create(Tunnel.DESCRIPTION.getName(), lastUsedTunnelName);</span>
+<span class="nc bnc" id="L805" title="All 2 branches missed.">                if (li != null) {</span>
+<span class="nc" id="L806">                    lastUsedTunnelName = li.getLabel(1);</span>
+                }
+<span class="nc" id="L808">                element.setAttribute(Keys.NETNAME, lastUsedTunnelName);</span>
+            }
+        }
+
+<span class="nc" id="L812">        parent.ensureModelIsStopped();</span>
+<span class="nc" id="L813">        mouseInsertElement.activate(element);</span>
+<span class="nc" id="L814">        Point point = MouseInfo.getPointerInfo().getLocation();</span>
+<span class="nc" id="L815">        SwingUtilities.convertPointFromScreen(point, this);</span>
+<span class="nc bnc" id="L816" title="All 6 branches missed.">        if (point.x &lt; MOUSE_BORDER_LARGE || point.x &gt; getWidth() - MOUSE_BORDER_SMALL</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">                || point.y &lt; MOUSE_BORDER_LARGE || point.y &gt; getHeight() - MOUSE_BORDER_SMALL) {</span>
+
+<span class="nc bnc" id="L819" title="All 2 branches missed.">            if (point.x &lt; MOUSE_BORDER_LARGE)</span>
+<span class="nc" id="L820">                point.x = MOUSE_BORDER_LARGE;</span>
+<span class="nc bnc" id="L821" title="All 2 branches missed.">            else if (point.x &gt; getWidth() - MOUSE_BORDER_SMALL)</span>
+<span class="nc" id="L822">                point.x = getWidth() - MOUSE_BORDER_SMALL;</span>
+
+<span class="nc bnc" id="L824" title="All 2 branches missed.">            if (point.y &lt; MOUSE_BORDER_LARGE)</span>
+<span class="nc" id="L825">                point.y = MOUSE_BORDER_LARGE;</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">            else if (point.y &gt; getHeight() - MOUSE_BORDER_SMALL)</span>
+<span class="nc" id="L827">                point.y = getHeight() - MOUSE_BORDER_SMALL;</span>
+
+        }
+<span class="nc" id="L830">        mouseInsertElement.updateMousePos(getPosVector(point.x, point.y));</span>
+<span class="nc" id="L831">        graphicHasChanged();</span>
+<span class="nc" id="L832">        requestFocus();</span>
+<span class="nc" id="L833">    }</span>
+
+    /**
+     * Adds the given list of elements to insert to the circuit
+     *
+     * @param elements the list of elements to insert
+     * @param pos      inserting position, maybe null
+     */
+    public void setPartsToInsert(ArrayList&lt;Movable&gt; elements, Vector pos) {
+<span class="nc" id="L842">        removeHighLighted();</span>
+<span class="nc" id="L843">        parent.ensureModelIsStopped();</span>
+<span class="nc bnc" id="L844" title="All 2 branches missed.">        if (pos == null) {</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">            if (lastMousePos != null)</span>
+<span class="nc" id="L846">                pos = getPosVector(lastMousePos.x, lastMousePos.y);</span>
+            else
+<span class="nc" id="L848">                pos = getPosVector(0, 0);</span>
+        }
+<span class="nc" id="L850">        elements = new CopiedElementLabelRenamer(getCircuit(), elements).rename();</span>
+<span class="nc" id="L851">        mouseInsertList.activate(elements, pos);</span>
+<span class="nc" id="L852">        graphicHasChanged();</span>
+<span class="nc" id="L853">    }</span>
+
+
+    private BufferedImage buffer;
+
+    @Override
+    protected void paintComponent(Graphics g) {
+<span class="nc" id="L860">        super.paintComponent(g);</span>
+
+<span class="nc bnc" id="L862" title="All 2 branches missed.">        boolean newBufferRequired = buffer == null</span>
+<span class="nc bnc" id="L863" title="All 2 branches missed.">                || getWidth() != buffer.getWidth()</span>
+<span class="nc bnc" id="L864" title="All 2 branches missed.">                || getHeight() != buffer.getHeight();</span>
+
+<span class="nc bnc" id="L866" title="All 4 branches missed.">        if (newBufferRequired &amp;&amp; !isManualScale)</span>
+<span class="nc" id="L867">            fitCircuit();</span>
+
+<span class="nc" id="L869">        final double scaleX = transform.getScaleX();</span>
+<span class="nc bnc" id="L870" title="All 4 branches missed.">        if (graphicHasChangedFlag || newBufferRequired) {</span>
+
+<span class="nc bnc" id="L872" title="All 2 branches missed.">            if (newBufferRequired)</span>
+<span class="nc" id="L873">                buffer = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(getWidth(), getHeight());</span>
+
+<span class="nc" id="L875">            Graphics2D gr2 = buffer.createGraphics();</span>
+
+<span class="nc" id="L877">            GraphicSwing gr = new GraphicSwing(gr2, (int) (2 / scaleX));</span>
+<span class="nc" id="L878">            gr.enableAntiAlias(antiAlias);</span>
+
+<span class="nc" id="L880">            gr2.setColor(ColorScheme.getSelected().getColor(ColorKey.BACKGROUND));</span>
+<span class="nc" id="L881">            gr2.fillRect(0, 0, getWidth(), getHeight());</span>
+
+<span class="nc bnc" id="L883" title="All 4 branches missed.">            if (scaleX &gt; 0.3 &amp;&amp; Settings.getInstance().get(Keys.SETTINGS_GRID))</span>
+<span class="nc" id="L884">                drawGrid(gr2);</span>
+
+<span class="nc" id="L886">            gr2.transform(transform);</span>
+
+<span class="nc" id="L888">            long time = System.currentTimeMillis();</span>
+<span class="nc" id="L889">            getCircuitOrShallowCopy().drawTo(gr, highLighted, highLightStyle, modelSync);</span>
+<span class="nc" id="L890">            time = System.currentTimeMillis() - time;</span>
+
+<span class="nc bnc" id="L892" title="All 2 branches missed.">            boolean scaleHasChanged = lastScaleX != scaleX;</span>
+<span class="nc bnc" id="L893" title="All 4 branches missed.">            if (time &gt; 500 &amp;&amp; !scaleHasChanged) antiAlias = false;</span>
+<span class="nc bnc" id="L894" title="All 2 branches missed.">            if (time &lt; 50) antiAlias = true;</span>
+
+            //System.out.println(&quot;repaint: &quot; + time + &quot;ms, &quot;+scaleHasChanged);
+
+<span class="nc" id="L898">            graphicHasChangedFlag = false;</span>
+        }
+
+<span class="nc" id="L901">        g.drawImage(buffer, 0, 0, null);</span>
+
+<span class="nc" id="L903">        Graphics2D gr2 = (Graphics2D) g;</span>
+<span class="nc" id="L904">        AffineTransform oldTrans = gr2.getTransform();</span>
+<span class="nc" id="L905">        gr2.transform(transform);</span>
+<span class="nc" id="L906">        GraphicSwing gr = new GraphicSwing(gr2, (int) (2 / scaleX));</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">        gr.enableAntiAlias(activeMouseController.drawables() &lt; 200);</span>
+<span class="nc" id="L908">        activeMouseController.drawTo(gr);</span>
+<span class="nc" id="L909">        gr2.setTransform(oldTrans);</span>
+
+<span class="nc" id="L911">        lastScaleX = scaleX;</span>
+<span class="nc" id="L912">    }</span>
+
+    private void drawGrid(Graphics2D gr2) {
+<span class="nc" id="L915">        Vector g1 = raster(getPosVector(0, 0));</span>
+<span class="nc" id="L916">        Point2D p1 = new Point2D.Double();</span>
+<span class="nc" id="L917">        transform.transform(new Point(g1.x, g1.y), p1);</span>
+
+<span class="nc" id="L919">        Vector g2 = raster(getPosVector(getWidth(), getHeight()));</span>
+<span class="nc" id="L920">        Point2D p2 = new Point2D.Double();</span>
+<span class="nc" id="L921">        transform.transform(new Point(g2.x, g2.y), p2);</span>
+
+<span class="nc" id="L923">        int cx = (g2.x - g1.x) / SIZE;</span>
+<span class="nc" id="L924">        int cy = (g2.y - g1.y) / SIZE;</span>
+
+<span class="nc bnc" id="L926" title="All 4 branches missed.">        if (cx == 0 || cy == 0) return;</span>
+
+<span class="nc" id="L928">        float screenScaling = Screen.getInstance().getScaling();</span>
+<span class="nc" id="L929">        double delta = transform.getScaleX() * 2 * screenScaling;</span>
+<span class="nc" id="L930">        double min = 2 * screenScaling;</span>
+<span class="nc bnc" id="L931" title="All 2 branches missed.">        if (delta &lt; min) delta = min;</span>
+<span class="nc" id="L932">        double max = 8 * screenScaling;</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">        if (delta &gt; max) delta = max;</span>
+<span class="nc" id="L934">        double sub = delta / 2.0;</span>
+
+<span class="nc" id="L936">        gr2.setColor(ColorScheme.getSelected().getColor(ColorKey.GRID));</span>
+<span class="nc bnc" id="L937" title="All 2 branches missed.">        for (int x = 0; x &lt;= cx; x++) {</span>
+<span class="nc" id="L938">            double xx = p1.getX() + (p2.getX() - p1.getX()) * x / cx - sub;</span>
+<span class="nc bnc" id="L939" title="All 2 branches missed.">            for (int y = 0; y &lt;= cy; y++) {</span>
+<span class="nc" id="L940">                double yy = p1.getY() + (p2.getY() - p1.getY()) * y / cy - sub;</span>
+<span class="nc" id="L941">                gr2.fill(new Rectangle2D.Double(xx, yy, delta, delta));</span>
+            }
+        }
+
+<span class="nc bnc" id="L945" title="All 2 branches missed.">        if (getCircuit().getAttributes().get(Keys.IS_GENERIC)) {</span>
+<span class="nc" id="L946">            double dx = (p2.getX() - p1.getX()) / cx / 2;</span>
+<span class="nc" id="L947">            double dy = (p2.getY() - p1.getY()) / cy / 2;</span>
+
+<span class="nc" id="L949">            Point2D.Double origin = new Point2D.Double();</span>
+<span class="nc" id="L950">            transform.transform(new Point(0, 0), origin);</span>
+<span class="nc" id="L951">            gr2.drawOval((int) (origin.getX() - dy), (int) (origin.getY() - dy), (int) (dx * 2), (int) (dy * 2));</span>
+        }
+<span class="nc" id="L953">    }</span>
+
+    /**
+     * Transforms a circuit coordinate to a screen coordinate relative to this component.
+     *
+     * @param pos the circuit position
+     * @return the screen coordinate relative to this component
+     */
+    public Point transform(Vector pos) {
+<span class="nc" id="L962">        Point p = new Point();</span>
+<span class="nc" id="L963">        transform.transform(new Point(pos.x, pos.y), p);</span>
+<span class="nc" id="L964">        return p;</span>
+    }
+
+    @Override
+    public void hasChanged() {
+<span class="nc" id="L969">        graphicHasChanged();</span>
+<span class="nc" id="L970">        enableUndoRedo();</span>
+<span class="nc" id="L971">    }</span>
+
+    private Vector getPosVector(MouseEvent e) {
+<span class="nc" id="L974">        return getPosVector(e.getX(), e.getY());</span>
+    }
+
+    private Vector getPosVector(int x, int y) {
+        try {
+<span class="nc" id="L979">            Point2D.Float p = new Point2D.Float();</span>
+<span class="nc" id="L980">            transform.inverseTransform(new Point(x, y), p);</span>
+<span class="nc" id="L981">            return new Vector((int) Math.round(p.getX()), (int) Math.round(p.getY()));</span>
+<span class="nc" id="L982">        } catch (NoninvertibleTransformException e1) {</span>
+<span class="nc" id="L983">            throw new RuntimeException(e1);</span>
+        }
+    }
+
+    /**
+     * rounds the given vector to the raster
+     *
+     * @param pos the vector
+     * @return pos round to raster
+     */
+    public static Vector raster(Vector pos) {
+<span class="fc" id="L994">        return new Vector((int) Math.round((double) pos.x / SIZE) * SIZE,</span>
+<span class="fc" id="L995">                (int) Math.round((double) pos.y / SIZE) * SIZE);</span>
+    }
+
+    /**
+     * @return the circuit used
+     */
+    public Circuit getCircuit() {
+<span class="nc" id="L1002">        return undoManager.getActual();</span>
+    }
+
+    /**
+     * Returns the used circuit or the shallow copy if available
+     *
+     * @return the circuit shown
+     */
+    public Circuit getCircuitOrShallowCopy() {
+<span class="nc bnc" id="L1011" title="All 2 branches missed.">        if (shallowCopy != null)</span>
+<span class="nc" id="L1012">            return shallowCopy;</span>
+        else
+<span class="nc" id="L1014">            return undoManager.getActual();</span>
+    }
+
+    /**
+     * Sets a circuit to this component
+     *
+     * @param circuit the circuit
+     */
+    public void setCircuit(Circuit circuit) {
+<span class="nc" id="L1023">        undoManager.setInitial(circuit);</span>
+<span class="nc" id="L1024">        undoAction.setEnabled(false);</span>
+<span class="nc" id="L1025">        redoAction.setEnabled(false);</span>
+
+<span class="nc" id="L1027">        toolTipNetList = null;</span>
+
+<span class="nc bnc" id="L1029" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1030">            circuitScrollPanel.sizeChanged();</span>
+<span class="nc" id="L1031">        fitCircuit();</span>
+<span class="nc" id="L1032">        setModeAndReset(false, SyncAccess.NOSYNC);</span>
+<span class="nc" id="L1033">    }</span>
+
+    /**
+     * maximizes the circuit shown
+     */
+    public void fitCircuit() {
+<span class="nc" id="L1039">        GraphicMinMax gr = new GraphicMinMax();</span>
+<span class="nc" id="L1040">        getCircuitOrShallowCopy().drawTo(gr);</span>
+
+<span class="nc" id="L1042">        AffineTransform newTrans = new AffineTransform();</span>
+<span class="nc bnc" id="L1043" title="All 6 branches missed.">        if (gr.getMin() != null &amp;&amp; getWidth() != 0 &amp;&amp; getHeight() != 0) {</span>
+<span class="nc" id="L1044">            Vector delta = gr.getMax().sub(gr.getMin());</span>
+<span class="nc" id="L1045">            int pad = circuitScrollPanel.getBarWidth();</span>
+<span class="nc" id="L1046">            double sx = ((double) getWidth() - pad) / (delta.x + SIZE * 2);</span>
+<span class="nc" id="L1047">            double sy = ((double) getHeight() - pad) / (delta.y + SIZE * 2);</span>
+<span class="nc" id="L1048">            double s = Math.min(sx, sy);</span>
+
+
+<span class="nc" id="L1051">            newTrans.setToScale(s, s);  // set Scaling</span>
+
+<span class="nc" id="L1053">            Vector center = gr.getMin().add(gr.getMax()).div(2);</span>
+<span class="nc" id="L1054">            newTrans.translate(-center.x, -center.y);  // move drawing center to (0,0)</span>
+
+<span class="nc" id="L1056">            Vector dif = new Vector(getWidth(), getHeight()).div(2);</span>
+<span class="nc" id="L1057">            newTrans.translate(dif.x / s, dif.y / s);  // move drawing center to frame center</span>
+<span class="nc" id="L1058">            isManualScale = false;</span>
+<span class="nc" id="L1059">        } else {</span>
+<span class="nc" id="L1060">            isManualScale = true;</span>
+        }
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">        if (!newTrans.equals(transform)) {</span>
+<span class="nc" id="L1063">            transform = newTrans;</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">            if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1065">                circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1066">            graphicHasChanged();</span>
+        }
+<span class="nc" id="L1068">    }</span>
+
+    /**
+     * scales the circuit
+     *
+     * @param f factor to scale
+     */
+    public void scaleCircuit(double f) {
+<span class="nc" id="L1076">        Vector dif = getPosVector(getWidth() / 2, getHeight() / 2);</span>
+<span class="nc" id="L1077">        transform.translate(dif.x, dif.y);</span>
+<span class="nc" id="L1078">        transform.scale(f, f);</span>
+<span class="nc" id="L1079">        transform.translate(-dif.x, -dif.y);</span>
+<span class="nc" id="L1080">        isManualScale = true;</span>
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1082">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1083">        graphicHasChanged();</span>
+<span class="nc" id="L1084">    }</span>
+
+    /**
+     * sets the scale of the circuit
+     *
+     * @param f factor to scale
+     */
+    public void setScale(float f) {
+<span class="nc" id="L1092">        Vector origin = getPosVector(getWidth() / 2, getHeight() / 2);</span>
+<span class="nc" id="L1093">        transform.setToScale(f, f);</span>
+<span class="nc" id="L1094">        VectorInterface tr = new Vector(getWidth() / 2, getHeight() / 2).mul(1 / f).sub(origin);</span>
+<span class="nc" id="L1095">        transform.translate(tr.getXFloat(), tr.getYFloat());</span>
+
+<span class="nc" id="L1097">        isManualScale = true;</span>
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1099">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1100">        graphicHasChanged();</span>
+<span class="nc" id="L1101">    }</span>
+
+    /**
+     * Translates the circuit.
+     *
+     * @param dx x movement
+     * @param dy y movement
+     */
+    public void translateCircuit(int dx, int dy) {
+<span class="nc" id="L1110">        transform.translate(dx, dy);</span>
+<span class="nc" id="L1111">        isManualScale = true;</span>
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1113">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1114">        graphicHasChanged();</span>
+<span class="nc" id="L1115">    }</span>
+
+    /**
+     * Translates the circuit.
+     *
+     * @param x x position
+     */
+    void translateCircuitToX(double x) {
+<span class="nc" id="L1123">        double[] matrix = new double[6];</span>
+<span class="nc" id="L1124">        transform.getMatrix(matrix);</span>
+<span class="nc" id="L1125">        matrix[4] = x;</span>
+<span class="nc" id="L1126">        transform = new AffineTransform(matrix);</span>
+<span class="nc" id="L1127">        isManualScale = true;</span>
+<span class="nc bnc" id="L1128" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1129">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1130">        graphicHasChanged();</span>
+<span class="nc" id="L1131">    }</span>
+
+    /**
+     * Translates the circuit.
+     *
+     * @param y y position
+     */
+    void translateCircuitToY(double y) {
+<span class="nc" id="L1139">        double[] matrix = new double[6];</span>
+<span class="nc" id="L1140">        transform.getMatrix(matrix);</span>
+<span class="nc" id="L1141">        matrix[5] = y;</span>
+<span class="nc" id="L1142">        transform = new AffineTransform(matrix);</span>
+<span class="nc" id="L1143">        isManualScale = true;</span>
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1145">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1146">        graphicHasChanged();</span>
+<span class="nc" id="L1147">    }</span>
+
+    private void editAttributes(VisualElement element, MouseEvent e) {
+        try {
+<span class="nc" id="L1151">            ArrayList&lt;Key&gt; list = getAttributeList(element);</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">            if (list.size() &gt; 0) {</span>
+<span class="nc" id="L1153">                ElementTypeDescription elementType = library.getElementType(element.getElementName());</span>
+
+<span class="nc bnc" id="L1155" title="All 2 branches missed.">                if (elementType instanceof ElementTypeDescriptionCustom) {</span>
+<span class="nc" id="L1156">                    ElementTypeDescriptionCustom customDescr = (ElementTypeDescriptionCustom) elementType;</span>
+<span class="nc bnc" id="L1157" title="All 2 branches missed.">                    if (customDescr.isGeneric()) {</span>
+<span class="nc bnc" id="L1158" title="All 2 branches missed.">                        if (element.getElementAttributes().get(Keys.GENERIC).isEmpty()) {</span>
+                            try {
+<span class="nc" id="L1160">                                element.getElementAttributes().set(Keys.GENERIC, customDescr.getDeclarationDefault());</span>
+<span class="nc" id="L1161">                            } catch (NodeException ex) {</span>
+<span class="nc" id="L1162">                                new ErrorMessage(Lang.get(&quot;msg_errParsingGenerics&quot;)).addCause(ex).show(CircuitComponent.this);</span>
+<span class="nc" id="L1163">                            }</span>
+                        }
+                    }
+                }
+
+<span class="nc bnc" id="L1168" title="All 2 branches missed.">                if (getCircuit().getAttributes().get(Keys.IS_GENERIC)) {</span>
+<span class="nc bnc" id="L1169" title="All 4 branches missed.">                    if (elementType == GenericInitCode.DESCRIPTION || elementType == TestCaseElement.DESCRIPTION) {</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">                        if (element.getElementAttributes().get(Keys.GENERIC).isEmpty()) {</span>
+                            try {
+<span class="nc" id="L1172">                                element.getElementAttributes().set(Keys.GENERIC, ElementTypeDescriptionCustom.createDeclarationDefault(getCircuit()));</span>
+<span class="nc" id="L1173">                            } catch (NodeException ex) {</span>
+<span class="nc" id="L1174">                                new ErrorMessage(Lang.get(&quot;msg_errParsingGenerics&quot;)).addCause(ex).show(CircuitComponent.this);</span>
+<span class="nc" id="L1175">                            }</span>
+                        }
+                    }
+                }
+
+<span class="nc" id="L1180">                Point p = new Point(e.getX(), e.getY());</span>
+<span class="nc" id="L1181">                SwingUtilities.convertPointToScreen(p, CircuitComponent.this);</span>
+<span class="nc" id="L1182">                AttributeDialog attributeDialog = new AttributeDialog(parent, p, list, element.getElementAttributes())</span>
+<span class="nc" id="L1183">                        .setDialogTitle(elementType.getTranslatedName())</span>
+<span class="nc" id="L1184">                        .setVisualElement(element);</span>
+<span class="nc bnc" id="L1185" title="All 2 branches missed.">                if (elementType instanceof ElementTypeDescriptionCustom) {</span>
+<span class="nc" id="L1186">                    attributeDialog.addButton(Lang.get(&quot;attr_openCircuitLabel&quot;), new ToolTipAction(Lang.get(&quot;attr_openCircuit&quot;)) {</span>
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1189">                            attributeDialog.dispose();</span>
+<span class="nc" id="L1190">                            new Main.MainBuilder()</span>
+<span class="nc" id="L1191">                                    .setParent(parent)</span>
+<span class="nc" id="L1192">                                    .setFileToOpen(((ElementTypeDescriptionCustom) elementType).getFile())</span>
+<span class="nc" id="L1193">                                    .setLibrary(library)</span>
+<span class="nc" id="L1194">                                    .denyMostFileActions()</span>
+<span class="nc" id="L1195">                                    .keepPrefMainFile()</span>
+<span class="nc" id="L1196">                                    .openLater();</span>
+<span class="nc" id="L1197">                        }</span>
+<span class="nc" id="L1198">                    }.setToolTip(Lang.get(&quot;attr_openCircuit_tt&quot;)));</span>
+                }
+<span class="nc bnc" id="L1200" title="All 6 branches missed.">                if ((elementType == GenericInitCode.DESCRIPTION || elementType == GenericCode.DESCRIPTION) &amp;&amp; getCircuit().getAttributes().get(Keys.IS_GENERIC)) {</span>
+<span class="nc" id="L1201">                    attributeDialog.addButton(Lang.get(&quot;attr_createConcreteCircuitLabel&quot;), new ToolTipAction(Lang.get(&quot;attr_createConcreteCircuit&quot;)) {</span>
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            try {
+<span class="nc" id="L1205">                                attributeDialog.fireOk();</span>
+<span class="nc" id="L1206">                                ElementAttributes modified = attributeDialog.getModifiedAttributes();</span>
+<span class="nc bnc" id="L1207" title="All 6 branches missed.">                                if (modified != null &amp;&amp; !isLocked() &amp;&amp; !modified.equals(element.getElementAttributes())) {</span>
+<span class="nc" id="L1208">                                    Modification&lt;Circuit&gt; mod = new ModifyAttributes(element, modified);</span>
+<span class="nc" id="L1209">                                    modify(checkNetRename(element, modified, mod));</span>
+                                }
+
+<span class="nc" id="L1212">                                ElementAttributes attr = null;</span>
+<span class="nc bnc" id="L1213" title="All 2 branches missed.">                                if (elementType == GenericInitCode.DESCRIPTION)</span>
+<span class="nc" id="L1214">                                    attr = element.getElementAttributes();</span>
+
+<span class="nc" id="L1216">                                Circuit concreteCircuit = new ResolveGenerics(getCircuit(), library)</span>
+<span class="nc" id="L1217">                                        .resolveCircuit(attr)</span>
+<span class="nc" id="L1218">                                        .cleanupConcreteCircuit()</span>
+<span class="nc" id="L1219">                                        .getCircuit();</span>
+
+<span class="nc" id="L1221">                                new Main.MainBuilder()</span>
+<span class="nc" id="L1222">                                        .setParent(parent)</span>
+<span class="nc" id="L1223">                                        .setCircuit(concreteCircuit)</span>
+<span class="nc" id="L1224">                                        .setLibrary(library)</span>
+<span class="nc" id="L1225">                                        .denyMostFileActions()</span>
+<span class="nc" id="L1226">                                        .keepPrefMainFile()</span>
+<span class="nc" id="L1227">                                        .openLater();</span>
+<span class="nc" id="L1228">                            } catch (NodeException | ElementNotFoundException | Editor.EditorParseException ex) {</span>
+<span class="nc" id="L1229">                                new ErrorMessage(Lang.get(&quot;attr_createConcreteCircuitErr&quot;)).addCause(ex).show(parent);</span>
+<span class="nc" id="L1230">                            }</span>
+<span class="nc" id="L1231">                        }</span>
+<span class="nc" id="L1232">                    }.setToolTip(Lang.get(&quot;attr_createConcreteCircuit_tt&quot;)));</span>
+                }
+<span class="nc" id="L1234">                attributeDialog.addButton(new ToolTipAction(Lang.get(&quot;attr_help&quot;)) {</span>
+                    @Override
+                    public void actionPerformed(ActionEvent actionEvent) {
+                        try {
+<span class="nc" id="L1238">                            attributeDialog.dispose();</span>
+<span class="nc" id="L1239">                            new ElementHelpDialog(</span>
+<span class="nc" id="L1240">                                    attributeDialog.getDialogParent(),</span>
+                                    elementType,
+<span class="nc" id="L1242">                                    element.getElementAttributes(),</span>
+<span class="nc" id="L1243">                                    getCircuit().getAttributes().get(Keys.IS_GENERIC)).setVisible(true);</span>
+<span class="nc" id="L1244">                        } catch (PinException | NodeException e1) {</span>
+<span class="nc" id="L1245">                            new ErrorMessage(Lang.get(&quot;msg_creatingHelp&quot;)).addCause(e1).show(CircuitComponent.this);</span>
+<span class="nc" id="L1246">                        }</span>
+<span class="nc" id="L1247">                    }</span>
+<span class="nc" id="L1248">                }.setToolTip(Lang.get(&quot;attr_help_tt&quot;)));</span>
+
+<span class="nc" id="L1250">                boolean locked = isLocked();</span>
+<span class="nc bnc" id="L1251" title="All 2 branches missed.">                if (isLocked())</span>
+<span class="nc" id="L1252">                    attributeDialog.disableOk();</span>
+
+<span class="nc" id="L1254">                ElementAttributes modified = attributeDialog.showDialog();</span>
+<span class="nc bnc" id="L1255" title="All 2 branches missed.">                if (elementType == Tunnel.DESCRIPTION) {</span>
+<span class="nc bnc" id="L1256" title="All 4 branches missed.">                    if (modified != null &amp;&amp; modified.contains(Keys.NETNAME))</span>
+<span class="nc" id="L1257">                        lastUsedTunnelName = modified.get(Keys.NETNAME);</span>
+                }
+<span class="nc bnc" id="L1259" title="All 4 branches missed.">                if (modified != null &amp;&amp; !locked) {</span>
+<span class="nc" id="L1260">                    Modification&lt;Circuit&gt; mod = new ModifyAttributes(element, modified);</span>
+<span class="nc" id="L1261">                    modify(checkNetRename(element, modified, mod));</span>
+                }
+            }
+<span class="nc" id="L1264">        } catch (ElementNotFoundException ex) {</span>
+            // do nothing if element not found!
+<span class="nc" id="L1266">        }</span>
+<span class="nc" id="L1267">    }</span>
+
+    private Modification&lt;Circuit&gt; checkNetRename(VisualElement element, ElementAttributes modified, Modification&lt;Circuit&gt; mod) {
+<span class="nc" id="L1270">        String oldName = element.getElementAttributes().get(Keys.NETNAME);</span>
+<span class="nc bnc" id="L1271" title="All 2 branches missed.">        if (element.equalsDescription(Tunnel.DESCRIPTION)</span>
+<span class="nc bnc" id="L1272" title="All 2 branches missed.">                &amp;&amp; modified.contains(Keys.NETNAME)</span>
+<span class="nc bnc" id="L1273" title="All 2 branches missed.">                &amp;&amp; !modified.get(Keys.NETNAME).equals(oldName)</span>
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">                &amp;&amp; !oldName.isEmpty()) {</span>
+
+<span class="nc bnc" id="L1276" title="All 2 branches missed.">            List&lt;VisualElement&gt; others = getCircuit().getElements(el -&gt; el != element</span>
+<span class="nc bnc" id="L1277" title="All 2 branches missed.">                    &amp;&amp; el.equalsDescription(Tunnel.DESCRIPTION)</span>
+<span class="nc bnc" id="L1278" title="All 2 branches missed.">                    &amp;&amp; el.getElementAttributes().get(Keys.NETNAME).equals(oldName));</span>
+
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">            if (others.size() &gt; 0) {</span>
+<span class="nc" id="L1281">                String newName = modified.get(Keys.NETNAME);</span>
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">                if (Settings.getInstance().get(Keys.SETTINGS_SHOW_TUNNEL_RENAME_DIALOG)) {</span>
+<span class="nc" id="L1283">                    int res = JOptionPane.showConfirmDialog(this,</span>
+<span class="nc" id="L1284">                            new LineBreaker().toHTML().preserveContainedLineBreaks().breakLines(Lang.get(&quot;msg_renameNet_N_OLD_NEW&quot;, others.size(), oldName, newName)),</span>
+<span class="nc" id="L1285">                            Lang.get(&quot;msg_renameNet&quot;),</span>
+                            JOptionPane.YES_NO_OPTION);
+<span class="nc bnc" id="L1287" title="All 2 branches missed.">                    if (res == JOptionPane.YES_OPTION) {</span>
+<span class="nc" id="L1288">                        Modifications.Builder&lt;Circuit&gt; b =</span>
+<span class="nc" id="L1289">                                new Modifications.Builder&lt;Circuit&gt;(Lang.get(&quot;msg_renameNet&quot;)).add(mod);</span>
+<span class="nc bnc" id="L1290" title="All 2 branches missed.">                        for (VisualElement o : others)</span>
+<span class="nc" id="L1291">                            b.add(new ModifyAttribute&lt;&gt;(o, Keys.NETNAME, newName));</span>
+<span class="nc" id="L1292">                        return b.build();</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L1297">        return mod;</span>
+    }
+
+    @Override
+    public void libraryChanged(LibraryNode node) {
+<span class="nc" id="L1302">        getCircuit().clearState();</span>
+<span class="nc" id="L1303">        graphicHasChangedFlag = true;</span>
+<span class="nc" id="L1304">        repaint();</span>
+<span class="nc" id="L1305">    }</span>
+
+    /**
+     * @return returns true if this circuit is locked
+     */
+    public boolean isLocked() {
+<span class="nc" id="L1311">        final boolean locked = getCircuit().getAttributes().get(Keys.LOCKED_MODE);</span>
+<span class="nc bnc" id="L1312" title="All 4 branches missed.">        if (locked &amp;&amp; !lockMessageShown) {</span>
+<span class="nc" id="L1313">            String message = Lang.get(&quot;msg_isLocked&quot;,</span>
+<span class="nc" id="L1314">                    Lang.get(&quot;menu_edit&quot;),</span>
+<span class="nc" id="L1315">                    Lang.get(&quot;menu_editAttributes&quot;),</span>
+<span class="nc" id="L1316">                    Lang.get(&quot;key_lockedMode&quot;));</span>
+<span class="nc" id="L1317">            SwingUtilities.invokeLater(new ErrorMessage(message).setComponent(this));</span>
+<span class="nc" id="L1318">            lockMessageShown = true;</span>
+        }
+<span class="nc" id="L1320">        return locked;</span>
+    }
+
+    /**
+     * @return undo action
+     */
+    public ToolTipAction getUndoAction() {
+<span class="nc" id="L1327">        return undoAction;</span>
+    }
+
+    /**
+     * @return redo action
+     */
+    public ToolTipAction getRedoAction() {
+<span class="nc" id="L1334">        return redoAction;</span>
+    }
+
+    /**
+     * Makes current input values to the default values
+     */
+    public void currentToDefault() {
+<span class="nc bnc" id="L1341" title="All 2 branches missed.">        if (!isLocked()) {</span>
+<span class="nc" id="L1342">            Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_actualToDefault&quot;));</span>
+
+<span class="nc" id="L1344">            Circuit circuit = getCircuitOrShallowCopy();</span>
+<span class="nc bnc" id="L1345" title="All 2 branches missed.">            for (VisualElement ve : circuit.getElements())</span>
+<span class="nc bnc" id="L1346" title="All 2 branches missed.">                if (ve.equalsDescription(In.DESCRIPTION)) {</span>
+<span class="nc" id="L1347">                    ObservableValue ov = ((InputShape) ve.getShape()).getObservableValue();</span>
+<span class="nc bnc" id="L1348" title="All 2 branches missed.">                    if (ov != null) {</span>
+<span class="nc" id="L1349">                        InValue newValue = new InValue(ov);</span>
+<span class="nc" id="L1350">                        InValue oldValue = ve.getElementAttributes().get(Keys.INPUT_DEFAULT);</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">                        if (!newValue.equals(oldValue))</span>
+<span class="nc" id="L1352">                            builder.add(new ModifyAttribute&lt;&gt;(ve, Keys.INPUT_DEFAULT, newValue));</span>
+                    }
+                }
+<span class="nc" id="L1355">            modify(builder.build());</span>
+        }
+<span class="nc" id="L1357">    }</span>
+
+    /**
+     * All fuses (diodes) are restored to &quot;not programed&quot; so that they are working again.
+     */
+    public void restoreAllFuses() {
+<span class="nc" id="L1363">        Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_restoreAllFuses&quot;));</span>
+<span class="nc bnc" id="L1364" title="All 2 branches missed.">        for (VisualElement ve : getCircuit().getElements())</span>
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">            if (library.isProgrammable(ve.getElementName())) {</span>
+<span class="nc bnc" id="L1366" title="All 2 branches missed.">                if (ve.getElementAttributes().get(Keys.BLOWN))</span>
+<span class="nc" id="L1367">                    builder.add(new ModifyAttribute&lt;&gt;(ve, Keys.BLOWN, false));</span>
+            }
+<span class="nc" id="L1369">        modify(builder.build());</span>
+<span class="nc" id="L1370">    }</span>
+
+    /**
+     * Label all inputs and outputs
+     */
+    public void labelPins() {
+<span class="nc" id="L1376">        LabelGenerator inGenerator = new LabelGenerator('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H');</span>
+<span class="nc" id="L1377">        LabelGenerator outGenerator = new LabelGenerator('Y', 'X', 'Z', 'U', 'V');</span>
+
+<span class="nc" id="L1379">        Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_labelPins&quot;));</span>
+<span class="nc bnc" id="L1380" title="All 2 branches missed.">        for (VisualElement ve : getCircuit().getElements()) {</span>
+<span class="nc bnc" id="L1381" title="All 4 branches missed.">            if (ve.equalsDescription(In.DESCRIPTION) &amp;&amp; ve.getElementAttributes().getLabel().length() == 0) {</span>
+<span class="nc" id="L1382">                builder.add(new ModifyAttribute&lt;&gt;(ve, Keys.LABEL, inGenerator.createLabel()));</span>
+<span class="nc bnc" id="L1383" title="All 4 branches missed.">            } else if (ve.equalsDescription(Out.DESCRIPTION) &amp;&amp; ve.getElementAttributes().getLabel().length() == 0) {</span>
+<span class="nc" id="L1384">                builder.add(new ModifyAttribute&lt;&gt;(ve, Keys.LABEL, outGenerator.createLabel()));</span>
+            }
+<span class="nc" id="L1386">        }</span>
+<span class="nc" id="L1387">        modify(builder.build());</span>
+<span class="nc" id="L1388">    }</span>
+
+    private VisualElement getActualVisualElement() {
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">        if (activeMouseController instanceof MouseControllerMoveElement)</span>
+<span class="nc" id="L1392">            mouseNormal.activate();</span>
+
+<span class="nc" id="L1394">        VisualElement ve = null;</span>
+<span class="nc bnc" id="L1395" title="All 2 branches missed.">        if (activeMouseController instanceof MouseControllerNormal) {</span>
+<span class="nc" id="L1396">            Vector pos = getPosVector(lastMousePos.x, lastMousePos.y);</span>
+<span class="nc" id="L1397">            ve = getCircuit().getElementAt(pos);</span>
+<span class="nc bnc" id="L1398" title="All 2 branches missed.">            if (ve == null)</span>
+<span class="nc" id="L1399">                ve = getCircuit().getElementAt(pos, true);</span>
+        }
+<span class="nc" id="L1401">        return ve;</span>
+    }
+
+    /**
+     * @return the used element library
+     */
+    public ElementLibrary getLibrary() {
+<span class="nc" id="L1408">        return library;</span>
+    }
+
+    private void editGroup(Vector min, Vector max) {
+<span class="nc bnc" id="L1412" title="All 2 branches missed.">        if (!isLocked())</span>
+            try {
+<span class="nc" id="L1414">                ArrayList&lt;Key&gt; keyList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1415">                ArrayList&lt;VisualElement&gt; elementList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1416">                HashMap&lt;Key, Boolean&gt; useKeyMap = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L1417">                ElementAttributes attr = new ElementAttributes();</span>
+<span class="nc bnc" id="L1418" title="All 2 branches missed.">                for (VisualElement ve : getCircuit().getElements())</span>
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">                    if (ve.matches(min, max)) {</span>
+<span class="nc" id="L1420">                        elementList.add(ve);</span>
+<span class="nc bnc" id="L1421" title="All 2 branches missed.">                        for (Key k : getAttributeList(ve)) {</span>
+<span class="nc bnc" id="L1422" title="All 2 branches missed.">                            if (k.isGroupEditAllowed()) {</span>
+<span class="nc bnc" id="L1423" title="All 2 branches missed.">                                if (keyList.contains(k)) {</span>
+<span class="nc bnc" id="L1424" title="All 2 branches missed.">                                    if (!ve.getElementAttributes().get(k).equals(attr.get(k))) {</span>
+<span class="nc" id="L1425">                                        useKeyMap.put(k, false);</span>
+                                    }
+                                } else {
+<span class="nc" id="L1428">                                    keyList.add(k);</span>
+<span class="nc" id="L1429">                                    attr.set(k, ve.getElementAttributes().get(k));</span>
+<span class="nc" id="L1430">                                    useKeyMap.put(k, true);</span>
+                                }
+                            }
+<span class="nc" id="L1433">                        }</span>
+                    }
+
+<span class="nc bnc" id="L1436" title="All 2 branches missed.">                if (keyList.size() &gt; 0) {</span>
+<span class="nc" id="L1437">                    AttributeDialog ad = new AttributeDialog(parent, null, keyList, attr, true);</span>
+<span class="nc bnc" id="L1438" title="All 2 branches missed.">                    for (Map.Entry&lt;Key, Boolean&gt; u : useKeyMap.entrySet())</span>
+<span class="nc" id="L1439">                        ad.getCheckBoxes().get(u.getKey()).setSelected(u.getValue());</span>
+<span class="nc" id="L1440">                    ElementAttributes mod = ad.showDialog();</span>
+<span class="nc bnc" id="L1441" title="All 2 branches missed.">                    if (ad.isOkPressed()) {</span>
+<span class="nc bnc" id="L1442" title="All 2 branches missed.">                        if (mod == null) mod = attr;</span>
+
+<span class="nc" id="L1444">                        Modifications.Builder&lt;Circuit&gt; modBuilder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;mod_groupEdit&quot;));</span>
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">                        for (Key key : keyList)</span>
+<span class="nc bnc" id="L1446" title="All 2 branches missed.">                            if (ad.getCheckBoxes().get(key).isSelected()) {</span>
+<span class="nc" id="L1447">                                Object newVal = mod.get(key);</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">                                for (VisualElement ve : elementList) {</span>
+<span class="nc bnc" id="L1449" title="All 2 branches missed.">                                    if (getAttributeList(ve).contains(key)) {</span>
+<span class="nc bnc" id="L1450" title="All 2 branches missed.">                                        if (!ve.getElementAttributes().get(key).equals(newVal))</span>
+<span class="nc" id="L1451">                                            modBuilder.add(new ModifyAttribute&lt;&gt;(ve, key, newVal));</span>
+                                    }
+<span class="nc" id="L1453">                                }</span>
+                            }
+<span class="nc" id="L1455">                        modify(modBuilder.build());</span>
+                    }
+                }
+
+<span class="nc" id="L1459">            } catch (ElementNotFoundException e) {</span>
+                // Do nothing if an element is not in the library
+<span class="nc" id="L1461">            }</span>
+<span class="nc" id="L1462">    }</span>
+
+    private ArrayList&lt;Key&gt; getAttributeList(VisualElement ve) throws ElementNotFoundException {
+<span class="nc" id="L1465">        ArrayList&lt;Key&gt; list = library.getElementType(ve.getElementName()).getAttributeList();</span>
+<span class="nc bnc" id="L1466" title="All 6 branches missed.">        if (getCircuit().getAttributes().get(Keys.IS_GENERIC) &amp;&amp; !(list.contains(Keys.GENERIC) || list.contains(Keys.GENERICLARGE))) {</span>
+<span class="nc" id="L1467">            list = new ArrayList&lt;&gt;(list);</span>
+<span class="nc" id="L1468">            list.add(Keys.GENERIC);</span>
+        }
+<span class="nc" id="L1470">        return list;</span>
+    }
+
+    /**
+     * @return true if circuit is modified
+     */
+    public boolean isModified() {
+<span class="nc" id="L1477">        return undoManager.isModified();</span>
+    }
+
+    /**
+     * Adds a listener to the circuit.
+     *
+     * @param listener the listener to add
+     */
+    public void addListener(ChangedListener listener) {
+<span class="nc" id="L1486">        undoManager.addListener(listener);</span>
+<span class="nc" id="L1487">    }</span>
+
+    /**
+     * @return true is component is in manual scale mode
+     */
+    boolean isManualScale() {
+<span class="nc" id="L1493">        return isManualScale;</span>
+    }
+
+    /**
+     * Sets a copy to use temporarily to draw the circuit.
+     * Used to visualize a created concrete circuit created from a generic one.
+     *
+     * @param circuit the circuit to use.
+     */
+    public void setCopy(Circuit circuit) {
+<span class="nc" id="L1503">        shallowCopy = circuit;</span>
+<span class="nc" id="L1504">    }</span>
+
+    private final class PlusMinusAction extends ToolTipAction {
+        private final int delta;
+
+<span class="nc" id="L1509">        private PlusMinusAction(int delta) {</span>
+<span class="nc" id="L1510">            super(&quot;plusMinus&quot;);</span>
+<span class="nc" id="L1511">            this.delta = delta;</span>
+<span class="nc" id="L1512">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L1516" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L1517">                VisualElement ve = getActualVisualElement();</span>
+<span class="nc bnc" id="L1518" title="All 2 branches missed.">                if (ve != null) {</span>
+                    try {
+<span class="nc bnc" id="L1520" title="All 2 branches missed.">                        if (library.getElementType(ve.getElementName()).hasAttribute(Keys.INPUT_COUNT)) {</span>
+<span class="nc" id="L1521">                            int number = ve.getElementAttributes().get(Keys.INPUT_COUNT) + delta;</span>
+<span class="nc bnc" id="L1522" title="All 4 branches missed.">                            if (number &gt;= Keys.INPUT_COUNT.getMin() &amp;&amp; number &lt;= Keys.INPUT_COUNT.getMax())</span>
+<span class="nc" id="L1523">                                modify(new ModifyAttribute&lt;&gt;(ve, Keys.INPUT_COUNT, number));</span>
+<span class="nc bnc" id="L1524" title="All 2 branches missed.">                        } else if (ve.equalsDescription(Const.DESCRIPTION)) {</span>
+<span class="nc" id="L1525">                            long v = ve.getElementAttributes().get(Keys.VALUE) + delta;</span>
+<span class="nc" id="L1526">                            v &amp;= Bits.mask(ve.getElementAttributes().getBits());</span>
+<span class="nc" id="L1527">                            modify(new ModifyAttribute&lt;&gt;(ve, Keys.VALUE, v));</span>
+                        }
+<span class="nc" id="L1529">                    } catch (ElementNotFoundException e1) {</span>
+                        // do nothing on error
+<span class="nc" id="L1531">                    }</span>
+                }
+            }
+<span class="nc" id="L1534">        }</span>
+    }
+
+<span class="nc" id="L1537">    private class MouseDispatcher extends MouseAdapter implements MouseMotionListener {</span>
+        private Vector pos;
+        private boolean isMoved;
+        private int statusX;
+        private int statusY;
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+<span class="nc bnc" id="L1545" title="All 4 branches missed.">            hadFocusAtClick = hasFocus() || parent.hasMouseFocus();</span>
+<span class="nc" id="L1546">            pos = new Vector(e.getX(), e.getY());</span>
+<span class="nc" id="L1547">            isMoved = false;</span>
+<span class="nc" id="L1548">            requestFocusInWindow();</span>
+<span class="nc" id="L1549">            activeMouseController.pressed(e);</span>
+<span class="nc" id="L1550">        }</span>
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+<span class="nc" id="L1554">            activeMouseController.released(e);</span>
+<span class="nc bnc" id="L1555" title="All 4 branches missed.">            if (!(wasMoved(e) || isMoved))</span>
+<span class="nc" id="L1556">                activeMouseController.clicked(e);</span>
+<span class="nc" id="L1557">        }</span>
+
+        private boolean wasMoved(MouseEvent e) {
+<span class="nc bnc" id="L1560" title="All 2 branches missed.">            if (pos == null) // seems to happen in very rare cases</span>
+<span class="nc" id="L1561">                return false;</span>
+<span class="nc" id="L1562">            Vector d = new Vector(e.getX(), e.getY()).sub(pos);</span>
+<span class="nc bnc" id="L1563" title="All 4 branches missed.">            return Math.abs(d.x) &gt; DRAG_DISTANCE || Math.abs(d.y) &gt; DRAG_DISTANCE;</span>
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+<span class="nc bnc" id="L1568" title="All 2 branches missed.">            if (toolTipHighlighted) {</span>
+<span class="nc" id="L1569">                removeHighLighted();</span>
+<span class="nc" id="L1570">                toolTipHighlighted = false;</span>
+            }
+<span class="nc" id="L1572">            lastMousePos = new Vector(e.getX(), e.getY());</span>
+
+<span class="nc bnc" id="L1574" title="All 2 branches missed.">            if (getCircuit().getAttributes().get(Keys.IS_GENERIC)) {</span>
+<span class="nc" id="L1575">                Vector p = getPosVector(e);</span>
+<span class="nc" id="L1576">                int x = Math.round(p.getXFloat() / SIZE);</span>
+<span class="nc" id="L1577">                int y = Math.round(p.getYFloat() / SIZE);</span>
+<span class="nc bnc" id="L1578" title="All 4 branches missed.">                if (x != statusX || y != statusY) {</span>
+<span class="nc" id="L1579">                    getMain().setStatus(&quot;pos: &quot; + x + &quot;, &quot; + y);</span>
+<span class="nc" id="L1580">                    statusX = x;</span>
+<span class="nc" id="L1581">                    statusY = y;</span>
+                }
+            }
+
+<span class="nc" id="L1585">            activeMouseController.moved(e);</span>
+<span class="nc" id="L1586">        }</span>
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+<span class="nc" id="L1590">            lastMousePos = new Vector(e.getX(), e.getY());</span>
+<span class="nc" id="L1591">            activeMouseController.moved(e);</span>
+<span class="nc" id="L1592">        }</span>
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+<span class="nc" id="L1596">            lastMousePos = new Vector(e.getX(), e.getY());</span>
+<span class="nc bnc" id="L1597" title="All 4 branches missed.">            if (wasMoved(e) || isMoved) {</span>
+<span class="nc" id="L1598">                isMoved = true;</span>
+<span class="nc bnc" id="L1599" title="All 2 branches missed.">                if (!activeMouseController.dragged(e)) {</span>
+                    // if active mouse controller does not handle the drag, move the circuit instead.
+<span class="nc" id="L1601">                    Vector newPos = new Vector(e.getX(), e.getY());</span>
+<span class="nc" id="L1602">                    Vector delta = newPos.sub(pos);</span>
+<span class="nc" id="L1603">                    double s = transform.getScaleX();</span>
+<span class="nc" id="L1604">                    transform.translate(delta.x / s, delta.y / s);</span>
+<span class="nc" id="L1605">                    isManualScale = true;</span>
+<span class="nc bnc" id="L1606" title="All 2 branches missed.">                    if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1607">                        circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1608">                    pos = newPos;</span>
+<span class="nc" id="L1609">                    graphicHasChanged();</span>
+                }
+            }
+<span class="nc" id="L1612">        }</span>
+    }
+
+    //MouseController can not be final because its overridden. Maybe checkstyle has a bug?
+    //CHECKSTYLE.OFF: FinalClass
+    private class MouseController {
+        private final Cursor mouseCursor;
+
+<span class="nc" id="L1620">        private MouseController(Cursor mouseCursor) {</span>
+<span class="nc" id="L1621">            this.mouseCursor = mouseCursor;</span>
+<span class="nc" id="L1622">        }</span>
+
+        void activate() {
+<span class="nc bnc" id="L1625" title="All 4 branches missed.">            if (activeMouseController != null &amp;&amp; activeMouseController != this)</span>
+<span class="nc" id="L1626">                activeMouseController.deactivate();</span>
+<span class="nc" id="L1627">            activeMouseController = this;</span>
+<span class="nc" id="L1628">            shallowCopy = null;</span>
+<span class="nc" id="L1629">            deleteAction.setEnabled(false);</span>
+<span class="nc" id="L1630">            copyAction.setEnabled(false);</span>
+<span class="nc" id="L1631">            cutAction.setEnabled(false);</span>
+<span class="nc" id="L1632">            rotateAction.setEnabled(false);</span>
+<span class="nc" id="L1633">            setCursor(mouseCursor);</span>
+<span class="nc" id="L1634">            graphicHasChanged();</span>
+<span class="nc" id="L1635">        }</span>
+
+        void deactivate() {
+<span class="nc" id="L1638">        }</span>
+
+        void clicked(MouseEvent e) {
+<span class="nc" id="L1641">        }</span>
+
+        void pressed(MouseEvent e) {
+<span class="nc" id="L1644">        }</span>
+
+        void released(MouseEvent e) {
+<span class="nc" id="L1647">        }</span>
+
+        void moved(MouseEvent e) {
+<span class="nc" id="L1650">        }</span>
+
+        /**
+         * Is called if the mouse is dragged.
+         * If this method returns false, the circuit is moved instead.
+         *
+         * @param e the mouse event
+         * @return false is drag is not handled by controller
+         */
+        boolean dragged(MouseEvent e) {
+<span class="nc" id="L1660">            return false;</span>
+        }
+
+        public int drawables() {
+<span class="nc" id="L1664">            return 0;</span>
+        }
+
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L1668">        }</span>
+
+        public void delete() {
+<span class="nc" id="L1671">        }</span>
+
+        public void rotate() {
+<span class="nc" id="L1674">        }</span>
+
+        public void escapePressed() {
+<span class="nc" id="L1677">        }</span>
+    }
+
+
+    private SearchResult getVisualElement(Vector pos, boolean includeText) {
+<span class="nc" id="L1682">        List&lt;VisualElement&gt; list = getCircuit().getElementListAt(pos, includeText);</span>
+<span class="nc bnc" id="L1683" title="All 2 branches missed.">        if (list.size() == 1)</span>
+<span class="nc" id="L1684">            return new SearchResult(SearchResult.State.FOUND, list.get(0));</span>
+<span class="nc bnc" id="L1685" title="All 2 branches missed.">        else if (list.size() &gt; 1) {</span>
+<span class="nc" id="L1686">            ItemPicker&lt;VisualElement&gt; picker = new ItemPicker&lt;&gt;(parent, list);</span>
+<span class="nc" id="L1687">            VisualElement vp = picker.select();</span>
+<span class="nc bnc" id="L1688" title="All 2 branches missed.">            if (vp == null)</span>
+<span class="nc" id="L1689">                return new SearchResult(SearchResult.State.CANCELED, null);</span>
+            else
+<span class="nc" id="L1691">                return new SearchResult(SearchResult.State.FOUND, vp);</span>
+        }
+<span class="nc" id="L1693">        return new SearchResult(SearchResult.State.NONE, null);</span>
+    }
+
+    //CHECKSTYLE.ON: FinalClass
+
+    private final class MouseControllerNormal extends MouseController {
+        private Vector pos;
+        private MouseEvent downButton;
+        private VisualElement pressedElement;
+
+<span class="nc" id="L1703">        private MouseControllerNormal(Cursor cursor) {</span>
+<span class="nc" id="L1704">            super(cursor);</span>
+<span class="nc" id="L1705">        }</span>
+
+        @Override
+        void activate() {
+<span class="nc" id="L1709">            super.activate();</span>
+<span class="nc" id="L1710">            pos = null;</span>
+<span class="nc" id="L1711">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc" id="L1715">            Vector pos = getPosVector(e);</span>
+
+<span class="nc bnc" id="L1717" title="All 2 branches missed.">            if (mouse.isSecondaryClick(e)) {</span>
+<span class="nc" id="L1718">                SearchResult sel = getVisualElement(pos, true);</span>
+<span class="nc bnc" id="L1719" title="All 2 branches missed.">                if (sel.getVisualElement() != null)</span>
+<span class="nc" id="L1720">                    editAttributes(sel.getVisualElement(), e);</span>
+<span class="nc bnc" id="L1721" title="All 4 branches missed.">            } else if (mouse.isPrimaryClick(e) &amp;&amp; hadFocusAtClick) {</span>
+<span class="nc" id="L1722">                SearchResult sel = getVisualElement(pos, false);</span>
+<span class="nc bnc" id="L1723" title="All 3 branches missed.">                switch (sel.getState()) {</span>
+                    case FOUND:
+<span class="nc" id="L1725">                        VisualElement vp = sel.getVisualElement();</span>
+<span class="nc bnc" id="L1726" title="All 4 branches missed.">                        if (vp.isPinPos(raster(pos)) &amp;&amp; !mouse.isClickModifier(e)) {</span>
+<span class="nc bnc" id="L1727" title="All 2 branches missed.">                            if (!isLocked()) mouseWireRect.activate(pos);</span>
+                        } else
+<span class="nc" id="L1729">                            mouseMoveElement.activate(vp, pos);</span>
+<span class="nc" id="L1730">                        break;</span>
+                    case NONE:
+<span class="nc bnc" id="L1732" title="All 2 branches missed.">                        if (!isLocked()) {</span>
+<span class="nc bnc" id="L1733" title="All 2 branches missed.">                            if (mouse.isClickModifier(e)) {</span>
+<span class="nc" id="L1734">                                Wire wire = getCircuit().getWireAt(pos, SIZE2);</span>
+<span class="nc bnc" id="L1735" title="All 2 branches missed.">                                if (wire != null)</span>
+<span class="nc" id="L1736">                                    mouseMoveWire.activate(wire, pos);</span>
+<span class="nc" id="L1737">                            } else</span>
+<span class="nc" id="L1738">                                mouseWireRect.activate(pos);</span>
+                        }
+                        break;
+                }
+            }
+<span class="nc" id="L1743">        }</span>
+
+        @Override
+        void deactivate() {
+<span class="nc" id="L1747">            removeHighLighted();</span>
+<span class="nc" id="L1748">        }</span>
+
+        @Override
+        void pressed(MouseEvent e) {
+<span class="nc" id="L1752">            downButton = e;</span>
+<span class="nc" id="L1753">            pos = getPosVector(e);</span>
+<span class="nc" id="L1754">            pressedElement = getCircuit().getElementAt(pos, false);</span>
+<span class="nc" id="L1755">        }</span>
+
+        @Override
+        void released(MouseEvent e) {
+<span class="nc" id="L1759">            pressedElement = null;</span>
+<span class="nc" id="L1760">        }</span>
+
+        @Override
+        boolean dragged(MouseEvent e) {
+<span class="nc bnc" id="L1764" title="All 2 branches missed.">            if (mouse.isPrimaryClick(downButton)) {</span>
+<span class="nc" id="L1765">                Vector p = getPosVector(e);</span>
+<span class="nc bnc" id="L1766" title="All 2 branches missed.">                if (pos == null)</span>
+<span class="nc" id="L1767">                    pos = p;</span>
+<span class="nc bnc" id="L1768" title="All 4 branches missed.">                if (pressedElement != null &amp;&amp; pressedElement.equalsDescription(DummyElement.RECTDESCRIPTION))</span>
+<span class="nc" id="L1769">                    mouseResizeRect.activate(pressedElement, pos);</span>
+                else
+<span class="nc" id="L1771">                    mouseSelect.activate(pos, p);</span>
+<span class="nc" id="L1772">                return true;</span>
+            }
+<span class="nc bnc" id="L1774" title="All 2 branches missed.">            return !mouse.isSecondaryClick(downButton);</span>
+        }
+    }
+
+    private final class MouseControllerInsertElement extends MouseController {
+        private VisualElement element;
+        private Vector delta;
+
+<span class="nc" id="L1782">        private MouseControllerInsertElement(Cursor cursor) {</span>
+<span class="nc" id="L1783">            super(cursor);</span>
+<span class="nc" id="L1784">        }</span>
+
+        private void activate(VisualElement element) {
+<span class="nc" id="L1787">            super.activate();</span>
+<span class="nc" id="L1788">            this.element = element;</span>
+<span class="nc" id="L1789">            delta = null;</span>
+<span class="nc" id="L1790">            deleteAction.setEnabled(true);</span>
+<span class="nc" id="L1791">            rotateAction.setEnabled(true);</span>
+<span class="nc" id="L1792">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L1796">            updateMousePos(getPosVector(e));</span>
+<span class="nc" id="L1797">        }</span>
+
+        void updateMousePos(Vector pos) {
+<span class="nc bnc" id="L1800" title="All 2 branches missed.">            if (delta == null) {</span>
+<span class="nc" id="L1801">                GraphicMinMax minMax = element.getMinMax(false);</span>
+<span class="nc" id="L1802">                delta = element.getPos().sub(minMax.getMax());</span>
+            }
+<span class="nc" id="L1804">            element.setPos(pos.add(delta));</span>
+<span class="nc" id="L1805">            repaint();</span>
+<span class="nc" id="L1806">        }</span>
+
+        @Override
+        public void delete() {
+<span class="nc" id="L1810">            mouseNormal.activate();</span>
+<span class="nc" id="L1811">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc bnc" id="L1815" title="All 2 branches missed.">            if (delta != null)</span>
+<span class="nc" id="L1816">                element.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L1817">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L1821" title="All 4 branches missed.">            if (mouse.isPrimaryClick(e) &amp;&amp; !isLocked()) {</span>
+<span class="nc" id="L1822">                modify(new ModifyInsertElement(element));</span>
+<span class="nc" id="L1823">                insertWires(element);</span>
+            }
+<span class="nc" id="L1825">            mouseNormal.activate();</span>
+<span class="nc" id="L1826">        }</span>
+
+        @Override
+        public void rotate() {
+<span class="nc" id="L1830">            element.rotate();</span>
+<span class="nc" id="L1831">            repaint();</span>
+<span class="nc" id="L1832">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L1836">            mouseNormal.activate();</span>
+<span class="nc" id="L1837">        }</span>
+
+    }
+
+    private void insertWires(VisualElement element) {
+<span class="nc bnc" id="L1842" title="All 2 branches missed.">        if (tutorialListener == null) {</span>
+<span class="nc" id="L1843">            Modifications.Builder&lt;Circuit&gt; wires = new Modifications.Builder&lt;&gt;(Lang.get(&quot;lib_wires&quot;));</span>
+<span class="nc bnc" id="L1844" title="All 2 branches missed.">            for (Pin p : element.getPins())</span>
+<span class="nc" id="L1845">                insertWirePin(p, element, wires);</span>
+<span class="nc" id="L1846">            modify(wires.build());</span>
+        }
+<span class="nc" id="L1848">    }</span>
+
+    private void insertWirePin(Pin p, VisualElement element, Modifications.Builder&lt;Circuit&gt; wires) {
+<span class="nc" id="L1851">        TransformRotate tr = new TransformRotate(new Vector(0, 0), element.getRotate());</span>
+<span class="nc" id="L1852">        Vector pos = new Vector(-SIZE, 0);</span>
+<span class="nc bnc" id="L1853" title="All 2 branches missed.">        if (p.getDirection() != PinDescription.Direction.input)</span>
+<span class="nc" id="L1854">            pos = new Vector(SIZE, 0);</span>
+
+<span class="nc" id="L1856">        pos = tr.transform(pos);</span>
+<span class="nc" id="L1857">        pos = pos.add(p.getPos());</span>
+<span class="nc" id="L1858">        Pin found = null;</span>
+<span class="nc" id="L1859">        List&lt;VisualElement&gt; el = getCircuit().getElementListAt(pos, false);</span>
+<span class="nc bnc" id="L1860" title="All 2 branches missed.">        for (VisualElement ve : el) {</span>
+<span class="nc" id="L1861">            final Pin pinAt = ve.getPinAt(pos);</span>
+<span class="nc bnc" id="L1862" title="All 2 branches missed.">            if (pinAt != null) {</span>
+<span class="nc bnc" id="L1863" title="All 2 branches missed.">                if (found != null)</span>
+<span class="nc" id="L1864">                    return;</span>
+<span class="nc" id="L1865">                found = pinAt;</span>
+            }
+<span class="nc bnc" id="L1867" title="All 2 branches missed.">            if (ve.isPinPos(p.getPos()))</span>
+<span class="nc" id="L1868">                return;</span>
+<span class="nc" id="L1869">        }</span>
+<span class="nc bnc" id="L1870" title="All 4 branches missed.">        if (found != null &amp;&amp; PinDescription.Direction.isInOut(p.getDirection(), found.getDirection())) {</span>
+<span class="nc" id="L1871">            Wire newWire = new Wire(found.getPos(), p.getPos());</span>
+<span class="nc bnc" id="L1872" title="All 2 branches missed.">            for (Wire w : getCircuit().getWires())</span>
+<span class="nc bnc" id="L1873" title="All 2 branches missed.">                if (w.equalsContent(newWire))</span>
+<span class="nc" id="L1874">                    return;</span>
+<span class="nc" id="L1875">            wires.add(new ModifyInsertWire(newWire));</span>
+        }
+<span class="nc" id="L1877">    }</span>
+
+    /**
+     * Sets the circuit panel used for scrolling
+     *
+     * @param circuitScrollPanel the panel
+     */
+    public void setCircuitScrollPanel(CircuitScrollPanel circuitScrollPanel) {
+<span class="nc" id="L1885">        this.circuitScrollPanel = circuitScrollPanel;</span>
+<span class="nc bnc" id="L1886" title="All 2 branches missed.">        if (circuitScrollPanel != null)</span>
+<span class="nc" id="L1887">            circuitScrollPanel.transformChanged(transform);</span>
+<span class="nc" id="L1888">    }</span>
+
+    private final class MouseControllerMoveElement extends MouseController {
+        private VisualElement visualElement;
+        private Vector delta;
+        private VisualElement originalVisualElement;
+
+<span class="nc" id="L1895">        private MouseControllerMoveElement(Cursor cursor) {</span>
+<span class="nc" id="L1896">            super(cursor);</span>
+<span class="nc" id="L1897">        }</span>
+
+        private void activate(VisualElement visualElement, Vector pos) {
+<span class="nc" id="L1900">            super.activate();</span>
+<span class="nc" id="L1901">            originalVisualElement = visualElement;</span>
+<span class="nc" id="L1902">            this.visualElement = new VisualElement(visualElement);</span>
+<span class="nc" id="L1903">            shallowCopy = getCircuit().createShallowCopy();</span>
+<span class="nc" id="L1904">            shallowCopy.delete(visualElement);</span>
+<span class="nc" id="L1905">            delta = originalVisualElement.getPos().sub(pos);</span>
+<span class="nc" id="L1906">            deleteAction.setEnabled(true);</span>
+<span class="nc" id="L1907">            rotateAction.setEnabled(true);</span>
+<span class="nc" id="L1908">            copyAction.setEnabled(true);</span>
+<span class="nc" id="L1909">            graphicHasChanged();</span>
+<span class="nc" id="L1910">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L1914" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L1915">                visualElement.setPos(visualElement.getPos());</span>
+<span class="nc bnc" id="L1916" title="All 2 branches missed.">                if (!visualElement.getPos().equals(originalVisualElement.getPos())</span>
+<span class="nc bnc" id="L1917" title="All 2 branches missed.">                        || visualElement.getRotate() != originalVisualElement.getRotate()) {</span>
+<span class="nc" id="L1918">                    modify(new ModifyMoveAndRotElement(originalVisualElement, visualElement.getPos(), visualElement.getRotate()));</span>
+<span class="nc" id="L1919">                    insertWires(visualElement);</span>
+                }
+            }
+<span class="nc" id="L1922">            mouseNormal.activate();</span>
+<span class="nc" id="L1923">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc bnc" id="L1927" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L1928">                Vector pos = getPosVector(e);</span>
+<span class="nc" id="L1929">                visualElement.setPos(pos.add(delta));</span>
+<span class="nc" id="L1930">                repaint();</span>
+            }
+<span class="nc" id="L1932">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L1936">            visualElement.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L1937">        }</span>
+
+        @Override
+        public void delete() {
+<span class="nc bnc" id="L1941" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L1942">                getCircuit().delete(visualElement);</span>
+<span class="nc" id="L1943">                isManualScale = true;</span>
+<span class="nc" id="L1944">                modify(new ModifyDeleteElement(originalVisualElement));</span>
+<span class="nc" id="L1945">                mouseNormal.activate();</span>
+            }
+<span class="nc" id="L1947">        }</span>
+
+        @Override
+        public void rotate() {
+<span class="nc bnc" id="L1951" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L1952">                visualElement.rotate();</span>
+<span class="nc" id="L1953">                repaint();</span>
+            }
+<span class="nc" id="L1955">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L1959">            mouseNormal.activate();</span>
+<span class="nc" id="L1960">        }</span>
+    }
+
+    private final class MouseControllerMoveWire extends MouseController {
+        private Wire wire;
+        private Vector pos;
+        private Wire originalWire;
+
+<span class="nc" id="L1968">        private MouseControllerMoveWire(Cursor cursor) {</span>
+<span class="nc" id="L1969">            super(cursor);</span>
+<span class="nc" id="L1970">        }</span>
+
+        private void activate(Wire wire, Vector pos) {
+<span class="nc" id="L1973">            super.activate();</span>
+<span class="nc" id="L1974">            originalWire = wire;</span>
+<span class="nc" id="L1975">            shallowCopy = getCircuit().createShallowCopy();</span>
+<span class="nc" id="L1976">            shallowCopy.delete(originalWire);</span>
+<span class="nc" id="L1977">            this.wire = new Wire(wire);</span>
+<span class="nc" id="L1978">            this.pos = raster(pos);</span>
+<span class="nc" id="L1979">            deleteAction.setEnabled(true);</span>
+<span class="nc" id="L1980">            removeHighLighted();</span>
+<span class="nc" id="L1981">            graphicHasChanged();</span>
+<span class="nc" id="L1982">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L1986" title="All 2 branches missed.">            if (!originalWire.p1.equals(wire.p1)) {</span>
+<span class="nc" id="L1987">                removeHighLighted();</span>
+<span class="nc" id="L1988">                modify(new ModifyMoveWire(originalWire, wire));</span>
+<span class="nc" id="L1989">                getCircuit().elementsMoved();</span>
+            }
+<span class="nc" id="L1991">            mouseNormal.activate();</span>
+<span class="nc" id="L1992">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L1996">            Vector pos = raster(getPosVector(e));</span>
+<span class="nc" id="L1997">            final Vector delta = pos.sub(this.pos);</span>
+<span class="nc bnc" id="L1998" title="All 2 branches missed.">            if (!delta.isZero()) {</span>
+<span class="nc" id="L1999">                wire.move(delta);</span>
+<span class="nc" id="L2000">                wire.noDot();</span>
+<span class="nc" id="L2001">                isManualScale = true;</span>
+<span class="nc" id="L2002">                repaint();</span>
+            }
+<span class="nc" id="L2004">            this.pos = pos;</span>
+<span class="nc" id="L2005">        }</span>
+
+        @Override
+        public void delete() {
+<span class="nc" id="L2009">            getCircuit().delete(wire);</span>
+<span class="nc" id="L2010">            isManualScale = true;</span>
+<span class="nc" id="L2011">            modify(new ModifyDeleteWire(originalWire));</span>
+<span class="nc" id="L2012">            mouseNormal.activate();</span>
+<span class="nc" id="L2013">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2017">            wire.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2018">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2022">            mouseNormal.activate();</span>
+<span class="nc" id="L2023">        }</span>
+    }
+
+    private final class MouseControllerWireDiag extends MouseController {
+        private Wire wire;
+
+<span class="nc" id="L2029">        private MouseControllerWireDiag(Cursor cursor) {</span>
+<span class="nc" id="L2030">            super(cursor);</span>
+<span class="nc" id="L2031">        }</span>
+
+        private void activate(Vector startPos, Vector endPos) {
+<span class="nc" id="L2034">            super.activate();</span>
+<span class="nc" id="L2035">            wire = new Wire(raster(startPos), raster(endPos));</span>
+<span class="nc" id="L2036">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L2040">            wire.setP2(raster(getPosVector(e)));</span>
+<span class="nc" id="L2041">            repaint();</span>
+<span class="nc" id="L2042">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L2046" title="All 2 branches missed.">            if (mouse.isClickModifier(e)) {</span>
+<span class="nc" id="L2047">                Vector pos = raster(getPosVector(e));</span>
+<span class="nc" id="L2048">                Wire wire = getCircuit().getWireAt(pos, SIZE2);</span>
+<span class="nc bnc" id="L2049" title="All 2 branches missed.">                if (wire != null)</span>
+<span class="nc" id="L2050">                    mouseMoveWire.activate(wire, pos);</span>
+<span class="nc" id="L2051">            } else {</span>
+<span class="nc bnc" id="L2052" title="All 2 branches missed.">                if (mouse.isSecondaryClick(e))</span>
+<span class="nc" id="L2053">                    mouseNormal.activate();</span>
+<span class="nc bnc" id="L2054" title="All 2 branches missed.">                else if (mouse.isPrimaryClick(e)) {</span>
+<span class="nc" id="L2055">                    boolean clickOnWire = getCircuit().isWireAt(wire.p2);</span>
+<span class="nc" id="L2056">                    modify(new ModifyInsertWire(wire).checkIfLenZero());</span>
+<span class="nc bnc" id="L2057" title="All 4 branches missed.">                    if (clickOnWire || getCircuit().isPinPos(wire.p2))</span>
+<span class="nc" id="L2058">                        mouseNormal.activate();</span>
+                    else
+<span class="nc" id="L2060">                        mouseWireRect.activate(wire.p2);</span>
+                }
+            }
+<span class="nc" id="L2063">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2067">            wire.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2068">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2072">            mouseNormal.activate();</span>
+<span class="nc" id="L2073">        }</span>
+
+        private void rectangularWire() {
+<span class="nc" id="L2076">            mouseWireRect.activate(wire.p1, wire.p2);</span>
+<span class="nc" id="L2077">        }</span>
+    }
+
+    private final class MouseControllerWireRect extends MouseController {
+        private Wire wire1;
+        private Wire wire2;
+        private boolean selectionMade;
+        private boolean firstHorizontal;
+        private Vector initialPos;
+        private Vector lastPosition;
+
+<span class="nc" id="L2088">        private MouseControllerWireRect(Cursor cursor) {</span>
+<span class="nc" id="L2089">            super(cursor);</span>
+<span class="nc" id="L2090">        }</span>
+
+        private void activate(Vector startPos) {
+<span class="nc" id="L2093">            startPos = raster(startPos);</span>
+<span class="nc" id="L2094">            activate(startPos, startPos);</span>
+<span class="nc" id="L2095">            selectionMade = false;</span>
+<span class="nc" id="L2096">        }</span>
+
+        private void activate(Vector startPos, Vector endPos) {
+<span class="nc" id="L2099">            super.activate();</span>
+<span class="nc" id="L2100">            initialPos = raster(startPos);</span>
+<span class="nc" id="L2101">            wire1 = new Wire(startPos, endPos);</span>
+<span class="nc" id="L2102">            wire2 = new Wire(startPos, endPos);</span>
+<span class="nc" id="L2103">            selectionMade = true;</span>
+<span class="nc" id="L2104">            lastPosition = endPos;</span>
+<span class="nc" id="L2105">            setWires();</span>
+<span class="nc" id="L2106">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L2110">            lastPosition = raster(getPosVector(e));</span>
+<span class="nc bnc" id="L2111" title="All 2 branches missed.">            if (!selectionMade) {</span>
+<span class="nc" id="L2112">                Vector delta = lastPosition.sub(initialPos);</span>
+<span class="nc bnc" id="L2113" title="All 2 branches missed.">                boolean dx = Math.abs(delta.x) &gt; DRAG_DISTANCE;</span>
+<span class="nc bnc" id="L2114" title="All 2 branches missed.">                boolean dy = Math.abs(delta.y) &gt; DRAG_DISTANCE;</span>
+<span class="nc bnc" id="L2115" title="All 4 branches missed.">                if (dx || dy) {</span>
+<span class="nc" id="L2116">                    firstHorizontal = dx;</span>
+<span class="nc" id="L2117">                    selectionMade = true;</span>
+                }
+            }
+<span class="nc" id="L2120">            setWires();</span>
+<span class="nc" id="L2121">        }</span>
+
+        private void setWires() {
+            Vector pm;
+<span class="nc bnc" id="L2125" title="All 2 branches missed.">            if (firstHorizontal)</span>
+<span class="nc" id="L2126">                pm = new Vector(lastPosition.x, wire1.p1.y);</span>
+            else
+<span class="nc" id="L2128">                pm = new Vector(wire1.p1.x, lastPosition.y);</span>
+<span class="nc" id="L2129">            wire1.setP2(pm);</span>
+<span class="nc" id="L2130">            wire2.setP1(pm);</span>
+<span class="nc" id="L2131">            wire2.setP2(lastPosition);</span>
+<span class="nc" id="L2132">            repaint();</span>
+<span class="nc" id="L2133">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L2137" title="All 2 branches missed.">            if (mouse.isClickModifier(e)) {</span>
+<span class="nc" id="L2138">                Vector pos = raster(getPosVector(e));</span>
+<span class="nc" id="L2139">                Wire wire = getCircuit().getWireAt(pos, SIZE2);</span>
+<span class="nc bnc" id="L2140" title="All 2 branches missed.">                if (wire != null)</span>
+<span class="nc" id="L2141">                    mouseMoveWire.activate(wire, pos);</span>
+<span class="nc" id="L2142">            } else {</span>
+<span class="nc bnc" id="L2143" title="All 2 branches missed.">                if (mouse.isSecondaryClick(e))</span>
+<span class="nc" id="L2144">                    mouseNormal.activate();</span>
+<span class="nc bnc" id="L2145" title="All 2 branches missed.">                else if (mouse.isPrimaryClick(e)) {</span>
+<span class="nc" id="L2146">                    boolean clickOnWire = getCircuit().isWireAt(wire2.p2);</span>
+<span class="nc" id="L2147">                    modify(new Modifications.Builder&lt;Circuit&gt;(Lang.get(&quot;mod_insertWire&quot;))</span>
+<span class="nc" id="L2148">                            .add(new ModifyInsertWire(wire1).checkIfLenZero())</span>
+<span class="nc" id="L2149">                            .add(new ModifyInsertWire(wire2).checkIfLenZero())</span>
+<span class="nc" id="L2150">                            .build());</span>
+<span class="nc bnc" id="L2151" title="All 4 branches missed.">                    if (clickOnWire || getCircuit().isPinPos(wire2.p2))</span>
+<span class="nc" id="L2152">                        mouseNormal.activate();</span>
+                    else {
+<span class="nc" id="L2154">                        initialPos = wire2.p2;</span>
+<span class="nc" id="L2155">                        selectionMade = false;</span>
+<span class="nc" id="L2156">                        wire1 = new Wire(wire2.p2, wire2.p2);</span>
+<span class="nc" id="L2157">                        wire2 = new Wire(wire2.p2, wire2.p2);</span>
+                    }
+                }
+            }
+<span class="nc" id="L2161">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2165">            wire1.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2166">            wire2.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2167">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2171">            mouseNormal.activate();</span>
+<span class="nc" id="L2172">        }</span>
+
+        void diagonalWire() {
+<span class="nc" id="L2175">            mouseWireDiag.activate(initialPos, wire2.p2);</span>
+<span class="nc" id="L2176">            repaint();</span>
+<span class="nc" id="L2177">        }</span>
+
+        private void flipWire() {
+<span class="nc" id="L2180">            selectionMade = true;</span>
+<span class="nc bnc" id="L2181" title="All 2 branches missed.">            firstHorizontal = !firstHorizontal;</span>
+<span class="nc" id="L2182">            setWires();</span>
+<span class="nc" id="L2183">        }</span>
+    }
+
+    private final class MouseControllerWireSplit extends MouseController {
+        private Wire wire1;
+        private Wire wire2;
+        private Wire origWire;
+
+<span class="nc" id="L2191">        private MouseControllerWireSplit(Cursor cursor) {</span>
+<span class="nc" id="L2192">            super(cursor);</span>
+<span class="nc" id="L2193">        }</span>
+
+        private void activate(Wire w, Vector startPos) {
+<span class="nc" id="L2196">            super.activate();</span>
+<span class="nc" id="L2197">            startPos = raster(startPos);</span>
+<span class="nc" id="L2198">            origWire = w;</span>
+<span class="nc" id="L2199">            shallowCopy = getCircuit().createShallowCopy();</span>
+<span class="nc" id="L2200">            shallowCopy.delete(w);</span>
+<span class="nc" id="L2201">            wire1 = new Wire(w.p1, startPos);</span>
+<span class="nc" id="L2202">            wire2 = new Wire(startPos, w.p2);</span>
+<span class="nc" id="L2203">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L2207">            Vector p = raster(getPosVector(e));</span>
+<span class="nc" id="L2208">            wire1.setP2(p);</span>
+<span class="nc" id="L2209">            wire2.setP1(p);</span>
+<span class="nc" id="L2210">            repaint();</span>
+<span class="nc" id="L2211">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L2215" title="All 2 branches missed.">            if (mouse.isPrimaryClick(e)) {</span>
+<span class="nc" id="L2216">                Modifications.Builder&lt;Circuit&gt; m = new Modifications.Builder&lt;&gt;(Lang.get(&quot;mod_splitWire&quot;));</span>
+<span class="nc" id="L2217">                m.add(new ModifyDeleteWire(origWire));</span>
+<span class="nc" id="L2218">                m.add(new ModifyInsertWire(wire1));</span>
+<span class="nc" id="L2219">                m.add(new ModifyInsertWire(wire2));</span>
+<span class="nc" id="L2220">                modify(m.build());</span>
+<span class="nc" id="L2221">                mouseNormal.activate();</span>
+<span class="nc bnc" id="L2222" title="All 2 branches missed.">            } else if (mouse.isSecondaryClick(e))</span>
+<span class="nc" id="L2223">                escapePressed();</span>
+<span class="nc" id="L2224">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2228">            mouseNormal.activate();</span>
+<span class="nc" id="L2229">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2233">            wire1.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2234">            wire2.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2235">        }</span>
+    }
+
+    private final class MouseControllerSelect extends MouseController {
+        private static final int MIN_SIZE = 8;
+        private Vector corner1;
+        private Vector corner2;
+        private boolean wasReleased;
+        private boolean moveOnDragging;
+
+<span class="nc" id="L2245">        private MouseControllerSelect(Cursor cursor) {</span>
+<span class="nc" id="L2246">            super(cursor);</span>
+<span class="nc" id="L2247">        }</span>
+
+        private void activate(Vector corner1, Vector corner2) {
+<span class="nc" id="L2250">            super.activate();</span>
+<span class="nc" id="L2251">            this.corner1 = corner1;</span>
+<span class="nc" id="L2252">            this.corner2 = corner2;</span>
+<span class="nc" id="L2253">            deleteAction.setEnabled(true);</span>
+<span class="nc" id="L2254">            copyAction.setEnabled(true);</span>
+<span class="nc" id="L2255">            cutAction.setEnabled(true);</span>
+<span class="nc" id="L2256">            rotateAction.setEnabled(true);</span>
+<span class="nc" id="L2257">            wasReleased = false;</span>
+<span class="nc" id="L2258">            updateHighlighting();</span>
+<span class="nc" id="L2259">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L2263" title="All 2 branches missed.">            if (mouse.isPrimaryClick(e)) {</span>
+<span class="nc" id="L2264">                mouseNormal.activate();</span>
+<span class="nc" id="L2265">                removeHighLighted();</span>
+<span class="nc bnc" id="L2266" title="All 2 branches missed.">            } else if (mouse.isSecondaryClick(e)) {</span>
+<span class="nc" id="L2267">                editGroup(Vector.min(corner1, corner2), Vector.max(corner1, corner2));</span>
+<span class="nc" id="L2268">                mouseNormal.activate();</span>
+<span class="nc" id="L2269">                removeHighLighted();</span>
+            }
+<span class="nc" id="L2271">        }</span>
+
+        @Override
+        void released(MouseEvent e) {
+<span class="nc" id="L2275">            wasReleased = true;</span>
+<span class="nc" id="L2276">            Vector dif = corner1.sub(corner2);</span>
+<span class="nc bnc" id="L2277" title="All 4 branches missed.">            if (Math.abs(dif.x) &gt; MIN_SIZE &amp;&amp; Math.abs(dif.y) &gt; MIN_SIZE)</span>
+<span class="nc" id="L2278">                setCursor(moveCursor);</span>
+            else {
+<span class="nc" id="L2280">                removeHighLighted();</span>
+<span class="nc" id="L2281">                mouseNormal.activate();</span>
+            }
+<span class="nc" id="L2283">        }</span>
+
+        @Override
+        void pressed(MouseEvent e) {
+<span class="nc" id="L2287">            moveOnDragging = mouse.isPrimaryClick(e);</span>
+<span class="nc" id="L2288">        }</span>
+
+        @Override
+        boolean dragged(MouseEvent e) {
+<span class="nc bnc" id="L2292" title="All 2 branches missed.">            if (wasReleased) {</span>
+<span class="nc bnc" id="L2293" title="All 2 branches missed.">                if (moveOnDragging) {</span>
+<span class="nc bnc" id="L2294" title="All 2 branches missed.">                    if (!isLocked())</span>
+<span class="nc" id="L2295">                        mouseMoveSelected.activate(corner1, corner2, getPosVector(e));</span>
+                } else
+<span class="nc" id="L2297">                    return false;</span>
+            } else {
+<span class="nc" id="L2299">                corner2 = getPosVector(e);</span>
+<span class="nc bnc" id="L2300" title="All 2 branches missed.">                if (mouse.isClickModifier(e)) {</span>
+<span class="nc" id="L2301">                    Vector dif = corner2.sub(corner1);</span>
+<span class="nc" id="L2302">                    int dx = dif.x;</span>
+<span class="nc" id="L2303">                    int dy = dif.y;</span>
+<span class="nc" id="L2304">                    int absDx = Math.abs(dx);</span>
+<span class="nc" id="L2305">                    int absDy = Math.abs(dy);</span>
+<span class="nc bnc" id="L2306" title="All 2 branches missed.">                    if (absDx != absDy) {</span>
+<span class="nc bnc" id="L2307" title="All 2 branches missed.">                        if (absDx &gt; absDy) {</span>
+<span class="nc bnc" id="L2308" title="All 2 branches missed.">                            if (dx &gt; absDy) dx = absDy;</span>
+<span class="nc" id="L2309">                            else dx = -absDy;</span>
+                        } else {
+<span class="nc bnc" id="L2311" title="All 2 branches missed.">                            if (dy &gt; absDx) dy = absDx;</span>
+<span class="nc" id="L2312">                            else dy = -absDx;</span>
+                        }
+                    }
+<span class="nc" id="L2315">                    corner2 = corner1.add(dx, dy);</span>
+                }
+<span class="nc" id="L2317">                updateHighlighting();</span>
+            }
+<span class="nc" id="L2319">            return true;</span>
+        }
+
+        private void updateHighlighting() {
+<span class="nc" id="L2323">            ArrayList&lt;Drawable&gt; elements = getCircuit().getElementsToHighlight(Vector.min(corner1, corner2), Vector.max(corner1, corner2));</span>
+<span class="nc" id="L2324">            removeHighLighted();</span>
+<span class="nc bnc" id="L2325" title="All 2 branches missed.">            if (elements != null)</span>
+<span class="nc" id="L2326">                addHighLighted(elements);</span>
+
+<span class="nc" id="L2328">            repaint();</span>
+<span class="nc" id="L2329">        }</span>
+
+        public void release() {
+<span class="nc" id="L2332">            this.wasReleased = true;</span>
+<span class="nc" id="L2333">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2337">            Vector p1 = new Vector(corner1.x, corner2.y);</span>
+<span class="nc" id="L2338">            Vector p2 = new Vector(corner2.x, corner1.y);</span>
+<span class="nc" id="L2339">            gr.drawLine(corner1, p1, Style.DASH);</span>
+<span class="nc" id="L2340">            gr.drawLine(p1, corner2, Style.DASH);</span>
+<span class="nc" id="L2341">            gr.drawLine(p2, corner2, Style.DASH);</span>
+<span class="nc" id="L2342">            gr.drawLine(corner1, p2, Style.DASH);</span>
+<span class="nc" id="L2343">        }</span>
+
+        @Override
+        public void delete() {
+<span class="nc bnc" id="L2347" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L2348">                isManualScale = true;</span>
+<span class="nc" id="L2349">                modify(new ModifyDeleteRect(Vector.min(corner1, corner2), Vector.max(corner1, corner2)));</span>
+<span class="nc" id="L2350">                mouseNormal.activate();</span>
+            }
+<span class="nc" id="L2352">        }</span>
+
+        public void rotate() {
+<span class="nc bnc" id="L2355" title="All 2 branches missed.">            if (!isLocked()) {</span>
+<span class="nc" id="L2356">                mouseMoveSelected.activate(corner1, corner2, lastMousePos);</span>
+<span class="nc" id="L2357">                mouseMoveSelected.rotate();</span>
+            }
+<span class="nc" id="L2359">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2363">            removeHighLighted();</span>
+<span class="nc" id="L2364">            mouseNormal.activate();</span>
+<span class="nc" id="L2365">        }</span>
+    }
+
+    private final class MouseControllerMoveSelected extends MouseController {
+        private Circuit.RectContainer elements;
+        private Vector lastPos;
+        private Vector center;
+        private Vector accumulatedDelta;
+        private int accumulatedRotate;
+        private Vector min;
+        private Vector max;
+
+<span class="nc" id="L2377">        private MouseControllerMoveSelected(Cursor cursor) {</span>
+<span class="nc" id="L2378">            super(cursor);</span>
+<span class="nc" id="L2379">        }</span>
+
+        private void activate(Vector corner1, Vector corner2, Vector pos) {
+<span class="nc" id="L2382">            super.activate();</span>
+<span class="nc" id="L2383">            rotateAction.setEnabled(true);</span>
+<span class="nc" id="L2384">            lastPos = pos;</span>
+<span class="nc" id="L2385">            center = raster(corner1.add(corner2).div(2));</span>
+
+<span class="nc" id="L2387">            accumulatedDelta = new Vector(0, 0);</span>
+<span class="nc" id="L2388">            accumulatedRotate = 0;</span>
+<span class="nc" id="L2389">            min = Vector.min(corner1, corner2);</span>
+<span class="nc" id="L2390">            max = Vector.max(corner1, corner2);</span>
+<span class="nc" id="L2391">            elements = getCircuit().copyElementsInRect(min, max, library.getShapeFactory());</span>
+<span class="nc bnc" id="L2392" title="All 2 branches missed.">            if (elements == null)</span>
+<span class="nc" id="L2393">                mouseNormal.activate();</span>
+            else {
+<span class="nc" id="L2395">                shallowCopy = getCircuit().createShallowCopy();</span>
+<span class="nc" id="L2396">                shallowCopy.delete(min, max);</span>
+            }
+<span class="nc" id="L2398">            removeHighLighted();</span>
+<span class="nc" id="L2399">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc" id="L2403">            lastPos = getPosVector(e);</span>
+<span class="nc" id="L2404">        }</span>
+
+        @Override
+        boolean dragged(MouseEvent e) {
+<span class="nc" id="L2408">            Vector pos = getPosVector(e);</span>
+<span class="nc" id="L2409">            Vector delta = raster(pos.sub(lastPos));</span>
+
+<span class="nc bnc" id="L2411" title="All 4 branches missed.">            if (delta.x != 0 || delta.y != 0) {</span>
+<span class="nc bnc" id="L2412" title="All 2 branches missed.">                for (Movable m : elements.getMovables())</span>
+<span class="nc" id="L2413">                    m.move(delta);</span>
+<span class="nc" id="L2414">                accumulatedDelta = accumulatedDelta.add(delta);</span>
+
+<span class="nc" id="L2416">                repaint();</span>
+<span class="nc" id="L2417">                lastPos = lastPos.add(delta);</span>
+<span class="nc" id="L2418">                center = center.add(delta);</span>
+            }
+<span class="nc" id="L2420">            return true;</span>
+        }
+
+        @Override
+        void released(MouseEvent e) {
+<span class="nc bnc" id="L2425" title="All 6 branches missed.">            if (accumulatedDelta.x != 0 || accumulatedDelta.y != 0 || accumulatedRotate != 0) {</span>
+<span class="nc" id="L2426">                modify(new ModifyMoveSelected(min, max, accumulatedDelta, accumulatedRotate, center));</span>
+<span class="nc" id="L2427">                getCircuit().elementsMoved();</span>
+            }
+<span class="nc" id="L2429">            mouseNormal.activate();</span>
+<span class="nc" id="L2430">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2434">            mouseNormal.activate();</span>
+<span class="nc" id="L2435">        }</span>
+
+        @Override
+        public void rotate() {
+<span class="nc" id="L2439">            ModifyMoveSelected.rotateElements(elements.getMovables(), center);</span>
+<span class="nc" id="L2440">            repaint();</span>
+<span class="nc" id="L2441">            accumulatedRotate++;</span>
+<span class="nc" id="L2442">        }</span>
+
+        @Override
+        public int drawables() {
+<span class="nc" id="L2446">            return elements.getDrawables().size();</span>
+        }
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc bnc" id="L2451" title="All 2 branches missed.">            for (Drawable m : elements.getDrawables())</span>
+<span class="nc" id="L2452">                m.drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2453">        }</span>
+    }
+
+    private final class MouseControllerInsertCopied extends MouseController {
+        private ArrayList&lt;Movable&gt; elements;
+        private Vector lastPos;
+
+<span class="nc" id="L2460">        private MouseControllerInsertCopied(Cursor cursor) {</span>
+<span class="nc" id="L2461">            super(cursor);</span>
+<span class="nc" id="L2462">        }</span>
+
+        private void activate(ArrayList&lt;Movable&gt; elements, Vector pos) {
+<span class="nc" id="L2465">            super.activate();</span>
+<span class="nc" id="L2466">            this.elements = elements;</span>
+<span class="nc" id="L2467">            lastPos = pos;</span>
+
+<span class="nc" id="L2469">            Vector max = null;</span>
+<span class="nc bnc" id="L2470" title="All 2 branches missed.">            for (Movable m : elements)</span>
+<span class="nc bnc" id="L2471" title="All 2 branches missed.">                if (m instanceof VisualElement) {</span>
+<span class="nc" id="L2472">                    GraphicMinMax mm = ((VisualElement) m).getMinMax(false);</span>
+<span class="nc bnc" id="L2473" title="All 2 branches missed.">                    if (max == null)</span>
+<span class="nc" id="L2474">                        max = mm.getMax();</span>
+                    else
+<span class="nc" id="L2476">                        max = Vector.max(max, mm.getMax());</span>
+<span class="nc bnc" id="L2477" title="All 2 branches missed.">                } else if (m instanceof Wire) {</span>
+<span class="nc" id="L2478">                    Wire w = (Wire) m;</span>
+<span class="nc bnc" id="L2479" title="All 2 branches missed.">                    if (max == null)</span>
+<span class="nc" id="L2480">                        max = Vector.max(w.p1, w.p2);</span>
+                    else
+<span class="nc" id="L2482">                        max = Vector.max(max, w.p1, w.p2);</span>
+                }
+
+<span class="nc bnc" id="L2485" title="All 2 branches missed.">            if (max != null) {</span>
+<span class="nc" id="L2486">                Vector delta = CircuitComponent.raster(lastPos.sub(max));</span>
+<span class="nc bnc" id="L2487" title="All 2 branches missed.">                for (Movable m : elements)</span>
+<span class="nc" id="L2488">                    m.move(delta);</span>
+            }
+
+<span class="nc" id="L2491">            deleteAction.setEnabled(true);</span>
+<span class="nc" id="L2492">            rotateAction.setEnabled(true);</span>
+<span class="nc" id="L2493">        }</span>
+
+        @Override
+        void moved(MouseEvent e) {
+<span class="nc bnc" id="L2497" title="All 2 branches missed.">            if (elements != null) {</span>
+<span class="nc" id="L2498">                Vector pos = getPosVector(e);</span>
+<span class="nc" id="L2499">                Vector delta = raster(pos.sub(lastPos));</span>
+
+<span class="nc bnc" id="L2501" title="All 4 branches missed.">                if (delta.x != 0 || delta.y != 0) {</span>
+<span class="nc bnc" id="L2502" title="All 2 branches missed.">                    for (Movable m : elements)</span>
+<span class="nc" id="L2503">                        m.move(delta);</span>
+
+<span class="nc" id="L2505">                    repaint();</span>
+<span class="nc" id="L2506">                    lastPos = lastPos.add(delta);</span>
+                }
+            }
+<span class="nc" id="L2509">        }</span>
+
+        @Override
+        public int drawables() {
+<span class="nc bnc" id="L2513" title="All 2 branches missed.">            if (elements == null)</span>
+<span class="nc" id="L2514">                return 0;</span>
+<span class="nc" id="L2515">            return elements.size();</span>
+        }
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc bnc" id="L2520" title="All 2 branches missed.">            if (elements != null)</span>
+<span class="nc bnc" id="L2521" title="All 2 branches missed.">                for (Movable m : elements)</span>
+<span class="nc bnc" id="L2522" title="All 2 branches missed.">                    if (m instanceof Drawable)</span>
+<span class="nc" id="L2523">                        ((Drawable) m).drawTo(gr, Style.HIGHLIGHT);</span>
+<span class="nc" id="L2524">        }</span>
+
+        @Override
+        public void delete() {
+<span class="nc" id="L2528">            mouseNormal.activate();</span>
+<span class="nc" id="L2529">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc bnc" id="L2533" title="All 4 branches missed.">            if (elements != null &amp;&amp; mouse.isPrimaryClick(e)) {</span>
+<span class="nc" id="L2534">                Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;mod_insertCopied&quot;));</span>
+<span class="nc" id="L2535">                ArrayList&lt;Wire&gt; wires = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L2536" title="All 2 branches missed.">                for (Movable m : elements) {</span>
+<span class="nc bnc" id="L2537" title="All 2 branches missed.">                    if (m instanceof Wire)</span>
+<span class="nc" id="L2538">                        wires.add((Wire) m);</span>
+<span class="nc bnc" id="L2539" title="All 2 branches missed.">                    if (m instanceof VisualElement)</span>
+<span class="nc" id="L2540">                        builder.add(new ModifyInsertElement((VisualElement) m));</span>
+<span class="nc" id="L2541">                }</span>
+<span class="nc" id="L2542">                builder.add(ModifyInsertWires.create(wires));</span>
+<span class="nc" id="L2543">                modify(builder.build());</span>
+            }
+<span class="nc" id="L2545">            mouseNormal.activate();</span>
+<span class="nc" id="L2546">        }</span>
+
+        @Override
+        public void rotate() {
+<span class="nc" id="L2550">            ModifyMoveSelected.rotateElements(elements, raster(lastPos));</span>
+<span class="nc" id="L2551">            graphicHasChanged();</span>
+<span class="nc" id="L2552">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2556">            mouseNormal.activate();</span>
+<span class="nc" id="L2557">        }</span>
+    }
+
+    private interface Actor {
+        void interact(CircuitComponent cc, Point p, Vector posInComponent, SyncAccess modelSync);
+    }
+
+    private final class MouseControllerRun extends MouseController {
+        private VisualElement draggedElement;
+
+<span class="nc" id="L2567">        private MouseControllerRun(Cursor cursor) {</span>
+<span class="nc" id="L2568">            super(cursor);</span>
+<span class="nc" id="L2569">        }</span>
+
+        @Override
+        void pressed(MouseEvent e) {
+<span class="nc" id="L2573">            VisualElement ve = getInteractiveElementAt(e);</span>
+<span class="nc bnc" id="L2574" title="All 2 branches missed.">            if (ve != null) {</span>
+<span class="nc" id="L2575">                interact(e, ve::elementPressed);</span>
+<span class="nc" id="L2576">                draggedElement = ve;</span>
+            } else
+<span class="nc" id="L2578">                draggedElement = null;</span>
+<span class="nc" id="L2579">        }</span>
+
+        private VisualElement getInteractiveElementAt(MouseEvent e) {
+<span class="nc" id="L2582">            Circuit circuit = getCircuitOrShallowCopy();</span>
+<span class="nc" id="L2583">            List&lt;VisualElement&gt; elementList = circuit.getElementListAt(getPosVector(e), false);</span>
+<span class="nc bnc" id="L2584" title="All 2 branches missed.">            for (VisualElement ve : elementList) {</span>
+<span class="nc bnc" id="L2585" title="All 2 branches missed.">                if (ve.isInteractive())</span>
+<span class="nc" id="L2586">                    return ve;</span>
+<span class="nc" id="L2587">            }</span>
+<span class="nc" id="L2588">            return null;</span>
+        }
+
+        @Override
+        void released(MouseEvent e) {
+<span class="nc bnc" id="L2593" title="All 2 branches missed.">            if (draggedElement != null) {</span>
+<span class="nc" id="L2594">                interact(e, (cc, pos, posInComponent, modelSync1) -&gt; draggedElement.elementReleased(cc, pos, posInComponent, modelSync1));</span>
+<span class="nc" id="L2595">                draggedElement = null;</span>
+            }
+<span class="nc" id="L2597">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc" id="L2601">            VisualElement ve = getInteractiveElementAt(e);</span>
+<span class="nc bnc" id="L2602" title="All 2 branches missed.">            if (ve != null)</span>
+<span class="nc" id="L2603">                interact(e, ve::elementClicked);</span>
+<span class="nc" id="L2604">        }</span>
+
+        @Override
+        boolean dragged(MouseEvent e) {
+<span class="nc bnc" id="L2608" title="All 2 branches missed.">            if (draggedElement != null) {</span>
+<span class="nc" id="L2609">                interact(e, (cc, pos, posInComponent, modelSync1) -&gt; draggedElement.elementDragged(cc, pos, posInComponent, modelSync1));</span>
+<span class="nc" id="L2610">                return true;</span>
+            } else
+<span class="nc" id="L2612">                return false;</span>
+        }
+
+        private void interact(MouseEvent e, Actor actor) {
+<span class="nc" id="L2616">            Point p = new Point(e.getX(), e.getY());</span>
+<span class="nc" id="L2617">            SwingUtilities.convertPointToScreen(p, CircuitComponent.this);</span>
+<span class="nc" id="L2618">            actor.interact(CircuitComponent.this, p, getPosVector(e), modelSync);</span>
+<span class="nc" id="L2619">        }</span>
+    }
+
+    private final class MouseControllerResizeRect extends MouseController {
+        private VisualElement element;
+        private Vector startPos;
+
+        private int rectX;
+        private int rectY;
+        private int rectWidth;
+        private int rectHeight;
+
+        private boolean changeNorth;
+        private boolean changeSouth;
+        private boolean changeWest;
+        private boolean changeEast;
+
+<span class="nc" id="L2636">        private MouseControllerResizeRect(Cursor cursor) {</span>
+<span class="nc" id="L2637">            super(cursor);</span>
+<span class="nc" id="L2638">        }</span>
+
+        void activate(VisualElement element, Vector pos) {
+<span class="nc" id="L2641">            super.activate();</span>
+<span class="nc" id="L2642">            this.element = element;</span>
+<span class="nc" id="L2643">            this.startPos = raster(pos);</span>
+
+<span class="nc" id="L2645">            setCursorForResizingRect(element, pos);</span>
+
+            // Get current rectangle attributes.
+<span class="nc" id="L2648">            rectX = element.getPos().x;</span>
+<span class="nc" id="L2649">            rectY = element.getPos().y;</span>
+<span class="nc" id="L2650">            rectWidth = element.getElementAttributes().get(Keys.RECT_WIDTH) * SIZE;</span>
+<span class="nc" id="L2651">            rectHeight = element.getElementAttributes().get(Keys.RECT_HEIGHT) * SIZE;</span>
+
+            // Find which directions are being changed.
+<span class="nc" id="L2654">            Vector posInRect = raster(pos.sub(element.getPos()));</span>
+<span class="nc bnc" id="L2655" title="All 2 branches missed.">            changeNorth = posInRect.y &lt;= 0;</span>
+<span class="nc bnc" id="L2656" title="All 2 branches missed.">            changeSouth = posInRect.y == rectHeight;</span>
+<span class="nc bnc" id="L2657" title="All 2 branches missed.">            changeEast = posInRect.x == 0;</span>
+<span class="nc bnc" id="L2658" title="All 2 branches missed.">            changeWest = posInRect.x == rectWidth;</span>
+<span class="nc" id="L2659">        }</span>
+
+        /**
+         * Updates the cursor for when the mouse hovers nears the border of a rectangle.
+         *
+         * @param rect The rectangle element.
+         * @param pos  Current mouse position in circuit coordinates.
+         */
+        public void setCursorForResizingRect(VisualElement rect, Vector pos) {
+<span class="nc" id="L2668">            Vector posInRect = raster(pos.sub(rect.getPos()));</span>
+<span class="nc" id="L2669">            int width = rect.getElementAttributes().get(Keys.RECT_WIDTH) * SIZE;</span>
+<span class="nc" id="L2670">            int height = rect.getElementAttributes().get(Keys.RECT_HEIGHT) * SIZE;</span>
+            int cursor;
+<span class="nc bnc" id="L2672" title="All 2 branches missed.">            if (posInRect.x == width) {</span>
+<span class="nc bnc" id="L2673" title="All 2 branches missed.">                if (posInRect.y &lt;= 0) {</span>
+<span class="nc" id="L2674">                    cursor = Cursor.NE_RESIZE_CURSOR;</span>
+<span class="nc bnc" id="L2675" title="All 2 branches missed.">                } else if (posInRect.y == height) {</span>
+<span class="nc" id="L2676">                    cursor = Cursor.SE_RESIZE_CURSOR;</span>
+                } else {
+<span class="nc" id="L2678">                    cursor = Cursor.E_RESIZE_CURSOR;</span>
+                }
+<span class="nc bnc" id="L2680" title="All 2 branches missed.">            } else if (posInRect.x == 0) {</span>
+<span class="nc bnc" id="L2681" title="All 2 branches missed.">                if (posInRect.y &lt;= 0) {</span>
+<span class="nc" id="L2682">                    cursor = Cursor.NW_RESIZE_CURSOR;</span>
+<span class="nc bnc" id="L2683" title="All 2 branches missed.">                } else if (posInRect.y == height) {</span>
+<span class="nc" id="L2684">                    cursor = Cursor.SW_RESIZE_CURSOR;</span>
+                } else {
+<span class="nc" id="L2686">                    cursor = Cursor.W_RESIZE_CURSOR;</span>
+                }
+<span class="nc bnc" id="L2688" title="All 2 branches missed.">            } else if (posInRect.y &lt;= 0) {</span>
+<span class="nc" id="L2689">                cursor = Cursor.N_RESIZE_CURSOR;</span>
+            } else {
+<span class="nc" id="L2691">                cursor = Cursor.S_RESIZE_CURSOR;</span>
+            }
+<span class="nc" id="L2693">            setCursor(new Cursor(cursor));</span>
+<span class="nc" id="L2694">        }</span>
+
+        @Override
+        boolean dragged(MouseEvent e) {
+<span class="nc" id="L2698">            ElementAttributes attributes = element.getElementAttributes();</span>
+<span class="nc" id="L2699">            Vector d = raster(getPosVector(e)).sub(startPos);</span>
+
+<span class="nc bnc" id="L2701" title="All 2 branches missed.">            if (changeNorth) {</span>
+<span class="nc" id="L2702">                rectY = element.getPos().y + d.y;</span>
+<span class="nc" id="L2703">                rectHeight = attributes.get(Keys.RECT_HEIGHT) * SIZE - d.y;</span>
+<span class="nc bnc" id="L2704" title="All 2 branches missed.">            } else if (changeSouth) {</span>
+<span class="nc" id="L2705">                rectHeight = attributes.get(Keys.RECT_HEIGHT) * SIZE + d.y;</span>
+            }
+<span class="nc bnc" id="L2707" title="All 2 branches missed.">            if (changeEast) {</span>
+<span class="nc" id="L2708">                rectX = element.getPos().x + d.x;</span>
+<span class="nc" id="L2709">                rectWidth = attributes.get(Keys.RECT_WIDTH) * SIZE - d.x;</span>
+<span class="nc bnc" id="L2710" title="All 2 branches missed.">            } else if (changeWest) {</span>
+<span class="nc" id="L2711">                rectWidth = attributes.get(Keys.RECT_WIDTH) * SIZE + d.x;</span>
+            }
+
+<span class="nc" id="L2714">            repaint();</span>
+<span class="nc" id="L2715">            return true;</span>
+        }
+
+        @Override
+        void released(MouseEvent e) {
+            // Flip rectangle vertically or horizontally if needed.
+<span class="nc bnc" id="L2721" title="All 2 branches missed.">            if (rectWidth &lt; 0) {</span>
+<span class="nc" id="L2722">                rectWidth = -rectWidth;</span>
+<span class="nc" id="L2723">                rectX -= rectWidth;</span>
+            }
+<span class="nc bnc" id="L2725" title="All 2 branches missed.">            if (rectHeight &lt; 0) {</span>
+<span class="nc" id="L2726">                rectHeight = -rectHeight;</span>
+<span class="nc" id="L2727">                rectY -= rectHeight;</span>
+            }
+
+            // Enforce rectangle min dimensions.
+<span class="nc" id="L2731">            rectWidth = Math.max(rectWidth, Keys.RECT_WIDTH.getMin() * SIZE);</span>
+<span class="nc" id="L2732">            rectHeight = Math.max(rectHeight, Keys.RECT_HEIGHT.getMin() * SIZE);</span>
+
+<span class="nc" id="L2734">            ElementAttributes newAttributes = new ElementAttributes(element.getElementAttributes())</span>
+<span class="nc" id="L2735">                    .set(Keys.RECT_WIDTH, rectWidth / SIZE)</span>
+<span class="nc" id="L2736">                    .set(Keys.RECT_HEIGHT, rectHeight / SIZE);</span>
+<span class="nc" id="L2737">            modify(new Modifications.Builder&lt;Circuit&gt;(Lang.get(&quot;mod_setAttributesIn_N&quot;, getToolTipName(element)))</span>
+<span class="nc" id="L2738">                    .add(new ModifyAttributes(element, newAttributes))</span>
+<span class="nc" id="L2739">                    .add(new ModifyMoveAndRotElement(element, new Vector(rectX, rectY), element.getRotate()))</span>
+<span class="nc" id="L2740">                    .build());</span>
+
+<span class="nc" id="L2742">            mouseNormal.activate();</span>
+<span class="nc" id="L2743">        }</span>
+
+        @Override
+        public void drawTo(Graphic gr) {
+<span class="nc" id="L2747">            gr.drawPolygon(new Polygon(true)</span>
+<span class="nc" id="L2748">                    .add(rectX, rectY)</span>
+<span class="nc" id="L2749">                    .add(rectX + rectWidth, rectY)</span>
+<span class="nc" id="L2750">                    .add(rectX + rectWidth, rectY + rectHeight)</span>
+<span class="nc" id="L2751">                    .add(rectX, rectY + rectHeight), Style.HIGHLIGHT);</span>
+<span class="nc" id="L2752">        }</span>
+    }
+
+    /**
+     * Activate a wizard
+     *
+     * @param wizardNotification the wizard notification
+     */
+    public void activateWizard(WizardNotification wizardNotification) {
+<span class="nc" id="L2761">        mouseNormal.activate();</span>
+<span class="nc" id="L2762">        getCircuit().clearState();</span>
+<span class="nc" id="L2763">        new MouseControllerWizard(wizardNotification).activate();</span>
+<span class="nc" id="L2764">    }</span>
+
+    /**
+     * Sets the modification listener.
+     *
+     * @param tutorialListener is called every time the circuit is modified
+     */
+    public void setTutorialListener(TutorialListener tutorialListener) {
+<span class="nc" id="L2772">        this.tutorialListener = tutorialListener;</span>
+<span class="nc" id="L2773">    }</span>
+
+    /**
+     * Deactivate a wizard
+     */
+    public void deactivateWizard() {
+<span class="nc bnc" id="L2779" title="All 2 branches missed.">        if (activeMouseController instanceof MouseControllerWizard) {</span>
+<span class="nc" id="L2780">            MouseControllerWizard mcw = (MouseControllerWizard) activeMouseController;</span>
+<span class="nc" id="L2781">            mcw.wizardNotification.closed();</span>
+        }
+<span class="nc" id="L2783">        mouseNormal.activate();</span>
+<span class="nc" id="L2784">    }</span>
+
+    private final class MouseControllerWizard extends MouseController {
+        private final WizardNotification wizardNotification;
+
+<span class="nc" id="L2789">        private MouseControllerWizard(WizardNotification wizardNotification) {</span>
+<span class="nc" id="L2790">            super(new Cursor(Cursor.CROSSHAIR_CURSOR));</span>
+<span class="nc" id="L2791">            this.wizardNotification = wizardNotification;</span>
+<span class="nc" id="L2792">        }</span>
+
+        @Override
+        void clicked(MouseEvent e) {
+<span class="nc" id="L2796">            Vector pos = getPosVector(e);</span>
+<span class="nc" id="L2797">            SearchResult sel = getVisualElement(pos, true);</span>
+<span class="nc bnc" id="L2798" title="All 2 branches missed.">            if (sel.getVisualElement() != null)</span>
+<span class="nc" id="L2799">                wizardNotification.notify(sel.getVisualElement());</span>
+<span class="nc" id="L2800">        }</span>
+
+        @Override
+        public void escapePressed() {
+<span class="nc" id="L2804">            wizardNotification.closed();</span>
+<span class="nc" id="L2805">            mouseNormal.activate();</span>
+<span class="nc" id="L2806">        }</span>
+    }
+
+    /**
+     * Interface to interact with wizards
+     */
+    public interface WizardNotification {
+        /**
+         * Called if an element is clicked
+         *
+         * @param clicked the element clicked
+         */
+        void notify(VisualElement clicked);
+
+        /**
+         * Called if the wizard is to close
+         */
+        void closed();
+    }
+
+    /**
+     * Listener to get notified if the circuit has changed
+     */
+    public interface TutorialListener {
+        /**
+         * Called if the circuit was modified
+         *
+         * @param modification the modification
+         */
+        void modified(Modification&lt;Circuit&gt; modification);
+    }
+
+    private static final class SearchResult {
+        private final State state;
+        private final VisualElement visualElement;
+
+<span class="nc" id="L2842">        enum State {NONE, FOUND, CANCELED}</span>
+
+<span class="nc" id="L2844">        private SearchResult(State state, VisualElement visualElement) {</span>
+<span class="nc" id="L2845">            this.state = state;</span>
+<span class="nc" id="L2846">            this.visualElement = visualElement;</span>
+<span class="nc" id="L2847">        }</span>
+
+        private State getState() {
+<span class="nc" id="L2850">            return state;</span>
+        }
+
+        private VisualElement getVisualElement() {
+<span class="nc" id="L2854">            return visualElement;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

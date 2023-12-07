@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Register.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">Register.java</span></div><h1>Register.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.stats.Countable;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A simple register.
+ */
+public class Register extends Node implements Element, Countable, ProgramCounter {
+
+    /**
+     * The registers {@link ElementTypeDescription}
+     */
+<span class="fc" id="L25">    public static final ElementTypeDescription DESCRIPTION</span>
+<span class="fc" id="L26">            = new ElementTypeDescription(Register.class, input(&quot;D&quot;), input(&quot;C&quot;).setClock(), input(&quot;en&quot;))</span>
+<span class="fc" id="L27">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L28">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L29">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L30">            .addAttribute(Keys.INVERTER_CONFIG)</span>
+<span class="fc" id="L31">            .addAttribute(Keys.IS_PROGRAM_COUNTER)</span>
+<span class="fc" id="L32">            .addAttribute(Keys.VALUE_IS_PROBE)</span>
+<span class="fc" id="L33">            .supportsHDL();</span>
+
+    private final int bits;
+    private final boolean isProbe;
+    private final String label;
+    private final boolean isProgramCounter;
+    private final ObservableValue q;
+    private ObservableValue dVal;
+    private ObservableValue clockVal;
+    private ObservableValue enableVal;
+    private boolean lastClock;
+    private long value;
+    private boolean enable;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attributes the elements attributes
+     */
+    public Register(ElementAttributes attributes) {
+<span class="fc" id="L53">        super(true);</span>
+<span class="fc" id="L54">        bits = attributes.getBits();</span>
+<span class="fc" id="L55">        this.q = new ObservableValue(&quot;Q&quot;, bits).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L56">        isProbe = attributes.get(Keys.VALUE_IS_PROBE);</span>
+<span class="fc" id="L57">        label = attributes.get(Keys.LABEL);</span>
+<span class="fc" id="L58">        isProgramCounter = attributes.get(Keys.IS_PROGRAM_COUNTER);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L63">        enable = enableVal.getBool();</span>
+<span class="fc" id="L64">        boolean clock = clockVal.getBool();</span>
+<span class="fc bfc" id="L65" title="All 6 branches covered.">        if (clock &amp;&amp; !lastClock &amp;&amp; enable)</span>
+<span class="fc" id="L66">            value = dVal.getValue();</span>
+<span class="fc" id="L67">        lastClock = clock;</span>
+<span class="fc" id="L68">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc" id="L72">        q.setValue(value);</span>
+<span class="fc" id="L73">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws BitsException {
+<span class="fc" id="L77">        dVal = inputs.get(0).checkBits(bits, this);</span>
+<span class="fc" id="L78">        clockVal = inputs.get(1).addObserverToValue(this).checkBits(1, this);</span>
+<span class="fc" id="L79">        enableVal = inputs.get(2).checkBits(1, this);</span>
+<span class="fc" id="L80">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L84">        return q.asList();</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+<span class="fc" id="L89">        super.registerNodes(model);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (isProbe)</span>
+<span class="fc" id="L91">            model.addSignal(new Signal(label, q, (value, highZ) -&gt; setValue(value)).setTestOutput());</span>
+<span class="fc" id="L92">    }</span>
+
+    @Override
+    public boolean isProgramCounter() {
+<span class="nc" id="L96">        return isProgramCounter;</span>
+    }
+
+    @Override
+    public long getProgramCounter() {
+<span class="nc" id="L101">        return value;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L106">        return bits;</span>
+    }
+
+    /**
+     * Returns the stored value.
+     * Used to improve custom testing capabilities.
+     *
+     * @return the stared value
+     */
+    public long getValue() {
+<span class="nc" id="L116">        return value;</span>
+    }
+
+    /**
+     * Sets the stored value.
+     * Used to improve custom testing capabilities.
+     *
+     * @param v the value
+     */
+    public void setValue(long v) {
+<span class="fc" id="L126">        value = v;</span>
+<span class="fc" id="L127">        q.setValue(value);</span>
+<span class="fc" id="L128">    }</span>
+
+    /**
+     * Returns the used label.
+     * Used to improve custom testing capabilities.
+     *
+     * @return the label
+     */
+    public String getLabel() {
+<span class="nc" id="L137">        return label;</span>
+    }
+
+    /**
+     * Returns the enable input value.
+     * Used to improve custom testing capabilities.
+     *
+     * @return true if enable was set at the last clock change.
+     */
+    public boolean isEnabled() {
+<span class="nc" id="L147">        return enable;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

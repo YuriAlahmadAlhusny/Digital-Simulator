@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LogisimReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory.importer</a> &gt; <span class="el_source">LogisimReader.java</span></div><h1>LogisimReader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory.importer;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.lang.Lang;
+
+import java.io.*;
+
+import static java.io.StreamTokenizer.*;
+
+/**
+ * Reader to read the original Logisim hex file format
+ */
+public class LogisimReader implements ValueArrayReader {
+    private final Reader reader;
+
+    /**
+     * Creates a new instance
+     *
+     * @param file the file to read
+     * @throws FileNotFoundException FileNotFoundException
+     */
+    public LogisimReader(File file) throws FileNotFoundException {
+<span class="fc" id="L28">        this(new FileReader(file));</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param reader the reader to used
+     */
+<span class="fc" id="L36">    public LogisimReader(Reader reader) {</span>
+<span class="fc" id="L37">        this.reader = reader;</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public void read(ValueArray valueArray) throws IOException {
+<span class="fc" id="L42">        try (BufferedReader bufferedReader = new BufferedReader(reader)) {</span>
+<span class="fc" id="L43">            String header = bufferedReader.readLine();</span>
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">            if (header == null || !header.equals(&quot;v2.0 raw&quot;))</span>
+<span class="fc" id="L45">                throw new IOException(Lang.get(&quot;err_invalidFileFormat&quot;));</span>
+
+<span class="fc" id="L47">            StreamTokenizer t = new StreamTokenizer(bufferedReader);</span>
+<span class="fc" id="L48">            t.resetSyntax();</span>
+<span class="fc" id="L49">            t.commentChar('#');</span>
+<span class="fc" id="L50">            t.wordChars('a', 'f');</span>
+<span class="fc" id="L51">            t.wordChars('A', 'F');</span>
+<span class="fc" id="L52">            t.wordChars('x', 'x');</span>
+<span class="fc" id="L53">            t.wordChars('X', 'X');</span>
+<span class="fc" id="L54">            t.wordChars('0', '9');</span>
+<span class="fc" id="L55">            t.whitespaceChars(0, ' ');</span>
+
+<span class="fc" id="L57">            int pos = 0;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            while (t.nextToken() != TT_EOF) {</span>
+                try {
+<span class="fc" id="L60">                    String vStr = t.sval;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                    if (vStr == null)</span>
+<span class="nc" id="L62">                        throw new IOException(&quot;invalid token in line &quot; + t.lineno());</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                    if (t.nextToken() == '*') {</span>
+<span class="fc" id="L64">                        t.nextToken();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">                        if (t.sval == null)</span>
+<span class="nc" id="L66">                            throw new IOException(&quot;invalid token in line &quot; + t.lineno());</span>
+<span class="fc" id="L67">                        long v = getHexLong(t.sval);</span>
+<span class="fc" id="L68">                        int reps = (int) Bits.decode(vStr, 0, 10);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                        for (int i = 0; i &lt; reps; i++) {</span>
+<span class="fc" id="L70">                            valueArray.set(pos, v);</span>
+<span class="fc" id="L71">                            pos++;</span>
+                        }
+<span class="fc" id="L73">                    } else {</span>
+<span class="fc" id="L74">                        t.pushBack();</span>
+<span class="fc" id="L75">                        valueArray.set(pos, getHexLong(vStr));</span>
+<span class="fc" id="L76">                        pos++;</span>
+                    }
+<span class="nc" id="L78">                } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L79">                    throw new IOException(e);</span>
+<span class="fc" id="L80">                }</span>
+            }
+        }
+<span class="fc" id="L83">    }</span>
+
+    private long getHexLong(String vStr) throws Bits.NumberFormatException {
+<span class="fc" id="L86">        int p = 0;</span>
+<span class="pc bpc" id="L87" title="1 of 8 branches missed.">        if (vStr.length() &gt; 2 &amp;&amp; vStr.charAt(0) == '0' &amp;&amp; (vStr.charAt(1) == 'x' || vStr.charAt(1) == 'X'))</span>
+<span class="fc" id="L88">            p = 2;</span>
+
+<span class="fc" id="L90">        return Bits.decode(vStr, p, 16);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

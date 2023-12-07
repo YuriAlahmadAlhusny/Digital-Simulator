@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LayoutShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">LayoutShape.java</span></div><h1>LayoutShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.ElementTypeDescriptionCustom;
+import de.neemann.digital.lang.Lang;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * The layout shape.
+ * The pins are ordered in the same way they are placed inside the circuit.
+ * Thus the shape feels like a minimized version of the contained circuit in respect to pin ordering.
+ */
+public class LayoutShape implements Shape {
+
+    private final int width;
+    private final int height;
+    private final Pins pins;
+    private final Color color;
+    private final String name;
+    private final PinList left;
+    private final PinList right;
+    private final PinList top;
+    private final PinList bottom;
+
+    /**
+     * Creates a new instance
+     *
+     * @param custom            the type description
+     * @param elementAttributes the local attributes
+     * @throws NodeException            NodeException
+     * @throws PinException             PinException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+<span class="fc" id="L56">    public LayoutShape(ElementTypeDescriptionCustom custom, ElementAttributes elementAttributes) throws NodeException, PinException, ElementNotFoundException {</span>
+<span class="fc" id="L57">        String l = elementAttributes.getLabel();</span>
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">        if (l != null &amp;&amp; l.length() &gt; 0)</span>
+<span class="nc" id="L59">            name = l;</span>
+        else
+<span class="fc" id="L61">            name = custom.getShortName();</span>
+
+<span class="fc" id="L63">        left = new PinList(name, false);</span>
+<span class="fc" id="L64">        right = new PinList(name, false);</span>
+<span class="fc" id="L65">        top = new PinList(name, true);</span>
+<span class="fc" id="L66">        bottom = new PinList(name, true);</span>
+
+<span class="fc" id="L68">        Circuit circuit = custom.getResolvedCircuit(elementAttributes);</span>
+
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (VisualElement ve : circuit.getElements()) {</span>
+<span class="pc bpc" id="L71" title="1 of 4 branches missed.">            if (ve.equalsDescription(In.DESCRIPTION) || ve.equalsDescription(Clock.DESCRIPTION)) {</span>
+<span class="pc bpc" id="L72" title="1 of 4 branches missed.">                switch (ve.getRotate()) {</span>
+                    case 0:
+<span class="fc" id="L74">                        left.add(ve);</span>
+<span class="fc" id="L75">                        break;</span>
+                    case 1:
+<span class="fc" id="L77">                        bottom.add(ve);</span>
+<span class="fc" id="L78">                        break;</span>
+                    case 2:
+<span class="nc" id="L80">                        right.add(ve);</span>
+<span class="nc" id="L81">                        break;</span>
+                    default:
+<span class="fc" id="L83">                        top.add(ve);</span>
+                        break;
+                }
+            }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (ve.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">                switch (ve.getRotate()) {</span>
+                    case 0:
+<span class="fc" id="L90">                        right.add(ve);</span>
+<span class="fc" id="L91">                        break;</span>
+                    case 1:
+<span class="nc" id="L93">                        top.add(ve);</span>
+<span class="nc" id="L94">                        break;</span>
+                    case 2:
+<span class="nc" id="L96">                        left.add(ve);</span>
+<span class="nc" id="L97">                        break;</span>
+                    default:
+<span class="fc" id="L99">                        bottom.add(ve);</span>
+                        break;
+                }
+            }
+<span class="fc" id="L103">        }</span>
+
+<span class="fc" id="L105">        height = left.max(right.max(circuit.getAttributes().get(Keys.HEIGHT)));</span>
+<span class="fc" id="L106">        width = top.max(bottom.max(circuit.getAttributes().get(Keys.WIDTH)));</span>
+
+<span class="fc" id="L108">        HashMap&lt;String, PinPos&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L109">        top.createPosition(map, new Vector(0, 0), width);</span>
+<span class="fc" id="L110">        bottom.createPosition(map, new Vector(0, SIZE * height), width);</span>
+<span class="fc" id="L111">        left.createPosition(map, new Vector(0, 0), height);</span>
+<span class="fc" id="L112">        right.createPosition(map, new Vector(SIZE * width, 0), height);</span>
+
+<span class="fc" id="L114">        pins = new Pins();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (PinDescription p : custom.getInputDescription(elementAttributes))</span>
+<span class="fc" id="L116">            pins.add(createPin(map, p));</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (PinDescription p : custom.getOutputDescriptions(elementAttributes))</span>
+<span class="fc" id="L118">            pins.add(createPin(map, p));</span>
+
+<span class="fc" id="L120">        color = circuit.getAttributes().get(Keys.BACKGROUND_COLOR);</span>
+<span class="fc" id="L121">    }</span>
+
+    private Pin createPin(HashMap&lt;String, PinPos&gt; map, PinDescription p) throws PinException {
+<span class="fc" id="L124">        PinPos pinPos = map.get(p.getName());</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (pinPos == null)</span>
+<span class="nc" id="L126">            throw new PinException(Lang.get(&quot;err_pin_N_notFound&quot;, p.getName()));</span>
+<span class="fc" id="L127">        return new Pin(pinPos.pos, p);</span>
+    }
+
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L133">        return pins;</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L138">        return null;</span>
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L143">        final Polygon poly = new Polygon(true)</span>
+<span class="fc" id="L144">                .add(0, 0)</span>
+<span class="fc" id="L145">                .add(width * SIZE, 0)</span>
+<span class="fc" id="L146">                .add(width * SIZE, height * SIZE)</span>
+<span class="fc" id="L147">                .add(0, height * SIZE);</span>
+<span class="fc" id="L148">        graphic.drawPolygon(poly, Style.NORMAL.deriveFillStyle(color));</span>
+<span class="fc" id="L149">        graphic.drawPolygon(poly, Style.NORMAL);</span>
+
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (bottom.size() == 0)</span>
+<span class="nc" id="L152">            graphic.drawText(new Vector(width * SIZE / 2, height * SIZE + 4), name, Orientation.CENTERTOP, Style.SHAPE_PIN);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        else if (top.size() == 0)</span>
+<span class="nc" id="L154">            graphic.drawText(new Vector(width * SIZE / 2, -4), name, Orientation.CENTERBOTTOM, Style.SHAPE_PIN);</span>
+        else
+<span class="fc" id="L156">            graphic.drawText(new Vector(width * SIZE / 2, height * SIZE / 2), name, Orientation.CENTERCENTER, Style.SHAPE_PIN);</span>
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (PinPos p : left)</span>
+<span class="fc" id="L159">            graphic.drawText(p.pos.add(4, 0), p.label, Orientation.LEFTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (PinPos p : right)</span>
+<span class="fc" id="L161">            graphic.drawText(p.pos.add(-4, 0), p.label, Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (PinPos p : top)</span>
+<span class="fc" id="L163">            graphic.drawText(p.pos.add(0, 4), p.pos.add(0, 3), p.label, Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (PinPos p : bottom)</span>
+<span class="fc" id="L165">            graphic.drawText(p.pos.add(0, -4), p.pos.add(0, -3), p.label, Orientation.RIGHTCENTER, Style.SHAPE_PIN);</span>
+<span class="fc" id="L166">    }</span>
+
+    private final static class PinPos implements Comparable&lt;PinPos&gt; {
+        private final int orderPos;
+        private final String label;
+        private boolean hasPosDelta;
+        private int posDelta;
+        private Vector pos;
+
+<span class="fc" id="L175">        private PinPos(VisualElement ve, boolean horizontal) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if (horizontal)</span>
+<span class="fc" id="L177">                orderPos = ve.getPos().x;</span>
+            else
+<span class="fc" id="L179">                orderPos = ve.getPos().y;</span>
+<span class="fc" id="L180">            label = ve.getElementAttributes().getLabel();</span>
+
+<span class="fc" id="L182">            posDelta = ve.getElementAttributes().get(Keys.LAYOUT_SHAPE_DELTA);</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            hasPosDelta = posDelta &gt; 0;</span>
+<span class="fc" id="L184">        }</span>
+
+        @Override
+        public int compareTo(PinPos pinPos) {
+<span class="fc" id="L188">            return orderPos - pinPos.orderPos;</span>
+        }
+
+    }
+
+    private final static class PinList implements Iterable&lt;PinPos&gt; {
+        private final String name;
+        private final boolean horizontal;
+        private ArrayList&lt;PinPos&gt; pins;
+<span class="fc" id="L197">        private boolean allHavePosDeltas = false;</span>
+        private Vector pos;
+        private int minWidth;
+
+<span class="fc" id="L201">        private PinList(String name, boolean horizontal) {</span>
+<span class="fc" id="L202">            this.name = name;</span>
+<span class="fc" id="L203">            this.horizontal = horizontal;</span>
+<span class="fc" id="L204">            pins = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L205">        }</span>
+
+        private void add(VisualElement ve) {
+<span class="fc" id="L208">            PinPos pp = new PinPos(ve, horizontal);</span>
+<span class="fc" id="L209">            pins.add(pp);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            if (pp.hasPosDelta)</span>
+<span class="nc" id="L211">                minWidth += pp.posDelta;</span>
+            else
+<span class="fc" id="L213">                allHavePosDeltas = false;</span>
+<span class="fc" id="L214">        }</span>
+
+        private int size() {
+<span class="fc" id="L217">            return pins.size();</span>
+        }
+
+        private void createPosition(HashMap&lt;String, PinPos&gt; map, Vector startPos, int length) throws PinException {
+<span class="fc" id="L221">            this.pos = startPos;</span>
+<span class="fc" id="L222">            Collections.sort(pins);</span>
+
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">            if (allHavePosDeltas) {</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                for (PinPos pp : pins) {</span>
+<span class="nc" id="L226">                    move(pp.posDelta);</span>
+<span class="nc" id="L227">                    pp.pos = pos;</span>
+<span class="nc" id="L228">                    addToMap(map, pp);</span>
+<span class="nc" id="L229">                }</span>
+            } else {
+                // length: user defined width, always larger or equal to pins.size()+1
+
+<span class="fc" id="L233">                int delta = (length + 2) / (pins.size() + 1);</span>
+
+<span class="fc" id="L235">                int pinsOnly = delta * (pins.size() - 1);</span>
+
+<span class="fc" id="L237">                move((length - pinsOnly) / 2);</span>
+
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                for (PinPos pp : pins) {</span>
+<span class="fc" id="L240">                    pp.pos = pos;</span>
+<span class="fc" id="L241">                    addToMap(map, pp);</span>
+<span class="fc" id="L242">                    move(delta);</span>
+<span class="fc" id="L243">                }</span>
+            }
+<span class="fc" id="L245">        }</span>
+
+        private void addToMap(HashMap&lt;String, PinPos&gt; map, PinPos pp) throws PinException {
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">            if (map.containsKey(pp.label))</span>
+<span class="nc" id="L249">                throw new PinException(Lang.get(&quot;err_duplicatePinLabel&quot;, pp.label, name));</span>
+<span class="fc" id="L250">            map.put(pp.label, pp);</span>
+<span class="fc" id="L251">        }</span>
+
+        private void move(int delta) {
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (horizontal)</span>
+<span class="fc" id="L255">                pos = pos.add(SIZE * delta, 0);</span>
+            else
+<span class="fc" id="L257">                pos = pos.add(0, SIZE * delta);</span>
+<span class="fc" id="L258">        }</span>
+
+        private int max(int m) {
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">            if (allHavePosDeltas)</span>
+<span class="nc" id="L262">                m = Math.max(m, minWidth + 1);</span>
+<span class="fc" id="L263">            return Math.max(m, pins.size() + 1);</span>
+        }
+
+        @Override
+        public Iterator&lt;PinPos&gt; iterator() {
+<span class="fc" id="L268">            return pins.iterator();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BehavioralFixtureCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">BehavioralFixtureCreator.java</span></div><h1>BehavioralFixtureCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2021 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.ModelModifier;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.TestCaseElement;
+import de.neemann.digital.testing.parser.ParserException;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.IOException;
+
+/**
+ * Dialog used to create a test case
+ */
+public class BehavioralFixtureCreator extends JDialog implements ModelModifier {
+    private final JLabel frameLabel;
+    private final Main main;
+    private final ShapeFactory shapeFactory;
+    private final StringBuilder testCase;
+    private int testLines;
+    private Model model;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent       the parent frame
+     * @param shapeFactory the shapeFactory used to create the test case component
+     */
+    public BehavioralFixtureCreator(Main parent, ShapeFactory shapeFactory) {
+<span class="nc" id="L46">        super(parent, Lang.get(&quot;menu_createBehavioralFixture&quot;), false);</span>
+<span class="nc" id="L47">        main = parent;</span>
+<span class="nc" id="L48">        this.shapeFactory = shapeFactory;</span>
+<span class="nc" id="L49">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L50">        frameLabel = new JLabel(Lang.get(&quot;msg_fixesCreated_N&quot;, testLines));</span>
+<span class="nc" id="L51">        frameLabel.setFont(Screen.getInstance().getFont(1.5f));</span>
+<span class="nc" id="L52">        frameLabel.setBorder(new EmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L53">        getContentPane().add(frameLabel);</span>
+
+<span class="nc" id="L55">        GridLayout layout = new GridLayout(2, 1);</span>
+<span class="nc" id="L56">        layout.setVgap(5);</span>
+<span class="nc" id="L57">        JPanel buttons = new JPanel(layout);</span>
+<span class="nc" id="L58">        buttons.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+
+<span class="nc" id="L60">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_createTestLine&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L63">                addFixture();</span>
+<span class="nc" id="L64">            }</span>
+<span class="nc" id="L65">        }.setToolTip(Lang.get(&quot;btn_createTestLine_tt&quot;)).createJButton());</span>
+<span class="nc" id="L66">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_BehavioralFixtureComplete&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L69">                createTestCase();</span>
+<span class="nc" id="L70">            }</span>
+<span class="nc" id="L71">        }.setToolTip(Lang.get(&quot;btn_BehavioralFixtureComplete_tt&quot;)).createJButton());</span>
+
+<span class="nc" id="L73">        getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L75">        testCase = new StringBuilder();</span>
+
+<span class="nc" id="L77">        pack();</span>
+<span class="nc" id="L78">        setLocation(parent.getLocation());</span>
+<span class="nc" id="L79">    }</span>
+
+    private void addFixture() {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (testCase.length() == 0) {</span>
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            for (Signal s : model.getInputs()) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                if (testCase.length() &gt; 0)</span>
+<span class="nc" id="L86">                    testCase.append(' ');</span>
+<span class="nc" id="L87">                testCase.append(s.getName());</span>
+<span class="nc" id="L88">            }</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            for (Signal s : model.getOutputs())</span>
+<span class="nc" id="L90">                testCase.append(&quot; &quot;).append(s.getName());</span>
+<span class="nc" id="L91">            testCase.append('\n');</span>
+        }
+
+<span class="nc" id="L94">        boolean first = true;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        for (Signal s : model.getInputs()) {</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (first)</span>
+<span class="nc" id="L97">                first = false;</span>
+            else
+<span class="nc" id="L99">                testCase.append(' ');</span>
+<span class="nc" id="L100">            addValue(testCase, s);</span>
+<span class="nc" id="L101">        }</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        for (Signal s : model.getOutputs()) {</span>
+<span class="nc" id="L103">            testCase.append(' ');</span>
+<span class="nc" id="L104">            addValue(testCase, s);</span>
+<span class="nc" id="L105">        }</span>
+<span class="nc" id="L106">        testCase.append('\n');</span>
+
+<span class="nc" id="L108">        testLines++;</span>
+<span class="nc" id="L109">        frameLabel.setText(Lang.get(&quot;msg_fixesCreated_N&quot;, testLines));</span>
+<span class="nc" id="L110">    }</span>
+
+    private void addValue(StringBuilder testCase, Signal s) {
+<span class="nc" id="L113">        ObservableValue value = s.getValue();</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (value.isHighZ()) {</span>
+<span class="nc" id="L115">            testCase.append('Z');</span>
+        } else {
+<span class="nc" id="L117">            int bits = value.getBits();</span>
+
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (bits &lt;= 3)</span>
+<span class="nc" id="L120">                testCase.append(value.getValue());</span>
+            else
+<span class="nc" id="L122">                testCase.append(&quot;0x&quot;).append(Long.toHexString(value.getValue()));</span>
+        }
+<span class="nc" id="L124">    }</span>
+
+    private void createTestCase() {
+        try {
+<span class="nc" id="L128">            VisualElement tc = new VisualElement(TestCaseElement.DESCRIPTION.getName())</span>
+<span class="nc" id="L129">                    .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L130">                    .setAttribute(Keys.TESTDATA, new TestCaseDescription(testCase.toString()));</span>
+<span class="nc" id="L131">            main.getCircuitComponent().setPartToInsert(tc);</span>
+<span class="nc" id="L132">        } catch (IOException | ParserException e) {</span>
+<span class="nc" id="L133">            SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorCreatingTestCase&quot;)).addCause(e));</span>
+        } finally {
+<span class="nc" id="L135">            dispose();</span>
+        }
+<span class="nc" id="L137">    }</span>
+
+    @Override
+    public void preInit(Model model) throws NodeException {
+<span class="nc" id="L141">        this.model = model;</span>
+
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (model.getInputs().isEmpty())</span>
+<span class="nc" id="L144">            throw new NodeException(Lang.get(&quot;err_analyseNoInputs&quot;));</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (model.getOutputs().isEmpty())</span>
+<span class="nc" id="L146">            throw new NodeException(Lang.get(&quot;err_analyseNoOutputs&quot;));</span>
+
+<span class="nc" id="L148">        SwingUtilities.invokeLater(() -&gt; setVisible(true));</span>
+<span class="nc" id="L149">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

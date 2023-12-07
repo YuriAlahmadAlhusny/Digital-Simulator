@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClockIntegratorGeneric.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.clock</a> &gt; <span class="el_source">ClockIntegratorGeneric.java</span></div><h1>ClockIntegratorGeneric.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.clock;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.hdl.model2.*;
+import de.neemann.digital.hdl.model2.HDLCircuit;
+
+import java.util.ArrayList;
+
+/**
+ * Creates a simple generic clock divider.
+ * Inserts a simple clock divider to match the frequency given in the model.
+ * Not suited for real world applications because a logical signal is used
+ * to clock the entities.
+ * You should use the FPGA-dependant clock resources to generate a clock signal.
+ */
+public class ClockIntegratorGeneric implements HDLClockIntegrator {
+<span class="fc" id="L23">    private static final Key&lt;Integer&gt; COUNTER_KEY = new Key&lt;&gt;(&quot;maxCounter&quot;, 0);</span>
+    private double periodns;
+    private String clockGenerator;
+
+    /**
+     * Creates a new instance
+     *
+     * @param periodns the clock period in ns
+     */
+<span class="fc" id="L32">    public ClockIntegratorGeneric(double periodns) {</span>
+<span class="fc" id="L33">        this.periodns = periodns;</span>
+<span class="fc" id="L34">    }</span>
+
+    /**
+     * Enables an external clock generator
+     *
+     * @param clockGenerator the clock generator
+     * @return this for chained calls
+     */
+    public ClockIntegratorGeneric setClockGenerator(String clockGenerator) {
+<span class="fc" id="L43">        this.clockGenerator = clockGenerator;</span>
+<span class="fc" id="L44">        return this;</span>
+    }
+
+    @Override
+    public void integrateClocks(HDLCircuit circuit, ArrayList&lt;ClockInfo&gt; clocks) throws HDLException {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (ClockInfo ci : clocks) {</span>
+<span class="fc" id="L50">            int freq = ci.getFrequency();</span>
+<span class="fc" id="L51">            int counter = (int) (1000000000.0 / (periodns * 2 * freq));</span>
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (counter &gt;= 2) {</span>
+<span class="fc" id="L54">                final ElementAttributes attributes = new ElementAttributes().set(COUNTER_KEY, counter);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                if (clockGenerator != null)</span>
+<span class="fc" id="L56">                    attributes.set(new Key&lt;&gt;(&quot;clockGenerator&quot;, &quot;&quot;), clockGenerator);</span>
+<span class="fc" id="L57">                HDLNodeBuildIn node = new HDLNodeBuildIn(&quot;simpleClockDivider&quot;,</span>
+                        attributes,
+<span class="nc" id="L59">                        name -&gt; 1);</span>
+
+<span class="fc" id="L61">                circuit.integrateClockNode(ci.getClockPort(), node);</span>
+            }
+<span class="fc" id="L63">        }</span>
+<span class="fc" id="L64">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

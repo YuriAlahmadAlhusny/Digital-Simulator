@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CircuitTransferable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">CircuitTransferable.java</span></div><h1>CircuitTransferable.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.Movable;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+
+/**
+ * Used to implement copy and paste.
+ */
+public class CircuitTransferable implements Transferable {
+
+    private String data;
+
+    /**
+     * Creates a new instance
+     *
+     * @param data the data to copy
+     */
+<span class="nc" id="L36">    CircuitTransferable(ArrayList&lt;Movable&gt; data) {</span>
+<span class="nc" id="L37">        XStream xStream = Circuit.getxStream();</span>
+<span class="nc" id="L38">        try (StringWriter out = new StringWriter()) {</span>
+<span class="nc" id="L39">            out.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="nc" id="L40">            xStream.marshal(data, new PrettyPrintWriter(out));</span>
+<span class="nc" id="L41">            this.data = out.toString();</span>
+<span class="nc" id="L42">        } catch (IOException e) {</span>
+<span class="nc" id="L43">            e.printStackTrace();</span>
+<span class="nc" id="L44">        }</span>
+<span class="nc" id="L45">    }</span>
+
+    @Override
+    public DataFlavor[] getTransferDataFlavors() {
+<span class="nc" id="L49">        return new DataFlavor[]{DataFlavor.stringFlavor};</span>
+    }
+
+    @Override
+    public boolean isDataFlavorSupported(DataFlavor flavor) {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        return flavor == DataFlavor.stringFlavor;</span>
+    }
+
+    @Override
+    public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (!isDataFlavorSupported(flavor))</span>
+<span class="nc" id="L60">            throw new UnsupportedFlavorException(flavor);</span>
+
+<span class="nc" id="L62">        return data;</span>
+    }
+
+    /**
+     * Creates a list of objects from inserted data
+     * Can also throw a {@link ClassCastException}!
+     *
+     * @param data         the inserted data
+     * @param shapeFactory the shapeFactory to set to the elements
+     * @return the elements or null
+     * @throws IOException IOException
+     */
+    public static ArrayList&lt;Movable&gt; createList(Object data, ShapeFactory shapeFactory) throws IOException {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (!(data instanceof String))</span>
+<span class="nc" id="L76">            return null;</span>
+
+<span class="nc" id="L78">        XStream xStream = Circuit.getxStream();</span>
+<span class="nc" id="L79">        try (Reader in = new StringReader(data.toString())) {</span>
+<span class="nc" id="L80">            ArrayList&lt;Movable&gt; elements = (ArrayList&lt;Movable&gt;) xStream.fromXML(in);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (elements == null)</span>
+<span class="nc" id="L82">                return null;</span>
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            for (Movable m : elements)</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                if (m instanceof VisualElement)</span>
+<span class="nc" id="L86">                    ((VisualElement) m).setShapeFactory(shapeFactory);</span>
+
+<span class="nc" id="L88">            return elements;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

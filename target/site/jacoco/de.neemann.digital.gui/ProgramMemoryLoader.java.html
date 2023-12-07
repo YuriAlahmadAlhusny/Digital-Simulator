@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProgramMemoryLoader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">ProgramMemoryLoader.java</span></div><h1>ProgramMemoryLoader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.ProgramMemory;
+import de.neemann.digital.core.memory.importer.Importer;
+import de.neemann.digital.core.memory.importer.MultiValueArray;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * A Modifier that loads a given rom file to the program memory of the model.
+ */
+public class ProgramMemoryLoader implements ModelModifier {
+    private final File romHex;
+    private final boolean bigEndian;
+
+    /**
+     * Creates a new rom modifier
+     *
+     * @param romHex the file to load
+     */
+<span class="fc" id="L36">    ProgramMemoryLoader(File romHex, boolean bigEndian) {</span>
+<span class="fc" id="L37">        this.romHex = romHex;</span>
+<span class="fc" id="L38">        this.bigEndian = bigEndian;</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public void preInit(Model model) throws NodeException {
+<span class="pc bpc" id="L43" title="2 of 4 branches missed.">        List&lt;Node&gt; progMem = model.findNode(n -&gt; n instanceof ProgramMemory &amp;&amp; ((ProgramMemory) n).isProgramMemory());</span>
+
+        try {
+<span class="pc bpc" id="L46" title="1 of 3 branches missed.">            switch (progMem.size()) {</span>
+                case 0:
+<span class="nc" id="L48">                    throw new NodeException(Lang.get(&quot;err_noRomFound&quot;));</span>
+                case 1:
+<span class="fc" id="L50">                    final ProgramMemory memory = (ProgramMemory) progMem.get(0);</span>
+<span class="fc" id="L51">                    memory.setProgramMemory(Importer.read(romHex, memory.getDataBits(), bigEndian));</span>
+                default:
+<span class="fc" id="L53">                    final Comparator&lt;Node&gt; comparator = Comparator.comparing(n -&gt; ((ProgramMemory) n).getLabel());</span>
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                    for (Node n : progMem)</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                        for (Node m : progMem)</span>
+<span class="fc bfc" id="L57" title="All 4 branches covered.">                            if ((n != m) &amp;&amp; comparator.compare(n, m) == 0)</span>
+<span class="fc" id="L58">                                throw new NodeException(Lang.get(&quot;err_ProgMemLabelsNotDifferent&quot;));</span>
+
+<span class="fc" id="L60">                    progMem.sort(comparator);</span>
+<span class="fc" id="L61">                    MultiValueArray.Builder builder = new MultiValueArray.Builder();</span>
+<span class="fc" id="L62">                    HashMap&lt;ProgramMemory, DataField&gt; memMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                    for (Node n : progMem) {</span>
+<span class="fc" id="L64">                        final ProgramMemory mem = (ProgramMemory) n;</span>
+<span class="fc" id="L65">                        DataField df = new DataField(1024);</span>
+<span class="fc" id="L66">                        builder.add(df, mem.getDataBits());</span>
+<span class="fc" id="L67">                        memMap.put(mem, df);</span>
+<span class="fc" id="L68">                    }</span>
+<span class="fc" id="L69">                    Importer.read(romHex, builder.build(), bigEndian);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                    for (Map.Entry&lt;ProgramMemory, DataField&gt; e : memMap.entrySet())</span>
+<span class="fc" id="L71">                        e.getKey().setProgramMemory(e.getValue());</span>
+            }
+<span class="nc" id="L73">        } catch (IOException | MultiValueArray.ValueArrayException e) {</span>
+<span class="nc" id="L74">            throw new NodeException(Lang.get(&quot;err_errorLoadingRomData&quot;), e);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

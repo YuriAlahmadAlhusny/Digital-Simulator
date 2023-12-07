@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SingleBusHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.wiring.bus</a> &gt; <span class="el_source">SingleBusHandler.java</span></div><h1>SingleBusHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.wiring.bus;
+
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.PinDescription;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * The SingleBusHandler is used for a simple isolated net.
+ */
+public final class SingleBusHandler extends AbstractBusHandler {
+    private final ObservableValue output;
+    private final PinDescription.PullResistor resistor;
+    private final List&lt;ObservableValue&gt; inputs;
+
+    /**
+     * Creates a new instance
+     *
+     * @param obs      the Observer used ti detect a burn condition
+     * @param output   the outputs connected to this net
+     * @param resistor the resistor of this net
+     * @param inputs   the outputs connected to this net are the inputs of the nets state
+     */
+    public SingleBusHandler(BusModelStateObserver obs, ObservableValue output, PinDescription.PullResistor resistor, ObservableValue... inputs) {
+<span class="fc" id="L32">        super(obs);</span>
+<span class="fc" id="L33">        this.output = output;</span>
+<span class="fc" id="L34">        this.resistor = resistor;</span>
+<span class="fc" id="L35">        this.inputs = Arrays.asList(inputs);</span>
+<span class="fc" id="L36">    }</span>
+
+    @Override
+    public List&lt;ObservableValue&gt; getInputs() {
+<span class="fc" id="L40">        return inputs;</span>
+    }
+
+    @Override
+    public PinDescription.PullResistor getResistor() {
+<span class="fc" id="L45">        return resistor;</span>
+    }
+
+    @Override
+    public void set(long value, long highz) {
+<span class="fc" id="L50">        output.set(value, highz);</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public ObservableValues getAllValues() {
+<span class="fc" id="L55">        return new ObservableValues.Builder().add(getInputs()).add(output).build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

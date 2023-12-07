@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.expression</a> &gt; <span class="el_source">ExpressionDialog.java</span></div><h1>ExpressionDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.expression;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.format.FormatToExpression;
+import de.neemann.digital.analyse.parser.Parser;
+import de.neemann.digital.builder.circuit.CircuitBuilder;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.components.table.ShowStringDialog;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.util.ArrayList;
+
+import static de.neemann.digital.gui.components.EditorFactory.addF1Traversal;
+
+/**
+ * Dialog to enter an expression.
+ * Creates a new frame with a circuit generated from the entered expression.
+ */
+public class ExpressionDialog extends JDialog {
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent       the parent
+     * @param library      the library to use
+     * @param shapeFactory the shapeFactory used for new circuits
+     * @param baseFilename filename used as base for file operations
+     */
+    public ExpressionDialog(Main parent, ElementLibrary library, ShapeFactory shapeFactory, File baseFilename) {
+<span class="nc" id="L44">        super(parent, Lang.get(&quot;expression&quot;), false);</span>
+
+<span class="nc" id="L46">        String exampleEquation = &quot;(C ∨ B) ∧ (A ∨ C) ∧ (B ∨ !C) * (C + !A)&quot;;</span>
+<span class="nc" id="L47">        JTextArea text = addF1Traversal(new JTextArea(exampleEquation, 5, 40));</span>
+<span class="nc" id="L48">        getContentPane().add(new JScrollPane(text), BorderLayout.CENTER);</span>
+<span class="nc" id="L49">        getContentPane().add(new JLabel(Lang.get(&quot;msg_enterAnExpression&quot;)), BorderLayout.NORTH);</span>
+
+<span class="nc" id="L51">        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="nc" id="L52">        getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L54">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_help&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L57">                new ShowStringDialog(</span>
+                        ExpressionDialog.this,
+<span class="nc" id="L59">                        Lang.get(&quot;msg_expressionHelpTitle&quot;),</span>
+<span class="nc" id="L60">                        Lang.get(&quot;msg_expressionHelp&quot;), true)</span>
+<span class="nc" id="L61">                        .setVisible(true);</span>
+<span class="nc" id="L62">            }</span>
+<span class="nc" id="L63">        }.createJButton());</span>
+
+<span class="nc" id="L65">        buttons.add(new ToolTipAction(Lang.get(&quot;btn_create&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L69">                    ArrayList&lt;Expression&gt; expList = new Parser(text.getText()).parse();</span>
+<span class="nc" id="L70">                    CircuitBuilder circuitBuilder = new CircuitBuilder(shapeFactory).setResolveLocalVars(true);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                    if (expList.size() == 1)</span>
+<span class="nc" id="L72">                        circuitBuilder.addCombinatorial(&quot;Y&quot;, expList.get(0));</span>
+                    else
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                        for (Expression exp : expList)</span>
+<span class="nc" id="L75">                            circuitBuilder.addCombinatorial(FormatToExpression.defaultFormat(exp), exp);</span>
+<span class="nc" id="L76">                    Circuit circuit = circuitBuilder.createCircuit();</span>
+<span class="nc" id="L77">                    new Main.MainBuilder()</span>
+<span class="nc" id="L78">                            .setParent(parent)</span>
+<span class="nc" id="L79">                            .setLibrary(library)</span>
+<span class="nc" id="L80">                            .setCircuit(circuit)</span>
+<span class="nc" id="L81">                            .setBaseFileName(baseFilename)</span>
+<span class="nc" id="L82">                            .openLater();</span>
+<span class="nc" id="L83">                } catch (Exception ex) {</span>
+<span class="nc" id="L84">                    new ErrorMessage().addCause(ex).show(ExpressionDialog.this);</span>
+<span class="nc" id="L85">                }</span>
+<span class="nc" id="L86">            }</span>
+<span class="nc" id="L87">        }.setToolTip(Lang.get(&quot;btn_create_tt&quot;)).createJButton());</span>
+
+<span class="nc" id="L89">        pack();</span>
+<span class="nc" id="L90">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L91">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

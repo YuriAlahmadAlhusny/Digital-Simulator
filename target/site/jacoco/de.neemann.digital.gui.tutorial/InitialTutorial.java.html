@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitialTutorial.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.tutorial</a> &gt; <span class="el_source">InitialTutorial.java</span></div><h1>InitialTutorial.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.tutorial;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.basic.XOr;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.gui.components.modification.ModifyInsertWire;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.undo.Modification;
+import de.neemann.digital.undo.Modifications;
+import de.neemann.gui.LineBreaker;
+import de.neemann.gui.Screen;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * The tutorial dialog.
+ */
+public class InitialTutorial extends JDialog implements CircuitComponent.TutorialListener, ModelStateObserverTyped {
+<span class="nc" id="L44">    private static final ArrayList&lt;Step&gt; STEPS = new ArrayList&lt;&gt;();</span>
+
+    static {
+<span class="nc" id="L47">        STEPS.add(new Step(&quot;tutorial1&quot;, (cc, mod, t) -&gt; contains(cc, In.DESCRIPTION)));</span>
+<span class="nc" id="L48">        STEPS.add(new Step(&quot;tutorial2&quot;, (cc, mod, t) -&gt; contains(cc, In.DESCRIPTION, In.DESCRIPTION)));</span>
+<span class="nc" id="L49">        STEPS.add(new Step(&quot;tutorial3&quot;, (cc, mod, t) -&gt; contains(cc, In.DESCRIPTION, In.DESCRIPTION, XOr.DESCRIPTION)));</span>
+<span class="nc" id="L50">        STEPS.add(new Step(&quot;tutorial4&quot;, (cc, mod, t) -&gt; contains(cc, In.DESCRIPTION, In.DESCRIPTION, XOr.DESCRIPTION, Out.DESCRIPTION)));</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">        STEPS.add(new Step(&quot;tutorial5&quot;, (cc, mod, t) -&gt; contains(mod, ModifyInsertWire.class) || isWorking(cc)));</span>
+<span class="nc" id="L52">        STEPS.add(new Step(&quot;tutorial6&quot;, (cc, mod, t) -&gt; isWorking(cc)));</span>
+<span class="nc" id="L53">        STEPS.add(new Step(&quot;tutorial7&quot;, (cc, mod, t) -&gt; {</span>
+<span class="nc" id="L54">            Model model = t.main.getModel();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (model != null) {</span>
+<span class="nc" id="L56">                model.addObserver(t);</span>
+<span class="nc" id="L57">                return true;</span>
+            } else
+<span class="nc" id="L59">                return false;</span>
+        }));
+<span class="nc" id="L61">        STEPS.add(new Step(&quot;tutorial8&quot;, (cc, mod, t) -&gt; outputIsHigh(t)));</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        STEPS.add(new Step(&quot;tutorial9&quot;, (cc, mod, t) -&gt; t.main.getModel() == null));</span>
+<span class="nc" id="L63">        STEPS.add(new Step(&quot;tutorial10&quot;, (cc, mod, t) -&gt; isIONamed(cc, 1, t)));</span>
+<span class="nc" id="L64">        STEPS.add(new Step(&quot;tutorial11&quot;, (cc, mod, t) -&gt; isIONamed(cc, 3, t)));</span>
+<span class="nc" id="L65">    }</span>
+
+    private final Main main;
+
+    private static boolean outputIsHigh(InitialTutorial t) {
+<span class="nc" id="L70">        Model model = t.main.getModel();</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (model == null)</span>
+<span class="nc" id="L72">            return false;</span>
+<span class="nc" id="L73">        List&lt;Node&gt; nl = model.getNodes();</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (nl.size() != 1)</span>
+<span class="nc" id="L75">            return false;</span>
+
+<span class="nc" id="L77">        Node n = nl.get(0);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (n instanceof Element) {</span>
+<span class="nc" id="L79">            Element e = (Element) n;</span>
+            try {
+<span class="nc" id="L81">                final ObservableValues outputs = e.getOutputs();</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                if (outputs.size() != 1)</span>
+<span class="nc" id="L83">                    return false;</span>
+                else
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                    return outputs.get(0).getValue() != 0;</span>
+<span class="nc" id="L86">            } catch (PinException ex) {</span>
+<span class="nc" id="L87">                return false;</span>
+            }
+        } else
+<span class="nc" id="L90">            return false;</span>
+    }
+
+    private static boolean isIONamed(CircuitComponent cc, int expected, InitialTutorial t) {
+<span class="nc" id="L94">        HashSet&lt;String&gt; set = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L95">        int num = 0;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (VisualElement ve : cc.getCircuit().getElements()) {</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">            if (ve.equalsDescription(In.DESCRIPTION) || ve.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L98">                String l = ve.getElementAttributes().getLabel();</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">                if (!l.isEmpty()) {</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                    if (set.contains(l)) {</span>
+<span class="nc" id="L101">                        t.setTextByID(&quot;tutorialUniqueIdents&quot;);</span>
+<span class="nc" id="L102">                        return false;</span>
+                    }
+<span class="nc" id="L104">                    set.add(l);</span>
+<span class="nc" id="L105">                    num++;</span>
+                }
+            }
+<span class="nc" id="L108">        }</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        return num &gt;= expected;</span>
+    }
+
+    private static boolean isWorking(CircuitComponent cc) {
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (cc.getCircuit().getElements().size() &lt; 4)</span>
+<span class="nc" id="L114">            return false;</span>
+        try {
+<span class="nc" id="L116">            new ModelCreator(cc.getCircuit(), cc.getLibrary()).createModel(false);</span>
+<span class="nc" id="L117">            return true;</span>
+<span class="nc" id="L118">        } catch (PinException | NodeException | ElementNotFoundException e) {</span>
+<span class="nc" id="L119">            return false;</span>
+        }
+    }
+
+    private static boolean contains(Modification&lt;Circuit&gt; mod, Class&lt;? extends Modification&gt; modifyClass) {
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (mod == null)</span>
+<span class="nc" id="L125">            return false;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (mod.getClass() == modifyClass)</span>
+<span class="nc" id="L127">            return true;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (mod instanceof Modifications) {</span>
+<span class="nc" id="L129">            Modifications m = (Modifications) mod;</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            for (Object i : m.getModifications())</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (i.getClass() == modifyClass)</span>
+<span class="nc" id="L132">                    return true;</span>
+        }
+<span class="nc" id="L134">        return false;</span>
+    }
+
+    private static boolean contains(CircuitComponent cc, ElementTypeDescription... descriptions) {
+<span class="nc" id="L138">        ArrayList&lt;VisualElement&gt; el = new ArrayList&lt;&gt;(cc.getCircuit().getElements());</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (el.size() &lt; descriptions.length)</span>
+<span class="nc" id="L140">            return false;</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        for (ElementTypeDescription d : descriptions) {</span>
+<span class="nc" id="L142">            Iterator&lt;VisualElement&gt; it = el.iterator();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            while (it.hasNext()) {</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">                if (it.next().equalsDescription(d)) {</span>
+<span class="nc" id="L145">                    it.remove();</span>
+<span class="nc" id="L146">                    break;</span>
+                }
+            }
+        }
+<span class="nc" id="L150">        return el.isEmpty();</span>
+    }
+
+
+    private final JTextPane text;
+    private final CircuitComponent circuitComponent;
+    private int stepIndex;
+
+    /**
+     * Creates the tutorial dialog.
+     *
+     * @param main the main class
+     */
+    public InitialTutorial(Main main) {
+<span class="nc" id="L164">        super(main, Lang.get(&quot;tutorial&quot;), false);</span>
+<span class="nc" id="L165">        this.main = main;</span>
+<span class="nc" id="L166">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L167">        setAlwaysOnTop(true);</span>
+<span class="nc" id="L168">        circuitComponent = main.getCircuitComponent();</span>
+<span class="nc" id="L169">        circuitComponent.setTutorialListener(this);</span>
+
+<span class="nc" id="L171">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosed(WindowEvent windowEvent) {
+<span class="nc" id="L174">                circuitComponent.setTutorialListener(null);</span>
+<span class="nc" id="L175">            }</span>
+        });
+
+<span class="nc" id="L178">        text = new JTextPane();</span>
+<span class="nc" id="L179">        text.setEditable(false);</span>
+<span class="nc" id="L180">        text.setFont(Screen.getInstance().getFont(1.2f));</span>
+<span class="nc" id="L181">        text.setPreferredSize(new Dimension(300, 400));</span>
+
+<span class="nc" id="L183">        getContentPane().add(new JScrollPane(text));</span>
+<span class="nc" id="L184">        getContentPane().add(new JButton(new AbstractAction(Lang.get(&quot;tutorialNotNeeded&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L187">                disableTutorial();</span>
+<span class="nc" id="L188">            }</span>
+        }), BorderLayout.SOUTH);
+
+<span class="nc" id="L191">        pack();</span>
+
+<span class="nc" id="L193">        final Point ml = main.getLocation();</span>
+<span class="nc" id="L194">        setLocation(Math.max(0, ml.x - getWidth()), ml.y);</span>
+
+<span class="nc" id="L196">        stepIndex = -1;</span>
+<span class="nc" id="L197">        incIndex();</span>
+
+<span class="nc" id="L199">    }</span>
+
+    private void disableTutorial() {
+<span class="nc" id="L202">        Settings.getInstance().getAttributes().set(Keys.SETTINGS_SHOW_TUTORIAL, false);</span>
+<span class="nc" id="L203">        dispose();</span>
+<span class="nc" id="L204">    }</span>
+
+    private void incIndex() {
+        do {
+<span class="nc" id="L208">            stepIndex++;</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        } while (stepIndex &lt; STEPS.size()</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                &amp;&amp; STEPS.get(stepIndex).getChecker().accomplished(circuitComponent, null, this));</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (stepIndex == STEPS.size()) {</span>
+<span class="nc" id="L212">            disableTutorial();</span>
+        } else {
+<span class="nc" id="L214">            setTextByID(STEPS.get(stepIndex).getId());</span>
+        }
+<span class="nc" id="L216">    }</span>
+
+    private void setTextByID(String id) {
+<span class="nc" id="L219">        final String s = Lang.get(id);</span>
+<span class="nc" id="L220">        text.setText(new LineBreaker(1000).breakLines(s));</span>
+<span class="nc" id="L221">    }</span>
+
+    @Override
+    public void modified(Modification&lt;Circuit&gt; modification) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (STEPS.get(stepIndex).getChecker().accomplished(circuitComponent, modification, this))</span>
+<span class="nc" id="L226">            incIndex();</span>
+<span class="nc" id="L227">    }</span>
+
+    @Override
+    public ModelEventType[] getEvents() {
+<span class="nc" id="L231">        return new ModelEventType[]{ModelEventType.STEP};</span>
+    }
+
+    @Override
+    public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (event == ModelEvent.STEP)</span>
+<span class="nc" id="L237">            modified(null);</span>
+<span class="nc" id="L238">    }</span>
+
+    private static final class Step {
+        private final String id;
+        private final Checker checker;
+
+<span class="nc" id="L244">        private Step(String id, Checker checker) {</span>
+<span class="nc" id="L245">            this.id = id;</span>
+<span class="nc" id="L246">            this.checker = checker;</span>
+<span class="nc" id="L247">        }</span>
+
+        public String getId() {
+<span class="nc" id="L250">            return id;</span>
+        }
+
+        public Checker getChecker() {
+<span class="nc" id="L254">            return checker;</span>
+        }
+    }
+
+    private interface Checker {
+        boolean accomplished(CircuitComponent circuitComponent, Modification&lt;Circuit&gt; modification, InitialTutorial t);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

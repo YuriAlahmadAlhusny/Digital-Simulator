@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WindowSizeStorage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">WindowSizeStorage.java</span></div><h1>WindowSizeStorage.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.util.prefs.Preferences;
+
+/**
+ * Used to store the window size
+ */
+public final class WindowSizeStorage {
+<span class="nc" id="L17">    private static final Preferences PREFS = Preferences.userRoot().node(&quot;dig&quot;).node(&quot;win&quot;);</span>
+    private static final String WIDTH_KEY = &quot;width&quot;;
+    private static final String HEIGHT_KEY = &quot;height&quot;;
+    private final Preferences prefs;
+<span class="nc" id="L21">    private int defWidth = 1024;</span>
+<span class="nc" id="L22">    private int defHeight = 768;</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param key the key used to store the size, must be unique
+     */
+<span class="nc" id="L29">    public WindowSizeStorage(String key) {</span>
+<span class="nc" id="L30">        prefs = PREFS.node(key);</span>
+<span class="nc" id="L31">    }</span>
+
+    /**
+     * Sets the default size. Used at the first startup
+     *
+     * @param width  width
+     * @param height height
+     * @return this for chained calls
+     */
+    public WindowSizeStorage setDefaultSize(int width, int height) {
+<span class="nc" id="L41">        this.defWidth = width;</span>
+<span class="nc" id="L42">        this.defHeight = height;</span>
+<span class="nc" id="L43">        return this;</span>
+    }
+
+    /**
+     * Restore the last used size.
+     *
+     * @param component the component to use
+     */
+    public void restore(Component component) {
+<span class="nc" id="L52">        int width = prefs.getInt(WIDTH_KEY, 0);</span>
+<span class="nc" id="L53">        int height = prefs.getInt(HEIGHT_KEY, 0);</span>
+
+<span class="nc bnc" id="L55" title="All 4 branches missed.">        if (width &lt; 100 || height &lt; 80)</span>
+<span class="nc" id="L56">            component.setSize(Screen.getInstance().scale(new Dimension(defWidth, defHeight)));</span>
+        else
+<span class="nc" id="L58">            component.setSize(new Dimension(width, height));</span>
+
+<span class="nc" id="L60">        component.addComponentListener(new ComponentAdapter() {</span>
+            @Override
+            public void componentResized(ComponentEvent componentEvent) {
+<span class="nc" id="L63">                final Dimension size = component.getSize();</span>
+<span class="nc" id="L64">                prefs.putInt(WIDTH_KEY, size.width);</span>
+<span class="nc" id="L65">                prefs.putInt(HEIGHT_KEY, size.height);</span>
+<span class="nc" id="L66">            }</span>
+        });
+<span class="nc" id="L68">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

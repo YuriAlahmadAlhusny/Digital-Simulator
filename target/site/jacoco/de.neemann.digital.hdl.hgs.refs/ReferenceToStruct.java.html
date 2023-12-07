@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReferenceToStruct.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs.refs</a> &gt; <span class="el_source">ReferenceToStruct.java</span></div><h1>ReferenceToStruct.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs.refs;
+
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.HGSMap;
+import de.neemann.digital.hdl.hgs.Value;
+
+/**
+ * Handles the access to a struct
+ */
+public class ReferenceToStruct implements Reference {
+    private final Reference parent;
+    private final String name;
+
+    /**
+     * Creates a new struct access
+     *
+     * @param parent the parent
+     * @param name   the field name
+     */
+<span class="fc" id="L26">    public ReferenceToStruct(Reference parent, String name) {</span>
+<span class="fc" id="L27">        this.parent = parent;</span>
+<span class="fc" id="L28">        this.name = name;</span>
+<span class="fc" id="L29">    }</span>
+
+    @Override
+    public void declareVar(Context context, Object initial) throws HGSEvalException {
+<span class="fc" id="L33">        final HGSMap hgsMap = Value.toMap(parent.get(context));</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (hgsMap.hgsMapGet(name) != null)</span>
+<span class="nc" id="L35">            throw new HGSEvalException(&quot;Value '&quot; + name + &quot;' redeclared in struct!&quot;);</span>
+
+<span class="fc" id="L37">        hgsMap.hgsMapPut(name, initial);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public void set(Context context, Object value) throws HGSEvalException {
+<span class="fc" id="L42">        final HGSMap hgsMap = Value.toMap(parent.get(context));</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (hgsMap.hgsMapGet(name) == null)</span>
+<span class="nc" id="L44">            throw new HGSEvalException(&quot;Value '&quot; + name + &quot;' not declared in struct!&quot;);</span>
+<span class="fc" id="L45">        hgsMap.hgsMapPut(name, value);</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public Object get(Context context) throws HGSEvalException {
+<span class="fc" id="L50">        final Object value = Value.toMap(parent.get(context)).hgsMapGet(name);</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (value == null)</span>
+<span class="fc" id="L52">            throw new HGSEvalException(&quot;Value '&quot; + name + &quot;' is not available in the struct!&quot;);</span>
+<span class="fc" id="L53">        return value;</span>
+    }
+
+    /**
+     * @return  the parent reference
+     */
+    public Reference getParent() {
+<span class="nc" id="L60">        return parent;</span>
+    }
+
+    /**
+     * @return the struct field name
+     */
+    public String getName() {
+<span class="nc" id="L67">        return name;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

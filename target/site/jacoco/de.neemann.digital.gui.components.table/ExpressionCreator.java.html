@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">ExpressionCreator.java</span></div><h1>ExpressionCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.*;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+import de.neemann.digital.analyse.quinemc.BoolTable;
+import de.neemann.digital.analyse.quinemc.TableReducer;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Used to generate the expressions belonging to the given truth table
+ */
+public class ExpressionCreator {
+<span class="fc" id="L31">    private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionCreator.class);</span>
+    private static final int MAX_INPUTS_ALLOWED = 12;
+    private static final int COMPLEX_VAR_SIZE = 8;
+
+    private final TruthTable theTable;
+    private ProgressListener progressListener;
+
+    /**
+     * Creates a new instance
+     *
+     * @param theTable the table to use
+     */
+<span class="fc" id="L43">    public ExpressionCreator(TruthTable theTable) {</span>
+<span class="fc" id="L44">        this.theTable = theTable;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Creates the expressions
+     *
+     * @param listener the listener to report the found expressions to
+     * @throws ExpressionException ExpressionException
+     * @throws FormatterException  FormatterException
+     * @throws AnalyseException    AnalyseException
+     */
+    public void create(ExpressionListener listener) throws ExpressionException, FormatterException, AnalyseException {
+<span class="fc" id="L56">        final List&lt;Variable&gt; vars = Collections.unmodifiableList(theTable.getVars());</span>
+<span class="fc" id="L57">        long time = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L58" title="All 4 branches covered.">        if (theTable.getResultCount() &gt;= 4 &amp;&amp; vars.size() &gt; COMPLEX_VAR_SIZE) {</span>
+<span class="fc" id="L59">            LOGGER.debug(&quot;use parallel solvers&quot;);</span>
+<span class="fc" id="L60">            ExecutorService ex = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());</span>
+
+<span class="fc" id="L62">            ArrayList&lt;Job&gt; jobs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            for (int table = 0; table &lt; theTable.getResultCount(); table++) {</span>
+<span class="fc" id="L64">                final ExpressionListenerStore l = new ExpressionListenerStore(null);</span>
+<span class="fc" id="L65">                jobs.add(simplify(l, vars, theTable.getResultName(table), theTable.getResult(table))</span>
+<span class="fc" id="L66">                        .setStorage(l));</span>
+            }
+
+<span class="fc" id="L69">            LOGGER.debug(&quot;jobs: &quot; + jobs.size());</span>
+
+<span class="fc" id="L71">            ArrayList&lt;Job&gt; orderedJobs = new ArrayList&lt;&gt;(jobs);</span>
+<span class="fc" id="L72">            orderedJobs.sort(Comparator.comparingInt(job -&gt; -job.getComplexity()));</span>
+
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (Job j : orderedJobs) {</span>
+<span class="fc" id="L75">                ex.submit(() -&gt; {</span>
+                    try {
+<span class="fc" id="L77">                        j.run();</span>
+<span class="fc" id="L78">                        j.close();</span>
+<span class="nc" id="L79">                    } catch (ExpressionException | FormatterException e) {</span>
+<span class="nc" id="L80">                        e.printStackTrace();</span>
+<span class="fc" id="L81">                    }</span>
+<span class="fc" id="L82">                });</span>
+<span class="fc" id="L83">            }</span>
+
+<span class="fc" id="L85">            ex.shutdown();</span>
+            try {
+<span class="fc" id="L87">                ex.awaitTermination(100, TimeUnit.HOURS);</span>
+<span class="nc" id="L88">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L89">                e.printStackTrace();</span>
+<span class="fc" id="L90">            }</span>
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (Job j : jobs)</span>
+<span class="fc" id="L93">                j.getStorage().replayTo(listener);</span>
+
+<span class="fc" id="L95">        } else {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            for (int table = 0; table &lt; theTable.getResultCount(); table++)</span>
+<span class="fc" id="L97">                simplify(listener, vars, theTable.getResultName(table), theTable.getResult(table)).run();</span>
+        }
+<span class="fc" id="L99">        listener.close();</span>
+<span class="fc" id="L100">        time = System.currentTimeMillis() - time;</span>
+<span class="fc" id="L101">        LOGGER.debug(&quot;time: &quot; + time / 1000.0 + &quot; sec&quot;);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (progressListener != null)</span>
+<span class="nc" id="L103">            progressListener.complete();</span>
+<span class="fc" id="L104">    }</span>
+
+    private Job simplify(ExpressionListener listener, List&lt;Variable&gt; vars, String resultName, BoolTable boolTable) throws AnalyseException, ExpressionException {
+<span class="fc" id="L107">        List&lt;Variable&gt; localVars = vars;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (vars.size() &gt; 4) {</span>
+<span class="fc" id="L109">            TableReducer tr = new TableReducer(vars, boolTable);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            if (tr.canReduce()) {</span>
+<span class="fc" id="L111">                LOGGER.debug(resultName + &quot; reduced from &quot; + vars.size() + &quot; to &quot; + tr.getVars().size() + &quot; variables (&quot; + tr.getVars() + &quot;)&quot;);</span>
+<span class="fc" id="L112">                boolTable = tr.getTable();</span>
+<span class="fc" id="L113">                localVars = tr.getVars();</span>
+            }
+        }
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">        if (!Main.isExperimentalMode() &amp;&amp; localVars.size() &gt; MAX_INPUTS_ALLOWED)</span>
+<span class="nc" id="L117">            throw new AnalyseException(Lang.get(&quot;err_toManyInputsIn_N0_max_N1_is_N2&quot;, resultName, MAX_INPUTS_ALLOWED, localVars.size()));</span>
+
+
+<span class="fc" id="L120">        listener = new CheckResultListener(listener, localVars, boolTable);</span>
+
+<span class="fc" id="L122">        return new Job(localVars, boolTable, resultName, listener);</span>
+    }
+
+    private MinimizerInterface getMinimizer(int size) {
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (size &lt;= 4)</span>
+<span class="fc" id="L127">            return new MinimizerQuineMcCluskeyExam();</span>
+        else {
+<span class="nc" id="L129">            return new MinimizerQuineMcCluskey();</span>
+        }
+    }
+
+    /**
+     * Sets the progress listener to use
+     *
+     * @param progressListener the progress listener
+     * @return this for chained calls
+     */
+    public ExpressionCreator setProgressListener(ProgressListener progressListener) {
+<span class="nc" id="L140">        this.progressListener = progressListener;</span>
+<span class="nc" id="L141">        return this;</span>
+    }
+
+    /**
+     * Listener used to monitor the progress
+     */
+    public interface ProgressListener {
+        /**
+         * Called if a equation is calculated
+         */
+        void oneCompleted();
+
+        /**
+         * Called if all equations are calculated
+         */
+        void complete();
+    }
+
+    private final class Job {
+        private final List&lt;Variable&gt; localVars;
+        private final BoolTable boolTable;
+        private final String resultName;
+        private final ExpressionListener listener;
+        private ExpressionListenerStore storage;
+
+<span class="fc" id="L166">        private Job(List&lt;Variable&gt; localVars, BoolTable boolTable, String resultName, ExpressionListener listener) {</span>
+<span class="fc" id="L167">            this.localVars = localVars;</span>
+<span class="fc" id="L168">            this.boolTable = boolTable;</span>
+<span class="fc" id="L169">            this.resultName = resultName;</span>
+<span class="fc" id="L170">            this.listener = listener;</span>
+<span class="fc" id="L171">        }</span>
+
+        private void run() throws ExpressionException, FormatterException {
+<span class="fc" id="L174">            LOGGER.debug(&quot;start job with complexity &quot; + getComplexity());</span>
+<span class="fc" id="L175">            long time = System.currentTimeMillis();</span>
+<span class="fc" id="L176">            getMinimizer(localVars.size()).minimize(localVars, boolTable, resultName, listener);</span>
+<span class="fc" id="L177">            LOGGER.debug(&quot;finished job with complexity &quot; + getComplexity() + &quot;:  &quot; + (System.currentTimeMillis() - time) / 1000 + &quot;sec&quot;);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            if (progressListener != null)</span>
+<span class="nc" id="L179">                progressListener.oneCompleted();</span>
+<span class="fc" id="L180">        }</span>
+
+        private int getComplexity() {
+<span class="fc" id="L183">            return boolTable.realSize();</span>
+        }
+
+        private void close() throws FormatterException, ExpressionException {
+<span class="fc" id="L187">            listener.close();</span>
+<span class="fc" id="L188">        }</span>
+
+        private ExpressionListenerStore getStorage() {
+<span class="fc" id="L191">            return storage;</span>
+        }
+
+        private Job setStorage(ExpressionListenerStore storage) {
+<span class="fc" id="L195">            this.storage = storage;</span>
+<span class="fc" id="L196">            return this;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

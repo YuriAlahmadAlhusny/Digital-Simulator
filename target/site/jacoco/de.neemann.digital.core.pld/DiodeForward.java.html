@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DiodeForward.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.pld</a> &gt; <span class="el_source">DiodeForward.java</span></div><h1>DiodeForward.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.pld;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.wiring.bus.CommonBusValue;
+import de.neemann.digital.lang.Lang;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A diode needed to pull a wire to VDD.
+ * Used to build a wired OR.
+ */
+public class DiodeForward implements Element, NodeInterface {
+
+    /**
+     * The diodes description
+     */
+<span class="fc" id="L24">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(DiodeForward.class, input(&quot;in&quot;))</span>
+<span class="fc" id="L25">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L26">            .addAttribute(Keys.BLOWN);</span>
+
+    private final ObservableValue output;
+    private final boolean blown;
+    private ObservableValue input;
+    private PinDescription.PullResistor requiredResistor;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+    public DiodeForward(ElementAttributes attr) {
+<span class="fc" id="L39">        this(attr, DESCRIPTION, PinDescription.PullResistor.pullDown);</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr             the elements attributes
+     * @param description      used to set the output pin description
+     * @param requiredResistor resistor needed at the output net
+     */
+<span class="fc" id="L49">    protected DiodeForward(ElementAttributes attr, ElementTypeDescription description, PinDescription.PullResistor requiredResistor) {</span>
+<span class="fc" id="L50">        output = new ObservableValue(&quot;out&quot;, 1)</span>
+<span class="fc" id="L51">                .setToHighZ()</span>
+<span class="fc" id="L52">                .setPinDescription(description)</span>
+<span class="fc" id="L53">                .setBidirectional();</span>
+<span class="fc" id="L54">        this.requiredResistor = requiredResistor;</span>
+<span class="fc" id="L55">        blown = attr.get(Keys.BLOWN);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (blown)</span>
+<span class="fc" id="L57">            output.setToHighZ();</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L62">        input = inputs.get(0).addObserverToValue(this).checkBits(1, null);</span>
+
+<span class="fc" id="L64">        ObservableValue o = inputs.get(1);</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (o instanceof CommonBusValue) {</span>
+<span class="fc" id="L66">            CommonBusValue cbv = (CommonBusValue) o;</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            if (cbv.getResistor().equals(requiredResistor))</span>
+<span class="fc" id="L68">                return;</span>
+        }
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (requiredResistor.equals(PinDescription.PullResistor.pullDown))</span>
+<span class="nc" id="L71">            throw new NodeException(Lang.get(&quot;err_diodeNeedsPullDownResistorAtOutput&quot;), output.asList());</span>
+        else
+<span class="nc" id="L73">            throw new NodeException(Lang.get(&quot;err_diodeNeedsPullUpResistorAtOutput&quot;), output.asList());</span>
+    }
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L78">        return output.asList();</span>
+    }
+
+    @Override
+    public void registerNodes(Model model) {
+        // its just a wire and has no delay, so it is'nt a node
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (!blown) {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (input.isHighZ()) {</span>
+<span class="fc" id="L90">                output.setToHighZ();</span>
+            } else {
+<span class="fc" id="L92">                final boolean in = input.getBool();</span>
+<span class="fc" id="L93">                setOutValue(output, in);</span>
+            }
+        }
+<span class="fc" id="L96">    }</span>
+
+    /**
+     * Sets the value to the output
+     *
+     * @param output the output to write to
+     * @param in     the input value
+     */
+    protected void setOutValue(ObservableValue output, boolean in) {
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        output.set(in ? 1 : 0, in ? 0 : 1);</span>
+<span class="fc" id="L106">    }</span>
+
+    @Override
+    public void init(Model model) throws NodeException {
+<span class="fc" id="L110">        hasChanged();</span>
+<span class="fc" id="L111">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

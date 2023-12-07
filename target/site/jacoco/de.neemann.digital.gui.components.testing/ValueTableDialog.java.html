@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValueTableDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.testing</a> &gt; <span class="el_source">ValueTableDialog.java</span></div><h1>ValueTableDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.testing;
+
+import de.neemann.digital.core.ErrorDetector;
+import de.neemann.digital.data.Value;
+import de.neemann.digital.data.ValueTable;
+import de.neemann.digital.data.ValueTableModel;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.gui.components.data.GraphDialog;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.TestExecutor;
+import de.neemann.digital.testing.TestResult;
+import de.neemann.digital.testing.TestingDataException;
+import de.neemann.digital.testing.parser.TestRow;
+import de.neemann.gui.IconCreator;
+import de.neemann.gui.LineBreaker;
+import de.neemann.gui.MyFileChooser;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collections;
+
+/**
+ * Dialog to show the testing results.
+ * ToDo: Sync of data access is missing!
+ */
+public class ValueTableDialog extends JDialog {
+    /**
+     * Background color for failed tests
+     */
+<span class="nc" id="L46">    static final Color FAILED_COLOR = new Color(255, 200, 200);</span>
+    /**
+     * Background color for passed tests
+     */
+<span class="nc" id="L50">    static final Color PASSED_COLOR = new Color(200, 255, 200);</span>
+<span class="nc" id="L51">    private static final Icon ICON_FAILED = IconCreator.create(&quot;testFailed.png&quot;);</span>
+<span class="nc" id="L52">    private static final Icon ICON_PASSED = IconCreator.create(&quot;testPassed.png&quot;);</span>
+<span class="nc" id="L53">    private static final Icon ICON_GRAPH = IconCreator.create(&quot;measurement-graph.png&quot;);</span>
+
+
+    private final ArrayList&lt;ValueTableHolder&gt; resultTableData;
+    private final JTabbedPane tp;
+    private final Window owner;
+    private final ToolTipAction asGraph;
+
+    /**
+     * Creates a new result dialog.
+     *
+     * @param owner the parent frame
+     * @param title the frame title
+     */
+    public ValueTableDialog(Window owner, String title) {
+<span class="nc" id="L68">        super(owner, title, ModalityType.MODELESS);</span>
+<span class="nc" id="L69">        this.owner = owner;</span>
+<span class="nc" id="L70">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L72">        resultTableData = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L73">        tp = new JTabbedPane();</span>
+
+<span class="nc" id="L75">        JMenuBar bar = new JMenuBar();</span>
+<span class="nc" id="L76">        JMenu file = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+<span class="nc" id="L77">        bar.add(file);</span>
+<span class="nc" id="L78">        file.add(new ToolTipAction(Lang.get(&quot;menu_saveData&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L81">                int tab = tp.getSelectedIndex();</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                if (tab &lt; 0) tab = 0;</span>
+<span class="nc" id="L83">                JFileChooser fileChooser = new MyFileChooser();</span>
+<span class="nc" id="L84">                fileChooser.setFileFilter(new FileNameExtensionFilter(&quot;Comma Separated Values&quot;, &quot;csv&quot;));</span>
+<span class="nc" id="L85">                new SaveAsHelper(ValueTableDialog.this, fileChooser, &quot;csv&quot;)</span>
+<span class="nc" id="L86">                        .checkOverwrite(resultTableData.get(tab).valueTable::saveCSV);</span>
+<span class="nc" id="L87">            }</span>
+<span class="nc" id="L88">        }.setToolTip(Lang.get(&quot;menu_saveData_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L90">        JMenu view = new JMenu(Lang.get(&quot;menu_view&quot;));</span>
+<span class="nc" id="L91">        asGraph = new ToolTipAction(Lang.get(&quot;menu_showDataAsGraph&quot;), ICON_GRAPH) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L94">                int tab = tp.getSelectedIndex();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                if (tab &lt; 0) tab = 0;</span>
+<span class="nc" id="L96">                new GraphDialog(ValueTableDialog.this, Lang.get(&quot;win_testdata_N&quot;, tp.getTitleAt(tab)), resultTableData.get(tab).valueTable)</span>
+<span class="nc" id="L97">                        .disableTable()</span>
+<span class="nc" id="L98">                        .setVisible(true);</span>
+<span class="nc" id="L99">            }</span>
+<span class="nc" id="L100">        }.setToolTip(Lang.get(&quot;menu_showDataAsGraph_tt&quot;));</span>
+<span class="nc" id="L101">        view.add(asGraph.createJMenuItem());</span>
+<span class="nc" id="L102">        bar.add(view);</span>
+<span class="nc" id="L103">        setJMenuBar(bar);</span>
+
+<span class="nc" id="L105">        JToolBar toolBar = new JToolBar();</span>
+<span class="nc" id="L106">        toolBar.add(asGraph.createJButtonNoText());</span>
+<span class="nc" id="L107">        getContentPane().add(toolBar, BorderLayout.NORTH);</span>
+
+<span class="nc" id="L109">        getContentPane().add(tp);</span>
+<span class="nc" id="L110">    }</span>
+
+    /**
+     * Add test results
+     *
+     * @param tsl     list of test sets
+     * @param circuit the circuit
+     * @param library the library to use
+     * @return this for chained calls
+     * @throws TestingDataException DataException
+     */
+    public ValueTableDialog addTestResult(java.util.List&lt;Circuit.TestCase&gt; tsl, Circuit circuit, ElementLibrary library) throws TestingDataException {
+<span class="nc" id="L122">        Collections.sort(tsl);</span>
+<span class="nc" id="L123">        int i = 0;</span>
+<span class="nc" id="L124">        int errorTabIndex = -1;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (Circuit.TestCase ts : tsl) {</span>
+<span class="nc" id="L126">            ErrorDetector errorDetector = new ErrorDetector();</span>
+            try {
+<span class="nc" id="L128">                TestResult testResult = new TestExecutor(ts, circuit, library)</span>
+<span class="nc" id="L129">                        .addObserver(errorDetector)</span>
+<span class="nc" id="L130">                        .execute();</span>
+
+                String tabName;
+                Icon tabIcon;
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                if (testResult.allPassed()) {</span>
+<span class="nc" id="L135">                    tabName = Lang.get(&quot;msg_test_N_Passed&quot;, ts.getLabel());</span>
+<span class="nc" id="L136">                    tabIcon = ICON_PASSED;</span>
+                } else {
+<span class="nc" id="L138">                    tabName = Lang.get(&quot;msg_test_N_Failed&quot;, ts.getLabel());</span>
+<span class="nc" id="L139">                    tabIcon = ICON_FAILED;</span>
+<span class="nc" id="L140">                    errorTabIndex = i;</span>
+                }
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                if (testResult.toManyResults())</span>
+<span class="nc" id="L143">                    tabName += &quot; &quot; + Lang.get(&quot;msg_test_missingLines&quot;);</span>
+
+<span class="nc" id="L145">                ValueTableHolder vth = new ValueTableHolder(testResult.getValueTable(), ts.getTestCaseDescription());</span>
+<span class="nc" id="L146">                tp.addTab(tabName, tabIcon, new JScrollPane(createTable(vth)));</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                if (testResult.toManyResults())</span>
+<span class="nc" id="L148">                    tp.setToolTipTextAt(i, new LineBreaker().toHTML().breakLines(Lang.get(&quot;msg_test_missingLines_tt&quot;)));</span>
+<span class="nc" id="L149">                resultTableData.add(vth);</span>
+<span class="nc" id="L150">                i++;</span>
+<span class="nc" id="L151">                errorDetector.check();</span>
+<span class="nc" id="L152">            } catch (Exception e) {</span>
+<span class="nc" id="L153">                throw new TestingDataException(Lang.get(&quot;err_whileExecutingTests_N0&quot;, ts.getLabel()), e);</span>
+<span class="nc" id="L154">            }</span>
+<span class="nc" id="L155">        }</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (errorTabIndex &gt;= 0)</span>
+<span class="nc" id="L157">            tp.setSelectedIndex(errorTabIndex);</span>
+
+<span class="nc" id="L159">        pack();</span>
+<span class="nc" id="L160">        setLocationRelativeTo(owner);</span>
+<span class="nc" id="L161">        return this;</span>
+    }
+
+    /**
+     * Add a table to this dialog
+     *
+     * @param name       the name of the tab
+     * @param valueTable the values
+     * @return this for chained calls
+     */
+    public ValueTableDialog addValueTable(String name, ValueTable valueTable) {
+<span class="nc" id="L172">        tp.addTab(name, new JScrollPane(createTable(new ValueTableHolder(valueTable))));</span>
+<span class="nc" id="L173">        resultTableData.add(new ValueTableHolder(valueTable));</span>
+
+<span class="nc" id="L175">        pack();</span>
+<span class="nc" id="L176">        setLocationRelativeTo(owner);</span>
+<span class="nc" id="L177">        return this;</span>
+    }
+
+    private JTable createTable(ValueTableHolder valueTableHolder) {
+<span class="nc" id="L181">        ValueTableModel vtm = new ValueTableModel(valueTableHolder.valueTable);</span>
+<span class="nc" id="L182">        JTable table = new JTable(vtm);</span>
+<span class="nc" id="L183">        table.setDefaultRenderer(Value.class, new ValueRenderer());</span>
+<span class="nc" id="L184">        table.setDefaultRenderer(Integer.class, new NumberRenderer());</span>
+<span class="nc" id="L185">        table.addMouseListener(new MouseAdapter() {</span>
+            @Override
+            public void mouseClicked(MouseEvent e) {
+<span class="nc" id="L188">                int r = table.getSelectedRow();</span>
+<span class="nc bnc" id="L189" title="All 6 branches missed.">                if (r &gt;= 0 &amp;&amp; r &lt; vtm.getRowCount() &amp;&amp; valueTableHolder.testCaseDescription != null) {</span>
+<span class="nc" id="L190">                    TestRow row = vtm.getRow(r);</span>
+<span class="nc" id="L191">                    int testRow = row.getRow();</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">                    if (owner instanceof Main &amp;&amp; testRow &gt;= 0) {</span>
+<span class="nc" id="L193">                        Main main = (Main) owner;</span>
+<span class="nc" id="L194">                        main.startSimulation(m -&gt; new TestExecutor(&quot;&quot;, valueTableHolder.testCaseDescription, m).executeTo(testRow));</span>
+                    }
+                }
+<span class="nc" id="L197">            }</span>
+        });
+<span class="nc" id="L199">        final Font font = table.getFont();</span>
+<span class="nc" id="L200">        table.setRowHeight(font.getSize() * 6 / 5);</span>
+<span class="nc" id="L201">        return table;</span>
+    }
+
+    /**
+     * Disable the show as graph function
+     *
+     * @return this for chained calls
+     */
+    public ValueTableDialog disableGraph() {
+<span class="nc" id="L210">        asGraph.setEnabled(false);</span>
+<span class="nc" id="L211">        return this;</span>
+    }
+
+    private static class ValueRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+<span class="nc" id="L218">            JLabel comp = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);</span>
+<span class="nc" id="L219">            Value v = (Value) value;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            if (v != null) {</span>
+<span class="nc" id="L221">                comp.setText(v.toString());</span>
+<span class="nc" id="L222">                comp.setHorizontalAlignment(JLabel.CENTER);</span>
+
+<span class="nc bnc" id="L224" title="All 4 branches missed.">                switch (((Value) value).getState()) {</span>
+                    case NORMAL:
+<span class="nc" id="L226">                        comp.setBackground(Color.WHITE);</span>
+<span class="nc" id="L227">                        break;</span>
+                    case FAIL:
+<span class="nc" id="L229">                        comp.setBackground(FAILED_COLOR);</span>
+<span class="nc" id="L230">                        break;</span>
+                    case PASS:
+<span class="nc" id="L232">                        comp.setBackground(PASSED_COLOR);</span>
+                        break;
+                }
+            }
+<span class="nc" id="L236">            return comp;</span>
+        }
+    }
+
+    private static class NumberRenderer extends DefaultTableCellRenderer {
+<span class="nc" id="L241">        private static final Color NUM_BACKGROUND_COLOR = new Color(238, 238, 238);</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+<span class="nc" id="L245">            JLabel comp = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);</span>
+<span class="nc" id="L246">            comp.setBackground(NUM_BACKGROUND_COLOR);</span>
+<span class="nc" id="L247">            comp.setHorizontalAlignment(JLabel.RIGHT);</span>
+<span class="nc" id="L248">            return comp;</span>
+        }
+    }
+
+    private static final class ValueTableHolder {
+        private final ValueTable valueTable;
+        private final TestCaseDescription testCaseDescription;
+
+<span class="nc" id="L256">        private ValueTableHolder(ValueTable valueTable) {</span>
+<span class="nc" id="L257">            this.valueTable = valueTable;</span>
+<span class="nc" id="L258">            testCaseDescription = null;</span>
+<span class="nc" id="L259">        }</span>
+
+<span class="nc" id="L261">        private ValueTableHolder(ValueTable valueTable, TestCaseDescription testCaseDescription) {</span>
+<span class="nc" id="L262">            this.valueTable = valueTable;</span>
+<span class="nc" id="L263">            this.testCaseDescription = testCaseDescription;</span>
+<span class="nc" id="L264">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

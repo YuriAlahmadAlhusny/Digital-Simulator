@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VHDLRenaming.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.vhdl2</a> &gt; <span class="el_source">VHDLRenaming.java</span></div><h1>VHDLRenaming.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.vhdl2;
+
+import de.neemann.digital.hdl.model2.HDLModel;
+
+import java.util.Collections;
+import java.util.HashSet;
+
+/**
+ * Renames the labels to valid VHDL names.
+ */
+<span class="fc" id="L16">public class VHDLRenaming implements HDLModel.Renaming {</span>
+
+<span class="fc" id="L18">    private static final HashSet&lt;String&gt; KEYWORDS = new HashSet&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L21">        Collections.addAll(KEYWORDS,</span>
+                &quot;abs&quot;, &quot;access&quot;, &quot;after&quot;, &quot;alias&quot;, &quot;all&quot;, &quot;and&quot;, &quot;architecture&quot;, &quot;array&quot;, &quot;assert&quot;,
+                &quot;attribute&quot;, &quot;begin&quot;, &quot;block&quot;, &quot;body&quot;, &quot;buffer&quot;, &quot;bus&quot;, &quot;case&quot;, &quot;component&quot;, &quot;configuration&quot;,
+                &quot;constant&quot;, &quot;disconnect&quot;, &quot;downto&quot;, &quot;else&quot;, &quot;elsif&quot;, &quot;end&quot;, &quot;entity&quot;, &quot;exit&quot;, &quot;file&quot;,
+                &quot;for&quot;, &quot;function&quot;, &quot;generate&quot;, &quot;generic&quot;, &quot;group&quot;, &quot;guarded&quot;, &quot;if&quot;, &quot;impure&quot;, &quot;in&quot;,
+                &quot;inertial&quot;, &quot;inout&quot;, &quot;is&quot;, &quot;label&quot;, &quot;library&quot;, &quot;linkage&quot;, &quot;literal&quot;, &quot;loop&quot;,
+                &quot;map&quot;, &quot;mod&quot;, &quot;nand&quot;, &quot;new&quot;, &quot;next&quot;, &quot;nor&quot;, &quot;not&quot;, &quot;null&quot;, &quot;of&quot;,
+                &quot;on&quot;, &quot;open&quot;, &quot;or&quot;, &quot;others&quot;, &quot;out&quot;, &quot;package&quot;, &quot;port&quot;, &quot;postponed&quot;, &quot;procedure&quot;,
+                &quot;process&quot;, &quot;pure&quot;, &quot;range&quot;, &quot;record&quot;, &quot;register&quot;, &quot;reject&quot;, &quot;rem&quot;, &quot;report&quot;, &quot;return&quot;,
+                &quot;rol&quot;, &quot;ror&quot;, &quot;select&quot;, &quot;severity&quot;, &quot;signal&quot;, &quot;shared&quot;, &quot;sla&quot;, &quot;sll&quot;, &quot;sra&quot;,
+                &quot;srl&quot;, &quot;subtype&quot;, &quot;then&quot;, &quot;to&quot;, &quot;transport&quot;, &quot;type&quot;, &quot;unaffected&quot;, &quot;units&quot;, &quot;until&quot;,
+                &quot;use&quot;, &quot;variable&quot;, &quot;wait&quot;, &quot;when&quot;, &quot;while&quot;, &quot;with&quot;, &quot;xnor&quot;, &quot;xor&quot;);
+<span class="fc" id="L33">    }</span>
+
+
+    @Override
+    public String checkName(String name) {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (isKeyword(name))</span>
+<span class="fc" id="L39">            return &quot;p_&quot; + name;</span>
+        else {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (Character.isDigit(name.charAt(0)))</span>
+<span class="fc" id="L42">                name = &quot;n&quot; + name;</span>
+<span class="fc" id="L43">            return cleanName(name);</span>
+        }
+    }
+
+    private boolean isKeyword(String str) {
+<span class="fc" id="L48">        return KEYWORDS.contains(str.toLowerCase());</span>
+    }
+
+    private String cleanName(String name) {
+<span class="fc" id="L52">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = 0; i &lt; name.length(); i++) {</span>
+<span class="fc" id="L54">            char c = name.charAt(i);</span>
+<span class="fc bfc" id="L55" title="All 12 branches covered.">            if ((c &gt;= 'a' &amp;&amp; c &lt;= 'z') || (c &gt;= 'A' &amp;&amp; c &lt;= 'Z') || (c &gt;= '0' &amp;&amp; c &lt;= '9'))</span>
+<span class="fc" id="L56">                sb.append(c);</span>
+            else {
+<span class="fc bfc" id="L58" title="All 5 branches covered.">                switch (c) {</span>
+                    case '/':
+                    case '!':
+                    case '~':
+                    case '\u00AC':
+<span class="fc" id="L63">                        sb.append(&quot;not&quot;);</span>
+<span class="fc" id="L64">                        break;</span>
+                    case '=':
+<span class="fc" id="L66">                        sb.append(&quot;eq&quot;);</span>
+<span class="fc" id="L67">                        break;</span>
+                    case '&lt;':
+<span class="fc" id="L69">                        sb.append(&quot;le&quot;);</span>
+<span class="fc" id="L70">                        break;</span>
+                    case '&gt;':
+<span class="fc" id="L72">                        sb.append(&quot;gr&quot;);</span>
+<span class="fc" id="L73">                        break;</span>
+                    default:
+<span class="fc bfc" id="L75" title="All 4 branches covered.">                        if (sb.length() &gt; 0 &amp;&amp; sb.charAt(sb.length() - 1) != '_')</span>
+<span class="fc" id="L76">                            sb.append(&quot;_&quot;);</span>
+                }
+            }
+        }
+
+<span class="pc bpc" id="L81" title="1 of 4 branches missed.">        while (sb.length() &gt; 0 &amp;&amp; sb.charAt(sb.length() - 1) == '_')</span>
+<span class="fc" id="L82">            sb.setLength(sb.length() - 1);</span>
+
+<span class="fc" id="L84">        return sb.toString();</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

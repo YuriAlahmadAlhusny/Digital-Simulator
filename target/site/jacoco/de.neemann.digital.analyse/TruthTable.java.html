@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TruthTable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">TruthTable.java</span></div><h1>TruthTable.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.XStreamValid;
+import de.neemann.digital.analyse.expression.BitSetter;
+import de.neemann.digital.analyse.expression.Context;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.quinemc.BoolTable;
+import de.neemann.digital.analyse.quinemc.BoolTableByteArray;
+import de.neemann.digital.undo.Copyable;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+
+/**
+ * The description of a truth table.
+ */
+public class TruthTable implements Copyable&lt;TruthTable&gt; {
+
+    private final ArrayList&lt;Variable&gt; variables;
+    private final ArrayList&lt;Result&gt; results;
+    private transient BitSetter bitSetter;
+    private transient ModelAnalyserInfo modelAnalyzerInfo;
+
+    /**
+     * Load the given file and returns a truth table instance
+     *
+     * @param filename filename
+     * @return the {@link TruthTable}
+     * @throws IOException IOException
+     */
+    public static TruthTable readFromFile(File filename) throws IOException {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (filename.getName().toLowerCase().endsWith(&quot;.csv&quot;))</span>
+<span class="nc" id="L43">            return CSVImporter.readCSV(filename);</span>
+        else {
+<span class="nc" id="L45">            XStream xStream = getxStream();</span>
+<span class="nc" id="L46">            try (InputStream in = new FileInputStream(filename)) {</span>
+<span class="nc" id="L47">                return (TruthTable) xStream.fromXML(in);</span>
+            }
+        }
+    }
+
+    /**
+     * Writes the table to the given file.
+     *
+     * @param filename the file
+     * @throws IOException IOException
+     */
+    public void save(File filename) throws IOException {
+<span class="nc" id="L59">        XStream xStream = getxStream();</span>
+<span class="nc" id="L60">        try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L61">            out.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="nc" id="L62">            xStream.marshal(this, new PrettyPrintWriter(out));</span>
+        }
+<span class="nc" id="L64">    }</span>
+
+    private static XStream getxStream() {
+<span class="nc" id="L67">        XStream xStream = new XStreamValid();</span>
+<span class="nc" id="L68">        xStream.alias(&quot;truthTable&quot;, TruthTable.class);</span>
+<span class="nc" id="L69">        xStream.alias(&quot;variable&quot;, Variable.class);</span>
+<span class="nc" id="L70">        xStream.aliasAttribute(Variable.class, &quot;identifier&quot;, &quot;name&quot;);</span>
+<span class="nc" id="L71">        xStream.alias(&quot;result&quot;, Result.class);</span>
+<span class="nc" id="L72">        xStream.alias(&quot;BoolTable&quot;, BoolTableByteArray.class);</span>
+<span class="nc" id="L73">        xStream.alias(&quot;BoolTableEx&quot;, BoolTableExpanded.class);</span>
+<span class="nc" id="L74">        xStream.registerConverter(new TruthTableConverter());</span>
+<span class="nc" id="L75">        return xStream;</span>
+    }
+
+    /**
+     * Creates a new instance
+     */
+    public TruthTable() {
+<span class="fc" id="L82">        this(new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * Creates a new instance with &lt;code&gt;vars&lt;/code&gt; variables
+     *
+     * @param vars number of variables
+     */
+    public TruthTable(int vars) {
+<span class="fc" id="L91">        this(Variable.vars(vars));</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Creates a new instance with the given variables
+     *
+     * @param vars the variables
+     */
+<span class="fc" id="L99">    public TruthTable(ArrayList&lt;Variable&gt; vars) {</span>
+<span class="fc" id="L100">        this.variables = vars;</span>
+<span class="fc" id="L101">        results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L102">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param newVars  the variables to use
+     * @param oldTable delivers the column names for the results
+     */
+    public TruthTable(ArrayList&lt;Variable&gt; newVars, TruthTable oldTable) {
+<span class="nc" id="L111">        this(newVars);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        for (int i = 0; i &lt; oldTable.getResultCount(); i++) {</span>
+<span class="nc" id="L113">            addResult(oldTable.results.get(i).getName(), new BoolTableByteArray(getRows()));</span>
+        }
+<span class="nc" id="L115">    }</span>
+
+<span class="fc" id="L117">    private TruthTable(TruthTable truthTable) {</span>
+<span class="fc" id="L118">        variables = new ArrayList&lt;&gt;(truthTable.variables.size());</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (Variable v : truthTable.variables)</span>
+<span class="fc" id="L120">            variables.add(new Variable(v.getIdentifier()));</span>
+<span class="fc" id="L121">        results = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (int i = 0; i &lt; truthTable.getResultCount(); i++) {</span>
+<span class="fc" id="L123">            Result result = truthTable.results.get(i);</span>
+<span class="fc" id="L124">            addResult(result.getName(), new BoolTableByteArray(result.values));</span>
+        }
+<span class="fc" id="L126">        this.modelAnalyzerInfo = truthTable.modelAnalyzerInfo;</span>
+<span class="fc" id="L127">    }</span>
+
+    /**
+     * Clears the table and sets the given variables
+     *
+     * @param vars the variables to use
+     */
+    public void clear(Collection&lt;? extends Variable&gt; vars) {
+<span class="fc" id="L135">        variables.clear();</span>
+<span class="fc" id="L136">        variables.addAll(vars);</span>
+<span class="fc" id="L137">        results.clear();</span>
+<span class="fc" id="L138">        bitSetter = null;</span>
+<span class="fc" id="L139">    }</span>
+
+    /**
+     * Returns the number of rows
+     *
+     * @return the number of rows
+     */
+    public int getRows() {
+<span class="fc" id="L147">        return 1 &lt;&lt; variables.size();</span>
+    }
+
+    /**
+     * Adds a new result row
+     *
+     * @param name   name of the result column
+     * @param values the values
+     * @return this for call chaining
+     */
+    public TruthTable addResult(String name, BoolTable values) {
+<span class="fc" id="L158">        results.add(new Result(name, values));</span>
+<span class="fc" id="L159">        return this;</span>
+    }
+
+    /**
+     * Adds a new column
+     *
+     * @return this for call chaining
+     */
+    public TruthTable addResult() {
+<span class="fc" id="L168">        char v = 'Y';</span>
+        String var;
+        do {
+<span class="fc" id="L171">            var = &quot;&quot; + v;</span>
+<span class="fc" id="L172">            v--;</span>
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">        } while (resultsContains(var) &amp;&amp; v &gt;= 'Q');</span>
+<span class="fc" id="L174">        return addResult(var);</span>
+    }
+
+    /**
+     * Adds a new column
+     *
+     * @param name name of result column
+     * @return this for call chaining
+     */
+    public TruthTable addResult(String name) {
+<span class="fc" id="L184">        results.add(new Result(name, new BoolTableByteArray(getRows())));</span>
+<span class="fc" id="L185">        return this;</span>
+    }
+
+    private boolean resultsContains(String var) {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        for (Result r : results)</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (r.getName().equals(var))</span>
+<span class="fc" id="L191">                return true;</span>
+<span class="fc" id="L192">        return false;</span>
+    }
+
+    /**
+     * Adds a new variable
+     */
+    public void addVariable() {
+<span class="nc" id="L199">        char v = 'A';</span>
+        Variable var;
+        do {
+<span class="nc" id="L202">            var = new Variable(&quot;&quot; + v);</span>
+<span class="nc" id="L203">            v++;</span>
+<span class="nc bnc" id="L204" title="All 4 branches missed.">        } while (variables.contains(var) &amp;&amp; v &lt;= 'Z');</span>
+<span class="nc" id="L205">        addVariable(var);</span>
+<span class="nc" id="L206">    }</span>
+
+    /**
+     * Adds a variable
+     *
+     * @param name name of the variable
+     * @return this for chained calls
+     */
+    public TruthTable addVariable(String name) {
+<span class="fc" id="L215">        return addVariable(new Variable(name));</span>
+    }
+
+    /**
+     * Adds a variable
+     *
+     * @param var the variable to add
+     * @return this for chained calls
+     */
+    public TruthTable addVariable(Variable var) {
+<span class="fc" id="L225">        variables.add(var);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (Result r : results)</span>
+<span class="fc" id="L227">            r.setValues(BoolTableByteArray.createDoubledValues(r.getValues()));</span>
+
+<span class="fc" id="L229">        bitSetter = null;</span>
+<span class="fc" id="L230">        return this;</span>
+    }
+
+    private BitSetter getBitSetter() {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        if (bitSetter == null)</span>
+<span class="fc" id="L235">            bitSetter = new DummyBitSetter(variables.size());</span>
+<span class="fc" id="L236">        return bitSetter;</span>
+    }
+
+
+    @Override
+    public String toString() {
+<span class="fc" id="L242">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (Variable s : variables)</span>
+<span class="fc" id="L244">            sb.append(s.getIdentifier()).append(&quot;\t&quot;);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (Result s : results)</span>
+<span class="fc" id="L246">            sb.append(s.getName()).append(&quot;\t&quot;);</span>
+
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (getRows() &lt;= 256) {</span>
+<span class="fc" id="L249">            sb.append('\n');</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            for (int row = 0; row &lt; getRows(); row++) {</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                for (int col = 0; col &lt; variables.size(); col++) {</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">                    if (getBitSetter().getBit(row, col))</span>
+<span class="fc" id="L253">                        sb.append(&quot;1\t&quot;);</span>
+                    else
+<span class="fc" id="L255">                        sb.append(&quot;0\t&quot;);</span>
+                }
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                for (int col = 0; col &lt; results.size(); col++) {</span>
+<span class="pc bpc" id="L258" title="1 of 3 branches missed.">                    switch (results.get(col).getValues().get(row)) {</span>
+                        case one:
+<span class="fc" id="L260">                            sb.append(&quot;1\t&quot;);</span>
+<span class="fc" id="L261">                            break;</span>
+                        case zero:
+<span class="fc" id="L263">                            sb.append(&quot;0\t&quot;);</span>
+<span class="fc" id="L264">                            break;</span>
+                        default:
+<span class="nc" id="L266">                            sb.append(&quot;x\t&quot;);</span>
+                            break;
+                    }
+                }
+<span class="fc" id="L270">                sb.append(&quot;\n&quot;);</span>
+            }
+        }
+<span class="fc" id="L273">        return sb.toString();</span>
+    }
+
+    /**
+     * @return number of collumns
+     */
+    public int getCols() {
+<span class="fc" id="L280">        return variables.size() + results.size();</span>
+    }
+
+    /**
+     * Returns the name of the column with the given index
+     *
+     * @param columnIndex the col index
+     * @return the name
+     */
+    public String getColumnName(int columnIndex) {
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        if (columnIndex &lt; variables.size())</span>
+<span class="nc" id="L291">            return variables.get(columnIndex).getIdentifier();</span>
+        else
+<span class="nc" id="L293">            return results.get(columnIndex - variables.size()).getName();</span>
+    }
+
+    /**
+     * Returns the value of the table as a int value
+     *
+     * @param rowIndex    the row
+     * @param columnIndex the col
+     * @return the table value (2 means &quot;don't care&quot;)
+     */
+    public int getValue(int rowIndex, int columnIndex) {
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (columnIndex &lt; variables.size()) {</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            if (getBitSetter().getBit(rowIndex, columnIndex)) return 1;</span>
+<span class="nc" id="L306">            else return 0;</span>
+        } else
+<span class="fc" id="L308">            return results.get(columnIndex - variables.size()).getValues().get(rowIndex).asInt();</span>
+    }
+
+    /**
+     * Returns true if given column is editable
+     *
+     * @param columnIndex the column
+     * @return thrue if editable
+     */
+    public boolean isEditable(int columnIndex) {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        if (columnIndex &lt; variables.size())</span>
+<span class="nc" id="L319">            return false;</span>
+        else {
+<span class="nc" id="L321">            BoolTable v = results.get(columnIndex - variables.size()).getValues();</span>
+<span class="nc" id="L322">            return v instanceof BoolTableByteArray;</span>
+        }
+    }
+
+    /**
+     * Sets modifies the table
+     *
+     * @param rowIndex    the row
+     * @param columnIndex the column
+     * @param aValue      the new value
+     */
+    public void setValue(int rowIndex, int columnIndex, int aValue) {
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        if (columnIndex &gt;= variables.size()) {</span>
+<span class="fc" id="L335">            BoolTable v = results.get(columnIndex - variables.size()).getValues();</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">            if (v instanceof BoolTableByteArray)</span>
+<span class="fc" id="L337">                ((BoolTableByteArray) v).set(rowIndex, aValue);</span>
+        }
+<span class="fc" id="L339">    }</span>
+
+    /**
+     * Sets the column name
+     *
+     * @param columnIndex the column
+     * @param name        the new name
+     */
+    public void setColumnName(int columnIndex, String name) {
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (columnIndex &lt; variables.size())</span>
+<span class="nc" id="L349">            variables.set(columnIndex, new Variable(name));</span>
+        else {
+<span class="nc" id="L351">            results.get(columnIndex - variables.size()).setName(name);</span>
+        }
+<span class="nc" id="L353">    }</span>
+
+    /**
+     * @return the used variables
+     */
+    public ArrayList&lt;Variable&gt; getVars() {
+<span class="fc" id="L359">        return variables;</span>
+    }
+
+    /**
+     * Gets the value which is determined by the actual context state
+     *
+     * @param result  the result index
+     * @param context the context
+     * @return the table value
+     * @throws ExpressionException ExpressionException
+     */
+    public int getByContext(int result, Context context) throws ExpressionException {
+<span class="fc" id="L371">        return results.get(result).getValues().get(getIndexByContext(context)).asInt();</span>
+    }
+
+    /**
+     * Sets the value which is determined by the actual context state
+     *
+     * @param result  the result index
+     * @param context the context
+     * @param value   the new value
+     * @throws ExpressionException ExpressionException
+     */
+    public void setByContext(int result, Context context, int value) throws ExpressionException {
+<span class="fc" id="L383">        BoolTable v = results.get(result).getValues();</span>
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">        if (v instanceof BoolTableByteArray)</span>
+<span class="fc" id="L385">            ((BoolTableByteArray) v).set(getIndexByContext(context), value);</span>
+<span class="fc" id="L386">    }</span>
+
+    private int getIndexByContext(Context context) throws ExpressionException {
+<span class="fc" id="L389">        int mask = 1 &lt;&lt; (variables.size() - 1);</span>
+<span class="fc" id="L390">        int index = 0;</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">        for (int i = 0; i &lt; variables.size(); i++) {</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">            if (context.get(variables.get(i))) {</span>
+<span class="fc" id="L393">                index |= mask;</span>
+            }
+<span class="fc" id="L395">            mask &gt;&gt;= 1;</span>
+        }
+<span class="fc" id="L397">        return index;</span>
+    }
+
+    /**
+     * @return the number of results
+     */
+    public int getResultCount() {
+<span class="fc" id="L404">        return results.size();</span>
+    }
+
+    /**
+     * Returns the result with the given index
+     *
+     * @param result the result index
+     * @return the table representing the result
+     */
+    public BoolTable getResult(int result) {
+<span class="fc" id="L414">        return results.get(result).getValues();</span>
+    }
+
+    /**
+     * Returns the result with the given name
+     *
+     * @param resultName the result name
+     * @return the table representing the result or null if not found
+     */
+    public BoolTable getResult(String resultName) {
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">        for (Result r : results)</span>
+<span class="fc bfc" id="L425" title="All 2 branches covered.">            if (r.getName().equals(resultName))</span>
+<span class="fc" id="L426">                return r.getValues();</span>
+<span class="nc" id="L427">        return null;</span>
+    }
+
+    /**
+     * Returns the results name
+     *
+     * @param result index of result
+     * @return the name
+     */
+    public String getResultName(int result) {
+<span class="fc" id="L437">        return results.get(result).getName();</span>
+    }
+
+    /**
+     * Removes the given result column
+     *
+     * @param i the index of the result to remove
+     */
+    public void removeResult(int i) {
+<span class="nc" id="L446">        results.remove(i);</span>
+<span class="nc" id="L447">    }</span>
+
+    /**
+     * Modifies all column in the table
+     *
+     * @param m the modifier to use
+     * @return this for chained calls
+     */
+    public TruthTable modifyValues(BoolTableByteArray.TableModifier m) {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (Result r : results) {</span>
+<span class="fc" id="L457">            BoolTable bt = r.getValues();</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">            if (bt instanceof BoolTableByteArray)</span>
+<span class="fc" id="L459">                ((BoolTableByteArray) bt).modify(m);</span>
+<span class="fc" id="L460">        }</span>
+<span class="fc" id="L461">        return this;</span>
+    }
+
+    /**
+     * Sets additional data obtained from the model
+     *
+     * @param modelAnalyzerInfo the data obtained from the model
+     */
+    public void setModelAnalyzerInfo(ModelAnalyserInfo modelAnalyzerInfo) {
+<span class="fc" id="L470">        this.modelAnalyzerInfo = modelAnalyzerInfo;</span>
+<span class="fc" id="L471">    }</span>
+
+    /**
+     * returns additional model infos
+     *
+     * @return infos obtained from the analysed model, maybe null
+     */
+    public ModelAnalyserInfo getModelAnalyzerInfo() {
+<span class="fc" id="L479">        return modelAnalyzerInfo;</span>
+    }
+
+    @Override
+    public TruthTable createDeepCopy() {
+<span class="fc" id="L484">        return new TruthTable(this);</span>
+    }
+
+    /**
+     * @return the names of all input variables
+     */
+    public ArrayList&lt;String&gt; getVarNames() {
+<span class="fc" id="L491">        ArrayList&lt;String&gt; names = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">        for (Variable v : variables)</span>
+<span class="fc" id="L493">            names.add(v.getIdentifier());</span>
+<span class="fc" id="L494">        return names;</span>
+    }
+
+    /**
+     * @return the names of al result variables
+     */
+    public ArrayList&lt;String&gt; getResultNames() {
+<span class="fc" id="L501">        ArrayList&lt;String&gt; names = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (Result r : results)</span>
+<span class="fc" id="L503">            names.add(r.getName());</span>
+<span class="fc" id="L504">        return names;</span>
+    }
+
+    /**
+     * A single result column
+     */
+    private static final class Result {
+        private String name;
+        private BoolTable values;
+
+        /**
+         * Creates a new instance
+         *
+         * @param name   the name of the result
+         * @param values the result values
+         */
+<span class="fc" id="L520">        Result(String name, BoolTable values) {</span>
+<span class="fc" id="L521">            this.name = name;</span>
+<span class="fc" id="L522">            this.values = values;</span>
+<span class="fc" id="L523">        }</span>
+
+        /**
+         * @return the result values name
+         */
+        public String getName() {
+<span class="fc" id="L529">            return name;</span>
+        }
+
+        /**
+         * Sets the values name
+         *
+         * @param name the values name
+         */
+        public void setName(String name) {
+<span class="nc" id="L538">            this.name = name;</span>
+<span class="nc" id="L539">        }</span>
+
+        /**
+         * @return the result values
+         */
+        public BoolTable getValues() {
+<span class="fc" id="L545">            return values;</span>
+        }
+
+        /**
+         * Sets new values
+         *
+         * @param values the values to set
+         */
+        public void setValues(BoolTable values) {
+<span class="fc" id="L554">            this.values = values;</span>
+<span class="fc" id="L555">        }</span>
+
+    }
+
+    private static final class DummyBitSetter extends BitSetter {
+        private DummyBitSetter(int bitCount) {
+<span class="fc" id="L561">            super(bitCount);</span>
+<span class="fc" id="L562">        }</span>
+
+        @Override
+        public void setBit(int row, int bit, boolean value) {
+<span class="nc" id="L566">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

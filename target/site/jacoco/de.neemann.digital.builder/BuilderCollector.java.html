@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BuilderCollector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder</a> &gt; <span class="el_source">BuilderCollector.java</span></div><h1>BuilderCollector.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.expression.VariableVisitor;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+
+/**
+ * A Builder implementation which only collects the expressions to build.
+ */
+public class BuilderCollector implements BuilderInterface&lt;BuilderCollector&gt; {
+    private final VariableVisitor vars;
+    private ArrayList&lt;String&gt; outputs;
+    private TreeMap&lt;String, Expression&gt; combinatorial;
+    private TreeMap&lt;String, Expression&gt; registered;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L28">    public BuilderCollector() {</span>
+<span class="fc" id="L29">        vars = new VariableVisitor();</span>
+<span class="fc" id="L30">        outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L31">        combinatorial = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L32">        registered = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public BuilderCollector addCombinatorial(String name, Expression expression) throws BuilderException {
+<span class="fc" id="L37">        expression.traverse(vars);</span>
+<span class="fc" id="L38">        outputs.add(name);</span>
+<span class="fc" id="L39">        combinatorial.put(name, expression);</span>
+<span class="fc" id="L40">        return this;</span>
+    }
+
+    @Override
+    public BuilderCollector addSequential(String name, Expression expression) throws BuilderException {
+<span class="fc" id="L45">        expression.traverse(vars);</span>
+<span class="fc" id="L46">        outputs.add(name);</span>
+<span class="fc" id="L47">        registered.put(name, expression);</span>
+<span class="fc" id="L48">        return this;</span>
+    }
+
+    /**
+     * @return the output names
+     */
+    public ArrayList&lt;String&gt; getOutputs() {
+<span class="fc" id="L55">        return outputs;</span>
+    }
+
+    /**
+     * @return the input names
+     */
+    public ArrayList&lt;String&gt; getInputs() {
+<span class="fc" id="L62">        ArrayList&lt;String&gt; inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (Variable v : vars.getVariables())</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (!outputs.contains(v.getIdentifier()))</span>
+<span class="fc" id="L65">                inputs.add(v.getIdentifier());</span>
+<span class="fc" id="L66">        return inputs;</span>
+    }
+
+    /**
+     * @return the combinatorial expressions
+     */
+    public Map&lt;String, Expression&gt; getCombinatorial() {
+<span class="fc" id="L73">        return combinatorial;</span>
+    }
+
+    /**
+     * @return the registered expressions
+     */
+    public Map&lt;String, Expression&gt; getRegistered() {
+<span class="fc" id="L80">        return registered;</span>
+    }
+
+    /**
+     * Removes an output.
+     *
+     * @param name the output to remove
+     */
+    public void removeOutput(String name) {
+<span class="fc" id="L89">        outputs.remove(name);</span>
+<span class="fc" id="L90">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

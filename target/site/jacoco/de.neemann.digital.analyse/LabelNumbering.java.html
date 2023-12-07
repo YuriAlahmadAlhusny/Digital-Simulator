@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LabelNumbering.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse</a> &gt; <span class="el_source">LabelNumbering.java</span></div><h1>LabelNumbering.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse;
+
+/**
+ * Helper to create unique names
+ */
+public class LabelNumbering {
+
+    private final String name;
+    private int pos;
+<span class="fc" id="L15">    private boolean useIndex = false;</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param name the original name
+     */
+<span class="fc" id="L22">    public LabelNumbering(String name) {</span>
+<span class="fc" id="L23">        this.name = name;</span>
+<span class="fc" id="L24">        pos = name.length();</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (name.endsWith(&quot;^n&quot;)) {</span>
+<span class="fc" id="L26">            pos = name.length() - 2;</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">            useIndex = !name.contains(&quot;_&quot;);</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        } else if (name.endsWith(&quot;n&quot;))</span>
+<span class="fc" id="L29">            pos = name.length() - 1;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Creates the unique name
+     *
+     * @param exists checks if a name already exists
+     * @return the unique label
+     */
+    public String create(Exists exists) {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (exists.exits(name)) {</span>
+<span class="fc" id="L40">            int n = 1;</span>
+            String l;
+            do {
+<span class="fc" id="L43">                l = addNumber(n);</span>
+<span class="fc" id="L44">                n++;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            } while (exists.exits(l));</span>
+<span class="fc" id="L46">            return l;</span>
+        }
+<span class="fc" id="L48">        return name;</span>
+
+    }
+
+    private String addNumber(int n) {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (useIndex)</span>
+<span class="fc" id="L54">            return name.substring(0, pos) + &quot;_&quot; + n + name.substring(pos);</span>
+        else
+<span class="fc" id="L56">            return name.substring(0, pos) + n + name.substring(pos);</span>
+    }
+
+    /**
+     * Used to check if a label exists
+     */
+    interface Exists {
+        /**
+         * Returns true if a label exists
+         *
+         * @param name the labels name
+         * @return true if label exists
+         */
+        boolean exits(String name);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

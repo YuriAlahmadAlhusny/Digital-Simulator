@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OutputShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">OutputShape.java</span></div><h1>OutputShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.Value;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * The output shape
+ */
+public class OutputShape implements Shape {
+
+    /**
+     * Size of the normal sized inputs and outputs
+     */
+    public static final int OUT_SIZE = GenericShape.SIZE * 3 / 4;
+
+    /**
+     * The size of the inputs and outputs
+     *
+     * @param small true if small symbol is used
+     * @return the size
+     */
+    public static int getOutSize(boolean small) {
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (small)</span>
+<span class="nc" id="L41">            return SIZE2;</span>
+        else
+<span class="fc" id="L43">            return OUT_SIZE;</span>
+    }
+
+    /**
+     * The size of the inputs and outputs
+     *
+     * @param small true if small symbol is used
+     * @return the size
+     */
+    public static Style getOutStyle(boolean small) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (small)</span>
+<span class="nc" id="L54">            return Style.THIN;</span>
+        else
+<span class="fc" id="L56">            return Style.NORMAL;</span>
+    }
+
+    /**
+     * Inner circle size used for inputs and outputs
+     *
+     * @param small true if small symbol is used
+     * @return the output circle radius as a vector
+     */
+    public static Vector getOutRad(boolean small) {
+<span class="fc" id="L66">        int s = getOutSize(small);</span>
+<span class="fc" id="L67">        return new Vector(s - 6, s - 6);</span>
+    }
+
+<span class="fc" id="L70">    static final Vector LATEX_RAD = new Vector(Style.MAXLINETHICK, Style.MAXLINETHICK);</span>
+    private final String label;
+    private final PinDescriptions inputs;
+    private final ValueFormatter formatter;
+    private final boolean small;
+    private IOState ioState;
+    private Value value;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L85">    public OutputShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L86">        this.inputs = inputs;</span>
+<span class="fc" id="L87">        String pinNumber = attr.get(Keys.PINNUMBER);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (pinNumber.length() == 0)</span>
+<span class="fc" id="L89">            this.label = attr.getLabel();</span>
+        else
+<span class="fc" id="L91">            this.label = attr.getLabel() + &quot; (&quot; + pinNumber + &quot;)&quot;;</span>
+
+<span class="fc" id="L93">        formatter = attr.getValueFormatter();</span>
+<span class="fc" id="L94">        small = attr.get(Keys.IN_OUT_SMALL);</span>
+<span class="fc" id="L95">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L99">        return new Pins().add(new Pin(new Vector(0, 0), inputs.get(0)));</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="fc" id="L104">        this.ioState = ioState;</span>
+<span class="fc" id="L105">        return null;</span>
+    }
+
+    @Override
+    public void readObservableValues() {
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (ioState != null)</span>
+<span class="nc" id="L111">            value = ioState.getInput(0).getCopy();</span>
+<span class="fc" id="L112">    }</span>
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (graphic.isFlagSet(Graphic.Flag.smallIO)) {</span>
+<span class="nc" id="L117">            Vector center = new Vector(LATEX_RAD.x, 0);</span>
+<span class="nc" id="L118">            graphic.drawCircle(center.sub(LATEX_RAD), center.add(LATEX_RAD), Style.NORMAL);</span>
+<span class="nc" id="L119">            Vector textPos = new Vector(SIZE2 + LATEX_RAD.x, 0);</span>
+<span class="nc" id="L120">            graphic.drawText(textPos, label, Orientation.LEFTCENTER, Style.INOUT);</span>
+<span class="nc" id="L121">        } else {</span>
+<span class="fc" id="L122">            int outSize = getOutSize(small);</span>
+<span class="fc" id="L123">            Style style = getOutStyle(small);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">            if (value != null) {</span>
+<span class="nc" id="L125">                style = Style.getWireStyle(value);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                if (value.getBits() &gt; 1) {</span>
+<span class="nc" id="L127">                    Vector textPos = new Vector(1 + outSize, -4 - outSize);</span>
+<span class="nc" id="L128">                    graphic.drawText(textPos, formatter.formatToView(value), Orientation.CENTERBOTTOM, Style.NORMAL);</span>
+                }
+            }
+
+<span class="fc" id="L132">            Vector radl = new Vector(outSize, outSize);</span>
+<span class="fc" id="L133">            Vector rad = getOutRad(small);</span>
+
+<span class="fc" id="L135">            Vector center = new Vector(1 + outSize, 0);</span>
+<span class="fc" id="L136">            graphic.drawCircle(center.sub(rad), center.add(rad), style);</span>
+<span class="fc" id="L137">            graphic.drawCircle(center.sub(radl), center.add(radl), Style.NORMAL);</span>
+<span class="fc" id="L138">            Vector textPos = new Vector(outSize * 3, 0);</span>
+<span class="fc" id="L139">            graphic.drawText(textPos, label, Orientation.LEFTCENTER, Style.INOUT);</span>
+        }
+<span class="fc" id="L141">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

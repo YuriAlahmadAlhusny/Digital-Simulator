@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataPlotter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.data</a> &gt; <span class="el_source">DataPlotter.java</span></div><h1>DataPlotter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.data;
+
+import de.neemann.digital.core.IntFormat;
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Orientation;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.testing.parser.TestRow;
+
+import javax.swing.*;
+
+/**
+ * The dataSet stores the collected DataSamples.
+ * Every DataSample contains the values of all signals at a given time.
+ */
+public class DataPlotter implements Drawable {
+    private final ValueTable dataOriginal;
+    private final int textWidth;
+    private final SyncAccess modelSync;
+<span class="fc" id="L27">    private double size = SIZE;</span>
+<span class="fc" id="L28">    private int xOffset = 0;</span>
+    private int yOffset;
+<span class="fc" id="L30">    private int width = 0;</span>
+<span class="fc" id="L31">    private int height = 0;</span>
+<span class="fc" id="L32">    private boolean manualScaling = false;</span>
+    private JScrollBar horizontalScrollBar;
+    private int autoScaleOffset;
+    private JScrollBar verticalScrollBar;
+
+    /**
+     * Creates a new instance
+     *
+     * @param data      the signals used to collect DataSamples
+     * @param modelSync used to access the model
+     */
+<span class="fc" id="L43">    public DataPlotter(ValueTable data, SyncAccess modelSync) {</span>
+<span class="fc" id="L44">        this.dataOriginal = data;</span>
+<span class="fc" id="L45">        this.modelSync = modelSync;</span>
+<span class="fc" id="L46">        int tl = 0;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; data.getColumns(); i++) {</span>
+<span class="fc" id="L48">            String text = data.getColumnName(i);</span>
+<span class="fc" id="L49">            int w = text.length();</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (w &gt; tl) tl = w;</span>
+        }
+<span class="fc" id="L52">        textWidth = tl * Style.NORMAL.getFontSize() / 2 + BORDER + SEP;</span>
+<span class="fc" id="L53">    }</span>
+
+    private static final int BORDER = 10;
+    private static final int SIZE = 25;
+    private static final int CENTER = SIZE / 2;
+    private static final int SEP2 = 5;
+    private static final int SEP = SEP2 * 2;
+
+    /**
+     * Fits the data in the visible area
+     */
+    public void fitInside() {
+<span class="nc" id="L65">        modelSync.read(() -&gt; size = ((double) (width - textWidth)) / dataOriginal.getRows());</span>
+<span class="nc" id="L66">        xOffset = 0;</span>
+<span class="nc" id="L67">        manualScaling = false;</span>
+<span class="nc" id="L68">    }</span>
+
+    /**
+     * Apply a scaling factor
+     *
+     * @param f    the factor
+     * @param xPos actual mouse position
+     */
+    public void scale(double f, int xPos) {
+<span class="nc" id="L77">        double p = (xPos - textWidth + xOffset) / size;</span>
+
+<span class="nc" id="L79">        size *= f;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (size &lt; Style.NORMAL.getThickness()) size = Style.NORMAL.getThickness();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (size &gt; SIZE * 6) size = SIZE * 6;</span>
+
+<span class="nc" id="L83">        xOffset = (int) (p * size - xPos + textWidth);</span>
+
+<span class="nc" id="L85">        manualScaling = true;</span>
+<span class="nc" id="L86">    }</span>
+
+    /**
+     * Moves the plot
+     *
+     * @param dx the x displacement
+     * @param dy the y displacement
+     */
+    public void move(int dx, int dy) {
+<span class="nc" id="L95">        xOffset -= dx;</span>
+<span class="nc bnc" id="L96" title="All 4 branches missed.">        manualScaling = dx &gt;= 0 || xOffset &lt; autoScaleOffset;</span>
+<span class="nc" id="L97">        yOffset -= dy;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (yOffset &lt; 0)</span>
+<span class="nc" id="L99">            yOffset = 0;</span>
+<span class="nc" id="L100">    }</span>
+
+    @Override
+    public void drawTo(Graphic g, Style highLight) {
+        ValueTable data;
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        final boolean staticData = modelSync == SyncAccess.NOSYNC;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (staticData) {</span>
+<span class="fc" id="L107">            data = dataOriginal;</span>
+        } else {
+<span class="fc" id="L109">            data = modelSync.read(new Runnable() {</span>
+                private ValueTable data;
+
+                @Override
+                public void run() {
+<span class="fc" id="L114">                    data = new ValueTable(dataOriginal);</span>
+<span class="fc" id="L115">                }</span>
+<span class="fc" id="L116">            }).data;</span>
+        }
+
+<span class="fc" id="L119">        final int availDataWidth = width - textWidth;</span>
+<span class="fc" id="L120">        final int preferredDataWidth = (int) (size * data.getRows());</span>
+
+<span class="fc" id="L122">        autoScaleOffset = preferredDataWidth - availDataWidth + 2;</span>
+<span class="pc bpc" id="L123" title="6 of 8 branches missed.">        if (!manualScaling &amp;&amp; width &gt; 0 &amp;&amp; !staticData &amp;&amp; autoScaleOffset &gt; 0)</span>
+<span class="nc" id="L124">            xOffset = autoScaleOffset;</span>
+
+<span class="fc" id="L126">        int signals = data.getColumns();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (horizontalScrollBar != null)</span>
+<span class="nc" id="L128">            horizontalScrollBar.setValues(xOffset, availDataWidth, 0, preferredDataWidth);</span>
+
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (signals * (SIZE + SEP) + BORDER * 2 - yOffset &lt; height) {</span>
+<span class="nc" id="L131">            yOffset = signals * (SIZE + SEP) + BORDER * 2 - height;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            if (yOffset &lt; 0) yOffset = 0;</span>
+        }
+
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (verticalScrollBar != null)</span>
+<span class="nc" id="L136">            verticalScrollBar.setValues(yOffset, height, 0, signals * (SIZE + SEP) + BORDER * 2);</span>
+
+<span class="fc" id="L138">        int dataAreaWidth = availDataWidth;</span>
+        // if no width is given, plot all the data
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (width == 0)</span>
+<span class="fc" id="L141">            dataAreaWidth = preferredDataWidth - xOffset;</span>
+
+<span class="fc" id="L143">        int yTextOffs = SIZE / 2;</span>
+<span class="fc" id="L144">        int y = BORDER - yOffset;</span>
+<span class="fc" id="L145">        int textPos = textWidth;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (xOffset &lt; 0)</span>
+<span class="nc" id="L147">            textPos = textWidth - xOffset;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int i = 0; i &lt; signals; i++) {</span>
+<span class="fc" id="L149">            String text = data.getColumnName(i);</span>
+<span class="fc" id="L150">            g.drawText(new Vector(textPos - 2, y + yTextOffs), text, Orientation.RIGHTCENTER, Style.NORMAL);</span>
+<span class="fc" id="L151">            g.drawLine(new Vector(textPos, y - SEP2), new Vector(textWidth + dataAreaWidth, y - SEP2), Style.DASH);</span>
+<span class="fc" id="L152">            y += SIZE + SEP;</span>
+        }
+<span class="fc" id="L154">        g.drawLine(new Vector(textPos, y - SEP2), new Vector(textWidth + dataAreaWidth, y - SEP2), Style.DASH);</span>
+
+
+<span class="fc" id="L157">        LastState[] last = new LastState[signals];</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int i = 0; i &lt; signals; i++) last[i] = new LastState();</span>
+
+<span class="fc" id="L160">        boolean first = true;</span>
+<span class="fc" id="L161">        double pos = 0;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (TestRow s : data) {</span>
+<span class="fc" id="L163">            int x1 = (int) (pos + textWidth - xOffset);</span>
+<span class="fc" id="L164">            int x2 = (int) (pos + textWidth - xOffset + size);</span>
+
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">            if (x2 &gt; textWidth &amp;&amp; x1 &lt; textWidth + dataAreaWidth) {</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">                if (x1 &lt; textWidth)</span>
+<span class="nc" id="L168">                    x1 = textWidth;</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">                if (x2 &gt; textWidth + dataAreaWidth)</span>
+<span class="nc" id="L170">                    x2 = textWidth + dataAreaWidth;</span>
+
+<span class="fc" id="L172">                g.drawLine(new Vector(x1, BORDER - SEP2 - yOffset), new Vector(x1, (SIZE + SEP) * signals + BORDER - SEP2 - yOffset), Style.DASH);</span>
+<span class="fc" id="L173">                y = BORDER - yOffset;</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                for (int i = 0; i &lt; signals; i++) {</span>
+                    Style style;
+<span class="pc bpc" id="L176" title="2 of 3 branches missed.">                    switch (s.getValue(i).getState()) {</span>
+                        case FAIL:
+<span class="nc" id="L178">                            style = Style.FAILED;</span>
+<span class="nc" id="L179">                            break;</span>
+                        case PASS:
+<span class="nc" id="L181">                            style = Style.PASS;</span>
+<span class="nc" id="L182">                            break;</span>
+                        default:
+<span class="fc" id="L184">                            style = Style.NORMAL;</span>
+                    }
+
+<span class="fc" id="L187">                    long width = data.getMax(i);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                    if (width == 0) width = 1;</span>
+<span class="fc" id="L189">                    long value = s.getValue(i).getValue();</span>
+                    int ry;
+<span class="fc" id="L191">                    long sWidth = (width &gt;&gt;&gt; 32);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                    if (sWidth == 0) {</span>
+<span class="fc" id="L193">                        ry = (int) (SIZE - (SIZE * value) / width);</span>
+                    } else {
+<span class="nc" id="L195">                        ry = (int) (SIZE - (SIZE * (value &gt;&gt;&gt; 32)) / sWidth);</span>
+                    }
+
+<span class="fc bfc" id="L198" title="All 2 branches covered.">                    if (value != last[i].value)</span>
+<span class="fc" id="L199">                        last[i].hasChanged = true;</span>
+
+<span class="pc bpc" id="L201" title="5 of 6 branches missed.">                    if (width &gt; 4 &amp;&amp; last[i].textWidth == 0 &amp;&amp; last[i].hasChanged) {</span>
+<span class="nc" id="L202">                        final String text = IntFormat.toShortHex(value);</span>
+<span class="nc" id="L203">                        last[i].textWidth = text.length() * SIZE / 2;</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                        if (ry &gt; CENTER)</span>
+<span class="nc" id="L205">                            g.drawText(new Vector(x1 + 1, y - SEP2 + 1), text, Orientation.LEFTTOP, Style.SHAPE_PIN);</span>
+                        else
+<span class="nc" id="L207">                            g.drawText(new Vector(x1 + 1, y + SIZE + SEP2 - 1), text, Orientation.LEFTBOTTOM, Style.SHAPE_PIN);</span>
+<span class="nc" id="L208">                        last[i].hasChanged = false;</span>
+                    }
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                    if (!s.getValue(i).getType().equals(Value.Type.HIGHZ))</span>
+<span class="fc" id="L212">                        g.drawLine(new Vector(x1, y + ry), new Vector(x2, y + ry), style);</span>
+
+<span class="fc bfc" id="L214" title="All 4 branches covered.">                    if (!first &amp;&amp; ry != last[i].y)</span>
+<span class="fc" id="L215">                        g.drawLine(new Vector(x1, y + last[i].y), new Vector(x1, y + ry), style);</span>
+
+<span class="pc bpc" id="L217" title="1 of 6 branches missed.">                    if (!first &amp;&amp; value != last[i].value &amp;&amp; Math.abs(ry - last[i].y) &lt; SEP2)</span>
+<span class="nc" id="L218">                        g.drawLine(new Vector(x1, y + ry - SEP2), new Vector(x1, y + ry + SEP2), Style.NORMAL);</span>
+
+<span class="fc" id="L220">                    last[i].y = ry;</span>
+<span class="fc" id="L221">                    last[i].value = value;</span>
+<span class="fc" id="L222">                    last[i].decTextWidth(x2 - x1);</span>
+
+<span class="fc" id="L224">                    y += SIZE + SEP;</span>
+                }
+<span class="fc" id="L226">                first = false;</span>
+            }
+
+<span class="pc bpc" id="L229" title="3 of 4 branches missed.">            if (width &gt; 0 &amp;&amp; x1 &gt; width)</span>
+<span class="nc" id="L230">                break;</span>
+
+<span class="fc" id="L232">            pos += size;</span>
+
+<span class="fc" id="L234">        }</span>
+<span class="fc" id="L235">        g.drawLine(new Vector(textWidth + dataAreaWidth, BORDER - SEP2 - yOffset), new Vector(textWidth + dataAreaWidth, (SIZE + SEP) * signals + BORDER - SEP2 - yOffset), Style.DASH);</span>
+<span class="fc" id="L236">    }</span>
+
+    /**
+     * @return the preferred height of the graphical representation
+     */
+    public int getGraphicHeight() {
+<span class="nc" id="L242">        return dataOriginal.getColumns() * (SIZE + SEP) + 2 * BORDER;</span>
+    }
+
+    /**
+     * @return the current width of the graphical representation
+     */
+    public int getCurrentGraphicWidth() {
+<span class="nc" id="L249">        return modelSync.read(new Runnable() {</span>
+            private int r;
+
+            @Override
+            public void run() {
+<span class="nc" id="L254">                r = DataPlotter.this.textWidth + (int) ((dataOriginal.getRows() + 1) * size);</span>
+<span class="nc" id="L255">            }</span>
+<span class="nc" id="L256">        }).r;</span>
+    }
+
+    /**
+     * Sets the width of the parents container
+     *
+     * @param width the component width
+     */
+    public void setWidth(int width) {
+<span class="nc" id="L265">        this.width = width;</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (horizontalScrollBar != null)</span>
+<span class="nc" id="L267">            horizontalScrollBar.setVisibleAmount(width - textWidth);</span>
+<span class="nc" id="L268">    }</span>
+
+    /**
+     * Sets the height of the parents container
+     *
+     * @param height the component width
+     */
+    public void setHeight(int height) {
+<span class="nc" id="L276">        this.height = height;</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (verticalScrollBar != null)</span>
+<span class="nc" id="L278">            verticalScrollBar.setVisibleAmount(height);</span>
+<span class="nc" id="L279">    }</span>
+
+    /**
+     * Sets the scroll bar to use
+     *
+     * @param scrollBar the scroll bar
+     */
+    public void setHorizontalScrollBar(JScrollBar scrollBar) {
+<span class="nc" id="L287">        this.horizontalScrollBar = scrollBar;</span>
+<span class="nc" id="L288">    }</span>
+
+    /**
+     * Sets the scroll bar to use
+     *
+     * @param scrollBar the scroll bar
+     */
+    public void setVerticalScrollBar(JScrollBar scrollBar) {
+<span class="nc" id="L296">        this.verticalScrollBar = scrollBar;</span>
+<span class="nc" id="L297">    }</span>
+
+
+    /**
+     * Sets the new x offset.
+     * Is called by the horizontal scrollbar.
+     *
+     * @param value the new offset
+     * @return true if there was a change
+     */
+    public boolean setNewXOffset(int value) {
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (xOffset != value) {</span>
+<span class="nc" id="L309">            xOffset = value;</span>
+<span class="nc bnc" id="L310" title="All 4 branches missed.">            manualScaling = horizontalScrollBar == null || horizontalScrollBar.getMaximum() - horizontalScrollBar.getVisibleAmount() != xOffset;</span>
+<span class="nc" id="L311">            return true;</span>
+        }
+<span class="nc" id="L313">        return false;</span>
+    }
+
+    /**
+     * Sets the new y offset.
+     * Is called by the vertical scrollbar.
+     *
+     * @param value the new offset
+     * @return true if there was a change
+     */
+    public boolean setNewYOffset(int value) {
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        if (yOffset != value) {</span>
+<span class="nc" id="L325">            yOffset = value;</span>
+<span class="nc" id="L326">            return true;</span>
+        }
+<span class="nc" id="L328">        return false;</span>
+    }
+
+<span class="fc" id="L331">    private static final class LastState {</span>
+        private long value;
+        private int y;
+        private int textWidth;
+<span class="fc" id="L335">        private boolean hasChanged = true;</span>
+
+        private void decTextWidth(int size) {
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">            if (textWidth &gt; 0) {</span>
+<span class="nc" id="L339">                textWidth -= size;</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                if (textWidth &lt; 0)</span>
+<span class="nc" id="L341">                    textWidth = 0;</span>
+            }
+<span class="fc" id="L343">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReferenceToFunc.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs.refs</a> &gt; <span class="el_source">ReferenceToFunc.java</span></div><h1>ReferenceToFunc.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs.refs;
+
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.Expression;
+import de.neemann.digital.hdl.hgs.function.InnerFunction;
+
+import java.util.ArrayList;
+
+/**
+ * A reference to a function
+ */
+public class ReferenceToFunc implements Reference {
+    private final Reference parent;
+    private final ArrayList&lt;Expression&gt; args;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent the parent reference
+     * @param args   the arguments of the function
+     */
+<span class="fc" id="L28">    public ReferenceToFunc(Reference parent, ArrayList&lt;Expression&gt; args) {</span>
+<span class="fc" id="L29">        this.parent = parent;</span>
+<span class="fc" id="L30">        this.args = args;</span>
+<span class="fc" id="L31">    }</span>
+
+
+    @Override
+    public void declareVar(Context context, Object initial) throws HGSEvalException {
+<span class="nc" id="L36">        set(context, initial);</span>
+<span class="nc" id="L37">    }</span>
+
+    @Override
+    public void set(Context context, Object value) throws HGSEvalException {
+<span class="fc" id="L41">        throw new HGSEvalException(&quot;It's not possible to write to a function!&quot;);</span>
+    }
+
+    @Override
+    public Object get(Context context) throws HGSEvalException {
+<span class="fc" id="L46">        Object funcObj = parent.get(context);</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (funcObj instanceof InnerFunction) {</span>
+<span class="fc" id="L48">            final InnerFunction func = (InnerFunction) funcObj;</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">            if (func.getArgCount() &gt;= 0 &amp;&amp; func.getArgCount() != args.size())</span>
+<span class="nc" id="L50">                throw new HGSEvalException(&quot;wrong number of arguments! found: &quot; + args.size() + &quot;, expected: &quot; + func.getArgCount());</span>
+<span class="fc" id="L51">            return func.call(context, args);</span>
+        }
+<span class="nc" id="L53">        throw new HGSEvalException(&quot;Value '&quot;+funcObj+&quot;' is not a function!&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

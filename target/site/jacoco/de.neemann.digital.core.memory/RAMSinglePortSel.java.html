@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RAMSinglePortSel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">RAMSinglePortSel.java</span></div><h1>RAMSinglePortSel.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.ObservableValues;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * RAM module with a single port to read and write data and a select input.
+ * This allows to build a bigger RAM with smaller RAMS and an additional address decoder.
+ */
+public class RAMSinglePortSel extends Node implements Element, RAMInterface {
+
+    /**
+     * The RAMs {@link ElementTypeDescription}
+     */
+<span class="fc" id="L28">    public static final ElementTypeDescription DESCRIPTION = new ElementTypeDescription(RAMSinglePortSel.class,</span>
+<span class="fc" id="L29">            input(&quot;A&quot;),</span>
+<span class="fc" id="L30">            input(&quot;CS&quot;),</span>
+<span class="fc" id="L31">            input(&quot;WE&quot;),</span>
+<span class="fc" id="L32">            input(&quot;OE&quot;))</span>
+<span class="fc" id="L33">            .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L34">            .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L35">            .addAttribute(Keys.ADDR_BITS)</span>
+<span class="fc" id="L36">            .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L37">            .addAttribute(Keys.IS_PROGRAM_MEMORY)</span>
+<span class="fc" id="L38">            .addAttribute(Keys.INVERTER_CONFIG);</span>
+
+    private final int bits;
+    private final int addrBits;
+    private final int size;
+    private final String label;
+    private final ObservableValue dataOut;
+    private final boolean isProgramMemory;
+    private DataField memory;
+    private ObservableValue addrIn;
+    private ObservableValue csIn;
+    private ObservableValue weIn;
+    private ObservableValue oeIn;
+    private ObservableValue dataIn;
+
+    private int addr;
+    private boolean cs;
+    private boolean oe;
+    private boolean we;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr the elements attributes
+     */
+    public RAMSinglePortSel(ElementAttributes attr) {
+<span class="fc" id="L64">        super(true);</span>
+<span class="fc" id="L65">        bits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L66">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L67">        size = 1 &lt;&lt; addrBits;</span>
+<span class="fc" id="L68">        memory = new DataField(size);</span>
+<span class="fc" id="L69">        label = attr.getLabel();</span>
+<span class="fc" id="L70">        dataOut = new ObservableValue(&quot;D&quot;, bits)</span>
+<span class="fc" id="L71">                .setToHighZ()</span>
+<span class="fc" id="L72">                .setPinDescription(DESCRIPTION)</span>
+<span class="fc" id="L73">                .setBidirectional();</span>
+<span class="fc" id="L74">        isProgramMemory = attr.isProgramMemory();</span>
+<span class="fc" id="L75">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws NodeException {
+<span class="fc" id="L79">        addrIn = inputs.get(0).checkBits(addrBits, this).addObserverToValue(this);</span>
+<span class="fc" id="L80">        csIn = inputs.get(1).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L81">        weIn = inputs.get(2).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L82">        oeIn = inputs.get(3).checkBits(1, this).addObserverToValue(this);</span>
+<span class="fc" id="L83">        dataIn = inputs.get(4).checkBits(bits, this).addObserverToValue(this);</span>
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc" id="L88">        cs = csIn.getBool();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (cs) {</span>
+<span class="fc" id="L90">            addr = (int) addrIn.getValue();</span>
+<span class="fc" id="L91">            oe = oeIn.getBool();</span>
+<span class="fc" id="L92">            we = weIn.getBool();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (we) {</span>
+<span class="fc" id="L94">                long data = dataIn.getValue();</span>
+<span class="fc" id="L95">                memory.setData(addr, data);</span>
+            }
+        }
+<span class="fc" id="L98">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc bfc" id="L102" title="All 6 branches covered.">        if (cs &amp;&amp; oe &amp;&amp; !we) {</span>
+<span class="fc" id="L103">            dataOut.setValue(memory.getDataWord(addr));</span>
+        } else {
+<span class="fc" id="L105">            dataOut.setToHighZ();</span>
+        }
+<span class="fc" id="L107">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L111">        return dataOut.asList();</span>
+    }
+
+    @Override
+    public DataField getMemory() {
+<span class="nc" id="L116">        return memory;</span>
+    }
+
+    @Override
+    public String getLabel() {
+<span class="nc" id="L121">        return label;</span>
+    }
+
+    @Override
+    public int getSize() {
+<span class="nc" id="L126">        return size;</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L131">        return bits;</span>
+    }
+
+    @Override
+    public int getAddrBits() {
+<span class="nc" id="L136">        return addrBits;</span>
+    }
+
+    /**
+     * Sets the rams data
+     *
+     * @param data the data to set
+     */
+    public void setData(DataField data) {
+<span class="nc" id="L145">        this.memory = data;</span>
+<span class="nc" id="L146">    }</span>
+
+    @Override
+    public boolean isProgramMemory() {
+<span class="nc" id="L150">        return isProgramMemory;</span>
+    }
+
+    @Override
+    public void setProgramMemory(DataField dataField) {
+<span class="nc" id="L155">        memory.setDataFrom(dataField);</span>
+<span class="nc" id="L156">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

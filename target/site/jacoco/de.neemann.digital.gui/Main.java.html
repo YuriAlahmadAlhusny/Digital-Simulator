@@ -1,0 +1,2338 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Main.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui</a> &gt; <span class="el_source">Main.java</span></div><h1>Main.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui;
+
+import de.neemann.digital.FileLocator;
+import de.neemann.digital.analyse.AnalyseException;
+import de.neemann.digital.analyse.ModelAnalyser;
+import de.neemann.digital.analyse.SubstituteLibrary;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.io.Button;
+import de.neemann.digital.core.io.*;
+import de.neemann.digital.core.memory.ProgramCounter;
+import de.neemann.digital.core.stats.Statistics;
+import de.neemann.digital.core.wiring.AsyncSeq;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.gif.GifExporter;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.library.ElementTypeDescriptionCustom;
+import de.neemann.digital.draw.model.AsyncSequentialClock;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.model.RealTimeClock;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.fsm.gui.FSMFrame;
+import de.neemann.digital.gui.components.*;
+import de.neemann.digital.gui.components.data.GraphDialog;
+import de.neemann.digital.gui.components.expression.ExpressionDialog;
+import de.neemann.digital.gui.components.modification.ModifyAttribute;
+import de.neemann.digital.gui.components.modification.ModifyMeasurementOrdering;
+import de.neemann.digital.gui.components.table.TableDialog;
+import de.neemann.digital.gui.components.terminal.Keyboard;
+import de.neemann.digital.gui.components.terminal.KeyboardDialog;
+import de.neemann.digital.gui.components.testing.TestAllDialog;
+import de.neemann.digital.gui.components.testing.ValueTableDialog;
+import de.neemann.digital.gui.components.tree.LibraryTreeModel;
+import de.neemann.digital.gui.components.tree.SelectTree;
+import de.neemann.digital.gui.release.CheckForNewRelease;
+import de.neemann.digital.gui.remote.DigitalHandler;
+import de.neemann.digital.gui.remote.RemoteException;
+import de.neemann.digital.gui.remote.RemoteSever;
+import de.neemann.digital.gui.state.State;
+import de.neemann.digital.gui.state.StateManager;
+import de.neemann.digital.gui.tutorial.InitialTutorial;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.hdl.verilog2.VerilogGenerator;
+import de.neemann.digital.hdl.vhdl2.VHDLGenerator;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestingDataException;
+import de.neemann.digital.toolchain.Configuration;
+import de.neemann.digital.undo.ChangedListener;
+import de.neemann.digital.undo.Modifications;
+import de.neemann.gui.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.DefaultEditorKit;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.gui.ToolTipAction.getCTRLMask;
+import static javax.swing.JOptionPane.showInputDialog;
+
+/**
+ * The main frame of the Digital Simulator
+ * Set log level: -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
+ */
+public final class Main extends JFrame implements ClosingWindowListener.ConfirmSave, FileHistory.OpenInterface, DigitalRemoteInterface, StatusInterface, ChangedListener {
+<span class="fc" id="L94">    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);</span>
+    private static final String KEY_START_STOP_ACTION = &quot;startStop&quot;;
+    private static boolean experimental;
+
+    /**
+     * @return true if experimental features are enabled
+     */
+    public static boolean isExperimentalMode() {
+<span class="fc" id="L102">        return experimental;</span>
+    }
+
+<span class="fc" id="L105">    private static final String MESSAGE = Lang.get(&quot;message&quot;);</span>
+<span class="fc" id="L106">    private static final Icon ICON_RUN = IconCreator.create(&quot;media-playback-start.png&quot;);</span>
+<span class="fc" id="L107">    private static final Icon ICON_MICRO = IconCreator.create(&quot;media-playback-start-2.png&quot;);</span>
+<span class="fc" id="L108">    private static final Icon ICON_TEST = IconCreator.create(&quot;media-playback-start-T.png&quot;);</span>
+<span class="fc" id="L109">    private static final Icon ICON_STEP = IconCreator.create(&quot;media-seek-forward.png&quot;);</span>
+<span class="fc" id="L110">    private static final Icon ICON_STEP_FINISH = IconCreator.create(&quot;media-seek-forward-f.png&quot;);</span>
+<span class="fc" id="L111">    private static final Icon ICON_STOP = IconCreator.create(&quot;media-playback-stop.png&quot;);</span>
+<span class="fc" id="L112">    private static final Icon ICON_NEW = IconCreator.create(&quot;document-new.png&quot;);</span>
+<span class="fc" id="L113">    private static final Icon ICON_NEW_SUB = IconCreator.create(&quot;document-new-sub.png&quot;);</span>
+<span class="fc" id="L114">    private static final Icon ICON_OPEN = IconCreator.create(&quot;document-open.png&quot;);</span>
+<span class="fc" id="L115">    private static final Icon ICON_OPEN_WIN = IconCreator.create(&quot;document-open-new.png&quot;);</span>
+<span class="fc" id="L116">    private static final Icon ICON_SAVE = IconCreator.create(&quot;document-save.png&quot;);</span>
+<span class="fc" id="L117">    private static final Icon ICON_SAVE_AS = IconCreator.create(&quot;document-save-as.png&quot;);</span>
+<span class="fc" id="L118">    private static final Icon ICON_FAST = IconCreator.create(&quot;media-skip-forward.png&quot;);</span>
+<span class="fc" id="L119">    private static final Icon ICON_EXPAND = IconCreator.create(&quot;View-zoom-fit.png&quot;);</span>
+<span class="fc" id="L120">    private static final Icon ICON_ZOOM_IN = IconCreator.create(&quot;View-zoom-in.png&quot;);</span>
+<span class="fc" id="L121">    private static final Icon ICON_ZOOM_OUT = IconCreator.create(&quot;View-zoom-out.png&quot;);</span>
+<span class="fc" id="L122">    private static final Icon ICON_HELP = IconCreator.create(&quot;help.png&quot;);</span>
+
+    private final CircuitComponent circuitComponent;
+    private final CircuitScrollPanel circuitScrollPanel;
+    private final ToolTipAction save;
+    private final ElementLibrary library;
+    private final ShapeFactory shapeFactory;
+    private final JLabel statusLabel;
+<span class="nc" id="L130">    private final StateManager stateManager = new StateManager();</span>
+<span class="nc" id="L131">    private final ScheduledThreadPoolExecutor timerExecutor = new ScheduledThreadPoolExecutor(1);</span>
+    private final WindowPosManager windowPosManager;
+    private final InsertHistory insertHistory;
+    private final boolean keepPrefMainFile;
+    private final FileHistory fileHistory;
+
+    private ToolTipAction doMicroStep;
+    private ToolTipAction runToBreakMicroAction;
+    private ToolTipAction runToBreakAction;
+    private ToolTipAction showMeasurementDialog;
+    private ToolTipAction showMeasurementGraph;
+    private ToolTipAction runTests;
+
+    private File baseFilename;
+    private File filename;
+<span class="nc" id="L146">    private boolean modifiedPrefixVisible = false;</span>
+
+    private Model model;
+
+    private ModelCreator modelCreator;
+    private boolean realTimeClockRunning;
+
+    private State stoppedState;
+    private RunModelState runModelState;
+    private State runModelMicroState;
+    private JComponent componentOnPane;
+    private LibraryTreeModel treeModel;
+
+    /**
+     * Creates a new instance
+     *
+     * @param builder the builder
+     */
+    private Main(MainBuilder builder) {
+<span class="nc" id="L165">        super(Lang.get(&quot;digital&quot;));</span>
+<span class="nc" id="L166">        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);</span>
+<span class="nc" id="L167">        setIconImages(IconCreator.createImages(&quot;icon32.png&quot;, &quot;icon64.png&quot;, &quot;icon128.png&quot;));</span>
+
+<span class="nc" id="L169">        windowPosManager = new WindowPosManager(this);</span>
+
+<span class="nc" id="L171">        keepPrefMainFile = builder.keepPrefMainFile;</span>
+
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (builder.library != null) library = builder.library;</span>
+        else {
+<span class="nc" id="L175">            library = new ElementLibrary(Settings.getInstance().get(Keys.SETTINGS_JAR_PATH));</span>
+<span class="nc" id="L176">            Exception e = library.checkForException();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            if (e != null)</span>
+<span class="nc" id="L178">                SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;err_loadingLibrary&quot;)).addCause(e).setComponent(this));</span>
+        }
+
+<span class="nc" id="L181">        shapeFactory = new ShapeFactory(library, Settings.getInstance().get(Keys.SETTINGS_IEEE_SHAPES));</span>
+
+<span class="nc" id="L183">        fileHistory = new FileHistory(this);</span>
+
+<span class="nc" id="L185">        baseFilename = builder.baseFileName;</span>
+
+<span class="nc" id="L187">        circuitComponent = new CircuitComponent(this, library, shapeFactory);</span>
+<span class="nc" id="L188">        circuitComponent.addListener(this);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (builder.circuit != null) {</span>
+<span class="nc" id="L190">            LOGGER.debug(&quot;create with given circuit: &quot; + builder.circuit.getOrigin());</span>
+<span class="nc" id="L191">            SwingUtilities.invokeLater(() -&gt; circuitComponent.setCircuit(builder.circuit));</span>
+<span class="nc" id="L192">            setFilename(builder.fileToOpen, false);</span>
+        } else {
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (builder.fileToOpen != null) {</span>
+<span class="nc" id="L195">                LOGGER.debug(&quot;create with given file &quot; + builder.fileToOpen);</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">                SwingUtilities.invokeLater(() -&gt; loadFile(builder.fileToOpen, builder.library == null, builder.library == null));</span>
+            } else {
+<span class="nc" id="L198">                File name = fileHistory.getMostRecent();</span>
+<span class="nc" id="L199">                LOGGER.debug(&quot;create with history file &quot; + name);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                if (name != null) {</span>
+<span class="nc" id="L201">                    SwingUtilities.invokeLater(() -&gt; loadFile(name, true, false));</span>
+                }
+            }
+        }
+<span class="nc" id="L205">        circuitScrollPanel = new CircuitScrollPanel(circuitComponent);</span>
+
+<span class="nc" id="L207">        library.addListener(circuitComponent);</span>
+
+<span class="nc" id="L209">        getContentPane().add(circuitScrollPanel);</span>
+<span class="nc" id="L210">        componentOnPane = circuitScrollPanel;</span>
+
+<span class="nc" id="L212">        circuitComponent.addKeyListener(new ModelKeyListener());</span>
+
+<span class="nc" id="L214">        statusLabel = new JLabel(&quot; &quot;);</span>
+<span class="nc" id="L215">        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, Screen.getInstance().getFontSize() * 2 / 3, 0, 0));</span>
+<span class="nc" id="L216">        getContentPane().add(statusLabel, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L218">        setupStates();</span>
+
+<span class="nc" id="L220">        JMenuBar menuBar = new JMenuBar();</span>
+<span class="nc" id="L221">        JToolBar toolBar = new JToolBar();</span>
+
+<span class="nc" id="L223">        save = createFileMenu(menuBar, toolBar, builder.allowAllFileActions);</span>
+<span class="nc" id="L224">        toolBar.addSeparator();</span>
+
+<span class="nc" id="L226">        createEditMenu(menuBar);</span>
+<span class="nc" id="L227">        createViewMenu(menuBar, toolBar);</span>
+
+<span class="nc" id="L229">        toolBar.addSeparator();</span>
+
+<span class="nc" id="L231">        toolBar.add(circuitComponent.getUndoAction().createJButtonNoText());</span>
+<span class="nc" id="L232">        toolBar.add(circuitComponent.getRedoAction().createJButtonNoText());</span>
+<span class="nc" id="L233">        toolBar.add(circuitComponent.getDeleteAction().createJButtonNoText());</span>
+<span class="nc" id="L234">        toolBar.addSeparator();</span>
+
+<span class="nc" id="L236">        createStartMenu(menuBar, toolBar);</span>
+
+<span class="nc" id="L238">        createAnalyseMenu(menuBar);</span>
+
+<span class="nc" id="L240">        toolBar.addSeparator();</span>
+
+<span class="nc" id="L242">        insertHistory = new InsertHistory(toolBar, library);</span>
+<span class="nc" id="L243">        library.addListener(insertHistory);</span>
+<span class="nc" id="L244">        final LibrarySelector librarySelector = new LibrarySelector(library, shapeFactory);</span>
+<span class="nc" id="L245">        library.addListener(librarySelector);</span>
+<span class="nc" id="L246">        menuBar.add(librarySelector.buildMenu(insertHistory, circuitComponent));</span>
+
+<span class="nc" id="L248">        menuBar.add(WindowManager.getInstance().registerAndCreateMenu(this));</span>
+
+<span class="nc" id="L250">        JMenu helpMenu = new JMenu(Lang.get(&quot;menu_help&quot;));</span>
+<span class="nc" id="L251">        helpMenu.add(new ToolTipAction(Lang.get(&quot;menu_help_elements&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L255">                    new ElementHelpDialog(Main.this, library, shapeFactory).setVisible(true);</span>
+<span class="nc" id="L256">                } catch (NodeException | PinException e) {</span>
+<span class="nc" id="L257">                    new ErrorMessage(Lang.get(&quot;msg_creatingHelp&quot;)).addCause(e).show(Main.this);</span>
+<span class="nc" id="L258">                }</span>
+<span class="nc" id="L259">            }</span>
+<span class="nc" id="L260">        }.setToolTip(Lang.get(&quot;menu_help_elements_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L261">        new DocumentationLocator().addMenuTo(helpMenu);</span>
+<span class="nc" id="L262">        helpMenu.addSeparator();</span>
+<span class="nc" id="L263">        helpMenu.add(InfoDialog.getInstance().createMenuItem(this, MESSAGE));</span>
+<span class="nc" id="L264">        menuBar.add(helpMenu);</span>
+
+<span class="nc" id="L266">        setJMenuBar(menuBar);</span>
+
+<span class="nc" id="L268">        addWindowListener(new ClosingWindowListener(this, this));</span>
+<span class="nc" id="L269">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosed(WindowEvent e) {
+<span class="nc" id="L272">                clearModelDescription(); // stop model timer if running</span>
+<span class="nc" id="L273">                timerExecutor.shutdown();</span>
+<span class="nc" id="L274">                library.removeListener(librarySelector);</span>
+<span class="nc" id="L275">                library.removeListener(insertHistory);</span>
+<span class="nc" id="L276">                library.removeListener(circuitComponent);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">                if (treeModel != null)</span>
+<span class="nc" id="L278">                    library.removeListener(treeModel);</span>
+<span class="nc" id="L279">                windowPosManager.shutdown();</span>
+<span class="nc" id="L280">            }</span>
+        });
+
+<span class="nc" id="L283">        getContentPane().add(toolBar, BorderLayout.NORTH);</span>
+
+<span class="nc" id="L285">        new ToolTipAction(&quot;insertLast&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L288">                InsertAction lastInsertAction = insertHistory.getLastInsertAction();</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">                if (lastInsertAction != null &amp;&amp; model == null)</span>
+<span class="nc" id="L290">                    lastInsertAction.actionPerformed(actionEvent);</span>
+<span class="nc" id="L291">            }</span>
+<span class="nc" id="L292">        }.setAccelerator(&quot;L&quot;).enableAcceleratorIn(circuitComponent);</span>
+
+<span class="nc" id="L294">        enableClockShortcut();</span>
+
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        new WindowSizeStorage(builder.mainFrame ? &quot;main&quot; : &quot;sub&quot;).restore(this);</span>
+
+<span class="nc bnc" id="L298" title="All 2 branches missed.">        if (builder.parent != null) {</span>
+<span class="nc" id="L299">            Point p = builder.parent.getLocation();</span>
+<span class="nc" id="L300">            final float d = 20 * Screen.getInstance().getScaling();</span>
+<span class="nc" id="L301">            p.x += d;</span>
+<span class="nc" id="L302">            p.y += d;</span>
+<span class="nc" id="L303">            Screen.setLocation(this, p, false);</span>
+<span class="nc" id="L304">        } else</span>
+<span class="nc" id="L305">            setLocationRelativeTo(null);</span>
+
+<span class="nc" id="L307">        checkIDEIntegration(builder, menuBar);</span>
+<span class="nc" id="L308">    }</span>
+
+    private void checkIDEIntegration(MainBuilder builder, JMenuBar menuBar) {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (builder.mainFrame) {</span>
+<span class="nc" id="L312">            File f = Settings.getInstance().get(Keys.SETTINGS_TOOLCHAIN_CONFIG);</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">            if (f.getPath().length() &gt; 0) {</span>
+                try {
+<span class="nc" id="L315">                    menuBar.add(</span>
+<span class="nc" id="L316">                            Configuration.load(f)</span>
+<span class="nc" id="L317">                                    .setCircuitProvider(() -&gt; getCircuitComponent().getCircuit())</span>
+<span class="nc" id="L318">                                    .setFilenameProvider(() -&gt; {</span>
+<span class="nc" id="L319">                                        saveChanges();</span>
+<span class="nc" id="L320">                                        return filename;</span>
+                                    })
+<span class="nc" id="L322">                                    .setLibraryProvider(() -&gt; library)</span>
+<span class="nc" id="L323">                                    .createMenu(this));</span>
+<span class="nc" id="L324">                } catch (IOException e) {</span>
+<span class="nc" id="L325">                    SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_errorReadingToolchainConfig_N&quot;, f.getPath())).addCause(e).setComponent(this));</span>
+<span class="nc" id="L326">                }</span>
+            }
+        }
+<span class="nc" id="L329">    }</span>
+
+    private void enableClockShortcut() {
+<span class="nc" id="L332">        new ToolTipAction(&quot;doClock&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L335" title="All 4 branches missed.">                if (model != null &amp;&amp; !realTimeClockRunning) {</span>
+<span class="nc" id="L336">                    ArrayList&lt;Clock&gt; cl = model.getClocks();</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                    if (cl.size() == 1) {</span>
+<span class="nc" id="L338">                        model.modify(() -&gt; {</span>
+<span class="nc" id="L339">                            ObservableValue clkVal = cl.get(0).getClockOutput();</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                            clkVal.setBool(!clkVal.getBool());</span>
+<span class="nc" id="L341">                        });</span>
+                    }
+                }
+<span class="nc" id="L344">            }</span>
+<span class="nc" id="L345">        }.setAccelerator(&quot;C&quot;).enableAcceleratorIn(circuitComponent);</span>
+<span class="nc" id="L346">    }</span>
+
+    private void createViewMenu(JMenuBar menuBar, JToolBar toolBar) {
+<span class="nc" id="L349">        ToolTipAction maximize = new ToolTipAction(Lang.get(&quot;menu_maximize&quot;), ICON_EXPAND) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L352">                circuitComponent.fitCircuit();</span>
+<span class="nc" id="L353">            }</span>
+<span class="nc" id="L354">        }.setAccelerator(&quot;F1&quot;);</span>
+<span class="nc" id="L355">        ToolTipAction zoomIn = new ToolTipAction(Lang.get(&quot;menu_zoomIn&quot;), ICON_ZOOM_IN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L358">                circuitComponent.scaleCircuit(1 / 0.9);</span>
+<span class="nc" id="L359">            }</span>
+<span class="nc" id="L360">        }.setAcceleratorCTRLplus(&quot;PLUS&quot;).enableAcceleratorIn(circuitComponent);</span>
+<span class="nc" id="L361">        circuitComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD, getCTRLMask()), zoomIn);</span>
+
+<span class="nc" id="L363">        ToolTipAction zoomOut = new ToolTipAction(Lang.get(&quot;menu_zoomOut&quot;), ICON_ZOOM_OUT) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L366">                circuitComponent.scaleCircuit(0.9);</span>
+<span class="nc" id="L367">            }</span>
+<span class="nc" id="L368">        }.setAcceleratorCTRLplus(&quot;MINUS&quot;).enableAcceleratorIn(circuitComponent);</span>
+<span class="nc" id="L369">        circuitComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, getCTRLMask()), zoomOut);</span>
+
+<span class="nc" id="L371">        ToolTipAction viewHelp = new ToolTipAction(Lang.get(&quot;menu_viewHelp&quot;), ICON_HELP) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L374">                final Circuit circuit = circuitComponent.getCircuit();</span>
+<span class="nc" id="L375">                final String name = Lang.get(&quot;msg_actualCircuit&quot;);</span>
+<span class="nc" id="L376">                File file = filename;</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                if (file == null)</span>
+<span class="nc" id="L378">                    file = new File(name);</span>
+                try {
+<span class="nc" id="L380">                    ElementTypeDescriptionCustom description =</span>
+<span class="nc" id="L381">                            ElementLibrary.createCustomDescription(file, circuit, library);</span>
+<span class="nc" id="L382">                    description.setShortName(name);</span>
+<span class="nc" id="L383">                    description.setDescription(Lang.evalMultilingualContent(circuit.getAttributes().get(Keys.DESCRIPTION)));</span>
+<span class="nc" id="L384">                    new ElementHelpDialog(Main.this, description, circuit.getAttributes()).setVisible(true);</span>
+<span class="nc" id="L385">                } catch (PinException | NodeException e1) {</span>
+<span class="nc" id="L386">                    new ErrorMessage(Lang.get(&quot;msg_creatingHelp&quot;)).addCause(e1).show(Main.this);</span>
+<span class="nc" id="L387">                }</span>
+<span class="nc" id="L388">            }</span>
+<span class="nc" id="L389">        }.setToolTip(Lang.get(&quot;menu_viewHelp_tt&quot;));</span>
+
+<span class="nc" id="L391">        JCheckBoxMenuItem treeCheckBox = new JCheckBoxMenuItem(Lang.get(&quot;menu_treeSelect&quot;));</span>
+<span class="nc" id="L392">        treeCheckBox.setToolTipText(Lang.get(&quot;menu_treeSelect_tt&quot;));</span>
+<span class="nc" id="L393">        treeCheckBox.addActionListener(actionEvent -&gt; {</span>
+<span class="nc" id="L394">            getContentPane().remove(componentOnPane);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">            if (treeCheckBox.isSelected()) {</span>
+<span class="nc" id="L396">                JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);</span>
+<span class="nc" id="L397">                split.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)</span>
+<span class="nc" id="L398">                        .put(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), &quot;digNone&quot;);</span>
+<span class="nc" id="L399">                treeModel = new LibraryTreeModel(library);</span>
+<span class="nc" id="L400">                split.setLeftComponent(createTreeComponent());</span>
+<span class="nc" id="L401">                split.setRightComponent(circuitScrollPanel);</span>
+<span class="nc" id="L402">                getContentPane().add(split);</span>
+<span class="nc" id="L403">                componentOnPane = split;</span>
+<span class="nc" id="L404">            } else {</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                if (treeModel != null) {</span>
+<span class="nc" id="L406">                    treeModel.close();</span>
+<span class="nc" id="L407">                    treeModel = null;</span>
+                }
+<span class="nc" id="L409">                getContentPane().add(circuitScrollPanel);</span>
+<span class="nc" id="L410">                componentOnPane = circuitScrollPanel;</span>
+            }
+<span class="nc" id="L412">            revalidate();</span>
+<span class="nc" id="L413">        });</span>
+<span class="nc" id="L414">        treeCheckBox.setAccelerator(KeyStroke.getKeyStroke(&quot;F5&quot;));</span>
+
+<span class="nc" id="L416">        ToolTipAction tutorial = new ToolTipAction(Lang.get(&quot;menu_tutorial&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L419" title="All 2 branches missed.">                if (ClosingWindowListener.checkForSave(Main.this, Main.this)) {</span>
+<span class="nc" id="L420">                    clearPane();</span>
+<span class="nc" id="L421">                    new InitialTutorial(Main.this).setVisible(true);</span>
+                }
+<span class="nc" id="L423">            }</span>
+<span class="nc" id="L424">        }.setToolTip(Lang.get(&quot;menu_tutorial_tt&quot;));</span>
+
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        if (Settings.getInstance().get(Keys.SETTINGS_DEFAULT_TREESELECT))</span>
+<span class="nc" id="L427">            SwingUtilities.invokeLater(treeCheckBox::doClick);</span>
+
+<span class="nc" id="L429">        toolBar.add(viewHelp.createJButtonNoText());</span>
+<span class="nc" id="L430">        toolBar.add(zoomIn.createJButtonNoText());</span>
+<span class="nc" id="L431">        toolBar.add(zoomOut.createJButtonNoText());</span>
+<span class="nc" id="L432">        toolBar.add(maximize.createJButtonNoText());</span>
+
+<span class="nc" id="L434">        JMenu scaleMenu = new JMenu(Lang.get(&quot;menu_scale&quot;));</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        for (int i = 0; i &lt; 10; i++) {</span>
+<span class="nc" id="L436">            int f = (20 + i * 20);</span>
+<span class="nc" id="L437">            scaleMenu.add(new JMenuItem(new AbstractAction(f + &quot;%&quot;) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L440">                    getCircuitComponent().setScale(f / 100.0f);</span>
+<span class="nc" id="L441">                }</span>
+            }));
+        }
+
+<span class="nc" id="L445">        JMenu view = new JMenu(Lang.get(&quot;menu_view&quot;));</span>
+<span class="nc" id="L446">        menuBar.add(view);</span>
+<span class="nc" id="L447">        view.add(maximize.createJMenuItem());</span>
+<span class="nc" id="L448">        view.add(zoomOut.createJMenuItem());</span>
+<span class="nc" id="L449">        view.add(zoomIn.createJMenuItem());</span>
+<span class="nc" id="L450">        view.add(scaleMenu);</span>
+<span class="nc" id="L451">        view.addSeparator();</span>
+<span class="nc" id="L452">        view.add(treeCheckBox);</span>
+<span class="nc" id="L453">        view.addSeparator();</span>
+<span class="nc" id="L454">        view.add(tutorial.createJMenuItem());</span>
+<span class="nc" id="L455">        view.addSeparator();</span>
+<span class="nc" id="L456">        view.add(viewHelp.createJMenuItem());</span>
+<span class="nc" id="L457">    }</span>
+
+    private JComponent createTreeComponent() {
+<span class="nc" id="L460">        JPanel panel = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L461">        JPanel field = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L462">        JTextField textField = new SearchTextField();</span>
+<span class="nc" id="L463">        field.add(textField);</span>
+<span class="nc" id="L464">        JButton clearButton = new JButton(new AbstractAction(&quot;\u2717&quot;) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L467">                textField.setText(&quot;&quot;);</span>
+<span class="nc" id="L468">            }</span>
+        });
+<span class="nc" id="L470">        clearButton.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));</span>
+<span class="nc" id="L471">        field.add(clearButton, BorderLayout.EAST);</span>
+<span class="nc" id="L472">        panel.add(field, BorderLayout.NORTH);</span>
+
+<span class="nc" id="L474">        textField.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L475">        SelectTree tree = new SelectTree(treeModel, circuitComponent, shapeFactory, insertHistory);</span>
+<span class="nc" id="L476">        textField.getDocument().addDocumentListener(new DocumentListener() {</span>
+            @Override
+            public void insertUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L479">                changedUpdate(documentEvent);</span>
+<span class="nc" id="L480">            }</span>
+
+            @Override
+            public void removeUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L484">                changedUpdate(documentEvent);</span>
+<span class="nc" id="L485">            }</span>
+
+            @Override
+            public void changedUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L489">                String text = textField.getText().trim();</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">                if (text.isEmpty())</span>
+<span class="nc" id="L491">                    treeModel = new LibraryTreeModel(library);</span>
+                else
+<span class="nc" id="L493">                    treeModel = new LibraryTreeModel(library, new TextSearchFilter(text));</span>
+<span class="nc" id="L494">                tree.setModel(treeModel);</span>
+<span class="nc" id="L495">            }</span>
+        });
+<span class="nc" id="L497">        panel.add(new JScrollPane(tree));</span>
+<span class="nc" id="L498">        return panel;</span>
+    }
+
+    private void clearPane() {
+<span class="nc" id="L502">        circuitComponent.setCircuit(new Circuit());</span>
+<span class="nc" id="L503">        setFilename(null, true);</span>
+<span class="nc" id="L504">        windowPosManager.closeAll();</span>
+        try {
+<span class="nc" id="L506">            library.setRootFilePath(null);</span>
+<span class="nc" id="L507">        } catch (IOException e1) {</span>
+            // can not happen, no folder is scanned
+<span class="nc" id="L509">        }</span>
+<span class="nc" id="L510">    }</span>
+
+    /**
+     * Creates the file menu and adds it to menu and toolbar
+     *
+     * @param menuBar the menuBar
+     * @param toolBar the toolBar
+     * @return the save action
+     */
+    private ToolTipAction createFileMenu(JMenuBar menuBar, JToolBar toolBar, boolean allowAll) {
+<span class="nc" id="L520">        ToolTipAction newFile = new ToolTipAction(Lang.get(&quot;menu_new&quot;), ICON_NEW) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L523" title="All 2 branches missed.">                if (ClosingWindowListener.checkForSave(Main.this, Main.this)) {</span>
+<span class="nc" id="L524">                    clearPane();</span>
+                }
+<span class="nc" id="L526">            }</span>
+<span class="nc" id="L527">        }.setAcceleratorCTRLplus('N').setToolTip(Lang.get(&quot;menu_new_tt&quot;)).setEnabledChain(allowAll);</span>
+
+<span class="nc" id="L529">        ToolTipAction newSubFile = new ToolTipAction(Lang.get(&quot;menu_newSub&quot;), ICON_NEW_SUB) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L532">                new MainBuilder()</span>
+<span class="nc" id="L533">                        .setParent(Main.this)</span>
+<span class="nc" id="L534">                        .setLibrary(library)</span>
+<span class="nc" id="L535">                        .setCircuit(new Circuit())</span>
+<span class="nc" id="L536">                        .setBaseFileName(getBaseFileName())</span>
+<span class="nc" id="L537">                        .keepPrefMainFile()</span>
+<span class="nc" id="L538">                        .build()</span>
+<span class="nc" id="L539">                        .setVisible(true);</span>
+<span class="nc" id="L540">            }</span>
+<span class="nc" id="L541">        }.setToolTip(Lang.get(&quot;menu_newSub_tt&quot;));</span>
+
+<span class="nc" id="L543">        ToolTipAction open = new ToolTipAction(Lang.get(&quot;menu_open&quot;), ICON_OPEN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L546" title="All 2 branches missed.">                if (ClosingWindowListener.checkForSave(Main.this, Main.this)) {</span>
+<span class="nc" id="L547">                    JFileChooser fc = getJFileChooser(baseFilename);</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">                    if (fc.showOpenDialog(Main.this) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L549">                        loadFile(fc.getSelectedFile(), true, true);</span>
+                    }
+                }
+<span class="nc" id="L552">            }</span>
+<span class="nc" id="L553">        }.setAcceleratorCTRLplus('O').setEnabledChain(allowAll);</span>
+
+<span class="nc" id="L555">        ToolTipAction openWin = new ToolTipAction(Lang.get(&quot;menu_openWin&quot;), ICON_OPEN_WIN) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L558">                JFileChooser fc = getJFileChooser(baseFilename);</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">                if (fc.showOpenDialog(Main.this) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L560">                    new MainBuilder()</span>
+<span class="nc" id="L561">                            .setParent(Main.this)</span>
+<span class="nc" id="L562">                            .setFileToOpen(fc.getSelectedFile())</span>
+<span class="nc" id="L563">                            .build()</span>
+<span class="nc" id="L564">                            .setVisible(true);</span>
+                }
+<span class="nc" id="L566">            }</span>
+<span class="nc" id="L567">        }.setToolTip(Lang.get(&quot;menu_openWin_tt&quot;)).setEnabledChain(allowAll);</span>
+
+<span class="nc" id="L569">        JMenu openRecent = new JMenu(Lang.get(&quot;menu_openRecent&quot;));</span>
+<span class="nc" id="L570">        JMenu openRecentNewWindow = new JMenu(Lang.get(&quot;menu_openRecentNewWindow&quot;));</span>
+<span class="nc" id="L571">        fileHistory.setMenu(openRecent, openRecentNewWindow);</span>
+<span class="nc" id="L572">        openRecent.setEnabled(allowAll);</span>
+<span class="nc" id="L573">        openRecentNewWindow.setEnabled(allowAll);</span>
+
+<span class="nc" id="L575">        ToolTipAction saveAs = new ToolTipAction(Lang.get(&quot;menu_saveAs&quot;), ICON_SAVE_AS) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L578">                JFileChooser fc = getJFileChooser(baseFilename);</span>
+<span class="nc" id="L579">                final SaveAsHelper saveAsHelper = new SaveAsHelper(Main.this, fc, &quot;dig&quot;);</span>
+<span class="nc" id="L580">                saveAsHelper.checkOverwrite(</span>
+                        file -&gt; {
+<span class="nc bnc" id="L582" title="All 2 branches missed.">                            if (library.isFileAccessible(file))</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">                                saveFile(file, !keepPrefMainFile);</span>
+                            else {
+<span class="nc" id="L585">                                Object[] options = {Lang.get(&quot;btn_saveAnyway&quot;), Lang.get(&quot;btn_newName&quot;), Lang.get(&quot;cancel&quot;)};</span>
+<span class="nc" id="L586">                                int res = JOptionPane.showOptionDialog(Main.this,</span>
+<span class="nc" id="L587">                                        Lang.get(&quot;msg_fileNotAccessible&quot;),</span>
+<span class="nc" id="L588">                                        Lang.get(&quot;msg_warning&quot;),</span>
+                                        JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                                        null, options, options[0]);
+<span class="nc bnc" id="L591" title="All 3 branches missed.">                                switch (res) {</span>
+                                    case 0:
+<span class="nc" id="L593">                                        saveFile(file, true);</span>
+<span class="nc" id="L594">                                        library.setRootFilePath(file.getParentFile());</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">                                        if (library.getWarningMessage() != null)</span>
+<span class="nc" id="L596">                                            SwingUtilities.invokeLater(new ErrorMessage(library.getWarningMessage().toString()).setComponent(Main.this));</span>
+                                        break;
+                                    case 1:
+<span class="nc" id="L599">                                        saveAsHelper.retryFileSelect();</span>
+                                }
+                            }
+<span class="nc" id="L602">                        }</span>
+                );
+<span class="nc" id="L604">            }</span>
+        };
+
+<span class="nc" id="L607">        ToolTipAction save = new ToolTipAction(Lang.get(&quot;menu_save&quot;), ICON_SAVE) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L610" title="All 2 branches missed.">                if (filename == null)</span>
+<span class="nc" id="L611">                    saveAs.actionPerformed(e);</span>
+                else
+<span class="nc" id="L613">                    saveFile(filename, false);</span>
+<span class="nc" id="L614">            }</span>
+<span class="nc" id="L615">        }.setAcceleratorCTRLplus('S').setEnabledChain(false);</span>
+
+<span class="nc" id="L617">        JMenu export = new JMenu(Lang.get(&quot;menu_export&quot;));</span>
+<span class="nc" id="L618">        export.add(new ExportAction(Lang.get(&quot;menu_exportSVG&quot;), &quot;svg&quot;, GraphicSVG::new));</span>
+<span class="nc" id="L619">        export.add(new ToolTipAction(Lang.get(&quot;menu_exportSVGSettings&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L622">                ElementAttributes modified = new AttributeDialog(Main.this, SVGSettings.getInstance().getKeys(), SVGSettings.getInstance().getAttributes()).showDialog();</span>
+<span class="nc" id="L623">                SVGSettings.getInstance().getAttributes().getValuesFrom(modified);</span>
+<span class="nc" id="L624">            }</span>
+        });
+<span class="nc" id="L626">        export.addSeparator();</span>
+<span class="nc" id="L627">        export.add(new ExportAction(Lang.get(&quot;menu_exportPNGSmall&quot;), &quot;png&quot;, (out) -&gt; new GraphicsImage(out, &quot;PNG&quot;, 1)));</span>
+<span class="nc" id="L628">        export.add(new ExportAction(Lang.get(&quot;menu_exportPNGLarge&quot;), &quot;png&quot;, (out) -&gt; new GraphicsImage(out, &quot;PNG&quot;, 2)));</span>
+
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        if (isExperimentalMode())</span>
+<span class="nc" id="L631">            export.add(new ExportGifAction(Lang.get(&quot;menu_exportAnimatedGIF&quot;)));</span>
+
+<span class="nc" id="L633">        export.addSeparator();</span>
+
+<span class="nc" id="L635">        export.add(createVHDLExportAction().createJMenuItem());</span>
+<span class="nc" id="L636">        export.add(createVerilogExportAction().createJMenuItem());</span>
+
+<span class="nc" id="L638">        export.addSeparator();</span>
+<span class="nc" id="L639">        export.add(new ExportZipAction(this).createJMenuItem());</span>
+
+<span class="nc" id="L641">        JMenu file = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+<span class="nc" id="L642">        menuBar.add(file);</span>
+<span class="nc" id="L643">        file.add(newFile.createJMenuItem());</span>
+<span class="nc" id="L644">        file.add(newSubFile.createJMenuItem());</span>
+<span class="nc" id="L645">        file.add(open.createJMenuItem());</span>
+<span class="nc" id="L646">        file.add(openRecent);</span>
+<span class="nc" id="L647">        file.add(openWin.createJMenuItem());</span>
+<span class="nc" id="L648">        file.add(openRecentNewWindow);</span>
+<span class="nc" id="L649">        file.add(save.createJMenuItem());</span>
+<span class="nc" id="L650">        file.add(saveAs.createJMenuItem());</span>
+<span class="nc" id="L651">        file.add(export);</span>
+
+<span class="nc" id="L653">        toolBar.add(newFile.createJButtonNoText());</span>
+<span class="nc" id="L654">        toolBar.add(open.createJButtonNoText());</span>
+<span class="nc" id="L655">        toolBar.add(save.createJButtonNoText());</span>
+
+<span class="nc" id="L657">        return save;</span>
+    }
+
+    private ToolTipAction createVHDLExportAction() {
+<span class="nc" id="L661">        return new ToolTipAction(Lang.get(&quot;menu_exportVHDL&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+
+                // check model for errors
+                try {
+<span class="nc" id="L667">                    new ModelCreator(circuitComponent.getCircuit(), library).createModel(false).close();</span>
+<span class="nc" id="L668">                } catch (PinException | NodeException | ElementNotFoundException | RuntimeException e) {</span>
+<span class="nc" id="L669">                    showError(Lang.get(&quot;msg_modelHasErrors&quot;), e);</span>
+<span class="nc" id="L670">                    return;</span>
+<span class="nc" id="L671">                }</span>
+
+<span class="nc" id="L673">                JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">                if (filename != null)</span>
+<span class="nc" id="L675">                    fc.setSelectedFile(SaveAsHelper.checkSuffix(filename, &quot;vhdl&quot;));</span>
+
+<span class="nc" id="L677">                ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L678">                File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L679" title="All 2 branches missed.">                if (exportDir != null)</span>
+<span class="nc" id="L680">                    fc.setCurrentDirectory(exportDir);</span>
+
+<span class="nc" id="L682">                fc.addChoosableFileFilter(new FileNameExtensionFilter(&quot;VHDL&quot;, &quot;vhdl&quot;));</span>
+<span class="nc" id="L683">                new SaveAsHelper(Main.this, fc, &quot;vhdl&quot;).checkOverwrite(</span>
+                        file -&gt; {
+<span class="nc" id="L685">                            settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L686">                            try (VHDLGenerator vhdl = new VHDLGenerator(library, new CodePrinter(file))) {</span>
+<span class="nc" id="L687">                                vhdl.export(circuitComponent.getCircuit());</span>
+                            }
+<span class="nc" id="L689">                        }</span>
+                );
+<span class="nc" id="L691">            }</span>
+<span class="nc" id="L692">        }.setToolTip(Lang.get(&quot;menu_exportVHDL_tt&quot;));</span>
+    }
+
+    private ToolTipAction createVerilogExportAction() {
+<span class="nc" id="L696">        return new ToolTipAction(Lang.get(&quot;menu_exportVerilog&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+
+                // check model for errors
+                try {
+<span class="nc" id="L702">                    new ModelCreator(circuitComponent.getCircuit(), library).createModel(false);</span>
+<span class="nc" id="L703">                } catch (PinException | NodeException | ElementNotFoundException e) {</span>
+<span class="nc" id="L704">                    showError(Lang.get(&quot;msg_modelHasErrors&quot;), e);</span>
+<span class="nc" id="L705">                    return;</span>
+<span class="nc" id="L706">                }</span>
+
+<span class="nc" id="L708">                JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">                if (filename != null)</span>
+<span class="nc" id="L710">                    fc.setSelectedFile(SaveAsHelper.checkSuffix(filename, &quot;v&quot;));</span>
+
+<span class="nc" id="L712">                ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L713">                File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L714" title="All 2 branches missed.">                if (exportDir != null)</span>
+<span class="nc" id="L715">                    fc.setCurrentDirectory(exportDir);</span>
+
+<span class="nc" id="L717">                fc.addChoosableFileFilter(new FileNameExtensionFilter(&quot;Verilog&quot;, &quot;v&quot;));</span>
+<span class="nc" id="L718">                new SaveAsHelper(Main.this, fc, &quot;v&quot;).checkOverwrite(</span>
+                        file -&gt; {
+<span class="nc" id="L720">                            settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L721">                            try (VerilogGenerator vlog = new VerilogGenerator(library, new CodePrinter(file))) {</span>
+<span class="nc" id="L722">                                vlog.export(circuitComponent.getCircuit());</span>
+                            }
+<span class="nc" id="L724">                        }</span>
+                );
+<span class="nc" id="L726">            }</span>
+<span class="nc" id="L727">        }.setToolTip(Lang.get(&quot;menu_exportVerilog_tt&quot;));</span>
+    }
+
+    /**
+     * @return the file name base
+     */
+    public File getBaseFileName() {
+<span class="nc bnc" id="L734" title="All 2 branches missed.">        if (filename != null) return filename;</span>
+<span class="nc" id="L735">        return baseFilename;</span>
+    }
+
+    /**
+     * @return the circuit component
+     */
+    public CircuitComponent getCircuitComponent() {
+<span class="nc" id="L742">        return circuitComponent;</span>
+    }
+
+    /**
+     * @return the used library
+     */
+    public ElementLibrary getLibrary() {
+<span class="nc" id="L749">        return library;</span>
+    }
+
+    /**
+     * Creates the edit menu
+     *
+     * @param menuBar the menu bar
+     */
+    private void createEditMenu(JMenuBar menuBar) {
+<span class="nc" id="L758">        JMenu edit = new JMenu(Lang.get(&quot;menu_edit&quot;));</span>
+<span class="nc" id="L759">        menuBar.add(edit);</span>
+
+<span class="nc" id="L761">        ToolTipAction orderInputs = new ToolTipAction(Lang.get(&quot;menu_orderInputs&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L764">                ElementOrder o = new ElementOrder(circuitComponent,</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">                        element -&gt; element.equalsDescription(In.DESCRIPTION)</span>
+<span class="nc bnc" id="L766" title="All 2 branches missed.">                                || element.equalsDescription(Clock.DESCRIPTION),</span>
+<span class="nc" id="L767">                        Lang.get(&quot;menu_orderInputs&quot;));</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">                if (new ElementOrderer&lt;&gt;(Main.this, Lang.get(&quot;menu_orderInputs&quot;), o).addOkButton().showDialog())</span>
+<span class="nc" id="L769">                    circuitComponent.modify(o.getModifications());</span>
+<span class="nc" id="L770">            }</span>
+<span class="nc" id="L771">        }.setToolTip(Lang.get(&quot;menu_orderInputs_tt&quot;));</span>
+
+<span class="nc" id="L773">        ToolTipAction orderOutputs = new ToolTipAction(Lang.get(&quot;menu_orderOutputs&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L776">                ElementOrder o = new ElementOrder(circuitComponent,</span>
+<span class="nc bnc" id="L777" title="All 2 branches missed.">                        element -&gt; element.equalsDescription(Out.DESCRIPTION)</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">                                || element.equalsDescription(Out.LEDDESCRIPTION),</span>
+<span class="nc" id="L779">                        Lang.get(&quot;menu_orderOutputs&quot;));</span>
+<span class="nc bnc" id="L780" title="All 2 branches missed.">                if (new ElementOrderer&lt;&gt;(Main.this, Lang.get(&quot;menu_orderOutputs&quot;), o).addOkButton().showDialog())</span>
+<span class="nc" id="L781">                    circuitComponent.modify(o.getModifications());</span>
+<span class="nc" id="L782">            }</span>
+<span class="nc" id="L783">        }.setToolTip(Lang.get(&quot;menu_orderOutputs_tt&quot;));</span>
+
+<span class="nc" id="L785">        ToolTipAction orderMeasurements = new ToolTipAction(Lang.get(&quot;menu_orderMeasurements&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L788">                orderMeasurements();</span>
+<span class="nc" id="L789">            }</span>
+<span class="nc" id="L790">        }.setToolTip(Lang.get(&quot;menu_orderMeasurements_tt&quot;));</span>
+
+
+<span class="nc" id="L793">        ToolTipAction editAttributes = new ToolTipAction(Lang.get(&quot;menu_editAttributes&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L796">                circuitComponent.editCircuitAttributes();</span>
+<span class="nc" id="L797">            }</span>
+<span class="nc" id="L798">        }.setToolTip(Lang.get(&quot;menu_editAttributes_tt&quot;));</span>
+
+<span class="nc" id="L800">        ToolTipAction editSettings = new ToolTipAction(Lang.get(&quot;menu_editSettings&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L803">                ElementAttributes modified =</span>
+<span class="nc" id="L804">                        new AttributeDialog(Main.this, Settings.getInstance().getKeys(), Settings.getInstance().getAttributes())</span>
+<span class="nc" id="L805">                                .setDialogTitle(Lang.get(&quot;menu_editSettings&quot;))</span>
+<span class="nc" id="L806">                                .showDialog();</span>
+<span class="nc bnc" id="L807" title="All 2 branches missed.">                if (modified != null) {</span>
+<span class="nc" id="L808">                    ColorScheme.updateCustomColorScheme(modified);</span>
+
+<span class="nc bnc" id="L810" title="All 2 branches missed.">                    if (Settings.getInstance().requiresRestart(modified)) {</span>
+<span class="nc" id="L811">                        Lang.setLanguage(modified.get(Keys.SETTINGS_LANGUAGE));</span>
+<span class="nc" id="L812">                        JOptionPane.showMessageDialog(Main.this, Lang.get(&quot;msg_restartNeeded&quot;));</span>
+                    }
+<span class="nc bnc" id="L814" title="All 2 branches missed.">                    if (Settings.getInstance().requiresRepaint(modified))</span>
+<span class="nc" id="L815">                        circuitComponent.graphicHasChanged();</span>
+
+<span class="nc" id="L817">                    Settings.getInstance().getAttributes().getValuesFrom(modified);</span>
+                }
+<span class="nc" id="L819">            }</span>
+<span class="nc" id="L820">        }.setToolTip(Lang.get(&quot;menu_editSettings_tt&quot;));</span>
+
+
+<span class="nc" id="L823">        ToolTipAction actualToDefault = new ToolTipAction(Lang.get(&quot;menu_actualToDefault&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L826">                circuitComponent.currentToDefault();</span>
+<span class="nc" id="L827">                ensureModelIsStopped();</span>
+<span class="nc" id="L828">            }</span>
+<span class="nc" id="L829">        }.setToolTip(Lang.get(&quot;menu_actualToDefault_tt&quot;));</span>
+
+<span class="nc" id="L831">        ToolTipAction restoreAllFuses = new ToolTipAction(Lang.get(&quot;menu_restoreAllFuses&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L834">                circuitComponent.restoreAllFuses();</span>
+<span class="nc" id="L835">                ensureModelIsStopped();</span>
+<span class="nc" id="L836">            }</span>
+<span class="nc" id="L837">        }.setToolTip(Lang.get(&quot;menu_restoreAllFuses_tt&quot;));</span>
+
+<span class="nc" id="L839">        ToolTipAction insertAsNew = new ToolTipAction(Lang.get(&quot;menu_insertAsNew&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L842">                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+                try {
+<span class="nc" id="L844">                    Object data = clipboard.getData(DataFlavor.stringFlavor);</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">                    if (data instanceof String) {</span>
+<span class="nc" id="L846">                        ArrayList&lt;Movable&gt; elements = CircuitTransferable.createList(data, shapeFactory);</span>
+<span class="nc bnc" id="L847" title="All 2 branches missed.">                        if (elements != null) {</span>
+<span class="nc" id="L848">                            Circuit circuit = new Circuit();</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">                            for (Movable m : elements) {</span>
+<span class="nc bnc" id="L850" title="All 2 branches missed.">                                if (m instanceof Wire)</span>
+<span class="nc" id="L851">                                    circuit.add((Wire) m);</span>
+<span class="nc bnc" id="L852" title="All 2 branches missed.">                                if (m instanceof VisualElement)</span>
+<span class="nc" id="L853">                                    circuit.add((VisualElement) m);</span>
+<span class="nc" id="L854">                            }</span>
+
+<span class="nc" id="L856">                            new MainBuilder()</span>
+<span class="nc" id="L857">                                    .setParent(Main.this)</span>
+<span class="nc" id="L858">                                    .setLibrary(library)</span>
+<span class="nc" id="L859">                                    .setCircuit(circuit)</span>
+<span class="nc" id="L860">                                    .setBaseFileName(getBaseFileName())</span>
+<span class="nc" id="L861">                                    .keepPrefMainFile()</span>
+<span class="nc" id="L862">                                    .build()</span>
+<span class="nc" id="L863">                                    .setVisible(true);</span>
+                        }
+                    }
+<span class="nc" id="L866">                } catch (Exception e1) {</span>
+<span class="nc" id="L867">                    e1.printStackTrace();</span>
+<span class="nc" id="L868">                    SwingUtilities.invokeLater(new ErrorMessage(Lang.get(&quot;msg_clipboardContainsNoImportableData&quot;)).setComponent(Main.this));</span>
+<span class="nc" id="L869">                }</span>
+<span class="nc" id="L870">            }</span>
+<span class="nc" id="L871">        }.setToolTip(Lang.get(&quot;menu_insertAsNew_tt&quot;));</span>
+
+<span class="nc" id="L873">        ToolTipAction labelPins = new ToolTipAction(Lang.get(&quot;menu_labelPins&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L876">                circuitComponent.labelPins();</span>
+<span class="nc" id="L877">                ensureModelIsStopped();</span>
+<span class="nc" id="L878">            }</span>
+<span class="nc" id="L879">        }.setToolTip(Lang.get(&quot;menu_labelPins_tt&quot;));</span>
+
+<span class="nc" id="L881">        ToolTipAction createTestCaseAction = new CreateTestCaseAction(Lang.get(&quot;menu_createBehavioralFixture&quot;))</span>
+<span class="nc" id="L882">                .setToolTip(Lang.get(&quot;menu_createBehavioralFixture_tt&quot;));</span>
+
+<span class="nc" id="L884">        edit.add(circuitComponent.getUndoAction().createJMenuItemNoIcon());</span>
+<span class="nc" id="L885">        edit.add(circuitComponent.getRedoAction().createJMenuItemNoIcon());</span>
+<span class="nc" id="L886">        edit.addSeparator();</span>
+<span class="nc" id="L887">        edit.add(editAttributes.createJMenuItem());</span>
+<span class="nc" id="L888">        edit.add(actualToDefault.createJMenuItem());</span>
+<span class="nc" id="L889">        edit.add(restoreAllFuses.createJMenuItem());</span>
+<span class="nc" id="L890">        edit.add(createSpecialEditMenu());</span>
+<span class="nc" id="L891">        edit.add(labelPins.createJMenuItem());</span>
+<span class="nc" id="L892">        edit.addSeparator();</span>
+<span class="nc" id="L893">        edit.add(createTestCaseAction.createJMenuItem());</span>
+<span class="nc" id="L894">        edit.addSeparator();</span>
+<span class="nc" id="L895">        edit.add(orderInputs.createJMenuItem());</span>
+<span class="nc" id="L896">        edit.add(orderOutputs.createJMenuItem());</span>
+<span class="nc" id="L897">        edit.add(orderMeasurements.createJMenuItem());</span>
+<span class="nc" id="L898">        edit.addSeparator();</span>
+
+<span class="nc" id="L900">        edit.add(circuitComponent.getCutAction().createJMenuItem());</span>
+<span class="nc" id="L901">        edit.add(circuitComponent.getCopyAction().createJMenuItem());</span>
+<span class="nc" id="L902">        edit.add(circuitComponent.getPasteAction().createJMenuItem());</span>
+<span class="nc" id="L903">        edit.add(circuitComponent.getRotateAction().createJMenuItem());</span>
+<span class="nc" id="L904">        edit.add(insertAsNew.createJMenuItem());</span>
+<span class="nc" id="L905">        edit.addSeparator();</span>
+<span class="nc" id="L906">        edit.add(editSettings.createJMenuItem());</span>
+<span class="nc" id="L907">    }</span>
+
+    private JMenu createSpecialEditMenu() {
+<span class="nc" id="L910">        JMenu special = new JMenu(Lang.get(&quot;menu_special&quot;));</span>
+<span class="nc" id="L911">        special.add(new ToolTipAction(Lang.get(&quot;menu_addPrefix&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L914" title="All 2 branches missed.">                if (!circuitComponent.isLocked()) {</span>
+<span class="nc" id="L915">                    String prefix = showInputDialog(Lang.get(&quot;menu_addPrefix&quot;));</span>
+<span class="nc bnc" id="L916" title="All 4 branches missed.">                    if (prefix != null &amp;&amp; prefix.length() &gt; 0) {</span>
+<span class="nc" id="L917">                        Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_addPrefix&quot;));</span>
+<span class="nc bnc" id="L918" title="All 2 branches missed.">                        for (Drawable d : circuitComponent.getHighLighted()) {</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">                            if (d instanceof VisualElement) {</span>
+<span class="nc" id="L920">                                VisualElement v = (VisualElement) d;</span>
+<span class="nc bnc" id="L921" title="All 4 branches missed.">                                if (v.equalsDescription(In.DESCRIPTION) || v.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L922">                                    ElementAttributes attr = v.getElementAttributes();</span>
+<span class="nc" id="L923">                                    String l = prefix + attr.getLabel();</span>
+<span class="nc" id="L924">                                    builder.add(new ModifyAttribute&lt;&gt;(v, Keys.LABEL, l));</span>
+                                }
+                            }
+<span class="nc" id="L927">                        }</span>
+<span class="nc" id="L928">                        circuitComponent.modify(builder.build());</span>
+                    }
+                }
+<span class="nc" id="L931">            }</span>
+<span class="nc" id="L932">        }.setToolTip(Lang.get(&quot;menu_addPrefix_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L933">        special.add(new ToolTipAction(Lang.get(&quot;menu_removePrefix&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L936" title="All 2 branches missed.">                if (!circuitComponent.isLocked()) {</span>
+<span class="nc" id="L937">                    Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_removePrefix&quot;));</span>
+<span class="nc bnc" id="L938" title="All 2 branches missed.">                    for (Drawable d : circuitComponent.getHighLighted()) {</span>
+<span class="nc bnc" id="L939" title="All 2 branches missed.">                        if (d instanceof VisualElement) {</span>
+<span class="nc" id="L940">                            VisualElement v = (VisualElement) d;</span>
+<span class="nc bnc" id="L941" title="All 4 branches missed.">                            if (v.equalsDescription(In.DESCRIPTION) || v.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L942">                                ElementAttributes attr = v.getElementAttributes();</span>
+<span class="nc" id="L943">                                String l = attr.getLabel();</span>
+<span class="nc bnc" id="L944" title="All 2 branches missed.">                                if (l.length() &gt; 1)</span>
+<span class="nc" id="L945">                                    builder.add(new ModifyAttribute&lt;&gt;(v, Keys.LABEL, l.substring(1)));</span>
+                            }
+                        }
+<span class="nc" id="L948">                    }</span>
+<span class="nc" id="L949">                    circuitComponent.modify(builder.build());</span>
+                }
+<span class="nc" id="L951">            }</span>
+<span class="nc" id="L952">        }.setToolTip(Lang.get(&quot;menu_removePrefix_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L953">        special.add(new ToolTipAction(Lang.get(&quot;menu_numbering&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L956" title="All 2 branches missed.">                if (!circuitComponent.isLocked())</span>
+<span class="nc" id="L957">                    new NumberingWizard(Main.this, circuitComponent).start();</span>
+<span class="nc" id="L958">            }</span>
+<span class="nc" id="L959">        }.setToolTip(Lang.get(&quot;menu_numbering_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L960">        special.add(new ToolTipAction(Lang.get(&quot;menu_removePinNumbers&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L963" title="All 2 branches missed.">                if (!circuitComponent.isLocked()) {</span>
+<span class="nc" id="L964">                    Modifications.Builder&lt;Circuit&gt; builder = new Modifications.Builder&lt;&gt;(Lang.get(&quot;menu_removePinNumbers&quot;));</span>
+<span class="nc bnc" id="L965" title="All 2 branches missed.">                    for (VisualElement v : circuitComponent.getCircuit().getElements()) {</span>
+<span class="nc bnc" id="L966" title="All 2 branches missed.">                        if (v.equalsDescription(In.DESCRIPTION)</span>
+<span class="nc bnc" id="L967" title="All 2 branches missed.">                                || v.equalsDescription(Clock.DESCRIPTION)</span>
+<span class="nc bnc" id="L968" title="All 2 branches missed.">                                || v.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L969">                            ElementAttributes attr = v.getElementAttributes();</span>
+<span class="nc" id="L970">                            String p = attr.get(Keys.PINNUMBER);</span>
+<span class="nc bnc" id="L971" title="All 2 branches missed.">                            if (p.length() &gt; 0)</span>
+<span class="nc" id="L972">                                builder.add(new ModifyAttribute&lt;&gt;(v, Keys.PINNUMBER, &quot;&quot;));</span>
+                        }
+<span class="nc" id="L974">                    }</span>
+<span class="nc" id="L975">                    circuitComponent.modify(builder.build());</span>
+                }
+<span class="nc" id="L977">            }</span>
+<span class="nc" id="L978">        }.setToolTip(Lang.get(&quot;menu_removePinNumbers_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L980">        special.add(new ToolTipAction(Lang.get(&quot;menu_addPowerSupply&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L983" title="All 2 branches missed.">                if (!circuitComponent.isLocked()) {</span>
+<span class="nc" id="L984">                    int maxNum = 0;</span>
+<span class="nc" id="L985">                    HashSet&lt;Integer&gt; pinsUsed = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L986" title="All 2 branches missed.">                    for (VisualElement v : circuitComponent.getCircuit().getElements()) {</span>
+<span class="nc bnc" id="L987" title="All 4 branches missed.">                        if (v.equalsDescription(In.DESCRIPTION) || v.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="nc" id="L988">                            int pin = v.getElementAttributes().getIntPinNumber();</span>
+<span class="nc" id="L989">                            maxNum = Math.max(maxNum, pin);</span>
+<span class="nc" id="L990">                            pinsUsed.add(pin);</span>
+                        }
+<span class="nc" id="L992">                    }</span>
+<span class="nc" id="L993">                    int guessedVCC = 0;</span>
+<span class="nc" id="L994">                    int guessedGND = 0;</span>
+<span class="nc bnc" id="L995" title="All 2 branches missed.">                    if ((maxNum &amp; 1) != 0) {</span>
+<span class="nc" id="L996">                        maxNum++;</span>
+<span class="nc" id="L997">                        guessedVCC = maxNum;</span>
+<span class="nc" id="L998">                        guessedGND = maxNum / 2;</span>
+                    }
+
+<span class="nc bnc" id="L1001" title="All 4 branches missed.">                    if (pinsUsed.contains(guessedGND) || pinsUsed.contains(guessedVCC)) {</span>
+<span class="nc" id="L1002">                        guessedGND = 0;</span>
+<span class="nc" id="L1003">                        guessedVCC = 0;</span>
+                    }
+
+                    // defines the power supply circuit
+<span class="nc" id="L1007">                    ArrayList&lt;Movable&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1008">                    list.add(new VisualElement(PowerSupply.DESCRIPTION.getName())</span>
+<span class="nc" id="L1009">                            .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L1010">                            .setPos(new Vector(SIZE * 2, 0)));</span>
+<span class="nc" id="L1011">                    VisualElement vcc = new VisualElement(In.DESCRIPTION.getName())</span>
+<span class="nc" id="L1012">                            .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L1013">                            .setAttribute(Keys.LABEL, &quot;VCC&quot;)</span>
+<span class="nc" id="L1014">                            .setAttribute(Keys.INPUT_DEFAULT, new InValue(1))</span>
+<span class="nc" id="L1015">                            .setPos(new Vector(0, 0));</span>
+<span class="nc bnc" id="L1016" title="All 2 branches missed.">                    if (guessedVCC &gt; 0)</span>
+<span class="nc" id="L1017">                        vcc.setAttribute(Keys.PINNUMBER, Integer.toString(guessedVCC));</span>
+
+<span class="nc" id="L1019">                    list.add(vcc);</span>
+<span class="nc" id="L1020">                    VisualElement gnd = new VisualElement(In.DESCRIPTION.getName())</span>
+<span class="nc" id="L1021">                            .setShapeFactory(shapeFactory)</span>
+<span class="nc" id="L1022">                            .setAttribute(Keys.LABEL, &quot;GND&quot;)</span>
+<span class="nc" id="L1023">                            .setPos(new Vector(0, SIZE * 2));</span>
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">                    if (guessedGND &gt; 0)</span>
+<span class="nc" id="L1025">                        gnd.setAttribute(Keys.PINNUMBER, Integer.toString(guessedGND));</span>
+
+<span class="nc" id="L1027">                    list.add(gnd);</span>
+<span class="nc" id="L1028">                    list.add(new Wire(new Vector(0, 0), new Vector(SIZE * 2, 0)));</span>
+<span class="nc" id="L1029">                    list.add(new Wire(new Vector(0, SIZE * 2), new Vector(SIZE, SIZE * 2)));</span>
+<span class="nc" id="L1030">                    list.add(new Wire(new Vector(SIZE, SIZE * 2), new Vector(SIZE, SIZE)));</span>
+<span class="nc" id="L1031">                    list.add(new Wire(new Vector(SIZE, SIZE), new Vector(SIZE * 2, SIZE)));</span>
+<span class="nc" id="L1032">                    circuitComponent.setPartsToInsert(list, null);</span>
+                }
+<span class="nc" id="L1034">            }</span>
+<span class="nc" id="L1035">        }.setToolTip(Lang.get(&quot;menu_addPowerSupply_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L1037">        return special;</span>
+    }
+
+    /**
+     * Creates the start menu
+     *
+     * @param menuBar the menu bar
+     * @param toolBar the tool bar
+     */
+    private void createStartMenu(JMenuBar menuBar, JToolBar toolBar) {
+<span class="nc" id="L1047">        doMicroStep = new ToolTipAction(Lang.get(&quot;menu_step&quot;), ICON_STEP) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1050">                model.doMicroStep(false);</span>
+<span class="nc" id="L1051">            }</span>
+<span class="nc" id="L1052">        }.setToolTip(Lang.get(&quot;menu_step_tt&quot;)).setAccelerator(&quot;V&quot;).setEnabledChain(false);</span>
+<span class="nc" id="L1053">        runToBreakMicroAction = new ToolTipAction(Lang.get(&quot;menu_runToBreakMicro&quot;), ICON_STEP_FINISH) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1056">                new RunToBreakRunnable(model, statusLabel, Model::runToBreakMicro).run();</span>
+<span class="nc" id="L1057">            }</span>
+<span class="nc" id="L1058">        }.setToolTip(Lang.get(&quot;menu_runToBreakMicro_tt&quot;)).setAccelerator(&quot;B&quot;).setEnabledChain(false);</span>
+
+<span class="nc" id="L1060">        ToolTipAction runModelAction = runModelState.createToolTipAction(Lang.get(&quot;menu_run&quot;), ICON_RUN)</span>
+<span class="nc" id="L1061">                .setToolTip(Lang.get(&quot;menu_run_tt&quot;));</span>
+<span class="nc" id="L1062">        ToolTipAction runModelMicroAction = runModelMicroState.createToolTipAction(Lang.get(&quot;menu_micro&quot;), ICON_MICRO)</span>
+<span class="nc" id="L1063">                .setToolTip(Lang.get(&quot;menu_micro_tt&quot;));</span>
+<span class="nc" id="L1064">        runToBreakAction = new ToolTipAction(Lang.get(&quot;menu_fast&quot;), ICON_FAST) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1067">                new RunToBreakRunnable(model, statusLabel, Model::runToBreak).run();</span>
+<span class="nc" id="L1068">            }</span>
+<span class="nc" id="L1069">        }.setToolTip(Lang.get(&quot;menu_fast_tt&quot;)).setEnabledChain(false).setAccelerator(&quot;F7&quot;);</span>
+
+<span class="nc" id="L1071">        ToolTipAction stoppedStateAction = stoppedState</span>
+<span class="nc" id="L1072">                .createToolTipAction(Lang.get(&quot;menu_element&quot;), ICON_STOP)</span>
+<span class="nc" id="L1073">                .setToolTip(Lang.get(&quot;menu_element_tt&quot;))</span>
+<span class="nc" id="L1074">                .setEnabledChain(false);</span>
+
+<span class="nc" id="L1076">        runTests = new ToolTipAction(Lang.get(&quot;menu_runTests&quot;), ICON_TEST) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1079">                startTests();</span>
+<span class="nc" id="L1080">            }</span>
+<span class="nc" id="L1081">        }.setToolTip(Lang.get(&quot;menu_runTests_tt&quot;)).setAccelerator(&quot;F8&quot;);</span>
+
+<span class="nc" id="L1083">        ToolTipAction runAllTests = new ToolTipAction(Lang.get(&quot;menu_runAllTests&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L1086" title="All 2 branches missed.">                if (filename != null)</span>
+<span class="nc" id="L1087">                    new TestAllDialog(Main.this, filename.getParentFile(), shapeFactory, library).setVisible(true);</span>
+<span class="nc" id="L1088">            }</span>
+<span class="nc" id="L1089">        }.setToolTip(Lang.get(&quot;menu_runAllTests_tt&quot;)).setAccelerator(&quot;F11&quot;);</span>
+
+<span class="nc" id="L1091">        ToolTipAction speedTest = new ToolTipAction(Lang.get(&quot;menu_speedTest&quot;)) {</span>
+<span class="nc" id="L1092">            private final NumberFormat format = new DecimalFormat(&quot;0.0&quot;);</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L1097">                    Model model = new ModelCreator(circuitComponent.getCircuit(), library).createModel(false);</span>
+                    try {
+<span class="nc" id="L1099">                        model.setWindowPosManager(windowPosManager);</span>
+<span class="nc" id="L1100">                        SpeedTest speedTest = new SpeedTest(model);</span>
+<span class="nc" id="L1101">                        String frequency = format.format(speedTest.calculate() / 1000);</span>
+<span class="nc" id="L1102">                        circuitComponent.getCircuit().clearState();</span>
+<span class="nc" id="L1103">                        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L1104">                            windowPosManager.closeAll();</span>
+<span class="nc" id="L1105">                            JOptionPane.showMessageDialog(Main.this, Lang.get(&quot;msg_frequency_N&quot;, frequency));</span>
+<span class="nc" id="L1106">                        });</span>
+                    } finally {
+<span class="nc" id="L1108">                        model.close();</span>
+                    }
+<span class="nc" id="L1110">                } catch (Exception e1) {</span>
+<span class="nc" id="L1111">                    showError(Lang.get(&quot;msg_speedTestError&quot;), e1);</span>
+<span class="nc" id="L1112">                }</span>
+<span class="nc" id="L1113">            }</span>
+<span class="nc" id="L1114">        }.setToolTip(Lang.get(&quot;menu_speedTest_tt&quot;));</span>
+
+<span class="nc" id="L1116">        showMeasurementDialog = new ToolTipAction(Lang.get(&quot;menu_showDataTable&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1119" title="All 2 branches missed.">                if (model != null) {</span>
+<span class="nc" id="L1120">                    ModelEventType event = ModelEventType.STEP;</span>
+<span class="nc bnc" id="L1121" title="All 2 branches missed.">                    if (stateManager.isActive(runModelMicroState))</span>
+<span class="nc" id="L1122">                        event = ModelEventType.MICROSTEP;</span>
+<span class="nc" id="L1123">                    showMeasurementDialog(event);</span>
+                }
+<span class="nc" id="L1125">            }</span>
+<span class="nc" id="L1126">        }.setToolTip(Lang.get(&quot;menu_showDataTable_tt&quot;)).setEnabledChain(false).setAccelerator(&quot;F6&quot;);</span>
+
+<span class="nc" id="L1128">        showMeasurementGraph = new ToolTipAction(Lang.get(&quot;menu_showDataGraph&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1131" title="All 2 branches missed.">                if (model != null) {</span>
+<span class="nc" id="L1132">                    ModelEventType event = ModelEventType.STEP;</span>
+<span class="nc bnc" id="L1133" title="All 2 branches missed.">                    if (stateManager.isActive(runModelMicroState))</span>
+<span class="nc" id="L1134">                        event = ModelEventType.MICROSTEP;</span>
+<span class="nc" id="L1135">                    showMeasurementGraph(event);</span>
+                }
+<span class="nc" id="L1137">            }</span>
+<span class="nc" id="L1138">        }.setToolTip(Lang.get(&quot;menu_showDataGraph_tt&quot;)).setEnabledChain(false);</span>
+
+<span class="nc" id="L1140">        circuitComponent.getInputMap().put(KeyStroke.getKeyStroke(' '), KEY_START_STOP_ACTION);</span>
+<span class="nc" id="L1141">        circuitComponent.getActionMap().put(KEY_START_STOP_ACTION, new AbstractAction() {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">                if (model == null)</span>
+<span class="nc" id="L1145">                    runModelAction.actionPerformed(actionEvent);</span>
+                else
+<span class="nc" id="L1147">                    stoppedStateAction.actionPerformed(actionEvent);</span>
+<span class="nc" id="L1148">            }</span>
+        });
+
+<span class="nc" id="L1151">        ToolTipAction stats = new ToolTipAction(Lang.get(&quot;menu_stats&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L1155">                    model = new ModelCreator(getCircuitComponent().getCircuit(), library).createModel(false);</span>
+<span class="nc" id="L1156">                    Statistics stats = new Statistics(model);</span>
+<span class="nc" id="L1157">                    new StatsDialog(Main.this, stats.getTableModel()).setVisible(true);</span>
+<span class="nc" id="L1158">                } catch (ElementNotFoundException | PinException | NodeException e) {</span>
+<span class="nc" id="L1159">                    new ErrorMessage(Lang.get(&quot;msg_couldNotCreateStats&quot;)).addCause(e).show(Main.this);</span>
+<span class="nc" id="L1160">                }</span>
+<span class="nc" id="L1161">            }</span>
+<span class="nc" id="L1162">        }.setToolTip(Lang.get(&quot;menu_stats_tt&quot;));</span>
+
+<span class="nc" id="L1164">        ToolTipAction pathLen = new ToolTipAction(Lang.get(&quot;menu_calcMaxPathLen&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L1168">                    Model model = new ModelCreator(getCircuitComponent().getCircuit(), library).createModel(false);</span>
+<span class="nc" id="L1169">                    ModelAnalyser ma = new ModelAnalyser(model);</span>
+<span class="nc" id="L1170">                    int depth = ma.calcMaxPathLen();</span>
+<span class="nc" id="L1171">                    JOptionPane.showMessageDialog(Main.this, Lang.get(&quot;msg_maxPathLen&quot;, depth));</span>
+<span class="nc" id="L1172">                } catch (ElementNotFoundException | PinException | NodeException | AnalyseException | BacktrackException e) {</span>
+<span class="nc" id="L1173">                    new ErrorMessage(Lang.get(&quot;msg_couldNotCalculateMaxPathLen&quot;)).addCause(e).show(Main.this);</span>
+<span class="nc" id="L1174">                }</span>
+<span class="nc" id="L1175">            }</span>
+<span class="nc" id="L1176">        }.setToolTip(Lang.get(&quot;menu_calcMaxPathLen_tt&quot;));</span>
+
+<span class="nc" id="L1178">        JMenu run = new JMenu(Lang.get(&quot;menu_sim&quot;));</span>
+<span class="nc" id="L1179">        menuBar.add(run);</span>
+<span class="nc" id="L1180">        run.add(showMeasurementDialog.createJMenuItem());</span>
+<span class="nc" id="L1181">        run.add(showMeasurementGraph.createJMenuItem());</span>
+<span class="nc" id="L1182">        run.addSeparator();</span>
+<span class="nc" id="L1183">        run.add(runModelAction.createJMenuItem());</span>
+<span class="nc" id="L1184">        run.add(runToBreakAction.createJMenuItem());</span>
+<span class="nc" id="L1185">        run.add(stoppedStateAction.createJMenuItem());</span>
+<span class="nc" id="L1186">        run.addSeparator();</span>
+<span class="nc" id="L1187">        run.add(runModelMicroAction.createJMenuItem());</span>
+<span class="nc" id="L1188">        run.add(doMicroStep.createJMenuItem());</span>
+<span class="nc" id="L1189">        run.add(runToBreakMicroAction.createJMenuItem());</span>
+<span class="nc" id="L1190">        run.addSeparator();</span>
+<span class="nc" id="L1191">        run.add(runTests.createJMenuItem());</span>
+<span class="nc" id="L1192">        run.add(runAllTests.createJMenuItem());</span>
+<span class="nc" id="L1193">        run.addSeparator();</span>
+<span class="nc" id="L1194">        run.add(speedTest.createJMenuItem());</span>
+<span class="nc" id="L1195">        run.add(stats.createJMenuItem());</span>
+<span class="nc" id="L1196">        run.add(pathLen.createJMenuItem());</span>
+
+<span class="nc" id="L1198">        toolBar.add(runModelState.setIndicator(runModelAction.createJButtonNoText()));</span>
+<span class="nc" id="L1199">        toolBar.add(runToBreakAction.createJButtonNoText());</span>
+<span class="nc" id="L1200">        toolBar.add(stoppedStateAction.createJButtonNoText());</span>
+<span class="nc" id="L1201">        toolBar.addSeparator();</span>
+<span class="nc" id="L1202">        toolBar.add(runModelMicroState.setIndicator(runModelMicroAction.createJButtonNoText()));</span>
+<span class="nc" id="L1203">        toolBar.add(doMicroStep.createJButtonNoText());</span>
+<span class="nc" id="L1204">        toolBar.add(runToBreakMicroAction.createJButtonNoText());</span>
+<span class="nc" id="L1205">        toolBar.addSeparator();</span>
+<span class="nc" id="L1206">        toolBar.add(runTests.createJButtonNoText());</span>
+<span class="nc" id="L1207">    }</span>
+
+    /**
+     * starts the tests
+     */
+    public void startTests() {
+        try {
+<span class="nc" id="L1214">            List&lt;Circuit.TestCase&gt; tsl = circuitComponent.getCircuit().getTestCases();</span>
+
+<span class="nc bnc" id="L1216" title="All 2 branches missed.">            if (tsl.isEmpty())</span>
+<span class="nc" id="L1217">                throw new TestingDataException(Lang.get(&quot;err_noTestData&quot;));</span>
+
+<span class="nc bnc" id="L1219" title="All 2 branches missed.">            for (Circuit.TestCase tc : tsl)</span>
+<span class="nc" id="L1220">                tc.getTestCaseDescription().setNewSeed();</span>
+
+<span class="nc" id="L1222">            windowPosManager.register(&quot;testResult&quot;, new ValueTableDialog(Main.this, Lang.get(&quot;msg_testResult&quot;))</span>
+<span class="nc" id="L1223">                            .addTestResult(tsl, circuitComponent.getCircuit(), library))</span>
+<span class="nc" id="L1224">                    .setVisible(true);</span>
+
+<span class="nc" id="L1226">            ensureModelIsStopped();</span>
+<span class="nc" id="L1227">        } catch (TestingDataException | RuntimeException e1) {</span>
+<span class="nc" id="L1228">            showError(Lang.get(&quot;msg_runningTestError&quot;), e1);</span>
+<span class="nc" id="L1229">        }</span>
+<span class="nc" id="L1230">    }</span>
+
+    /**
+     * Creates the analyse menu
+     *
+     * @param menuBar the menu bar
+     */
+    private void createAnalyseMenu(JMenuBar menuBar) {
+<span class="nc" id="L1238">        JMenu analyse = new JMenu(Lang.get(&quot;menu_analyse&quot;));</span>
+<span class="nc" id="L1239">        menuBar.add(analyse);</span>
+<span class="nc" id="L1240">        analyse.add(new ToolTipAction(Lang.get(&quot;menu_analyse&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L1244">                    Model model = new ModelCreator(circuitComponent.getCircuit(), new SubstituteLibrary(library)).createModel(false);</span>
+                    try {
+<span class="nc" id="L1246">                        model.checkForInvalidSignals();</span>
+<span class="nc" id="L1247">                        new TableDialog(Main.this,</span>
+<span class="nc" id="L1248">                                new ModelAnalyser(model).analyse(),</span>
+<span class="nc" id="L1249">                                library,</span>
+<span class="nc" id="L1250">                                getBaseFileName())</span>
+<span class="nc" id="L1251">                                .setVisible(true);</span>
+<span class="nc" id="L1252">                        ensureModelIsStopped();</span>
+                    } finally {
+<span class="nc" id="L1254">                        model.close();</span>
+                    }
+<span class="nc" id="L1256">                } catch (PinException | NodeException | AnalyseException | ElementNotFoundException | BacktrackException | RuntimeException e1) {</span>
+<span class="nc" id="L1257">                    showError(Lang.get(&quot;msg_analyseErr&quot;), e1);</span>
+<span class="nc" id="L1258">                }</span>
+<span class="nc" id="L1259">            }</span>
+        }
+<span class="nc" id="L1261">                .setToolTip(Lang.get(&quot;menu_analyse_tt&quot;))</span>
+<span class="nc" id="L1262">                .setAccelerator(&quot;F9&quot;)</span>
+<span class="nc" id="L1263">                .createJMenuItem());</span>
+
+<span class="nc" id="L1265">        analyse.add(new ToolTipAction(Lang.get(&quot;menu_synthesise&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1268">                TruthTable tt = new TruthTable(3).addResult();</span>
+<span class="nc" id="L1269">                new TableDialog(Main.this, tt, library, getBaseFileName()).setVisible(true);</span>
+<span class="nc" id="L1270">                ensureModelIsStopped();</span>
+<span class="nc" id="L1271">            }</span>
+        }
+<span class="nc" id="L1273">                .setToolTip(Lang.get(&quot;menu_synthesise_tt&quot;))</span>
+<span class="nc" id="L1274">                .createJMenuItem());</span>
+
+<span class="nc" id="L1276">        analyse.add(new ToolTipAction(Lang.get(&quot;menu_expression&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1279">                new ExpressionDialog(Main.this, library, shapeFactory, getBaseFileName()).setVisible(true);</span>
+<span class="nc" id="L1280">            }</span>
+        }
+<span class="nc" id="L1282">                .setToolTip(Lang.get(&quot;menu_expression_tt&quot;))</span>
+<span class="nc" id="L1283">                .createJMenuItem());</span>
+
+<span class="nc" id="L1285">        analyse.add(new ToolTipAction(Lang.get(&quot;menu_fsm&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1288">                String foundName = null;</span>
+<span class="nc bnc" id="L1289" title="All 2 branches missed.">                for (VisualElement ve : circuitComponent.getCircuit().getElements()) {</span>
+<span class="nc bnc" id="L1290" title="All 2 branches missed.">                    if (ve.equalsDescription(Probe.DESCRIPTION)) {</span>
+<span class="nc" id="L1291">                        String name = ve.getElementAttributes().getLabel();</span>
+<span class="nc bnc" id="L1292" title="All 2 branches missed.">                        if (name.endsWith(&quot;.fsm&quot;)) {</span>
+<span class="nc" id="L1293">                            foundName = name;</span>
+                        }
+                    }
+<span class="nc" id="L1296">                }</span>
+
+<span class="nc" id="L1298">                new FSMFrame(Main.this, library)</span>
+<span class="nc" id="L1299">                        .setBaseFileName(filename)</span>
+<span class="nc" id="L1300">                        .setProbeLabelName(foundName)</span>
+<span class="nc" id="L1301">                        .setVisible(true);</span>
+<span class="nc" id="L1302">            }</span>
+        }
+<span class="nc" id="L1304">                .setToolTip(Lang.get(&quot;menu_fsm_tt&quot;))</span>
+<span class="nc" id="L1305">                .createJMenuItem());</span>
+<span class="nc" id="L1306">    }</span>
+
+    private void orderMeasurements() {
+        try {
+<span class="nc" id="L1310">            Model m = new ModelCreator(circuitComponent.getCircuit(), library).createModel(false);</span>
+            try {
+<span class="nc" id="L1312">                ensureModelIsStopped();</span>
+<span class="nc" id="L1313">                ArrayList&lt;String&gt; names = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1314" title="All 2 branches missed.">                for (Signal s : m.getSignals())</span>
+<span class="nc" id="L1315">                    names.add(s.getName());</span>
+<span class="nc" id="L1316">                new OrderMerger&lt;String, String&gt;(circuitComponent.getCircuit().getMeasurementOrdering()).order(names);</span>
+<span class="nc" id="L1317">                ElementOrderer.ListOrder&lt;String&gt; o = new ElementOrderer.ListOrder&lt;&gt;(names);</span>
+<span class="nc" id="L1318">                if (new ElementOrderer&lt;&gt;(Main.this, Lang.get(&quot;menu_orderMeasurements&quot;), o)</span>
+<span class="nc" id="L1319">                        .addOkButton()</span>
+<span class="nc bnc" id="L1320" title="All 2 branches missed.">                        .showDialog()) {</span>
+<span class="nc" id="L1321">                    circuitComponent.modify(new ModifyMeasurementOrdering(names));</span>
+                }
+            } finally {
+<span class="nc" id="L1324">                m.close();</span>
+            }
+<span class="nc" id="L1326">        } catch (NodeException | PinException | ElementNotFoundException | RuntimeException e) {</span>
+<span class="nc" id="L1327">            showError(Lang.get(&quot;msg_errorCreatingModel&quot;), e);</span>
+<span class="nc" id="L1328">        }</span>
+<span class="nc" id="L1329">    }</span>
+
+    private void setupStates() {
+<span class="nc" id="L1332">        stoppedState = stateManager.register(new State() {</span>
+            @Override
+            public void enter() {
+<span class="nc" id="L1335">                super.enter();</span>
+<span class="nc" id="L1336">                clearModelDescription();</span>
+<span class="nc" id="L1337">                circuitComponent.setModeAndReset(false, SyncAccess.NOSYNC);</span>
+<span class="nc" id="L1338">                doMicroStep.setEnabled(false);</span>
+<span class="nc" id="L1339">                stoppedState.getAction().setEnabled(false);</span>
+<span class="nc" id="L1340">                showMeasurementDialog.setEnabled(false);</span>
+<span class="nc" id="L1341">                showMeasurementGraph.setEnabled(false);</span>
+<span class="nc" id="L1342">                runToBreakAction.setEnabled(false);</span>
+<span class="nc" id="L1343">                runToBreakMicroAction.setEnabled(false);</span>
+<span class="nc" id="L1344">                runTests.setEnabled(true);</span>
+                // keep errors
+<span class="nc bnc" id="L1346" title="All 2 branches missed.">                if (circuitComponent.getHighLightStyle() != Style.ERROR)</span>
+<span class="nc" id="L1347">                    circuitComponent.removeHighLighted();</span>
+<span class="nc" id="L1348">            }</span>
+
+        });
+<span class="nc" id="L1351">        runModelState = stateManager.register(new RunModelState());</span>
+<span class="nc" id="L1352">        runModelMicroState = stateManager.register(new State() {</span>
+            @Override
+            public void enter() {
+<span class="nc" id="L1355">                super.enter();</span>
+<span class="nc" id="L1356">                showMeasurementDialog.setEnabled(true);</span>
+<span class="nc" id="L1357">                showMeasurementGraph.setEnabled(true);</span>
+<span class="nc" id="L1358">                stoppedState.getAction().setEnabled(true);</span>
+<span class="nc" id="L1359">                runTests.setEnabled(false);</span>
+<span class="nc" id="L1360">                createAndStartModel(false, ModelEventType.MICROSTEP, null);</span>
+<span class="nc" id="L1361">            }</span>
+        });
+<span class="nc" id="L1363">        stateManager.setActualState(stoppedState);</span>
+<span class="nc" id="L1364">    }</span>
+
+    /**
+     * @return returns true if one of the children has the focus.
+     */
+    public boolean hasMouseFocus() {
+<span class="nc" id="L1370">        return checkFocus(getContentPane());</span>
+    }
+
+    private static boolean checkFocus(Container contentPane) {
+<span class="nc bnc" id="L1374" title="All 2 branches missed.">        for (int i = 0; i &lt; contentPane.getComponentCount(); i++) {</span>
+<span class="nc" id="L1375">            Component c = contentPane.getComponent(i);</span>
+<span class="nc bnc" id="L1376" title="All 2 branches missed.">            if (c.hasFocus())</span>
+<span class="nc" id="L1377">                return true;</span>
+<span class="nc bnc" id="L1378" title="All 2 branches missed.">            if (c instanceof Container)</span>
+<span class="nc bnc" id="L1379" title="All 2 branches missed.">                if (checkFocus((Container) c))</span>
+<span class="nc" id="L1380">                    return true;</span>
+        }
+<span class="nc" id="L1382">        return false;</span>
+    }
+
+<span class="nc" id="L1385">    private class RunModelState extends State {</span>
+        @Override
+        public void enter() {
+<span class="nc" id="L1388">            enter(true, null);</span>
+<span class="nc" id="L1389">        }</span>
+
+        void enter(boolean runRealTime, ModelModifier modelModifier) {
+<span class="nc" id="L1392">            super.enter();</span>
+<span class="nc" id="L1393">            stoppedState.getAction().setEnabled(true);</span>
+<span class="nc" id="L1394">            showMeasurementDialog.setEnabled(true);</span>
+<span class="nc" id="L1395">            showMeasurementGraph.setEnabled(true);</span>
+<span class="nc" id="L1396">            runTests.setEnabled(false);</span>
+<span class="nc" id="L1397">            createAndStartModel(runRealTime, ModelEventType.STEP, modelModifier);</span>
+<span class="nc" id="L1398">        }</span>
+    }
+
+    private void clearModelDescription() {
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">        if (model != null)</span>
+<span class="nc" id="L1403">            model.close();</span>
+
+<span class="nc" id="L1405">        modelCreator = null;</span>
+<span class="nc" id="L1406">        model = null;</span>
+<span class="nc" id="L1407">    }</span>
+
+    private void createAndStartModel(boolean globalRunClock, ModelEventType updateEvent, ModelModifier modelModifier) {
+        try {
+<span class="nc" id="L1411">            circuitComponent.removeHighLighted();</span>
+
+<span class="nc bnc" id="L1413" title="All 2 branches missed.">            if (model != null) {</span>
+<span class="nc" id="L1414">                ModelClosedObserver mco = model.getObserver(ModelClosedObserver.class);</span>
+<span class="nc bnc" id="L1415" title="All 2 branches missed.">                if (mco != null) mco.setClosedByRestart(true);</span>
+<span class="nc" id="L1416">                model.close();</span>
+<span class="nc" id="L1417">                circuitComponent.getCircuit().clearState();</span>
+<span class="nc" id="L1418">                model = null;</span>
+            }
+
+<span class="nc" id="L1421">            long time = System.currentTimeMillis();</span>
+<span class="nc" id="L1422">            modelCreator = new ModelCreator(circuitComponent.getCircuit(), library);</span>
+<span class="nc" id="L1423">            model = modelCreator.createModel(true);</span>
+
+<span class="nc" id="L1425">            time = System.currentTimeMillis() - time;</span>
+<span class="nc" id="L1426">            LOGGER.debug(&quot;model creation: &quot; + time + &quot; ms, &quot; + model.getNodes().size() + &quot; nodes&quot;);</span>
+
+<span class="nc" id="L1428">            model.setWindowPosManager(windowPosManager);</span>
+
+<span class="nc" id="L1430">            statusLabel.setText(Lang.get(&quot;msg_N_nodes&quot;, model.size()));</span>
+
+<span class="nc" id="L1432">            int maxFrequency = 0;</span>
+<span class="nc" id="L1433">            realTimeClockRunning = false;</span>
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">            if (globalRunClock) {</span>
+<span class="nc" id="L1435">                int threadRunnerCount = 0;</span>
+<span class="nc bnc" id="L1436" title="All 2 branches missed.">                for (Clock c : model.getClocks()) {</span>
+<span class="nc" id="L1437">                    int frequency = c.getFrequency();</span>
+<span class="nc bnc" id="L1438" title="All 2 branches missed.">                    if (frequency &gt; 0) {</span>
+<span class="nc" id="L1439">                        final RealTimeClock realTimeClock = new RealTimeClock(model, c, timerExecutor, this);</span>
+<span class="nc bnc" id="L1440" title="All 2 branches missed.">                        if (realTimeClock.isThreadRunner()) threadRunnerCount++;</span>
+<span class="nc" id="L1441">                        realTimeClockRunning = true;</span>
+                    }
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">                    if (frequency &gt; maxFrequency)</span>
+<span class="nc" id="L1444">                        maxFrequency = frequency;</span>
+<span class="nc" id="L1445">                }</span>
+<span class="nc bnc" id="L1446" title="All 2 branches missed.">                if (threadRunnerCount &gt; 1)</span>
+<span class="nc" id="L1447">                    throw new RuntimeException(Lang.get(&quot;err_moreThanOneFastClock&quot;));</span>
+            }
+<span class="nc bnc" id="L1449" title="All 4 branches missed.">            if (!realTimeClockRunning &amp;&amp; updateEvent == ModelEventType.MICROSTEP) {</span>
+                // no real clock
+<span class="nc" id="L1451">                AsyncSeq ai = model.getAsyncInfos();</span>
+<span class="nc bnc" id="L1452" title="All 2 branches missed.">                if (ai != null) {</span>
+<span class="nc bnc" id="L1453" title="All 2 branches missed.">                    if (ai.getFrequency() &gt; 0) {</span>
+<span class="nc bnc" id="L1454" title="All 2 branches missed.">                        if (!model.getClocks().isEmpty())</span>
+<span class="nc" id="L1455">                            throw new RuntimeException(Lang.get(&quot;err_clocksNotAllowedInAsyncMode&quot;));</span>
+<span class="nc" id="L1456">                        model.addObserver(</span>
+                                new AsyncSequentialClock(model, ai, timerExecutor));
+<span class="nc" id="L1458">                        realTimeClockRunning = true;</span>
+                    }
+<span class="nc" id="L1460">                    model.setAsyncMode();</span>
+                }
+            }
+
+<span class="nc bnc" id="L1464" title="All 2 branches missed.">            circuitComponent.setModeAndReset(true,</span>
+<span class="nc" id="L1465">                    model.createSync(updateEvent == ModelEventType.MICROSTEP));</span>
+<span class="nc bnc" id="L1466" title="All 2 branches missed.">            if (circuitComponent.getCircuit().getAttributes().get(Keys.IS_GENERIC))</span>
+<span class="nc" id="L1467">                circuitComponent.setCopy(modelCreator.getCircuit());</span>
+
+            // Allows the model to modify the circuit
+<span class="nc" id="L1470">            CircuitModifierPostClosed cmpc = new CircuitModifierPostClosed(</span>
+<span class="nc" id="L1471">                    modification -&gt; SwingUtilities.invokeLater(() -&gt; circuitComponent.modify(modification)));</span>
+<span class="nc" id="L1472">            modelCreator.connectToGui(cmpc);</span>
+<span class="nc" id="L1473">            this.model.addObserver(cmpc);</span>
+
+<span class="nc" id="L1475">            handleKeyboardComponents();</span>
+
+<span class="nc" id="L1477">            doMicroStep.setEnabled(false);</span>
+<span class="nc bnc" id="L1478" title="All 4 branches missed.">            if (!realTimeClockRunning &amp;&amp; this.model.isRunToBreakAllowed()) {</span>
+<span class="nc bnc" id="L1479" title="All 2 branches missed.">                if (updateEvent == ModelEventType.MICROSTEP)</span>
+<span class="nc" id="L1480">                    runToBreakMicroAction.setEnabled(true);</span>
+                else
+<span class="nc" id="L1482">                    runToBreakAction.setEnabled(true);</span>
+            }
+
+<span class="nc" id="L1485">            ElementAttributes settings = circuitComponent.getCircuit().getAttributes();</span>
+<span class="nc bnc" id="L1486" title="All 4 branches missed.">            if (settings.get(Keys.SHOW_DATA_TABLE) || windowPosManager.isVisible(&quot;probe&quot;))</span>
+<span class="nc" id="L1487">                showMeasurementDialog(updateEvent);</span>
+
+<span class="nc bnc" id="L1489" title="All 4 branches missed.">            if (settings.get(Keys.SHOW_DATA_GRAPH) || windowPosManager.isVisible(&quot;dataSet&quot;))</span>
+<span class="nc" id="L1490">                showMeasurementGraph(updateEvent);</span>
+<span class="nc bnc" id="L1491" title="All 2 branches missed.">            if (settings.get(Keys.SHOW_DATA_GRAPH_MICRO))</span>
+<span class="nc" id="L1492">                showMeasurementGraph(ModelEventType.MICROSTEP);</span>
+
+<span class="nc bnc" id="L1494" title="All 2 branches missed.">            if (modelModifier != null)</span>
+<span class="nc" id="L1495">                modelModifier.preInit(this.model);</span>
+            else {
+<span class="nc bnc" id="L1497" title="All 2 branches missed.">                if (settings.get(Keys.PRELOAD_PROGRAM)) {</span>
+<span class="nc" id="L1498">                    File romHex = new FileLocator(settings.get(Keys.PROGRAM_TO_PRELOAD))</span>
+<span class="nc" id="L1499">                            .setupWithMain(this)</span>
+<span class="nc" id="L1500">                            .locate();</span>
+<span class="nc" id="L1501">                    new ProgramMemoryLoader(romHex, settings.get(Keys.BIG_ENDIAN_SETTING))</span>
+<span class="nc" id="L1502">                            .preInit(this.model);</span>
+                }
+            }
+
+<span class="nc bnc" id="L1506" title="All 2 branches missed.">            if (updateEvent == ModelEventType.MICROSTEP) {</span>
+<span class="nc" id="L1507">                checkMicroStepActions(this.model);</span>
+<span class="nc" id="L1508">                this.model.addObserver(new UpdateViewMicroStep(this.model, modelCreator));</span>
+<span class="nc bnc" id="L1509" title="All 2 branches missed.">            } else if (updateEvent == ModelEventType.STEP) {</span>
+<span class="nc bnc" id="L1510" title="All 2 branches missed.">                if (maxFrequency &lt;= 50)</span>
+<span class="nc" id="L1511">                    this.model.addObserver(new UpdateViewAtEvent());</span>
+                else
+<span class="nc" id="L1513">                    this.model.addObserver(new UpdateViewPeriodic());</span>
+            }
+
+<span class="nc" id="L1516">            this.model.addObserver(new ModelClosedObserver());</span>
+
+<span class="nc" id="L1518">            this.model.init();</span>
+
+<span class="nc" id="L1520">        } catch (NodeException | PinException | RuntimeException | ElementNotFoundException e) {</span>
+<span class="nc bnc" id="L1521" title="All 2 branches missed.">            if (model != null)</span>
+<span class="nc" id="L1522">                model.close();</span>
+<span class="nc" id="L1523">            showError(Lang.get(&quot;msg_errorCreatingModel&quot;), e);</span>
+<span class="nc" id="L1524">        }</span>
+<span class="nc" id="L1525">    }</span>
+
+    private void checkMicroStepActions(Model model) {
+<span class="nc" id="L1528">        final boolean needsUpdate = model.needsUpdate();</span>
+<span class="nc" id="L1529">        doMicroStep.setEnabled(needsUpdate);</span>
+<span class="nc bnc" id="L1530" title="All 2 branches missed.">        if (!model.isRunToBreakAllowed())</span>
+<span class="nc" id="L1531">            runToBreakMicroAction.setEnabled(needsUpdate);</span>
+<span class="nc" id="L1532">    }</span>
+
+    private void handleKeyboardComponents() {
+<span class="nc bnc" id="L1535" title="All 2 branches missed.">        for (Keyboard k : model.findNode(Keyboard.class))</span>
+<span class="nc" id="L1536">            windowPosManager.register(&quot;keyboard_&quot; + k.getLabel(), new KeyboardDialog(this, k, model));</span>
+<span class="nc" id="L1537">    }</span>
+
+    private void showMeasurementGraph(ModelEventType updateEvent) {
+<span class="nc" id="L1540">        Circuit circuit = circuitComponent.getCircuit();</span>
+<span class="nc" id="L1541">        List&lt;String&gt; ordering = circuit.getMeasurementOrdering();</span>
+<span class="nc" id="L1542">        int sampleSize = circuit.getAttributes().get(Keys.SETTINGS_MAX_STEP_COUNT);</span>
+<span class="nc bnc" id="L1543" title="All 2 branches missed.">        windowPosManager.register(&quot;dataSet&quot;, GraphDialog.createLiveDialog(this, model, updateEvent == ModelEventType.MICROSTEP, ordering, sampleSize)).setVisible(true);</span>
+<span class="nc" id="L1544">    }</span>
+
+    private void showMeasurementDialog(ModelEventType updateEvent) {
+<span class="nc" id="L1547">        List&lt;String&gt; ordering = circuitComponent.getCircuit().getMeasurementOrdering();</span>
+<span class="nc" id="L1548">        windowPosManager.register(&quot;probe&quot;, new ProbeDialog(this, model, updateEvent, ordering)).setVisible(true);</span>
+<span class="nc" id="L1549">    }</span>
+
+    /**
+     * @return the model or null if no model is running
+     */
+    public Model getModel() {
+<span class="nc" id="L1555">        return model;</span>
+    }
+
+    private void showError(String message, Exception cause) {
+<span class="nc bnc" id="L1559" title="All 2 branches missed.">        if (cause instanceof NodeException) {</span>
+<span class="nc" id="L1560">            NodeException e = (NodeException) cause;</span>
+<span class="nc" id="L1561">            circuitComponent.addHighLightedWires(e.getValues());</span>
+<span class="nc" id="L1562">            circuitComponent.addHighLighted(e.getVisualElement());</span>
+<span class="nc bnc" id="L1563" title="All 2 branches missed.">            if (modelCreator != null)</span>
+<span class="nc" id="L1564">                modelCreator.addNodeElementsTo(e.getNodes(), circuitComponent.getHighLighted());</span>
+<span class="nc bnc" id="L1565" title="All 2 branches missed.">        } else if (cause instanceof PinException) {</span>
+<span class="nc" id="L1566">            PinException e = (PinException) cause;</span>
+<span class="nc" id="L1567">            circuitComponent.addHighLighted(e.getVisualElement());</span>
+<span class="nc bnc" id="L1568" title="All 2 branches missed.">            if (e.getNet() != null)</span>
+<span class="nc" id="L1569">                circuitComponent.addHighLighted(e.getNet().getWires());</span>
+<span class="nc bnc" id="L1570" title="All 2 branches missed.">        } else if (cause instanceof BurnException) {</span>
+<span class="nc" id="L1571">            BurnException e = (BurnException) cause;</span>
+<span class="nc" id="L1572">            circuitComponent.addHighLightedWires(e.getValues());</span>
+        }
+<span class="nc" id="L1574">        circuitComponent.setHighLightStyle(Style.ERROR);</span>
+<span class="nc" id="L1575">        circuitComponent.graphicHasChanged();</span>
+<span class="nc" id="L1576">        new ErrorMessage(message).addCause(cause).show(Main.this);</span>
+<span class="nc" id="L1577">        ensureModelIsStopped();</span>
+<span class="nc" id="L1578">    }</span>
+
+    /**
+     * stops the model
+     */
+    public void ensureModelIsStopped() {
+<span class="nc bnc" id="L1584" title="All 2 branches missed.">        if (!stoppedState.isActive())</span>
+<span class="nc" id="L1585">            stoppedState.enter();</span>
+<span class="nc" id="L1586">    }</span>
+
+
+    private static JFileChooser getJFileChooser(File filename) {
+<span class="nc" id="L1590">        File folder = null;</span>
+<span class="nc bnc" id="L1591" title="All 2 branches missed.">        if (filename != null)</span>
+<span class="nc" id="L1592">            folder = filename.getParentFile();</span>
+
+<span class="nc" id="L1594">        JFileChooser fileChooser = new MyFileChooser(folder);</span>
+<span class="nc" id="L1595">        fileChooser.setFileFilter(new FileNameExtensionFilter(&quot;Circuit&quot;, &quot;dig&quot;));</span>
+<span class="nc" id="L1596">        return fileChooser;</span>
+    }
+
+    @Override
+    public boolean isStateChanged() {
+<span class="nc" id="L1601">        return circuitComponent.isModified();</span>
+    }
+
+    @Override
+    public void saveChanges() {
+<span class="nc" id="L1606">        save.actionPerformed(null);</span>
+<span class="nc" id="L1607">    }</span>
+
+    @Override
+    public void open(File file, boolean newWindow) {
+<span class="nc bnc" id="L1611" title="All 2 branches missed.">        if (newWindow) {</span>
+<span class="nc" id="L1612">            new MainBuilder()</span>
+<span class="nc" id="L1613">                    .setParent(Main.this)</span>
+<span class="nc" id="L1614">                    .setFileToOpen(file)</span>
+<span class="nc" id="L1615">                    .build()</span>
+<span class="nc" id="L1616">                    .setVisible(true);</span>
+        } else {
+<span class="nc bnc" id="L1618" title="All 2 branches missed.">            if (ClosingWindowListener.checkForSave(Main.this, Main.this))</span>
+<span class="nc" id="L1619">                loadFile(file, true, true);</span>
+        }
+<span class="nc" id="L1621">    }</span>
+
+    private void loadFile(File filename, boolean setLibraryRoot, boolean toPref) {
+<span class="nc" id="L1624">        LOGGER.debug(&quot;loadFile: &quot; + filename);</span>
+        try {
+<span class="nc bnc" id="L1626" title="All 2 branches missed.">            if (setLibraryRoot) {</span>
+<span class="nc" id="L1627">                LOGGER.debug(&quot;set library root: &quot; + filename);</span>
+<span class="nc" id="L1628">                library.setRootFilePath(filename.getParentFile());</span>
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">                if (library.getWarningMessage() != null)</span>
+<span class="nc" id="L1630">                    SwingUtilities.invokeLater(new ErrorMessage(library.getWarningMessage().toString()).setComponent(this));</span>
+            }
+<span class="nc" id="L1632">            Circuit circuit = Circuit.loadCircuit(filename, shapeFactory);</span>
+<span class="nc" id="L1633">            circuitComponent.setCircuit(circuit);</span>
+
+            // requests the circuit modified state, so place it behind circuitComponent.setCircuit(circuit);
+<span class="nc" id="L1636">            setFilename(filename, toPref);</span>
+
+<span class="nc" id="L1638">            ensureModelIsStopped();</span>
+<span class="nc" id="L1639">            windowPosManager.closeAll();</span>
+<span class="nc" id="L1640">            statusLabel.setText(&quot; &quot;);</span>
+<span class="nc" id="L1641">        } catch (Exception e) {</span>
+<span class="nc" id="L1642">            circuitComponent.setCircuit(new Circuit());</span>
+<span class="nc" id="L1643">            setFilename(null, false);</span>
+<span class="nc" id="L1644">            new ErrorMessage(Lang.get(&quot;msg_errorReadingFile&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L1645">        }</span>
+<span class="nc" id="L1646">    }</span>
+
+    private void saveFile(File filename, boolean toPrefs) {
+        try {
+<span class="nc" id="L1650">            circuitComponent.save(filename);</span>
+<span class="nc" id="L1651">            ensureModelIsStopped();</span>
+<span class="nc" id="L1652">            setFilename(filename, toPrefs);</span>
+
+<span class="nc" id="L1654">            library.invalidateElement(filename);</span>
+
+<span class="nc bnc" id="L1656" title="All 2 branches missed.">            if (library.getRootFilePath() == null) {</span>
+<span class="nc" id="L1657">                library.setRootFilePath(filename.getParentFile());</span>
+<span class="nc bnc" id="L1658" title="All 2 branches missed.">                if (library.getWarningMessage() != null)</span>
+<span class="nc" id="L1659">                    SwingUtilities.invokeLater(new ErrorMessage(library.getWarningMessage().toString()).setComponent(this));</span>
+            }
+<span class="nc" id="L1661">        } catch (IOException e) {</span>
+<span class="nc" id="L1662">            new ErrorMessage(Lang.get(&quot;msg_errorWritingFile&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L1663">        }</span>
+<span class="nc" id="L1664">    }</span>
+
+    private void setFilename(File filename, boolean toPrefs) {
+<span class="nc" id="L1667">        modifiedPrefixVisible = circuitComponent.isModified();</span>
+<span class="nc bnc" id="L1668" title="All 2 branches missed.">        if (save != null)</span>
+<span class="nc" id="L1669">            save.setEnabled(modifiedPrefixVisible);</span>
+<span class="nc" id="L1670">        String prefix = &quot;&quot;;</span>
+<span class="nc bnc" id="L1671" title="All 2 branches missed.">        if (modifiedPrefixVisible)</span>
+<span class="nc" id="L1672">            prefix = &quot;*&quot;;</span>
+<span class="nc" id="L1673">        this.filename = filename;</span>
+<span class="nc bnc" id="L1674" title="All 2 branches missed.">        if (filename != null) {</span>
+<span class="nc" id="L1675">            this.baseFilename = filename;</span>
+<span class="nc bnc" id="L1676" title="All 2 branches missed.">            if (toPrefs)</span>
+<span class="nc" id="L1677">                fileHistory.add(filename);</span>
+<span class="nc" id="L1678">            setTitle(prefix + filename + &quot; - &quot; + Lang.get(&quot;digital&quot;));</span>
+        } else {
+<span class="nc" id="L1680">            setTitle(prefix + Lang.get(&quot;digital&quot;));</span>
+        }
+<span class="nc" id="L1682">    }</span>
+
+    /**
+     * Starts the simulation and allows to advance the model to a certain state.
+     *
+     * @param advanceSimulator needs to be implemented to advance the model
+     */
+    public void startSimulation(AdvanceSimulator advanceSimulator) {
+<span class="nc" id="L1690">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L1691">            runModelState.enter(false, null);</span>
+<span class="nc" id="L1692">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc bnc" id="L1693" title="All 4 branches missed.">                if (model != null &amp;&amp; model.isRunning()) {</span>
+                    try {
+<span class="nc" id="L1695">                        advanceSimulator.advance(model);</span>
+<span class="nc" id="L1696">                        circuitComponent.graphicHasChanged();</span>
+<span class="nc" id="L1697">                    } catch (Exception e) {</span>
+<span class="nc" id="L1698">                        showError(Lang.get(&quot;msg_errorSettingModelToTestCase&quot;), e);</span>
+<span class="nc" id="L1699">                    }</span>
+                }
+<span class="nc" id="L1701">            });</span>
+<span class="nc" id="L1702">        });</span>
+<span class="nc" id="L1703">    }</span>
+
+    @Override
+    public void hasChanged() {
+<span class="nc" id="L1707">        ensureModelIsStopped();</span>
+<span class="nc bnc" id="L1708" title="All 2 branches missed.">        if (modifiedPrefixVisible != circuitComponent.isModified())</span>
+<span class="nc" id="L1709">            setFilename(filename, false);</span>
+<span class="nc" id="L1710">    }</span>
+
+    /**
+     * @return the window position manager
+     */
+    public WindowPosManager getWindowPosManager() {
+<span class="nc" id="L1716">        return windowPosManager;</span>
+    }
+
+    @Override
+    public void setStatus(String message) {
+<span class="nc" id="L1721">        SwingUtilities.invokeLater(() -&gt; statusLabel.setText(message));</span>
+<span class="nc" id="L1722">    }</span>
+
+    /**
+     * Used to update the gui if the model is closed
+     */
+<span class="nc" id="L1727">    private class ModelClosedObserver implements ModelStateObserverTyped {</span>
+
+<span class="nc" id="L1729">        private boolean closedByRestart = false;</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L1733" title="All 3 branches missed.">            switch (event.getType()) {</span>
+                case ERROR_OCCURRED:
+<span class="nc" id="L1735">                    SwingUtilities.invokeLater(() -&gt; showError(Lang.get(&quot;msg_errorCalculatingStep&quot;), event.getCause()));</span>
+<span class="nc" id="L1736">                    break;</span>
+                case CLOSED:
+<span class="nc bnc" id="L1738" title="All 2 branches missed.">                    if (!closedByRestart)</span>
+<span class="nc" id="L1739">                        SwingUtilities.invokeLater(Main.this::ensureModelIsStopped);</span>
+                    break;
+            }
+<span class="nc" id="L1742">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L1746">            return new ModelEventType[]{ModelEventType.CLOSED, ModelEventType.ERROR_OCCURRED};</span>
+        }
+
+        public void setClosedByRestart(boolean closedByRestart) {
+<span class="nc" id="L1750">            this.closedByRestart = closedByRestart;</span>
+<span class="nc" id="L1751">        }</span>
+    }
+
+    /**
+     * Updates the graphic at every modification.
+     */
+    private class UpdateViewAtEvent implements ModelStateObserverTyped {
+        private boolean stepUpdateEnabled;
+
+<span class="nc" id="L1760">        UpdateViewAtEvent() {</span>
+<span class="nc" id="L1761">            stepUpdateEnabled = true;</span>
+<span class="nc" id="L1762">        }</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L1766" title="All 5 branches missed.">            switch (event.getType()) {</span>
+                case RUN_TO_BREAK:
+<span class="nc" id="L1768">                    stepUpdateEnabled = false;</span>
+<span class="nc" id="L1769">                    break;</span>
+                case CHECKBURN:
+                case BREAK:
+<span class="nc" id="L1772">                    stepUpdateEnabled = true;</span>
+                case STEP:
+<span class="nc bnc" id="L1774" title="All 2 branches missed.">                    if (stepUpdateEnabled)</span>
+<span class="nc" id="L1775">                        circuitComponent.graphicHasChanged();</span>
+                    break;
+                case RUN_TO_BREAK_TIMEOUT:
+<span class="nc" id="L1778">                    circuitComponent.graphicHasChanged();</span>
+                    break;
+            }
+<span class="nc" id="L1781">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L1785">            return new ModelEventType[]{ModelEventType.CHECKBURN, ModelEventType.STEP, ModelEventType.BREAK};</span>
+        }
+    }
+
+    /**
+     * Updates the graphic at every 100ms
+     */
+    private final class UpdateViewPeriodic implements ModelStateObserverTyped {
+        private final Timer timer;
+
+<span class="nc" id="L1795">        private UpdateViewPeriodic() {</span>
+<span class="nc" id="L1796">            timer = new Timer(100, actionEvent -&gt; circuitComponent.graphicHasChanged());</span>
+<span class="nc" id="L1797">        }</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L1801" title="All 3 branches missed.">            switch (event.getType()) {</span>
+                case STARTED:
+<span class="nc" id="L1803">                    timer.start();</span>
+<span class="nc" id="L1804">                    break;</span>
+                case CLOSED:
+                case BREAK:
+<span class="nc" id="L1807">                    timer.stop();</span>
+<span class="nc" id="L1808">                    SwingUtilities.invokeLater(circuitComponent::graphicHasChanged);</span>
+                    break;
+            }
+<span class="nc" id="L1811">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L1815">            return new ModelEventType[]{ModelEventType.CLOSED, ModelEventType.BREAK};</span>
+        }
+    }
+
+    /**
+     * Updates the graphic at every micro step
+     */
+    private final class UpdateViewMicroStep implements ModelStateObserverTyped {
+        private final Model model;
+        private final ModelCreator modelCreator;
+
+<span class="nc" id="L1826">        private UpdateViewMicroStep(Model model, ModelCreator modelCreator) {</span>
+<span class="nc" id="L1827">            this.model = model;</span>
+<span class="nc" id="L1828">            this.modelCreator = modelCreator;</span>
+<span class="nc" id="L1829">        }</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L1833" title="All 2 branches missed.">            switch (event.getType()) {</span>
+                case CHECKBURN:
+                case MICROSTEP:
+                case BREAK:
+<span class="nc bnc" id="L1837" title="All 2 branches missed.">                    if (!realTimeClockRunning) {</span>
+<span class="nc" id="L1838">                        circuitComponent.removeHighLighted();</span>
+<span class="nc" id="L1839">                        modelCreator.addNodeElementsTo(model.nodesToUpdate(), circuitComponent.getHighLighted());</span>
+                    }
+<span class="nc" id="L1841">                    circuitComponent.graphicHasChanged();</span>
+<span class="nc bnc" id="L1842" title="All 2 branches missed.">                    if (!realTimeClockRunning)</span>
+<span class="nc" id="L1843">                        checkMicroStepActions(model);</span>
+                    break;
+            }
+<span class="nc" id="L1846">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L1850">            return new ModelEventType[]{ModelEventType.CHECKBURN, ModelEventType.MICROSTEP, ModelEventType.BREAK};</span>
+        }
+    }
+
+    private class ExportAction extends ToolTipAction {
+        private final String name;
+        private final String suffix;
+        private final ExportFactory exportFactory;
+
+<span class="nc" id="L1859">        ExportAction(String name, String suffix, ExportFactory exportFactory) {</span>
+<span class="nc" id="L1860">            super(name);</span>
+<span class="nc" id="L1861">            this.name = name;</span>
+<span class="nc" id="L1862">            this.suffix = suffix;</span>
+<span class="nc" id="L1863">            this.exportFactory = exportFactory;</span>
+<span class="nc" id="L1864">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1868">            JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L1869" title="All 2 branches missed.">            if (filename != null)</span>
+<span class="nc" id="L1870">                fc.setSelectedFile(SaveAsHelper.checkSuffix(filename, suffix));</span>
+
+<span class="nc" id="L1872">            ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L1873">            File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L1874" title="All 2 branches missed.">            if (exportDir != null)</span>
+<span class="nc" id="L1875">                fc.setCurrentDirectory(exportDir);</span>
+
+<span class="nc" id="L1877">            fc.addChoosableFileFilter(new FileNameExtensionFilter(name, suffix));</span>
+<span class="nc" id="L1878">            new SaveAsHelper(Main.this, fc, suffix).checkOverwrite(</span>
+                    file -&gt; {
+<span class="nc" id="L1880">                        settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L1881">                        new Export(circuitComponent.getCircuitOrShallowCopy(), exportFactory).export(file);</span>
+<span class="nc" id="L1882">                    }</span>
+            );
+<span class="nc" id="L1884">        }</span>
+    }
+
+    private class ExportGifAction extends ToolTipAction {
+        private final String name;
+
+<span class="nc" id="L1890">        ExportGifAction(String name) {</span>
+<span class="nc" id="L1891">            super(name);</span>
+<span class="nc" id="L1892">            this.name = name;</span>
+<span class="nc" id="L1893">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1897">            JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L1898" title="All 2 branches missed.">            if (filename != null)</span>
+<span class="nc" id="L1899">                fc.setSelectedFile(SaveAsHelper.checkSuffix(filename, &quot;gif&quot;));</span>
+
+<span class="nc" id="L1901">            ElementAttributes settings = Settings.getInstance().getAttributes();</span>
+<span class="nc" id="L1902">            File exportDir = settings.getFile(&quot;exportDirectory&quot;);</span>
+<span class="nc bnc" id="L1903" title="All 2 branches missed.">            if (exportDir != null)</span>
+<span class="nc" id="L1904">                fc.setCurrentDirectory(exportDir);</span>
+
+<span class="nc" id="L1906">            fc.addChoosableFileFilter(new FileNameExtensionFilter(name, &quot;gif&quot;));</span>
+<span class="nc" id="L1907">            new SaveAsHelper(Main.this, fc, &quot;gif&quot;).checkOverwrite(</span>
+                    file -&gt; {
+<span class="nc" id="L1909">                        settings.setFile(&quot;exportDirectory&quot;, file.getParentFile());</span>
+<span class="nc" id="L1910">                        GifExporter gifExporter = new GifExporter(Main.this, circuitComponent.getCircuit(), 500, file);</span>
+<span class="nc" id="L1911">                        windowPosManager.closeAll();</span>
+<span class="nc" id="L1912">                        runModelState.enter(false, gifExporter);</span>
+<span class="nc" id="L1913">                        circuitComponent.graphicHasChanged();</span>
+<span class="nc" id="L1914">                    }</span>
+            );
+<span class="nc" id="L1916">        }</span>
+    }
+
+    private class CreateTestCaseAction extends ToolTipAction {
+
+<span class="nc" id="L1921">        CreateTestCaseAction(String name) {</span>
+<span class="nc" id="L1922">            super(name);</span>
+<span class="nc" id="L1923">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1927">            BehavioralFixtureCreator bfc = new BehavioralFixtureCreator(Main.this, shapeFactory);</span>
+<span class="nc" id="L1928">            windowPosManager.closeAll();</span>
+<span class="nc" id="L1929">            runModelState.enter(false, bfc);</span>
+<span class="nc" id="L1930">            circuitComponent.graphicHasChanged();</span>
+<span class="nc" id="L1931">        }</span>
+    }
+
+    //***********************
+    // remote interface start
+    //***********************
+
+    private static class AddressPicker {
+        private long address;
+
+        private void getProgramROMAddress(Model model) {
+<span class="nc bnc" id="L1942" title="All 4 branches missed.">            List&lt;Node&gt; programCounters = model.findNode(n -&gt; n instanceof ProgramCounter &amp;&amp; ((ProgramCounter) n).isProgramCounter());</span>
+<span class="nc bnc" id="L1943" title="All 2 branches missed.">            if (programCounters.size() == 1)</span>
+<span class="nc" id="L1944">                address = ((ProgramCounter) programCounters.get(0)).getProgramCounter();</span>
+            else
+<span class="nc" id="L1946">                address = -1;</span>
+<span class="nc" id="L1947">        }</span>
+
+        String getAddressString() {
+<span class="nc bnc" id="L1950" title="All 2 branches missed.">            if (address &lt; 0)</span>
+<span class="nc" id="L1951">                return null;</span>
+            else
+<span class="nc" id="L1953">                return Long.toHexString(address);</span>
+        }
+    }
+
+    @Override
+    public void start(File romHex, boolean bigEndian) {
+<span class="nc" id="L1959">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L1960">            ProgramMemoryLoader modelModifier = null;</span>
+<span class="nc bnc" id="L1961" title="All 2 branches missed.">            if (romHex != null)</span>
+<span class="nc" id="L1962">                modelModifier = new ProgramMemoryLoader(romHex, bigEndian);</span>
+<span class="nc" id="L1963">            runModelState.enter(true, modelModifier);</span>
+<span class="nc" id="L1964">            circuitComponent.graphicHasChanged();</span>
+<span class="nc" id="L1965">        });</span>
+<span class="nc" id="L1966">    }</span>
+
+    @Override
+    public void debug(File romHex, boolean bigEndian) {
+<span class="nc" id="L1970">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L1971">            runModelState.enter(false, new ProgramMemoryLoader(romHex, bigEndian));</span>
+<span class="nc" id="L1972">            circuitComponent.graphicHasChanged();</span>
+<span class="nc bnc" id="L1973" title="All 2 branches missed.">            if (model != null)</span>
+<span class="nc" id="L1974">                showMeasurementDialog(ModelEventType.STEP);</span>
+<span class="nc" id="L1975">        });</span>
+<span class="nc" id="L1976">    }</span>
+
+    @Override
+    public String doSingleStep() throws RemoteException {
+<span class="nc bnc" id="L1980" title="All 4 branches missed.">        if (model != null &amp;&amp; !realTimeClockRunning) {</span>
+            try {
+<span class="nc" id="L1982">                AddressPicker addressPicker = new AddressPicker();</span>
+<span class="nc" id="L1983">                SwingUtilities.invokeAndWait(() -&gt; {</span>
+<span class="nc" id="L1984">                    ArrayList&lt;Clock&gt; cl = model.getClocks();</span>
+<span class="nc bnc" id="L1985" title="All 2 branches missed.">                    if (cl.size() == 1) {</span>
+<span class="nc" id="L1986">                        ObservableValue clkVal = cl.get(0).getClockOutput();</span>
+<span class="nc bnc" id="L1987" title="All 2 branches missed.">                        model.modify(() -&gt; clkVal.setBool(!clkVal.getBool()));</span>
+<span class="nc bnc" id="L1988" title="All 2 branches missed.">                        if (model != null) {</span>
+<span class="nc bnc" id="L1989" title="All 4 branches missed.">                            if (clkVal.getBool() &amp;&amp; model.isRunning())</span>
+<span class="nc bnc" id="L1990" title="All 2 branches missed.">                                model.modify(() -&gt; clkVal.setBool(!clkVal.getBool()));</span>
+<span class="nc" id="L1991">                            addressPicker.getProgramROMAddress(model);</span>
+                        }
+                    }
+<span class="nc" id="L1994">                });</span>
+<span class="nc" id="L1995">                return addressPicker.getAddressString();</span>
+<span class="nc" id="L1996">            } catch (InterruptedException | InvocationTargetException e) {</span>
+<span class="nc" id="L1997">                throw new RemoteException(&quot;error performing a single step &quot; + e.getMessage());</span>
+            }
+        }
+<span class="nc" id="L2000">        return null;</span>
+    }
+
+    @Override
+    public String runToBreak() throws RemoteException {
+<span class="nc" id="L2005">        AddressPicker addressPicker = new AddressPicker();</span>
+<span class="nc bnc" id="L2006" title="All 6 branches missed.">        if (model != null &amp;&amp; model.isRunToBreakAllowed() &amp;&amp; !realTimeClockRunning) {</span>
+<span class="nc" id="L2007">            WaitForBreak waitForBreak = new WaitForBreak();</span>
+<span class="nc" id="L2008">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L2009">                model.addObserver(waitForBreak);</span>
+<span class="nc" id="L2010">                new RunToBreakRunnable(model, statusLabel, Model::runToBreak).run();</span>
+<span class="nc" id="L2011">            });</span>
+<span class="nc" id="L2012">            waitForBreak.waitForBreak();</span>
+<span class="nc" id="L2013">            SwingUtilities.invokeLater(() -&gt; model.removeObserver(waitForBreak));</span>
+<span class="nc" id="L2014">            addressPicker.getProgramROMAddress(model);</span>
+        }
+<span class="nc" id="L2016">        return addressPicker.getAddressString();</span>
+    }
+
+<span class="nc" id="L2019">    private static final class WaitForBreak implements ModelStateObserverTyped {</span>
+<span class="nc" id="L2020">        private boolean wasBreak = false;</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L2024" title="All 2 branches missed.">            if (event.getType() == ModelEventType.BREAK</span>
+<span class="nc bnc" id="L2025" title="All 2 branches missed.">                    || event.getType() == ModelEventType.CLOSED) {</span>
+<span class="nc" id="L2026">                synchronized (this) {</span>
+<span class="nc" id="L2027">                    wasBreak = true;</span>
+<span class="nc" id="L2028">                    notify();</span>
+<span class="nc" id="L2029">                }</span>
+            }
+<span class="nc" id="L2031">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L2035">            return new ModelEventType[]{ModelEventType.BREAK, ModelEventType.CLOSED};</span>
+        }
+
+        private synchronized void waitForBreak() {
+            try {
+<span class="nc bnc" id="L2040" title="All 2 branches missed.">                while (!wasBreak)</span>
+<span class="nc" id="L2041">                    wait();</span>
+<span class="nc" id="L2042">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L2043">                e.printStackTrace();</span>
+<span class="nc" id="L2044">            }</span>
+<span class="nc" id="L2045">        }</span>
+    }
+
+    @Override
+    public void stop() {
+<span class="nc" id="L2050">        SwingUtilities.invokeLater(this::ensureModelIsStopped);</span>
+<span class="nc" id="L2051">    }</span>
+
+    @Override
+    public String measure() throws RemoteException {
+<span class="nc bnc" id="L2055" title="All 2 branches missed.">        if (model == null)</span>
+<span class="nc" id="L2056">            throw new RemoteException(&quot;no model available&quot;);</span>
+
+<span class="nc" id="L2058">        StringBuilder sb = new StringBuilder(&quot;{&quot;);</span>
+<span class="nc" id="L2059">        model.read(() -&gt; {</span>
+<span class="nc" id="L2060">            boolean first = true;</span>
+<span class="nc bnc" id="L2061" title="All 2 branches missed.">            for (Signal s : model.getSignals()) {</span>
+<span class="nc bnc" id="L2062" title="All 2 branches missed.">                if (first) first = false;</span>
+<span class="nc" id="L2063">                else sb.append(',');</span>
+<span class="nc" id="L2064">                sb.append('&quot;').append(s.getName()).append(&quot;\&quot;:&quot;).append(s.getValue().getValue());</span>
+<span class="nc" id="L2065">            }</span>
+<span class="nc" id="L2066">        });</span>
+<span class="nc" id="L2067">        sb.append(&quot;}&quot;);</span>
+<span class="nc" id="L2068">        return sb.toString();</span>
+    }
+
+    //**********************
+    // remote interface end
+    //**********************
+
+    /**
+     * Starts the main app
+     *
+     * @param args the arguments
+     */
+    public static void main(String[] args) {
+<span class="nc" id="L2081">        Thread.setDefaultUncaughtExceptionHandler(new DigitalUncaughtExceptionHandler());</span>
+
+<span class="nc bnc" id="L2083" title="All 2 branches missed.">        if (LOGGER.isDebugEnabled())</span>
+<span class="nc" id="L2084">            LOGGER.debug(InfoDialog.getInstance().getRevision());</span>
+
+        /*
+        The Apple look an feel, which can be enabled by choosing the UIManager.getSystemLookAndFeelClassName()
+        on MacOS has problems with the component tree view because it does not support different item heights.
+        Also, the HTML rendering does not seem to be supported. See GitHub #190.
+        Therefore also on MosOS the MetalLookAndFeel is used.
+         */
+        try { // enforce MetalLookAndFeel
+<span class="nc" id="L2093">            UIManager.setLookAndFeel(&quot;javax.swing.plaf.metal.MetalLookAndFeel&quot;);</span>
+<span class="nc" id="L2094">        } catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {</span>
+<span class="nc" id="L2095">            e.printStackTrace();</span>
+<span class="nc" id="L2096">        }</span>
+<span class="nc" id="L2097">        ToolTipManager.sharedInstance().setDismissDelay(10000);</span>
+<span class="nc" id="L2098">        URL.setURLStreamHandlerFactory(ElementHelpDialog.createURLStreamHandlerFactory());</span>
+
+<span class="nc bnc" id="L2100" title="All 2 branches missed.">        if (Screen.isMac()) {</span>
+<span class="nc" id="L2101">            setMacCopyPasteTo(UIManager.get(&quot;TextField.focusInputMap&quot;));</span>
+<span class="nc" id="L2102">            setMacCopyPasteTo(UIManager.get(&quot;TextArea.focusInputMap&quot;));</span>
+        }
+
+<span class="nc" id="L2105">        File file = null;</span>
+<span class="nc bnc" id="L2106" title="All 2 branches missed.">        for (String s : args) {</span>
+<span class="nc bnc" id="L2107" title="All 2 branches missed.">            if (s.equals(&quot;experimental&quot;)) experimental = true;</span>
+<span class="nc bnc" id="L2108" title="All 2 branches missed.">            else if (s.trim().length() &gt; 0) {</span>
+<span class="nc" id="L2109">                File f = new File(s);</span>
+<span class="nc bnc" id="L2110" title="All 2 branches missed.">                if (f.exists())</span>
+<span class="nc" id="L2111">                    file = f;</span>
+            }
+        }
+
+<span class="nc bnc" id="L2115" title="All 4 branches missed.">        if (file != null &amp;&amp; file.getName().endsWith(&quot;.fsm&quot;)) {</span>
+<span class="nc" id="L2116">            FSMFrame.openFile(file);</span>
+<span class="nc bnc" id="L2117" title="All 4 branches missed.">        } else if (file != null &amp;&amp; file.getName().endsWith(&quot;.tru&quot;)) {</span>
+<span class="nc" id="L2118">            TableDialog.openFile(file);</span>
+        } else {
+<span class="nc" id="L2120">            MainBuilder builder = new MainBuilder().setMainFrame();</span>
+<span class="nc bnc" id="L2121" title="All 2 branches missed.">            if (file != null)</span>
+<span class="nc" id="L2122">                builder.setFileToOpen(file);</span>
+<span class="nc" id="L2123">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc bnc" id="L2124" title="All 4 branches missed.">                final boolean tutorial = (builder.fileToOpen == null) &amp;&amp; Settings.getInstance().getAttributes().get(Keys.SETTINGS_SHOW_TUTORIAL);</span>
+<span class="nc bnc" id="L2125" title="All 2 branches missed.">                if (tutorial) {</span>
+<span class="nc" id="L2126">                    LOGGER.debug(&quot;set empty circuit to start tutorial&quot;);</span>
+<span class="nc" id="L2127">                    builder.setCircuit(new Circuit());</span>
+                }
+
+<span class="nc" id="L2130">                Main main = builder.build();</span>
+                try {
+<span class="nc" id="L2132">                    new RemoteSever(new DigitalHandler(main)).start(41114);</span>
+<span class="nc" id="L2133">                } catch (IOException e) {</span>
+<span class="nc" id="L2134">                    SwingUtilities.invokeLater(() -&gt; main.statusLabel.setText(Lang.get(&quot;err_portIsInUse&quot;)));</span>
+<span class="nc" id="L2135">                }</span>
+<span class="nc" id="L2136">                main.setVisible(true);</span>
+
+<span class="nc bnc" id="L2138" title="All 2 branches missed.">                if (tutorial) {</span>
+<span class="nc" id="L2139">                    LOGGER.debug(&quot;open tutorial dialog&quot;);</span>
+<span class="nc" id="L2140">                    new InitialTutorial(main).setVisible(true);</span>
+                }
+
+<span class="nc" id="L2143">                CheckForNewRelease.showReleaseDialog(main);</span>
+<span class="nc" id="L2144">            });</span>
+        }
+<span class="nc" id="L2146">    }</span>
+
+    private static void setMacCopyPasteTo(Object obj) {
+<span class="nc bnc" id="L2149" title="All 2 branches missed.">        if (obj instanceof InputMap) {</span>
+<span class="nc" id="L2150">            InputMap im = (InputMap) obj;</span>
+<span class="nc" id="L2151">            im.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.META_DOWN_MASK), DefaultEditorKit.copyAction);</span>
+<span class="nc" id="L2152">            im.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);</span>
+<span class="nc" id="L2153">            im.put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);</span>
+        }
+<span class="nc" id="L2155">    }</span>
+
+    /**
+     * Builder to create a Main-Window
+     */
+<span class="nc" id="L2160">    public static class MainBuilder {</span>
+        private File fileToOpen;
+        private Window parent;
+        private ElementLibrary library;
+        private Circuit circuit;
+<span class="nc" id="L2165">        private boolean allowAllFileActions = true;</span>
+        private File baseFileName;
+        private boolean keepPrefMainFile;
+<span class="nc" id="L2168">        private boolean mainFrame = false;</span>
+
+        /**
+         * @param fileToOpen the file to open
+         * @return this for chained calls
+         */
+        public MainBuilder setFileToOpen(File fileToOpen) {
+<span class="nc" id="L2175">            this.fileToOpen = fileToOpen;</span>
+<span class="nc" id="L2176">            this.baseFileName = fileToOpen;</span>
+<span class="nc" id="L2177">            return this;</span>
+        }
+
+        /**
+         * @param baseFileName filename used as base for save and load operations
+         * @return this for chained calls
+         */
+        public MainBuilder setBaseFileName(File baseFileName) {
+<span class="nc" id="L2185">            this.baseFileName = baseFileName;</span>
+<span class="nc" id="L2186">            return this;</span>
+        }
+
+        /**
+         * @param parent the parent component
+         * @return this for chained calls
+         */
+        public MainBuilder setParent(Window parent) {
+<span class="nc" id="L2194">            this.parent = parent;</span>
+<span class="nc" id="L2195">            return this;</span>
+        }
+
+        /**
+         * @param library the library to use
+         * @return this for chained calls
+         */
+        public MainBuilder setLibrary(ElementLibrary library) {
+<span class="nc" id="L2203">            this.library = library;</span>
+<span class="nc" id="L2204">            return this;</span>
+        }
+
+        /**
+         * @param circuit the circuit to show
+         * @return this for chained calls
+         */
+        public MainBuilder setCircuit(Circuit circuit) {
+<span class="nc" id="L2212">            this.circuit = circuit;</span>
+<span class="nc" id="L2213">            return this;</span>
+        }
+
+        /**
+         * If called, most file actions are denied
+         *
+         * @return this for chained calls
+         */
+        public MainBuilder denyMostFileActions() {
+<span class="nc" id="L2222">            this.allowAllFileActions = false;</span>
+<span class="nc" id="L2223">            return this;</span>
+        }
+
+        /**
+         * Keeps the main file defined in the preferences
+         *
+         * @return this for chained calls
+         */
+        public MainBuilder keepPrefMainFile() {
+<span class="nc" id="L2232">            this.keepPrefMainFile = true;</span>
+<span class="nc" id="L2233">            return this;</span>
+        }
+
+        /**
+         * Creates a new Main instance
+         *
+         * @return a new Main instance
+         */
+        public Main build() {
+<span class="nc" id="L2242">            return new Main(this);</span>
+        }
+
+        /**
+         * Opens the frame using SwingUtilities.invokeLater
+         */
+        public void openLater() {
+<span class="nc" id="L2249">            SwingUtilities.invokeLater(() -&gt; build().setVisible(true));</span>
+<span class="nc" id="L2250">        }</span>
+
+        private MainBuilder setMainFrame() {
+<span class="nc" id="L2253">            mainFrame = true;</span>
+<span class="nc" id="L2254">            return this;</span>
+        }
+    }
+
+<span class="nc" id="L2258">    private class ModelKeyListener extends KeyAdapter {</span>
+
+        @Override
+        public void keyPressed(KeyEvent keyEvent) {
+<span class="nc" id="L2262">            checkKey(keyEvent.getKeyCode(), true);</span>
+<span class="nc" id="L2263">        }</span>
+
+        @Override
+        public void keyReleased(KeyEvent keyEvent) {
+<span class="nc" id="L2267">            checkKey(keyEvent.getKeyCode(), false);</span>
+<span class="nc" id="L2268">        }</span>
+
+        private void checkKey(int keyCode, boolean pressed) {
+<span class="nc bnc" id="L2271" title="All 4 branches missed.">            if (model != null &amp;&amp; keyCode != KeyEvent.VK_UNDEFINED) {</span>
+<span class="nc" id="L2272">                Button b = model.getButtonToMap(keyCode);</span>
+<span class="nc bnc" id="L2273" title="All 2 branches missed.">                if (b != null) {</span>
+<span class="nc" id="L2274">                    model.modify(() -&gt; b.setPressed(pressed));</span>
+                }
+            }
+<span class="nc" id="L2277">        }</span>
+    }
+
+    /**
+     * Allows to start the simulation and advance the model to a certain state.
+     */
+    public interface AdvanceSimulator {
+        /**
+         * Advances the model to a certain state
+         *
+         * @param model the model
+         * @throws Exception Exception
+         */
+        void advance(Model model) throws Exception;
+    }
+
+    private static final class RunToBreakRunnable implements Runnable {
+        private static final int DEFAULT_TARGET_TIME_MS = 100;
+        private final RunModel runModel;
+        private final int targetTimeMs;
+        private final Model model;
+        private final JLabel statusLabel;
+        private int steps;
+
+        private RunToBreakRunnable(Model model, JLabel statusLabel, RunModel runModel) {
+<span class="nc" id="L2302">            this(model, statusLabel, runModel, DEFAULT_TARGET_TIME_MS);</span>
+<span class="nc" id="L2303">        }</span>
+
+<span class="nc" id="L2305">        private RunToBreakRunnable(Model model, JLabel statusLabel, RunModel runModel, int targetTimeMs) {</span>
+<span class="nc" id="L2306">            this.model = model;</span>
+<span class="nc" id="L2307">            this.statusLabel = statusLabel;</span>
+<span class="nc" id="L2308">            this.runModel = runModel;</span>
+<span class="nc" id="L2309">            this.targetTimeMs = targetTimeMs;</span>
+<span class="nc" id="L2310">            steps = 10000;</span>
+<span class="nc" id="L2311">        }</span>
+
+        @Override
+        public void run() {
+<span class="nc bnc" id="L2315" title="All 2 branches missed.">            if (model.isRunning()) {</span>
+<span class="nc" id="L2316">                long time = System.currentTimeMillis();</span>
+<span class="nc" id="L2317">                Model.BreakInfo info = runModel.runModel(model, steps);</span>
+<span class="nc" id="L2318">                time = System.currentTimeMillis() - time;</span>
+
+<span class="nc bnc" id="L2320" title="All 2 branches missed.">                if (info != null) {</span>
+<span class="nc bnc" id="L2321" title="All 4 branches missed.">                    if (info.isTimeout() &amp;&amp; model.isRunning()) {</span>
+<span class="nc bnc" id="L2322" title="All 2 branches missed.">                        if (time &gt; 0) {</span>
+<span class="nc" id="L2323">                            int newSteps = (int) (steps * targetTimeMs / time);</span>
+<span class="nc" id="L2324">                            steps = (steps + newSteps) / 2;</span>
+                        }
+<span class="nc" id="L2326">                        SwingUtilities.invokeLater(this);</span>
+                    } else
+<span class="nc" id="L2328">                        statusLabel.setText(Lang.get(&quot;stat_clocks&quot;, info.getSteps(), info.getLabel()));</span>
+                }
+            }
+<span class="nc" id="L2331">        }</span>
+    }
+
+    private interface RunModel {
+        Model.BreakInfo runModel(Model model, int steps);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

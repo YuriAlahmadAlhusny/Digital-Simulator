@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NodeSorterExpressionBased.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.optimizations</a> &gt; <span class="el_source">NodeSorterExpressionBased.java</span></div><h1>NodeSorterExpressionBased.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.optimizations;
+
+import de.neemann.digital.hdl.model2.HDLCircuit;
+import de.neemann.digital.hdl.model2.HDLNet;
+import de.neemann.digital.hdl.model2.HDLNode;
+import de.neemann.digital.hdl.model2.HDLPort;
+import de.neemann.digital.hdl.model2.expression.ExprUsingNet;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.expression.Visitor;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+
+/**
+ * Used to sort the nodes in a more &quot;human typical&quot; order.
+ * Sorts the nodes from the input side to the output side.
+ */
+<span class="fc" id="L23">public class NodeSorterExpressionBased implements Optimization {</span>
+
+    @Override
+    public void optimize(HDLCircuit circuit) {
+<span class="fc" id="L27">        ArrayList&lt;HDLNode&gt; nodes = circuit.getNodes();</span>
+<span class="fc" id="L28">        ArrayList&lt;HDLNode&gt; nodesAvail = new ArrayList&lt;&gt;(nodes);</span>
+<span class="fc" id="L29">        nodes.clear();</span>
+
+<span class="fc" id="L31">        HashSet&lt;HDLNet&gt; nets = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        for (HDLPort p : circuit.getInputs())</span>
+<span class="fc" id="L33">            nets.add(p.getNet());</span>
+
+
+        // all nodes without an input at top!
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        for (HDLNode n : nodesAvail)</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            if (n.getInputs().isEmpty()) {</span>
+<span class="fc" id="L39">                nodes.add(n);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">                for (HDLPort p : n.getOutputs())</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">                    if (p.getNet() != null)</span>
+<span class="fc" id="L42">                        nets.add(p.getNet());</span>
+            }
+<span class="fc" id="L44">        nodesAvail.removeAll(nodes);</span>
+
+        // then a layer sorting
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        while (!nodesAvail.isEmpty()) {</span>
+<span class="fc" id="L48">            ArrayList&lt;HDLNode&gt; layer = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (HDLNode n : nodesAvail) {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                if (n.traverseExpressions(new DependsOnlyOn(nets)).ok())</span>
+<span class="fc" id="L51">                    layer.add(n);</span>
+<span class="fc" id="L52">            }</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            if (layer.isEmpty()) {</span>
+                // circular dependency detected
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                for (HDLNode n : nodesAvail)</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                    if (n.traverseExpressions(new DependsAtLeastOnOneOf(nets)).ok())</span>
+<span class="fc" id="L58">                        layer.add(n);</span>
+            }
+
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (layer.isEmpty())</span>
+<span class="fc" id="L62">                break;</span>
+
+<span class="fc" id="L64">            nodes.addAll(layer);</span>
+<span class="fc" id="L65">            nodesAvail.removeAll(layer);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            for (HDLNode n : layer)</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                for (HDLPort p : n.getOutputs())</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                    if (p.getNet() != null)</span>
+<span class="fc" id="L69">                        nets.add(p.getNet());</span>
+
+<span class="fc" id="L71">        }</span>
+
+        // if there are unsolvable circular dependencies, keep old order
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (!nodesAvail.isEmpty())</span>
+<span class="fc" id="L75">            nodes.addAll(nodesAvail);</span>
+<span class="fc" id="L76">    }</span>
+
+    private static final class DependsOnlyOn implements Visitor {
+        private final HashSet&lt;HDLNet&gt; nets;
+<span class="fc" id="L80">        private boolean dependsOnlyOn = true;</span>
+
+<span class="fc" id="L82">        private DependsOnlyOn(HashSet&lt;HDLNet&gt; nets) {</span>
+<span class="fc" id="L83">            this.nets = nets;</span>
+<span class="fc" id="L84">        }</span>
+
+        @Override
+        public void visit(Expression expression) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (expression instanceof ExprUsingNet) {</span>
+<span class="fc" id="L89">                final HDLNet net = ((ExprUsingNet) expression).getNet();</span>
+<span class="fc bfc" id="L90" title="All 4 branches covered.">                if (!net.isClock() &amp;&amp; !nets.contains(net))</span>
+<span class="fc" id="L91">                    dependsOnlyOn = false;</span>
+            }
+<span class="fc" id="L93">        }</span>
+
+        public boolean ok() {
+<span class="fc" id="L96">            return dependsOnlyOn;</span>
+        }
+    }
+
+    private static final class DependsAtLeastOnOneOf implements Visitor {
+        private final HashSet&lt;HDLNet&gt; nets;
+<span class="fc" id="L102">        private boolean dependsAtLeastOnOne = false;</span>
+
+<span class="fc" id="L104">        private DependsAtLeastOnOneOf(HashSet&lt;HDLNet&gt; nets) {</span>
+<span class="fc" id="L105">            this.nets = nets;</span>
+<span class="fc" id="L106">        }</span>
+
+        @Override
+        public void visit(Expression expression) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (expression instanceof ExprUsingNet) {</span>
+<span class="fc" id="L111">                final HDLNet net = ((ExprUsingNet) expression).getNet();</span>
+<span class="fc bfc" id="L112" title="All 4 branches covered.">                if (!net.isClock() &amp;&amp; nets.contains(net))</span>
+<span class="fc" id="L113">                    dependsAtLeastOnOne = true;</span>
+            }
+<span class="fc" id="L115">        }</span>
+
+        public boolean ok() {
+<span class="fc" id="L118">            return dependsAtLeastOnOne;</span>
+        }
+    }
+
+    private boolean dependsOnlyOn(HDLNode n, HashSet&lt;HDLNet&gt; nets) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (HDLPort p : n.getInputs())</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">            if (!p.getNet().isClock() &amp;&amp; !nets.contains(p.getNet()))</span>
+<span class="nc" id="L125">                return false;</span>
+<span class="nc" id="L126">        return true;</span>
+    }
+
+    private boolean dependsAtLeastAtOne(HDLNode n, HashSet&lt;HDLNet&gt; nets) {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (HDLPort p : n.getInputs())</span>
+<span class="nc bnc" id="L131" title="All 4 branches missed.">            if (!p.getNet().isClock() &amp;&amp; nets.contains(p.getNet()))</span>
+<span class="nc" id="L132">                return true;</span>
+<span class="nc" id="L133">        return false;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

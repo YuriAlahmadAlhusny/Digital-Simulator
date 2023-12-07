@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.memory</a> &gt; <span class="el_source">DataField.java</span></div><h1>DataField.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.memory;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.hdl.hgs.HGSArray;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+/**
+ * Used to store an array of values.
+ */
+public class DataField implements HGSArray {
+
+    private long[] data;
+
+<span class="fc" id="L23">    private final transient ArrayList&lt;DataListener&gt; listeners = new ArrayList&lt;&gt;();</span>
+
+    /**
+     * Creates a new DataField of size 0
+     */
+    public DataField() {
+<span class="fc" id="L29">        this(0);</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Creates a new DataField
+     *
+     * @param size size
+     */
+    public DataField(int size) {
+<span class="fc" id="L38">        this(new long[size]);</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Creates a new data field
+     *
+     * @param data the data to copy
+     */
+<span class="fc" id="L46">    public DataField(DataField data) {</span>
+<span class="fc" id="L47">        this.data = Arrays.copyOf(data.data, data.data.length);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Creates a new data field
+     *
+     * @param data the data
+     */
+<span class="fc" id="L55">    public DataField(long[] data) {</span>
+<span class="fc" id="L56">        this.data = data;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Save the stored data
+     *
+     * @param file file to store the data to
+     * @throws IOException IOException
+     */
+    public void saveTo(File file) throws IOException {
+<span class="nc" id="L66">        try (Writer w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L67">            saveTo(w);</span>
+        }
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * Save the stored data
+     *
+     * @param writer writer to write the data to
+     * @throws IOException IOException
+     */
+    public void saveTo(Writer writer) throws IOException {
+<span class="fc" id="L78">        trim();</span>
+        BufferedWriter w;
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (writer instanceof BufferedWriter)</span>
+<span class="nc" id="L81">            w = (BufferedWriter) writer;</span>
+        else
+<span class="fc" id="L83">            w = new BufferedWriter(writer);</span>
+
+<span class="fc" id="L85">        w.write(&quot;v2.0 raw&quot;);</span>
+<span class="fc" id="L86">        w.newLine();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (data.length &gt; 0) {</span>
+<span class="fc" id="L88">            long akt = data[0];</span>
+<span class="fc" id="L89">            int count = 1;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            for (int i = 1; i &lt; data.length; i++) {</span>
+<span class="fc" id="L91">                final long now = data[i];</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                if (now == akt)</span>
+<span class="fc" id="L93">                    count++;</span>
+                else {
+<span class="fc" id="L95">                    writeChunk(w, akt, count);</span>
+<span class="fc" id="L96">                    akt = now;</span>
+<span class="fc" id="L97">                    count = 1;</span>
+                }
+            }
+<span class="fc" id="L100">            writeChunk(w, akt, count);</span>
+        }
+<span class="fc" id="L102">        w.flush();</span>
+<span class="fc" id="L103">    }</span>
+
+    private void writeChunk(BufferedWriter w, long data, int count) throws IOException {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (count &lt; 4) {</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            for (int j = 0; j &lt; count; j++) {</span>
+<span class="fc" id="L108">                w.write(Long.toHexString(data));</span>
+<span class="fc" id="L109">                w.newLine();</span>
+            }
+        } else {
+<span class="fc" id="L112">            w.write(Integer.toString(count));</span>
+<span class="fc" id="L113">            w.write('*');</span>
+<span class="fc" id="L114">            w.write(Long.toHexString(data));</span>
+<span class="fc" id="L115">            w.newLine();</span>
+        }
+<span class="fc" id="L117">    }</span>
+
+    /**
+     * Sets all stored data to null!
+     * Is not called during simulation! Is only called during editing.
+     */
+    public void clearAll() {
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (data != null)</span>
+<span class="nc" id="L125">            Arrays.fill(data, 0);</span>
+
+        // all the data have changed!
+<span class="nc" id="L128">        fireChanged(-1);</span>
+<span class="nc" id="L129">    }</span>
+
+    /**
+     * Sets a data value the DataField.
+     * If the actual data field capacity is to small the size in increased.
+     *
+     * @param addr  the address
+     * @param value the value
+     * @return this for chained calls
+     */
+    public boolean setData(int addr, long value) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (addr &gt;= data.length) {</span>
+<span class="fc" id="L141">            int newLen = addr * 2;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            if (newLen &lt; 32) newLen = 32;</span>
+<span class="fc" id="L143">            data = Arrays.copyOf(data, newLen);</span>
+        }
+
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (data[addr] != value) {</span>
+<span class="fc" id="L147">            data[addr] = value;</span>
+<span class="fc" id="L148">            fireChanged(addr);</span>
+<span class="fc" id="L149">            return true;</span>
+        } else
+<span class="fc" id="L151">            return false;</span>
+    }
+
+    /**
+     * Gets the value at the given address
+     *
+     * @param addr the address
+     * @return the value
+     */
+    public long getDataWord(int addr) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (addr &gt;= data.length)</span>
+<span class="fc" id="L162">            return 0;</span>
+        else
+<span class="fc" id="L164">            return data[addr];</span>
+    }
+
+    /**
+     * Trims the data field to it's minimal size.
+     * All trailing zeros are removed.
+     *
+     * @return the new length of the data array
+     */
+    public int trim() {
+<span class="fc" id="L174">        return trim(data.length);</span>
+    }
+
+    /**
+     * Trims the data field to it's minimal size.
+     * The size is limited to the given value.
+     * Additional data is removed, even if it is not zero.
+     *
+     * @param size the max size
+     * @return the new length of the data array
+     */
+    private int trim(int size) {
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (size &gt; data.length)</span>
+<span class="nc" id="L187">            size = data.length;</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">        while (size &gt; 0 &amp;&amp; data[size - 1] == 0) size--;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (size &lt; data.length)</span>
+<span class="fc" id="L190">            data = Arrays.copyOf(data, size);</span>
+<span class="fc" id="L191">        return data.length;</span>
+    }
+
+    /**
+     * Trims the data field to the given bit numbers.
+     *
+     * @param addrBits the number of addr bits, trims the size of the array
+     * @param dataBits the number of data bits, trims the values
+     * @return this for chained calls
+     */
+    public DataField trimValues(int addrBits, int dataBits) {
+<span class="fc" id="L202">        trim(1 &lt;&lt; addrBits);</span>
+<span class="fc" id="L203">        long mask = Bits.mask(dataBits);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; i++)</span>
+<span class="fc" id="L205">            data[i] = data[i] &amp; mask;</span>
+
+<span class="fc" id="L207">        return this;</span>
+    }
+
+
+    /**
+     * @return true if the data field is empty
+     */
+    public boolean isEmpty() {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        return trim() == 0;</span>
+    }
+
+    /**
+     * Adds a listener to this DataField
+     *
+     * @param l the listener
+     */
+    public void addListener(DataListener l) {
+<span class="nc" id="L224">        synchronized (listeners) {</span>
+<span class="nc" id="L225">            listeners.add(l);</span>
+<span class="nc" id="L226">        }</span>
+<span class="nc" id="L227">    }</span>
+
+    /**
+     * Removes a listener
+     *
+     * @param l the listener to remove
+     */
+    public void removeListener(DataListener l) {
+<span class="nc" id="L235">        synchronized (listeners) {</span>
+<span class="nc" id="L236">            listeners.remove(l);</span>
+<span class="nc" id="L237">        }</span>
+<span class="nc" id="L238">    }</span>
+
+    /**
+     * Fires a valueChanged event
+     *
+     * @param addr the address which value has changed
+     */
+    private void fireChanged(int addr) {
+<span class="fc" id="L246">        synchronized (listeners) {</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            for (DataListener l : listeners)</span>
+<span class="nc" id="L248">                l.valueChanged(addr);</span>
+<span class="fc" id="L249">        }</span>
+<span class="fc" id="L250">    }</span>
+
+    /**
+     * Sets the data from the given data field
+     *
+     * @param dataField the data to set to this data field
+     */
+    public void setDataFrom(DataField dataField) {
+<span class="fc" id="L258">        data = Arrays.copyOf(dataField.data, dataField.data.length);</span>
+<span class="fc" id="L259">        fireChanged(-1);</span>
+<span class="fc" id="L260">    }</span>
+
+    @Override
+    public int hgsArraySize() {
+<span class="fc" id="L264">        return data.length;</span>
+    }
+
+    @Override
+    public Object hgsArrayGet(int i) {
+<span class="fc" id="L269">        return getDataWord(i);</span>
+    }
+
+    /**
+     * The listener interface
+     */
+    public interface DataListener {
+        /**
+         * Called if the DataField has changed.
+         *
+         * @param addr the address which has changed, Called with addr=-1 if all values have changed!
+         */
+        void valueChanged(int addr);
+
+    }
+
+    /**
+     * @return the raw data
+     */
+    public long[] getData() {
+<span class="fc" id="L289">        return data;</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L295" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L296">        DataField dataField = (DataField) o;</span>
+<span class="fc" id="L297">        return Arrays.equals(data, dataField.data);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L302">        return Arrays.hashCode(data);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

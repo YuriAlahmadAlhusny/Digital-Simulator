@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GifSequenceWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.gif</a> &gt; <span class="el_source">GifSequenceWriter.java</span></div><h1>GifSequenceWriter.java</h1><pre class="source lang-java linenums">package de.neemann.digital.draw.gif;
+
+import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.image.RenderedImage;
+import java.io.IOException;
+import java.util.Iterator;
+
+/**
+ * GifSequenceWriter.java
+ * &lt;p&gt;
+ * Created by Elliot Kroo on 2009-04-25.
+ * &lt;p&gt;
+ * This work is licensed under the Creative Commons Attribution 3.0 Unported
+ * License. To view a copy of this license, visit
+ * http://creativecommons.org/licenses/by/3.0/ or send a letter to Creative
+ * Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
+ * &lt;p&gt;
+ * Minor modifications made by hneemann, 2017-05-17
+ */
+public class GifSequenceWriter implements AutoCloseable {
+    private ImageWriter gifWriter;
+    private ImageWriteParam imageWriteParam;
+    private IIOMetadata imageMetaData;
+
+    /**
+     * Creates a new GifSequenceWriter
+     *
+     * @param outputStream        the ImageOutputStream to be written to
+     * @param imageType           one of the imageTypes specified in BufferedImage
+     * @param timeBetweenFramesMS the time between frames in miliseconds
+     * @param loopContinuously    wether the gif should loop repeatedly
+     * @throws IOException if no gif ImageWriters are found
+     * @author Elliot Kroo (elliot[at]kroo[dot]net)
+     */
+    public GifSequenceWriter(
+            ImageOutputStream outputStream,
+            int imageType,
+            int timeBetweenFramesMS,
+<span class="nc" id="L42">            boolean loopContinuously) throws IOException {</span>
+        // my method to create a writer
+<span class="nc" id="L44">        gifWriter = getWriter();</span>
+<span class="nc" id="L45">        imageWriteParam = gifWriter.getDefaultWriteParam();</span>
+<span class="nc" id="L46">        ImageTypeSpecifier imageTypeSpecifier =</span>
+<span class="nc" id="L47">                ImageTypeSpecifier.createFromBufferedImageType(imageType);</span>
+
+<span class="nc" id="L49">        imageMetaData =</span>
+<span class="nc" id="L50">                gifWriter.getDefaultImageMetadata(imageTypeSpecifier,</span>
+                        imageWriteParam);
+
+<span class="nc" id="L53">        String metaFormatName = imageMetaData.getNativeMetadataFormatName();</span>
+
+<span class="nc" id="L55">        IIOMetadataNode root = (IIOMetadataNode)</span>
+<span class="nc" id="L56">                imageMetaData.getAsTree(metaFormatName);</span>
+
+<span class="nc" id="L58">        IIOMetadataNode graphicsControlExtensionNode = getNode(</span>
+                root,
+                &quot;GraphicControlExtension&quot;);
+
+<span class="nc" id="L62">        graphicsControlExtensionNode.setAttribute(&quot;disposalMethod&quot;, &quot;none&quot;);</span>
+<span class="nc" id="L63">        graphicsControlExtensionNode.setAttribute(&quot;userInputFlag&quot;, &quot;FALSE&quot;);</span>
+<span class="nc" id="L64">        graphicsControlExtensionNode.setAttribute(</span>
+                &quot;transparentColorFlag&quot;,
+                &quot;FALSE&quot;);
+<span class="nc" id="L67">        graphicsControlExtensionNode.setAttribute(</span>
+                &quot;delayTime&quot;,
+<span class="nc" id="L69">                Integer.toString(timeBetweenFramesMS / 10));</span>
+<span class="nc" id="L70">        graphicsControlExtensionNode.setAttribute(</span>
+                &quot;transparentColorIndex&quot;,
+                &quot;0&quot;);
+
+<span class="nc" id="L74">        IIOMetadataNode commentsNode = getNode(root, &quot;CommentExtensions&quot;);</span>
+<span class="nc" id="L75">        commentsNode.setAttribute(&quot;CommentExtension&quot;, &quot;Created by MAH&quot;);</span>
+
+<span class="nc" id="L77">        IIOMetadataNode appEntensionsNode = getNode(</span>
+                root,
+                &quot;ApplicationExtensions&quot;);
+
+<span class="nc" id="L81">        IIOMetadataNode child = new IIOMetadataNode(&quot;ApplicationExtension&quot;);</span>
+
+<span class="nc" id="L83">        child.setAttribute(&quot;applicationID&quot;, &quot;NETSCAPE&quot;);</span>
+<span class="nc" id="L84">        child.setAttribute(&quot;authenticationCode&quot;, &quot;2.0&quot;);</span>
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        int loop = loopContinuously ? 0 : 1;</span>
+
+<span class="nc" id="L88">        child.setUserObject(new byte[]{0x1, (byte) (loop &amp; 0xFF), (byte)</span>
+                ((loop &gt;&gt; 8) &amp; 0xFF)});
+<span class="nc" id="L90">        appEntensionsNode.appendChild(child);</span>
+
+<span class="nc" id="L92">        imageMetaData.setFromTree(metaFormatName, root);</span>
+
+<span class="nc" id="L94">        gifWriter.setOutput(outputStream);</span>
+
+<span class="nc" id="L96">        gifWriter.prepareWriteSequence(null);</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Method to add an image
+     *
+     * @param img the image
+     * @throws IOException IOException
+     */
+    public void writeToSequence(RenderedImage img) throws IOException {
+<span class="nc" id="L106">        gifWriter.writeToSequence(</span>
+                new IIOImage(
+                        img,
+                        null,
+                        imageMetaData),
+                imageWriteParam);
+<span class="nc" id="L112">    }</span>
+
+    /**
+     * Close this GifSequenceWriter object. This does not close the underlying
+     * stream, just finishes off the GIF.
+     *
+     * @throws IOException IOException
+     */
+    public void close() throws IOException {
+<span class="nc" id="L121">        gifWriter.endWriteSequence();</span>
+<span class="nc" id="L122">    }</span>
+
+    /**
+     * Returns the first available GIF ImageWriter using
+     * ImageIO.getImageWritersBySuffix(&quot;gif&quot;).
+     *
+     * @return a GIF ImageWriter object
+     * @throws IIOException if no GIF image writers are returned
+     */
+    private static ImageWriter getWriter() throws IIOException {
+<span class="nc" id="L132">        Iterator&lt;ImageWriter&gt; iter = ImageIO.getImageWritersBySuffix(&quot;gif&quot;);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (!iter.hasNext()) {</span>
+<span class="nc" id="L134">            throw new IIOException(&quot;No GIF Image Writers Exist&quot;);</span>
+        } else {
+<span class="nc" id="L136">            return iter.next();</span>
+        }
+    }
+
+    /**
+     * Returns an existing child node, or creates and returns a new child node (if
+     * the requested node does not exist).
+     *
+     * @param rootNode the &lt;tt&gt;IIOMetadataNode&lt;/tt&gt; to search for the child node.
+     * @param nodeName the name of the child node.
+     * @return the child node, if found or a new node created with the given name.
+     */
+    private static IIOMetadataNode getNode(
+            IIOMetadataNode rootNode,
+            String nodeName) {
+<span class="nc" id="L151">        int nNodes = rootNode.getLength();</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (int i = 0; i &lt; nNodes; i++) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (rootNode.item(i).getNodeName().compareToIgnoreCase(nodeName)</span>
+                    == 0) {
+<span class="nc" id="L155">                return ((IIOMetadataNode) rootNode.item(i));</span>
+            }
+        }
+<span class="nc" id="L158">        IIOMetadataNode node = new IIOMetadataNode(nodeName);</span>
+<span class="nc" id="L159">        rootNode.appendChild(node);</span>
+<span class="nc" id="L160">        return (node);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

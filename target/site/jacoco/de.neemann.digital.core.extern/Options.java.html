@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Options.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">Options.java</span></div><h1>Options.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2020 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.gui.Settings;
+
+import java.util.ArrayList;
+
+/**
+ * Used to split option strings to a option list
+ */
+public class Options {
+
+    private final ArrayList&lt;String&gt; list;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L24">    public Options() {</span>
+<span class="fc" id="L25">        list = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L26">    }</span>
+
+    /**
+     * Adds a string from the settings
+     *
+     * @param key the key to use
+     * @return this for chained calls
+     */
+    public Options addFromSettings(Key&lt;String&gt; key) {
+<span class="nc" id="L35">        return addString(Settings.getInstance().get(key));</span>
+    }
+
+    /**
+     * Adds a string containing many options
+     *
+     * @param options the string containing the options
+     * @return this for chained calls
+     */
+    public Options addString(String options) {
+<span class="fc" id="L45">        StringBuilder opt = new StringBuilder();</span>
+<span class="fc" id="L46">        boolean inQuote = false;</span>
+<span class="fc" id="L47">        int quoteCount = 0;</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (int i = 0; i &lt; options.length(); i++) {</span>
+<span class="fc" id="L49">            char c = options.charAt(i);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (c == '&quot;') {</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">                inQuote = !inQuote;</span>
+<span class="fc" id="L52">                quoteCount++;</span>
+            }
+
+<span class="fc bfc" id="L55" title="All 6 branches covered.">            if (c == '\\' &amp;&amp; i &lt; options.length() - 1 &amp;&amp; !inQuote) {</span>
+                //modification of loop variable i is intended!
+                //CHECKSTYLE.OFF: ModifiedControlVariable
+<span class="fc" id="L58">                i++;</span>
+                //CHECKSTYLE.ON: ModifiedControlVariable
+<span class="fc" id="L60">                opt.append(escapeChar(options.charAt(i)));</span>
+            } else {
+<span class="fc bfc" id="L62" title="All 4 branches covered.">                if (Character.isWhitespace(c) &amp;&amp; !inQuote) {</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                    if (opt.length() &gt; 0) {</span>
+<span class="fc" id="L64">                        addQuote(opt.toString(), quoteCount);</span>
+<span class="fc" id="L65">                        quoteCount = 0;</span>
+                    }
+<span class="fc" id="L67">                    opt.setLength(0);</span>
+                } else {
+<span class="fc" id="L69">                    opt.append(c);</span>
+                }
+            }
+        }
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (opt.length() &gt; 0)</span>
+<span class="fc" id="L74">            addQuote(opt.toString(), quoteCount);</span>
+<span class="fc" id="L75">        return this;</span>
+    }
+
+    private void addQuote(String opt, int quoteCount) {
+<span class="pc bpc" id="L79" title="1 of 6 branches missed.">        if (quoteCount == 2 &amp;&amp; opt.charAt(0) == '&quot;' &amp;&amp; opt.charAt(opt.length() - 1) == '&quot;') {</span>
+<span class="fc" id="L80">            list.add(opt.substring(1, opt.length() - 1));</span>
+        } else {
+<span class="fc" id="L82">            list.add(opt);</span>
+        }
+<span class="fc" id="L84">    }</span>
+
+    private char escapeChar(char c) {
+<span class="fc bfc" id="L87" title="All 4 branches covered.">        switch (c) {</span>
+            case 't':
+<span class="fc" id="L89">                return '\t';</span>
+            case 'n':
+<span class="fc" id="L91">                return '\n';</span>
+            case 'r':
+<span class="fc" id="L93">                return '\r';</span>
+            default:
+<span class="fc" id="L95">                return c;</span>
+        }
+    }
+
+    /**
+     * Adds a single raw option
+     *
+     * @param option the options to add
+     * @return this for chained calls
+     */
+    public Options add(String option) {
+<span class="nc" id="L106">        list.add(option);</span>
+<span class="nc" id="L107">        return this;</span>
+    }
+
+    /**
+     * Adds a string from the give attributes
+     *
+     * @param attr the attributes
+     * @param key  the key to use
+     * @return this for chained calls
+     */
+    public Options add(ElementAttributes attr, Key&lt;String&gt; key) {
+<span class="nc" id="L118">        return addString(attr.get(key));</span>
+    }
+
+
+    /**
+     * @return the options as a list
+     */
+    public ArrayList&lt;String&gt; getList() {
+<span class="fc" id="L126">        return list;</span>
+    }
+
+    /**
+     * @return the options as an array
+     */
+    public String[] getArray() {
+<span class="nc" id="L133">        return list.toArray(new String[0]);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

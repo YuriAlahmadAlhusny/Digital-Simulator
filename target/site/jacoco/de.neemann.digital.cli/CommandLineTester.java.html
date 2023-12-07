@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommandLineTester.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.cli</a> &gt; <span class="el_source">CommandLineTester.java</span></div><h1>CommandLineTester.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.cli;
+
+import de.neemann.digital.cli.cli.Argument;
+import de.neemann.digital.cli.cli.BasicCommand;
+import de.neemann.digital.cli.cli.CLIException;
+import de.neemann.digital.core.ErrorDetector;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestExecutor;
+import de.neemann.digital.testing.TestResult;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.List;
+
+/**
+ * Tester used from the command line
+ */
+public class CommandLineTester {
+
+    private final CircuitLoader circuitLoader;
+    private List&lt;Circuit.TestCase&gt; testCases;
+    private int testsPassed;
+    private boolean allowMissingInputs;
+    private boolean verbose;
+
+    /**
+     * Creates a new instance.
+     *
+     * @param file the file to test
+     * @throws IOException IOException
+     */
+<span class="fc" id="L39">    public CommandLineTester(File file) throws IOException {</span>
+<span class="fc" id="L40">        circuitLoader = new CircuitLoader(file);</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Uses the test cases from the given file
+     *
+     * @param file the file containing the test cases
+     * @return this for chained calls
+     * @throws IOException IOException
+     */
+    public CommandLineTester useTestCasesFrom(File file) throws IOException {
+<span class="fc" id="L51">        Circuit c = Circuit.loadCircuit(file, circuitLoader.getShapeFactory());</span>
+<span class="fc" id="L52">        testCases = c.getTestCases();</span>
+<span class="fc" id="L53">        return this;</span>
+    }
+
+    /**
+     * Executes test test
+     *
+     * @param out Stream to output messages
+     * @return the number of failed test cases
+     */
+    public int execute(PrintStream out) {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (testCases == null)</span>
+<span class="fc" id="L64">            testCases = circuitLoader.getCircuit().getTestCases();</span>
+
+<span class="fc" id="L66">        int errorCount = 0;</span>
+
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (testCases.isEmpty()) {</span>
+<span class="nc" id="L69">            out.println(&quot;no test cases given&quot;);</span>
+<span class="nc" id="L70">            errorCount++;</span>
+        } else {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            for (Circuit.TestCase t : testCases) {</span>
+<span class="fc" id="L73">                String label = t.getLabel();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                if (label.isEmpty())</span>
+<span class="fc" id="L75">                    label = &quot;unnamed&quot;;</span>
+
+                try {
+<span class="fc" id="L78">                    ErrorDetector errorDetector = new ErrorDetector();</span>
+<span class="fc" id="L79">                    TestResult tr = new TestExecutor(t, circuitLoader.getCircuit(), circuitLoader.getLibrary())</span>
+<span class="fc" id="L80">                            .setAllowMissingInputs(allowMissingInputs)</span>
+<span class="fc" id="L81">                            .addObserver(errorDetector)</span>
+<span class="fc" id="L82">                            .execute();</span>
+
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                    if (tr.allPassed()) {</span>
+<span class="fc" id="L85">                        out.println(label + &quot;: passed&quot;);</span>
+<span class="fc" id="L86">                        testsPassed++;</span>
+                    } else {
+<span class="fc" id="L88">                        String message = label + &quot;: failed&quot;;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">                        if (tr.isErrorOccurred())</span>
+<span class="nc" id="L90">                            message += &quot; due to an error&quot;;</span>
+                        else
+<span class="fc" id="L92">                            message += &quot; (&quot; + tr.failedPercent() + &quot;%)&quot;;</span>
+<span class="fc" id="L93">                        out.println(message);</span>
+
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">                        if (verbose)</span>
+<span class="nc" id="L96">                            out.println(tr.getValueTable());</span>
+
+<span class="fc" id="L98">                        errorCount++;</span>
+                    }
+<span class="fc" id="L100">                    errorDetector.check();</span>
+
+<span class="nc" id="L102">                } catch (Exception e) {</span>
+<span class="nc" id="L103">                    out.println(label + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L104">                    errorCount++;</span>
+<span class="fc" id="L105">                }</span>
+<span class="fc" id="L106">            }</span>
+        }
+<span class="fc" id="L108">        return errorCount;</span>
+    }
+
+    /**
+     * @return the number of passed tests
+     */
+    public int getTestsPassed() {
+<span class="fc" id="L115">        return testsPassed;</span>
+    }
+
+    private CommandLineTester setAllowMissingInputs(boolean allowMissingInputs) {
+<span class="fc" id="L119">        this.allowMissingInputs = allowMissingInputs;</span>
+<span class="fc" id="L120">        return this;</span>
+    }
+
+    /**
+     * Sets verbose mode
+     *
+     * @param verbose true if verbose mode is set
+     * @return this for chained calls
+     */
+    public CommandLineTester setVerbose(boolean verbose) {
+<span class="fc" id="L130">        this.verbose = verbose;</span>
+<span class="fc" id="L131">        return this;</span>
+    }
+
+    /**
+     * The test command
+     */
+    public static class TestCommand extends BasicCommand {
+        private final Argument&lt;String&gt; circ;
+        private final Argument&lt;String&gt; tests;
+        private final Argument&lt;Boolean&gt; allowMissingInputs;
+        private final Argument&lt;Boolean&gt; verbose;
+        private int testsPassed;
+
+        /**
+         * Creates a new CLI command
+         */
+        public TestCommand() {
+<span class="fc" id="L148">            super(&quot;test&quot;);</span>
+<span class="fc" id="L149">            circ = addArgument(new Argument&lt;&gt;(&quot;circ&quot;, &quot;&quot;, false));</span>
+<span class="fc" id="L150">            tests = addArgument(new Argument&lt;&gt;(&quot;tests&quot;, &quot;&quot;, true));</span>
+<span class="fc" id="L151">            allowMissingInputs = addArgument(new Argument&lt;&gt;(&quot;allowMissingInputs&quot;, false, true));</span>
+<span class="fc" id="L152">            verbose = addArgument(new Argument&lt;&gt;(&quot;verbose&quot;, false, true));</span>
+<span class="fc" id="L153">        }</span>
+
+        @Override
+        protected void execute() throws CLIException {
+            try {
+<span class="fc" id="L158">                CommandLineTester clt = new CommandLineTester(new File(circ.get()))</span>
+<span class="fc" id="L159">                        .setVerbose(verbose.get())</span>
+<span class="fc" id="L160">                        .setAllowMissingInputs(allowMissingInputs.get());</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                if (tests.isSet())</span>
+<span class="fc" id="L162">                    clt.useTestCasesFrom(new File(tests.get()));</span>
+<span class="fc" id="L163">                int errors = clt.execute(System.out);</span>
+<span class="fc" id="L164">                testsPassed = clt.getTestsPassed();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">                if (errors &gt; 0)</span>
+<span class="fc" id="L166">                    throw new CLIException(Lang.get(&quot;cli_thereAreTestFailures&quot;), errors).hideHelp();</span>
+<span class="nc" id="L167">            } catch (IOException e) {</span>
+<span class="nc" id="L168">                throw new CLIException(Lang.get(&quot;cli_errorExecutingTests&quot;), e);</span>
+<span class="fc" id="L169">            }</span>
+<span class="fc" id="L170">        }</span>
+
+        /**
+         * @return the number of tests passed
+         */
+        public int getTestsPassed() {
+<span class="fc" id="L176">            return testsPassed;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

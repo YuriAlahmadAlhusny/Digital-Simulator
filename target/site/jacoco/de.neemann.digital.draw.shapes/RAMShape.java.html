@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RAMShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">RAMShape.java</span></div><h1>RAMShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.Node;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.RAMInterface;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.model.ModelEntry;
+import de.neemann.digital.gui.components.CircuitComponent;
+import de.neemann.digital.gui.components.DataEditor;
+
+import java.awt.*;
+
+/**
+ * The RAM shape
+ */
+public class RAMShape extends GenericShape {
+    private final int dataBits;
+    private final int addrBits;
+    private final String dialogTitle;
+    private Model model;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr        the attributes of the element
+     * @param description element type description
+     * @throws NodeException NodeException
+     * @throws PinException  PinException
+     */
+    public RAMShape(ElementAttributes attr, ElementTypeDescription description) throws NodeException, PinException {
+<span class="fc" id="L42">        this(attr, description, 3);</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr        the attributes of the element
+     * @param description element type description
+     * @param width       the used width
+     * @throws NodeException NodeException
+     * @throws PinException  PinException
+     */
+    public RAMShape(ElementAttributes attr, ElementTypeDescription description, int width) throws NodeException, PinException {
+<span class="fc" id="L55">        super(description.getShortName(),</span>
+<span class="fc" id="L56">                description.getInputDescription(attr),</span>
+<span class="fc" id="L57">                description.getOutputDescriptions(attr),</span>
+<span class="fc" id="L58">                attr.getLabel(), true, width);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (attr.getLabel().length() &gt; 0)</span>
+<span class="fc" id="L60">            dialogTitle = attr.getLabel();</span>
+        else
+<span class="fc" id="L62">            dialogTitle = description.getShortName();</span>
+<span class="fc" id="L63">        dataBits = attr.get(Keys.BITS);</span>
+<span class="fc" id="L64">        addrBits = attr.get(Keys.ADDR_BITS);</span>
+<span class="fc" id="L65">        setInverterConfig(attr.get(Keys.INVERTER_CONFIG));</span>
+<span class="fc" id="L66">    }</span>
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="fc" id="L70">        return new Interactor() {</span>
+            @Override
+            public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                if (element instanceof RAMInterface) {</span>
+<span class="nc" id="L74">                    RAMInterface ram = (RAMInterface) element;</span>
+<span class="nc" id="L75">                    DataField dataField = ram.getMemory();</span>
+<span class="nc" id="L76">                    DataEditor dataEditor = new DataEditor(cc, dataField, dataBits, addrBits, true, modelSync, ram.getValueFormatter());</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                    if (element instanceof Node)</span>
+<span class="nc" id="L78">                        dataEditor.setNode((Node) element);</span>
+<span class="nc" id="L79">                    dataEditor.showDialog(dialogTitle, model);</span>
+                }
+<span class="nc" id="L81">            }</span>
+        };
+    }
+
+    @Override
+    public void registerModel(ModelCreator modelCreator, Model model, ModelEntry element) {
+<span class="fc" id="L87">        this.model = model;</span>
+<span class="fc" id="L88">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

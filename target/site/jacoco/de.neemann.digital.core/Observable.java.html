@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Observable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core</a> &gt; <span class="el_source">Observable.java</span></div><h1>Observable.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core;
+
+import java.util.ArrayList;
+
+/**
+ * A simple observable
+ */
+public class Observable {
+    private final ArrayList&lt;Observer&gt; observers;
+
+    /**
+     * Creates a new instance
+     */
+<span class="fc" id="L19">    public Observable() {</span>
+<span class="fc" id="L20">        observers = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L21">    }</span>
+
+    /**
+     * Adds an observer to this observable.
+     *
+     * @param observer the observer to add
+     * @return observer the observer to add
+     */
+    public Observer addObserver(Observer observer) {
+<span class="pc bpc" id="L30" title="1 of 4 branches missed.">        if (observer != null &amp;&amp; !observers.contains(observer))</span>
+<span class="fc" id="L31">            observers.add(observer);</span>
+<span class="fc" id="L32">        return observer;</span>
+    }
+
+    /**
+     * @return the numbers of observers
+     */
+    public int observerCount() {
+<span class="fc" id="L39">        return observers.size();</span>
+    }
+
+    /**
+     * Removes an observer from this observable.
+     *
+     * @param observer the observer to use
+     */
+    public void removeObserver(Observer observer) {
+<span class="fc" id="L48">        observers.remove(observer);</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Removes all observers from the given class
+     *
+     * @param observerClass the class of observers to remove
+     */
+    public void removeObserver(Class&lt;? extends Observer&gt; observerClass) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        observers.removeIf(observer -&gt; observer.getClass() == observerClass);</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Fires a has changed event to all observers
+     */
+    public void fireHasChanged() {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (Observer o : observers)</span>
+<span class="fc" id="L65">            o.hasChanged();</span>
+<span class="fc" id="L66">    }</span>
+
+
+    /**
+     * Returns true if the given observer observes this observable
+     *
+     * @param observer the observer
+     * @return true if the given observer observes this observable
+     */
+    public boolean hasObserver(Observer observer) {
+<span class="fc" id="L76">        return observers.contains(observer);</span>
+    }
+
+    /**
+     * @return tje list of observers
+     */
+    public ArrayList&lt;Observer&gt; getObservers() {
+<span class="fc" id="L83">        return observers;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

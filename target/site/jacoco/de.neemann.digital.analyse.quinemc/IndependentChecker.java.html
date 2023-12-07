@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IndependentChecker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.quinemc</a> &gt; <span class="el_source">IndependentChecker.java</span></div><h1>IndependentChecker.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.quinemc;
+
+/**
+ * Checks if a bool table is independent from a certain variable
+ */
+public final class IndependentChecker {
+
+    private final BoolTable boolTable;
+    private final int vars;
+    private final int checkSize;
+
+    /**
+     * Creates a new BoolTable
+     *
+     * @param boolTable the table to investigate
+     */
+<span class="fc" id="L22">    public IndependentChecker(BoolTable boolTable) {</span>
+<span class="fc" id="L23">        this.boolTable = boolTable;</span>
+
+<span class="fc" id="L25">        int v = 0;</span>
+<span class="fc" id="L26">        int s = boolTable.size();</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        while (s &gt; 1) {</span>
+<span class="fc" id="L28">            s = s / 2;</span>
+<span class="fc" id="L29">            v++;</span>
+        }
+<span class="fc" id="L31">        vars = v;</span>
+<span class="fc" id="L32">        checkSize = boolTable.size() / 2;</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * @return the number of variables
+     */
+    public int getVars() {
+<span class="fc" id="L39">        return vars;</span>
+    }
+
+    /**
+     * checks if the given bool table is dependent on the given variable
+     *
+     * @param varNum the variable to check
+     * @return true if table is independent
+     */
+    public boolean isIndependentFrom(int varNum) {
+<span class="fc" id="L49">        int bitMask = 1 &lt;&lt; (vars - varNum - 1);</span>
+<span class="fc" id="L50">        int lowMask = bitMask - 1;</span>
+<span class="fc" id="L51">        int highMask = ~lowMask;</span>
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int n = 0; n &lt; checkSize; n++) {</span>
+<span class="fc" id="L54">            int i1 = (n &amp; lowMask) | ((n &amp; highMask) &lt;&lt; 1);</span>
+<span class="fc" id="L55">            int i2 = i1 | bitMask;</span>
+
+<span class="fc" id="L57">            ThreeStateValue v1 = boolTable.get(i1);</span>
+<span class="fc" id="L58">            ThreeStateValue v2 = boolTable.get(i2);</span>
+
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (v1.equals(v2))</span>
+<span class="fc" id="L61">                continue;</span>
+
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">            if (v1.equals(ThreeStateValue.dontCare) || v2.equals(ThreeStateValue.dontCare))</span>
+<span class="nc" id="L64">                continue;</span>
+
+<span class="fc" id="L66">            return false;</span>
+        }
+
+<span class="fc" id="L69">        return true;</span>
+    }
+
+    /**
+     * Returns a table with the given variable removed
+     *
+     * @param varNum the variable to remove
+     * @return the reduced BoolTable
+     */
+    public BoolTable removeVar(int varNum) {
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">        if (varNum &gt;= vars || varNum &lt; 0)</span>
+<span class="nc" id="L80">            throw new RuntimeException(&quot;variable does not exist&quot;);</span>
+<span class="fc" id="L81">        return new BoolTableRemoveVar(boolTable, vars, varNum);</span>
+    }
+
+    private static final class BoolTableRemoveVar implements BoolTable {
+        private final BoolTable boolTable;
+        private final int bitMask;
+        private final int lowMask;
+        private final int highMask;
+        private final int size;
+
+<span class="fc" id="L91">        private BoolTableRemoveVar(BoolTable boolTable, int vars, int varNum) {</span>
+<span class="fc" id="L92">            this.boolTable = boolTable;</span>
+<span class="fc" id="L93">            bitMask = 1 &lt;&lt; (vars - varNum - 1);</span>
+<span class="fc" id="L94">            lowMask = bitMask - 1;</span>
+<span class="fc" id="L95">            highMask = ~lowMask;</span>
+<span class="fc" id="L96">            size = 1 &lt;&lt; (vars - 1);</span>
+<span class="fc" id="L97">        }</span>
+
+        @Override
+        public int size() {
+<span class="fc" id="L101">            return size;</span>
+        }
+
+        @Override
+        public ThreeStateValue get(int n) {
+<span class="fc" id="L106">            int i = (n &amp; lowMask) | ((n &amp; highMask) &lt;&lt; 1);</span>
+<span class="fc" id="L107">            ThreeStateValue v = boolTable.get(i);</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            if (v.equals(ThreeStateValue.dontCare))</span>
+<span class="nc" id="L109">                return boolTable.get(i | bitMask);</span>
+            else
+<span class="fc" id="L111">                return v;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

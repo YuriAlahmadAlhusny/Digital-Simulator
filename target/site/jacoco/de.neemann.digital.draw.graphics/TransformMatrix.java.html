@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransformMatrix.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">TransformMatrix.java</span></div><h1>TransformMatrix.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+/**
+ * A Matrix transformation
+ */
+public class TransformMatrix implements Transform {
+
+
+    /**
+     * Creates a rotation.
+     * Rotates in mathematically positive direction. Takes into account that
+     * in Digital the y-axis goes downwards.
+     *
+     * @param w the angle in 360 grad units
+     * @return the transformation
+     */
+    public static TransformMatrix rotate(double w) {
+<span class="fc" id="L23">        final double phi = w / 180 * Math.PI;</span>
+<span class="fc" id="L24">        float cos = (float) Math.cos(phi);</span>
+<span class="fc" id="L25">        float sin = (float) Math.sin(phi);</span>
+<span class="fc" id="L26">        return new TransformMatrix(cos, -sin, sin, cos, 0, 0);</span>
+    }
+
+    /**
+     * Creates a scaling transformation
+     *
+     * @param sx scaling in x direction
+     * @param sy scaling in y direction
+     * @return the transformation
+     */
+    public static TransformMatrix scale(float sx, float sy) {
+<span class="fc" id="L37">        return new TransformMatrix(sx, 0, 0, sy, 0, 0);</span>
+    }
+
+    final float a;
+    final float b;
+    final float c;
+    final float d;
+    final float x;
+    final float y;
+
+    /**
+     * Creates a new instance
+     *
+     * @param a A_00
+     * @param b A_10
+     * @param c A_01
+     * @param d A_11
+     * @param x x offset
+     * @param y y offset
+     */
+<span class="fc" id="L57">    public TransformMatrix(float a, float b, float c, float d, float x, float y) {</span>
+<span class="fc" id="L58">        this.a = a;</span>
+<span class="fc" id="L59">        this.b = b;</span>
+<span class="fc" id="L60">        this.c = c;</span>
+<span class="fc" id="L61">        this.d = d;</span>
+<span class="fc" id="L62">        this.x = x;</span>
+<span class="fc" id="L63">        this.y = y;</span>
+<span class="fc" id="L64">    }</span>
+
+    @Override
+    public Vector transform(Vector v) {
+<span class="fc" id="L68">        return new Vector(</span>
+<span class="fc" id="L69">                (int) (v.getXFloat() * a + v.getYFloat() * b + x),</span>
+<span class="fc" id="L70">                (int) (v.getXFloat() * c + v.getYFloat() * d + y));</span>
+    }
+
+    @Override
+    public VectorFloat transform(VectorFloat v) {
+<span class="fc" id="L75">        return new VectorFloat(</span>
+<span class="fc" id="L76">                v.getXFloat() * a + v.getYFloat() * b + x,</span>
+<span class="fc" id="L77">                v.getXFloat() * c + v.getYFloat() * d + y);</span>
+    }
+
+
+    /**
+     * Transforms a direction vector.
+     * Ignores the translation part of the transformation.
+     *
+     * @param v the vector to transform
+     * @return the transformed vector
+     */
+    public VectorFloat transformDirection(VectorInterface v) {
+<span class="fc" id="L89">        return new VectorFloat(</span>
+<span class="fc" id="L90">                v.getXFloat() * a + v.getYFloat() * b,</span>
+<span class="fc" id="L91">                v.getXFloat() * c + v.getYFloat() * d);</span>
+    }
+
+    @Override
+    public TransformMatrix getMatrix() {
+<span class="fc" id="L96">        return this;</span>
+    }
+
+    /**
+     * Returns the inverse transformation.
+     *
+     * @return the inverse transformation.
+     */
+    public TransformMatrix invert() {
+<span class="fc" id="L105">        float q = a * d - b * c;</span>
+
+<span class="fc" id="L107">        return new TransformMatrix(d / q, -b / q, -c / q, a / q,</span>
+                (b * y - d * x) / q, (c * x - a * y) / q);
+    }
+
+    /**
+     * @return true if this transformation does no asymmetric scaling.
+     */
+    public boolean isUniform() {
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">        return equal(a, d) &amp;&amp; equal(b, -c);</span>
+    }
+
+    /**
+     * @return true if this transformation does no rotation
+     */
+    public boolean noRotation() {
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">        return equal(b, 0) &amp;&amp; equal(c, 0);</span>
+    }
+
+    private static boolean equal(float a, float b) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        return Math.abs(a - b) &lt; 1e-7;</span>
+    }
+
+    /**
+     * @return the matrix values
+     */
+    public float[] getValues() {
+<span class="fc" id="L133">        return new float[]{a, b, c, d, x, y};</span>
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

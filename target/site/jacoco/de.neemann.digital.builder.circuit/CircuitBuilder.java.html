@@ -1,0 +1,804 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CircuitBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.builder.circuit</a> &gt; <span class="el_source">CircuitBuilder.java</span></div><h1>CircuitBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.builder.circuit;
+
+import de.neemann.digital.analyse.DetermineJKStateMachine;
+import de.neemann.digital.analyse.ModelAnalyserInfo;
+import de.neemann.digital.analyse.expression.*;
+import de.neemann.digital.analyse.expression.Not;
+import de.neemann.digital.builder.BuilderException;
+import de.neemann.digital.builder.BuilderInterface;
+import de.neemann.digital.core.basic.*;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.Rotation;
+import de.neemann.digital.core.flipflops.FlipflopD;
+import de.neemann.digital.core.flipflops.FlipflopJK;
+import de.neemann.digital.core.io.Const;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.io.Probe;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.LookUpTable;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.Tunnel;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.elements.Wire;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Settings;
+import de.neemann.digital.lang.Lang;
+
+import java.util.*;
+
+import static de.neemann.digital.analyse.expression.Variable.isVar;
+import static de.neemann.digital.analyse.expression.Variable.isVarOrNotVar;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * Builder to create a circuit from a set of expressions.
+ * Is also able to create a finite state machine.
+ */
+public class CircuitBuilder implements BuilderInterface&lt;CircuitBuilder&gt; {
+
+    private final VariableVisitor variableVisitor;
+    private final ShapeFactory shapeFactory;
+    private final ArrayList&lt;FragmentVariable&gt; fragmentVariables;
+    private final ArrayList&lt;Fragment&gt; fragments;
+    private final HashMap&lt;String, FragmentVisualElement&gt; combinatorialOutputs;
+    private final ArrayList&lt;Variable&gt; sequentialVars;
+    private final ArrayList&lt;FragmentVisualElement&gt; flipflops;
+    private final ArrayList&lt;Variable&gt; desiredVarOrdering;
+    private final HashSet&lt;String&gt; varsToNet;
+    private final HashSet&lt;String&gt; localVarsUsed;
+    private int pos;
+    private boolean useLUT;
+    private boolean useJKff;
+    private ModelAnalyserInfo mai;
+    private int lutNumber;
+    private boolean resolveLocalVars;
+    private boolean wideShapes;
+
+
+    /**
+     * Creates a new builder.
+     *
+     * @param shapeFactory ShapeFactory which is set to the created VisualElements
+     */
+    public CircuitBuilder(ShapeFactory shapeFactory) {
+<span class="fc" id="L73">        this(shapeFactory, null);</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * Creates a new builder.
+     *
+     * @param shapeFactory ShapeFactory which is set to the created VisualElements
+     * @param varOrdering  the desired ordering of the variables, There may be more variables than required. Maybe null.
+     */
+<span class="fc" id="L82">    public CircuitBuilder(ShapeFactory shapeFactory, ArrayList&lt;Variable&gt; varOrdering) {</span>
+<span class="fc" id="L83">        this.shapeFactory = shapeFactory;</span>
+<span class="fc" id="L84">        this.useJKff = false;</span>
+<span class="fc" id="L85">        this.useLUT = false;</span>
+<span class="fc" id="L86">        desiredVarOrdering = varOrdering;</span>
+<span class="fc" id="L87">        variableVisitor = new VariableVisitor();</span>
+<span class="fc" id="L88">        fragmentVariables = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L89">        fragments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L90">        flipflops = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L91">        combinatorialOutputs = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L92">        sequentialVars = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L93">        varsToNet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L94">        localVarsUsed = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L95">        wideShapes = Settings.getInstance().get(Keys.SETTINGS_IEEE_SHAPES);</span>
+<span class="fc" id="L96">    }</span>
+
+    /**
+     * Allows the usage of local variables
+     *
+     * @param resolveLocalVars true if local variables should be resolved
+     * @return this for chained calls
+     */
+    public CircuitBuilder setResolveLocalVars(boolean resolveLocalVars) {
+<span class="fc" id="L105">        this.resolveLocalVars = resolveLocalVars;</span>
+<span class="fc" id="L106">        return this;</span>
+    }
+
+    /**
+     * Enables the usage of JK flip flops
+     *
+     * @param useJKff true if JK ff should be used
+     * @return this for chained calls
+     */
+    public CircuitBuilder setUseJK(boolean useJKff) {
+<span class="fc" id="L116">        this.useJKff = useJKff;</span>
+<span class="fc" id="L117">        return this;</span>
+    }
+
+    /**
+     * Enables the usage of LUTs
+     *
+     * @param useLUT true if LUTs should be used
+     * @return this for chained calls
+     */
+    public CircuitBuilder setUseLUTs(boolean useLUT) {
+<span class="fc" id="L127">        this.useLUT = useLUT;</span>
+<span class="fc" id="L128">        return this;</span>
+    }
+
+    /**
+     * Enables wide shapes
+     *
+     * @param wideShapes true if wide shapes should be used
+     * @return this for chained calls
+     */
+    public CircuitBuilder setWideShapes(boolean wideShapes) {
+<span class="nc" id="L138">        this.wideShapes = wideShapes;</span>
+<span class="nc" id="L139">        return this;</span>
+    }
+
+    /**
+     * Adds an expression to the circuit
+     *
+     * @param name       the output name
+     * @param expression the expression
+     * @return this for chained calls
+     * @throws BuilderException BuilderException
+     */
+    @Override
+    public CircuitBuilder addCombinatorial(String name, Expression expression) throws BuilderException {
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (expression instanceof NamedExpression) {</span>
+<span class="nc" id="L153">            name = ((NamedExpression) expression).getName();</span>
+<span class="nc" id="L154">            expression = ((NamedExpression) expression).getExpression();</span>
+        }
+
+<span class="fc" id="L157">        Fragment fr = createFragment(expression);</span>
+
+<span class="fc" id="L159">        final FragmentVisualElement frag = new FragmentVisualElement(Out.DESCRIPTION, shapeFactory).setAttr(Keys.LABEL, name);</span>
+<span class="fc" id="L160">        checkPinNumber(frag.getVisualElement());</span>
+
+<span class="fc" id="L162">        checkForLocalVars(expression);</span>
+
+<span class="fc" id="L164">        combinatorialOutputs.put(name, frag);</span>
+
+<span class="fc" id="L166">        fragments.add(new FragmentExpression(fr, frag));</span>
+<span class="fc" id="L167">        expression.traverse(variableVisitor);</span>
+<span class="fc" id="L168">        return this;</span>
+    }
+
+    void checkForLocalVars(Expression expression) {
+<span class="fc" id="L172">        VariableVisitor vv = new VariableVisitor();</span>
+<span class="fc" id="L173">        expression.traverse(vv);</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (Variable usedVar : vv.getVariables())</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            for (String createdVar : combinatorialOutputs.keySet())</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                if (usedVar.getIdentifier().equals(createdVar))</span>
+<span class="fc" id="L177">                    localVarsUsed.add(createdVar);</span>
+<span class="fc" id="L178">    }</span>
+
+    /**
+     * Add a transition function of a state machine
+     *
+     * @param name       name of the state
+     * @param expression the expression describing next state
+     * @return this for chained calls
+     * @throws BuilderException BuilderException
+     */
+    @Override
+    public CircuitBuilder addSequential(String name, Expression expression) throws BuilderException {
+<span class="fc" id="L190">        boolean useDff = true;</span>
+<span class="fc" id="L191">        long initValue = 0;</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (mai != null)</span>
+<span class="nc" id="L193">            initValue = mai.getSequentialInitValue(name);</span>
+
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (useJKff) {</span>
+            try {
+<span class="fc" id="L197">                DetermineJKStateMachine jk = new DetermineJKStateMachine(name, expression);</span>
+<span class="fc" id="L198">                useDff = jk.isDFF();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                if (!useDff) {</span>
+<span class="fc" id="L200">                    boolean isJequalK = new Equals(jk.getSimplifiedJ(), jk.getSimplifiedK()).isEqual();</span>
+<span class="fc" id="L201">                    Fragment frJ = createFragment(jk.getSimplifiedJ());</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                    if (isJequalK) {</span>
+<span class="fc" id="L203">                        FragmentVisualElement ff = new FragmentVisualElement(FlipflopJK.DESCRIPTION, shapeFactory)</span>
+<span class="fc" id="L204">                                .ignoreInput(1)</span>
+<span class="fc" id="L205">                                .setAttr(Keys.LABEL, name)</span>
+<span class="fc" id="L206">                                .setAttr(Keys.DEFAULT, initValue);</span>
+<span class="fc" id="L207">                        flipflops.add(ff);</span>
+<span class="fc" id="L208">                        FragmentSameInValue fsv = new FragmentSameInValue(ff);</span>
+<span class="fc" id="L209">                        FragmentExpression fe = new FragmentExpression(fsv, new FragmentVisualElement(Tunnel.DESCRIPTION, shapeFactory).setAttr(Keys.NETNAME, name));</span>
+<span class="fc" id="L210">                        fragments.add(new FragmentExpression(frJ, fe));</span>
+<span class="fc" id="L211">                    } else {</span>
+<span class="fc" id="L212">                        Fragment frK = createFragment(jk.getSimplifiedK());</span>
+<span class="fc" id="L213">                        FragmentVisualElement ff = new FragmentVisualElement(FlipflopJK.DESCRIPTION, shapeFactory)</span>
+<span class="fc" id="L214">                                .ignoreInput(1)</span>
+<span class="fc" id="L215">                                .setAttr(Keys.LABEL, name)</span>
+<span class="fc" id="L216">                                .setAttr(Keys.DEFAULT, initValue);</span>
+<span class="fc" id="L217">                        flipflops.add(ff);</span>
+<span class="fc" id="L218">                        FragmentExpression fe = new FragmentExpression(ff, new FragmentVisualElement(Tunnel.DESCRIPTION, shapeFactory).setAttr(Keys.NETNAME, name));</span>
+<span class="fc" id="L219">                        fragments.add(new FragmentExpression(Arrays.asList(frJ, frK), fe));</span>
+                    }
+                }
+<span class="nc" id="L222">            } catch (ExpressionException e) {</span>
+<span class="nc" id="L223">                throw new BuilderException(e.getMessage());</span>
+<span class="fc" id="L224">            }</span>
+        }
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (useDff) {</span>
+<span class="fc" id="L227">            Fragment fr = createFragment(expression);</span>
+            Fragment fe;
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (expression instanceof Constant)</span>
+<span class="fc" id="L230">                fe = new FragmentVisualElement(Tunnel.DESCRIPTION, shapeFactory).setAttr(Keys.NETNAME, name);</span>
+            else {
+<span class="fc" id="L232">                FragmentVisualElement ff = new FragmentVisualElement(FlipflopD.DESCRIPTION, shapeFactory)</span>
+<span class="fc" id="L233">                        .setAttr(Keys.LABEL, name)</span>
+<span class="fc" id="L234">                        .setAttr(Keys.DEFAULT, initValue);</span>
+<span class="fc" id="L235">                flipflops.add(ff);</span>
+<span class="fc" id="L236">                fe = new FragmentExpression(ff, new FragmentVisualElement(Tunnel.DESCRIPTION, shapeFactory).setAttr(Keys.NETNAME, name));</span>
+            }
+<span class="fc" id="L238">            fragments.add(new FragmentExpression(fr, fe));</span>
+        }
+
+<span class="fc" id="L241">        checkForLocalVars(expression);</span>
+
+<span class="fc" id="L243">        expression.traverse(variableVisitor);</span>
+<span class="fc" id="L244">        sequentialVars.add(new Variable(name));</span>
+<span class="fc" id="L245">        return this;</span>
+    }
+
+    private Fragment createFragment(Expression expression) throws BuilderException {
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (useLUT) {</span>
+<span class="pc bpc" id="L250" title="1 of 4 branches missed.">            if (isVarOrNotVar(expression) || expression instanceof Constant)</span>
+<span class="fc" id="L251">                return createBasicFragment(expression);</span>
+
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">            if (expression instanceof Operation) {</span>
+<span class="fc" id="L254">                boolean allVars = true;</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">                for (Expression ex : ((Operation) expression).getExpressions()) {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">                    if (!isVarOrNotVar(ex))</span>
+<span class="fc" id="L257">                        allVars = false;</span>
+<span class="fc" id="L258">                }</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">                if (allVars)</span>
+<span class="nc" id="L260">                    return createBasicFragment(expression);</span>
+            }
+
+<span class="fc" id="L263">            return createLutFragment(expression);</span>
+        } else
+<span class="fc" id="L265">            return createBasicFragment(expression);</span>
+    }
+
+    private Fragment createLutFragment(Expression expression) throws BuilderException {
+<span class="fc" id="L269">        ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;(expression.traverse(new VariableVisitor()).getVariables());</span>
+
+<span class="fc" id="L271">        ArrayList&lt;Fragment&gt; frags = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        for (Variable v : vars) {</span>
+<span class="fc" id="L273">            FragmentVariable fragmentVariable = new FragmentVariable(v, false);</span>
+<span class="fc" id="L274">            fragmentVariables.add(fragmentVariable);</span>
+<span class="fc" id="L275">            frags.add(0, fragmentVariable);</span>
+<span class="fc" id="L276">        }</span>
+
+<span class="fc" id="L278">        final int size = 1 &lt;&lt; vars.size();</span>
+<span class="fc" id="L279">        DataField data = new DataField(size);</span>
+<span class="fc" id="L280">        ContextFiller context = new ContextFiller(vars);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L282">            context.setContextTo(i);</span>
+            try {
+<span class="fc" id="L284">                boolean r = expression.calculate(context);</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                data.setData(i, r ? 1 : 0);</span>
+<span class="nc" id="L286">            } catch (ExpressionException e) {</span>
+<span class="nc" id="L287">                throw new BuilderException(Lang.get(&quot;err_builder_couldNotFillLUT&quot;), e);</span>
+<span class="fc" id="L288">            }</span>
+        }
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (isXor(data.getData()))</span>
+<span class="fc" id="L292">            return new FragmentExpression(frags, new FragmentVisualElement(XOr.DESCRIPTION, frags.size(), shapeFactory));</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        else if (isXNor(data.getData()))</span>
+<span class="nc" id="L294">            return new FragmentExpression(frags, new FragmentVisualElement(XNOr.DESCRIPTION, frags.size(), shapeFactory));</span>
+        else {
+<span class="fc" id="L296">            lutNumber++;</span>
+<span class="fc" id="L297">            return new FragmentExpression(frags, new FragmentVisualElement(LookUpTable.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L298">                    .setAttr(Keys.LABEL, &quot;L&quot; + lutNumber)</span>
+<span class="fc" id="L299">                    .setAttr(Keys.INPUT_COUNT, frags.size())</span>
+<span class="fc" id="L300">                    .setAttr(Keys.DATA, data)</span>
+<span class="fc" id="L301">                    .setAttr(Keys.BITS, 1));</span>
+        }
+    }
+
+    static boolean isXNor(long[] data) {
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; i++)</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">            if ((Integer.bitCount(i) &amp; 1) == data[i])</span>
+<span class="fc" id="L308">                return false;</span>
+<span class="fc" id="L309">        return true;</span>
+    }
+
+    static boolean isXor(long[] data) {
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; i++)</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">            if (!((Integer.bitCount(i) &amp; 1) == data[i]))</span>
+<span class="fc" id="L315">                return false;</span>
+<span class="fc" id="L316">        return true;</span>
+    }
+
+    private Fragment createBasicFragment(Expression expression) throws BuilderException {
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (expression instanceof Operation) {</span>
+<span class="fc" id="L321">            Operation op = (Operation) expression;</span>
+<span class="fc" id="L322">            ArrayList&lt;Fragment&gt; frags = getOperationFragments(op);</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">            if (op instanceof Operation.And)</span>
+<span class="fc" id="L324">                return new FragmentExpression(frags,</span>
+<span class="fc" id="L325">                        new FragmentVisualElement(And.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L326">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">            else if (op instanceof Operation.Or)</span>
+<span class="fc" id="L328">                return new FragmentExpression(frags,</span>
+<span class="fc" id="L329">                        new FragmentVisualElement(Or.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L330">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">            else if (op instanceof Operation.XOr)</span>
+<span class="fc" id="L332">                return new FragmentExpression(frags,</span>
+<span class="fc" id="L333">                        new FragmentVisualElement(XOr.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L334">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+            else
+<span class="nc" id="L336">                throw new BuilderException(Lang.get(&quot;err_builder_operationNotSupported&quot;, op.getClass().getSimpleName()));</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">        } else if (expression instanceof Not) {</span>
+<span class="fc" id="L338">            Not n = (Not) expression;</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (isVar(n.getExpression())) {</span>
+<span class="fc" id="L340">                FragmentVariable fragmentVariable = new FragmentVariable((Variable) n.getExpression(), true);</span>
+<span class="fc" id="L341">                fragmentVariables.add(fragmentVariable);</span>
+<span class="fc" id="L342">                return fragmentVariable;</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">            } else if (n.getExpression() instanceof Operation.And) {</span>
+<span class="fc" id="L344">                ArrayList&lt;Fragment&gt; frags = getOperationFragments((Operation) n.getExpression());</span>
+<span class="fc" id="L345">                return new FragmentExpression(frags,</span>
+<span class="fc" id="L346">                        new FragmentVisualElement(NAnd.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L347">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            } else if (n.getExpression() instanceof Operation.Or) {</span>
+<span class="fc" id="L349">                ArrayList&lt;Fragment&gt; frags = getOperationFragments((Operation) n.getExpression());</span>
+<span class="fc" id="L350">                return new FragmentExpression(frags,</span>
+<span class="fc" id="L351">                        new FragmentVisualElement(NOr.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="fc" id="L352">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">            } else if (n.getExpression() instanceof Operation.XOr) {</span>
+<span class="nc" id="L354">                ArrayList&lt;Fragment&gt; frags = getOperationFragments((Operation) n.getExpression());</span>
+<span class="nc" id="L355">                return new FragmentExpression(frags,</span>
+<span class="nc" id="L356">                        new FragmentVisualElement(XNOr.DESCRIPTION, frags.size(), shapeFactory)</span>
+<span class="nc" id="L357">                                .setAttr(Keys.WIDE_SHAPE, wideShapes));</span>
+            }
+<span class="fc" id="L359">            return new FragmentExpression(createBasicFragment(n.getExpression()), new FragmentVisualElement(de.neemann.digital.core.basic.Not.DESCRIPTION, shapeFactory));</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        } else if (isVar(expression)) {</span>
+<span class="fc" id="L361">            FragmentVariable fragmentVariable = new FragmentVariable((Variable) expression, false);</span>
+<span class="fc" id="L362">            fragmentVariables.add(fragmentVariable);</span>
+<span class="fc" id="L363">            return fragmentVariable;</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        } else if (expression instanceof Constant) {</span>
+<span class="fc" id="L365">            long val = 0;</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">            if (((Constant) expression).getValue())</span>
+<span class="fc" id="L367">                val = 1;</span>
+<span class="fc" id="L368">            return new FragmentVisualElement(Const.DESCRIPTION, shapeFactory).setAttr(Keys.VALUE, val);</span>
+        } else
+<span class="nc" id="L370">            throw new BuilderException(Lang.get(&quot;err_builder_exprNotSupported&quot;, expression.getClass().getSimpleName()));</span>
+    }
+
+    private ArrayList&lt;Fragment&gt; getOperationFragments(Operation op) throws BuilderException {
+<span class="fc" id="L374">        ArrayList&lt;Fragment&gt; frags = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">        for (Expression exp : op.getExpressions())</span>
+<span class="fc" id="L376">            frags.add(createBasicFragment(exp));</span>
+<span class="fc" id="L377">        return frags;</span>
+    }
+
+    private void createInputBus(Collection&lt;Variable&gt; inputs, Circuit circuit) {
+<span class="fc" id="L381">        HashMap&lt;String, Integer&gt; varPos = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L382">        int dx = -(inputs.size() * 3 - 1) * SIZE;</span>
+<span class="fc" id="L383">        pos -= SIZE;</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        for (Variable v : inputs) {</span>
+            VisualElement visualElement;
+<span class="fc bfc" id="L386" title="All 4 branches covered.">            if (sequentialVars.contains(v) || varsToNet.contains(v.getIdentifier())) {</span>
+<span class="fc" id="L387">                visualElement = new VisualElement(Tunnel.DESCRIPTION.getName()).setShapeFactory(shapeFactory);</span>
+<span class="fc" id="L388">                visualElement.getElementAttributes()</span>
+<span class="fc" id="L389">                        .set(Keys.ROTATE, new Rotation(1))</span>
+<span class="fc" id="L390">                        .set(Keys.NETNAME, v.getIdentifier());</span>
+            } else {
+<span class="fc" id="L392">                visualElement = new VisualElement(In.DESCRIPTION.getName()).setShapeFactory(shapeFactory);</span>
+<span class="fc" id="L393">                visualElement.getElementAttributes()</span>
+<span class="fc" id="L394">                        .set(Keys.ROTATE, new Rotation(3))</span>
+<span class="fc" id="L395">                        .set(Keys.LABEL, v.getIdentifier());</span>
+<span class="fc" id="L396">                checkPinNumber(visualElement);</span>
+            }
+<span class="fc" id="L398">            visualElement.setPos(new Vector(dx, -SIZE * 5));</span>
+<span class="fc" id="L399">            circuit.add(visualElement);</span>
+
+<span class="fc" id="L401">            circuit.add(new Wire(new Vector(dx, -SIZE * 5), new Vector(dx, pos)));</span>
+
+<span class="fc bfc" id="L403" title="All 2 branches covered.">            if (isNotNeeded(v.getIdentifier())) {</span>
+<span class="fc" id="L404">                visualElement = new VisualElement(de.neemann.digital.core.basic.Not.DESCRIPTION.getName()).setShapeFactory(shapeFactory);</span>
+<span class="fc" id="L405">                visualElement.getElementAttributes()</span>
+<span class="fc" id="L406">                        .set(Keys.ROTATE, new Rotation(3));</span>
+<span class="fc" id="L407">                visualElement.setPos(new Vector(dx + SIZE, -SIZE * 3));</span>
+<span class="fc" id="L408">                circuit.add(visualElement);</span>
+
+<span class="fc" id="L410">                circuit.add(new Wire(new Vector(dx, -SIZE * 4), new Vector(dx + SIZE, -SIZE * 4)));</span>
+<span class="fc" id="L411">                circuit.add(new Wire(new Vector(dx + SIZE, -SIZE * 3), new Vector(dx + SIZE, -SIZE * 4)));</span>
+<span class="fc" id="L412">                circuit.add(new Wire(new Vector(dx + SIZE, -SIZE), new Vector(dx + SIZE, pos)));</span>
+            }
+
+<span class="fc" id="L415">            varPos.put(v.getIdentifier(), dx);</span>
+<span class="fc" id="L416">            dx += SIZE * 3;</span>
+<span class="fc" id="L417">        }</span>
+
+<span class="fc bfc" id="L419" title="All 2 branches covered.">        for (FragmentVariable f : fragmentVariables) {</span>
+<span class="fc" id="L420">            Vector p = f.getCircuitPos();</span>
+<span class="fc" id="L421">            int in = varPos.get(f.getVariable().getIdentifier());</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">            if (f.isInvert()) in += SIZE;</span>
+<span class="fc" id="L423">            circuit.add(new Wire(p, new Vector(in, p.y)));</span>
+<span class="fc" id="L424">        }</span>
+<span class="fc" id="L425">    }</span>
+
+    private boolean isNotNeeded(String identifier) {
+<span class="fc bfc" id="L428" title="All 2 branches covered.">        for (FragmentVariable fv : fragmentVariables)</span>
+<span class="fc bfc" id="L429" title="All 4 branches covered.">            if (fv.isInvert() &amp;&amp; fv.getVariable().getIdentifier().equals(identifier))</span>
+<span class="fc" id="L430">                return true;</span>
+
+<span class="fc" id="L432">        return false;</span>
+    }
+
+    private void addFragmentToCircuit(Fragment fr, Circuit circuit) {
+<span class="fc" id="L436">        fr.setPos(new Vector(0, 0));</span>
+<span class="fc" id="L437">        Box b = fr.doLayout();</span>
+
+<span class="fc bfc" id="L439" title="All 2 branches covered.">        if (fr.traverse(new FindLUTVisitor()).containsLUT())</span>
+<span class="fc" id="L440">            pos += SIZE * 2;</span>
+
+<span class="fc" id="L442">        fr.addToCircuit(new Vector(0, pos), circuit);</span>
+<span class="fc" id="L443">        pos += b.getHeight() + SIZE * 2;</span>
+<span class="fc" id="L444">    }</span>
+
+    /**
+     * Creates the circuit
+     *
+     * @return the circuit
+     */
+    public Circuit createCircuit() {
+<span class="fc bfc" id="L452" title="All 2 branches covered.">        if (resolveLocalVars)</span>
+<span class="fc" id="L453">            resolveLocalVars();</span>
+
+        // determine maximum width
+<span class="fc" id="L456">        int maxWidth = 0;</span>
+<span class="fc bfc" id="L457" title="All 2 branches covered.">        for (Fragment f : fragments) {</span>
+<span class="fc" id="L458">            Box b = f.doLayout();</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">            if (maxWidth &lt; b.getWidth()) maxWidth = b.getWidth();</span>
+<span class="fc" id="L460">        }</span>
+        // add space for clock wire!
+<span class="fc bfc" id="L462" title="All 2 branches covered.">        if (!sequentialVars.isEmpty())</span>
+<span class="fc" id="L463">            maxWidth += SIZE * 2;</span>
+
+        // set width to fragments
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (Fragment f : fragments) {</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">            if (f instanceof FragmentExpression)</span>
+<span class="fc" id="L468">                ((FragmentExpression) f).setWidth(maxWidth);</span>
+<span class="fc" id="L469">        }</span>
+
+<span class="fc" id="L471">        Circuit circuit = new Circuit();</span>
+
+<span class="fc" id="L473">        int outSplitterY = 0;</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">        if (mai != null)</span>
+<span class="fc" id="L475">            outSplitterY = checkForOutputBus(maxWidth + SIZE * 15, circuit);</span>
+
+        // add fragments to circuit
+<span class="fc bfc" id="L478" title="All 2 branches covered.">        for (Fragment f : fragments)</span>
+<span class="fc" id="L479">            addFragmentToCircuit(f, circuit);</span>
+
+        // order bus variables
+<span class="fc" id="L482">        Collection&lt;Variable&gt; variables = variableVisitor.getVariables();</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">        if (desiredVarOrdering != null)</span>
+<span class="fc" id="L484">            variables = order(variables, desiredVarOrdering);</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">        if (!sequentialVars.isEmpty())</span>
+<span class="fc" id="L486">            variables = order(variables, sequentialVars);</span>
+
+<span class="fc bfc" id="L488" title="All 2 branches covered.">        if (mai != null)</span>
+<span class="fc" id="L489">            checkForInputBus(variables, -SIZE * 5 - variables.size() * SIZE * 3, circuit);</span>
+
+<span class="fc" id="L491">        createInputBus(variables, circuit);</span>
+
+        // add clock
+<span class="fc bfc" id="L494" title="All 2 branches covered.">        if (!flipflops.isEmpty())</span>
+<span class="fc" id="L495">            addClockToFlipFlops(circuit);</span>
+
+<span class="fc bfc" id="L497" title="All 2 branches covered.">        if (combinatorialOutputs.isEmpty())</span>
+<span class="fc" id="L498">            outSplitterY = addNetConnections(circuit, maxWidth + SIZE * 17, outSplitterY);</span>
+
+<span class="fc bfc" id="L500" title="All 2 branches covered.">        if (mai != null) {</span>
+<span class="fc" id="L501">            final String stateVariableName = mai.getStateSignalName();</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">            if (stateVariableName != null)</span>
+<span class="nc" id="L503">                outSplitterY = createStateVar(maxWidth + SIZE * 15, outSplitterY, circuit, stateVariableName);</span>
+        }
+
+<span class="fc" id="L506">        return circuit;</span>
+    }
+
+    private void resolveLocalVars() {
+<span class="fc bfc" id="L510" title="All 2 branches covered.">        for (String lv : localVarsUsed) {</span>
+<span class="fc" id="L511">            varsToNet.add(lv);</span>
+<span class="fc" id="L512">            FragmentVisualElement frag = combinatorialOutputs.get(lv);</span>
+<span class="fc" id="L513">            frag.traverse(new ReplaceOutputByTunnel(lv, shapeFactory));</span>
+<span class="fc" id="L514">        }</span>
+<span class="fc" id="L515">    }</span>
+
+    private void checkForInputBus(Collection&lt;Variable&gt; variables, int splitterXPos, Circuit circuit) {
+<span class="fc" id="L518">        StringBuilder pinString = new StringBuilder();</span>
+<span class="fc" id="L519">        int y = 0;</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        for (ModelAnalyserInfo.Bus b : mai.getInputBusList()) {</span>
+<span class="fc" id="L521">            pinString.setLength(0);</span>
+<span class="fc" id="L522">            int found = 0;</span>
+<span class="fc" id="L523">            final ArrayList&lt;String&gt; inputs = b.getSignalNames();</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">            for (String n : inputs) {</span>
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">                if (variables.contains(new Variable(n))) {</span>
+<span class="fc" id="L526">                    found++;</span>
+<span class="fc" id="L527">                    String p = mai.getPins().get(n);</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">                    if (p != null) {</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">                        if (pinString.length() != 0)</span>
+<span class="fc" id="L530">                            pinString.append(&quot;,&quot;);</span>
+<span class="fc" id="L531">                        pinString.append(p);</span>
+                    }
+                }
+<span class="fc" id="L534">            }</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">            if (found == inputs.size()) {</span>
+<span class="fc" id="L536">                varsToNet.addAll(inputs);</span>
+
+<span class="fc" id="L538">                circuit.add(new VisualElement(Splitter.DESCRIPTION.getName())</span>
+<span class="fc" id="L539">                        .setAttribute(Keys.INPUT_SPLIT, &quot;&quot; + inputs.size())</span>
+<span class="fc" id="L540">                        .setAttribute(Keys.OUTPUT_SPLIT, &quot;1*&quot; + inputs.size())</span>
+<span class="fc" id="L541">                        .setPos(new Vector(splitterXPos, y))</span>
+<span class="fc" id="L542">                        .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L543">                circuit.add(new VisualElement(In.DESCRIPTION.getName())</span>
+<span class="fc" id="L544">                        .setAttribute(Keys.LABEL, b.getBusName())</span>
+<span class="fc" id="L545">                        .setAttribute(Keys.BITS, inputs.size())</span>
+<span class="fc" id="L546">                        .setAttribute(Keys.PINNUMBER, pinString.toString())</span>
+<span class="fc" id="L547">                        .setPos(new Vector(splitterXPos - 2 * SIZE, y))</span>
+<span class="fc" id="L548">                        .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L549">                circuit.add(new Wire(</span>
+                        new Vector(splitterXPos - 2 * SIZE, y),
+                        new Vector(splitterXPos, y)
+                ));
+
+<span class="fc bfc" id="L554" title="All 2 branches covered.">                for (int i = 0; i &lt; inputs.size(); i++) {</span>
+<span class="fc" id="L555">                    circuit.add(new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="fc" id="L556">                            .setAttribute(Keys.NETNAME, inputs.get(i))</span>
+<span class="fc" id="L557">                            .setPos(new Vector(splitterXPos + 2 * SIZE, y + i * SIZE))</span>
+<span class="fc" id="L558">                            .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L559">                    circuit.add(new Wire(</span>
+                            new Vector(splitterXPos + SIZE, y + i * SIZE),
+                            new Vector(splitterXPos + 2 * SIZE, y + i * SIZE)
+                    ));
+                }
+
+<span class="fc" id="L565">                y += (inputs.size() + 2) * SIZE;</span>
+            }
+<span class="fc" id="L567">        }</span>
+<span class="fc" id="L568">    }</span>
+
+    private int checkForOutputBus(int splitterXPos, Circuit circuit) {
+<span class="fc" id="L571">        StringBuilder pinString = new StringBuilder();</span>
+<span class="fc" id="L572">        int y = 0;</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">        for (ModelAnalyserInfo.Bus b : mai.getOutputBusList()) {</span>
+<span class="fc" id="L574">            pinString.setLength(0);</span>
+<span class="fc" id="L575">            int found = 0;</span>
+<span class="fc" id="L576">            final ArrayList&lt;String&gt; outputs = b.getSignalNames();</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">            for (String n : outputs) {</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">                if (combinatorialOutputs.containsKey(n)) {</span>
+<span class="fc" id="L579">                    found++;</span>
+<span class="fc" id="L580">                    String p = mai.getPins().get(n);</span>
+<span class="fc bfc" id="L581" title="All 2 branches covered.">                    if (p != null) {</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">                        if (pinString.length() != 0)</span>
+<span class="fc" id="L583">                            pinString.append(&quot;,&quot;);</span>
+<span class="fc" id="L584">                        pinString.append(p);</span>
+                    }
+                }
+<span class="fc" id="L587">            }</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">            if (found == outputs.size()) {</span>
+
+<span class="fc" id="L590">                circuit.add(new VisualElement(Splitter.DESCRIPTION.getName())</span>
+<span class="fc" id="L591">                        .setAttribute(Keys.OUTPUT_SPLIT, &quot;&quot; + outputs.size())</span>
+<span class="fc" id="L592">                        .setAttribute(Keys.INPUT_SPLIT, &quot;1*&quot; + outputs.size())</span>
+<span class="fc" id="L593">                        .setPos(new Vector(splitterXPos, y))</span>
+<span class="fc" id="L594">                        .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L595">                circuit.add(new VisualElement(Out.DESCRIPTION.getName())</span>
+<span class="fc" id="L596">                        .setAttribute(Keys.LABEL, b.getBusName())</span>
+<span class="fc" id="L597">                        .setAttribute(Keys.BITS, outputs.size())</span>
+<span class="fc" id="L598">                        .setAttribute(Keys.PINNUMBER, pinString.toString())</span>
+<span class="fc" id="L599">                        .setPos(new Vector(splitterXPos + 3 * SIZE, y))</span>
+<span class="fc" id="L600">                        .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L601">                circuit.add(new Wire(</span>
+                        new Vector(splitterXPos + 3 * SIZE, y),
+                        new Vector(splitterXPos + SIZE, y)
+                ));
+
+<span class="fc bfc" id="L606" title="All 2 branches covered.">                for (int i = 0; i &lt; outputs.size(); i++) {</span>
+<span class="fc" id="L607">                    circuit.add(new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="fc" id="L608">                            .setAttribute(Keys.NETNAME, outputs.get(i))</span>
+<span class="fc" id="L609">                            .setRotation(2)</span>
+<span class="fc" id="L610">                            .setPos(new Vector(splitterXPos - SIZE, y + i * SIZE))</span>
+<span class="fc" id="L611">                            .setShapeFactory(shapeFactory));</span>
+<span class="fc" id="L612">                    circuit.add(new Wire(</span>
+                            new Vector(splitterXPos - SIZE, y + i * SIZE),
+                            new Vector(splitterXPos, y + i * SIZE)
+                    ));
+
+<span class="fc" id="L617">                    FragmentVisualElement frag = combinatorialOutputs.get(outputs.get(i));</span>
+<span class="fc" id="L618">                    frag.setVisualElement(new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="fc" id="L619">                            .setShapeFactory(shapeFactory)</span>
+<span class="fc" id="L620">                            .setAttribute(Keys.NETNAME, outputs.get(i)));</span>
+                }
+
+<span class="fc" id="L623">                y += (outputs.size() + 2) * SIZE;</span>
+            }
+<span class="fc" id="L625">        }</span>
+<span class="fc" id="L626">        return y;</span>
+    }
+
+    private int createStateVar(int splitterXPos, int y, Circuit circuit, String name) {
+<span class="nc" id="L630">        ArrayList&lt;Variable&gt; outputs = sequentialVars;</span>
+<span class="nc" id="L631">        outputs.sort(Comparator.comparing(Variable::getIdentifier));</span>
+
+<span class="nc" id="L633">        circuit.add(new VisualElement(Splitter.DESCRIPTION.getName())</span>
+<span class="nc" id="L634">                .setAttribute(Keys.OUTPUT_SPLIT, &quot;&quot; + outputs.size())</span>
+<span class="nc" id="L635">                .setAttribute(Keys.INPUT_SPLIT, &quot;1*&quot; + outputs.size())</span>
+<span class="nc" id="L636">                .setPos(new Vector(splitterXPos, y))</span>
+<span class="nc" id="L637">                .setShapeFactory(shapeFactory));</span>
+<span class="nc" id="L638">        circuit.add(new VisualElement(Probe.DESCRIPTION.getName())</span>
+<span class="nc" id="L639">                .setAttribute(Keys.LABEL, name)</span>
+<span class="nc" id="L640">                .setAttribute(Keys.BITS, outputs.size())</span>
+<span class="nc" id="L641">                .setPos(new Vector(splitterXPos + 3 * SIZE, y))</span>
+<span class="nc" id="L642">                .setShapeFactory(shapeFactory));</span>
+<span class="nc" id="L643">        circuit.add(new Wire(</span>
+                new Vector(splitterXPos + 3 * SIZE, y),
+                new Vector(splitterXPos + SIZE, y)
+        ));
+
+<span class="nc bnc" id="L648" title="All 2 branches missed.">        for (int i = 0; i &lt; outputs.size(); i++) {</span>
+<span class="nc" id="L649">            circuit.add(new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="nc" id="L650">                    .setAttribute(Keys.NETNAME, outputs.get(i).getIdentifier())</span>
+<span class="nc" id="L651">                    .setRotation(2)</span>
+<span class="nc" id="L652">                    .setPos(new Vector(splitterXPos - SIZE, y + i * SIZE))</span>
+<span class="nc" id="L653">                    .setShapeFactory(shapeFactory));</span>
+<span class="nc" id="L654">            circuit.add(new Wire(</span>
+                    new Vector(splitterXPos - SIZE, y + i * SIZE),
+                    new Vector(splitterXPos, y + i * SIZE)
+            ));
+        }
+
+<span class="nc" id="L660">        y += (outputs.size() + 2) * SIZE;</span>
+
+<span class="nc" id="L662">        return y;</span>
+    }
+
+
+    /**
+     * Move the lastItems to the end of the variables list.
+     * Items which are not in lastItems are placed at the beginning of the result list
+     *
+     * @param variables the variables to order
+     * @param lastItems the items to be placed at the end of the list
+     * @return the ordered list
+     */
+    private static &lt;T&gt; ArrayList&lt;T&gt; order(Collection&lt;T&gt; variables, ArrayList&lt;T&gt; lastItems) {
+<span class="fc" id="L675">        ArrayList&lt;T&gt; vars = new ArrayList&lt;&gt;(variables);</span>
+<span class="fc bfc" id="L676" title="All 2 branches covered.">        for (T seq : lastItems)</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">            if (vars.contains(seq)) {</span>
+<span class="fc" id="L678">                vars.remove(seq); // move to end</span>
+<span class="fc" id="L679">                vars.add(seq);</span>
+            }
+<span class="fc" id="L681">        return vars;</span>
+    }
+
+    private void addClockToFlipFlops(Circuit circuit) {
+<span class="fc" id="L685">        int x = Integer.MAX_VALUE;</span>
+<span class="fc" id="L686">        int yMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L687">        int yMax = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">        for (FragmentVisualElement ff : flipflops) {</span>
+<span class="fc" id="L689">            Vector p = ff.getVisualElement().getPos();</span>
+<span class="fc bfc" id="L690" title="All 2 branches covered.">            if (p.x &lt; x) x = p.x;</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">            if (p.y &lt; yMin) yMin = p.y;</span>
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">            if (p.y &gt; yMax) yMax = p.y;</span>
+<span class="fc" id="L693">        }</span>
+<span class="fc" id="L694">        x -= SIZE;</span>
+<span class="fc bfc" id="L695" title="All 2 branches covered.">        if (useJKff) x -= SIZE;</span>
+
+<span class="fc" id="L697">        int yPos = yMin - SIZE * 3;</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">        if (useJKff) yPos = -SIZE;</span>
+
+<span class="fc" id="L700">        circuit.add(new Wire(new Vector(x, yPos), new Vector(x, yMax + SIZE)));</span>
+
+<span class="fc bfc" id="L702" title="All 2 branches covered.">        for (FragmentVisualElement ff : flipflops) {</span>
+<span class="fc" id="L703">            Vector p = ff.getVisualElement().getPos();</span>
+<span class="fc" id="L704">            circuit.add(new Wire(new Vector(x, p.y + SIZE), new Vector(p.x, p.y + SIZE)));</span>
+<span class="fc" id="L705">        }</span>
+
+<span class="fc" id="L707">        VisualElement clock = new VisualElement(Clock.DESCRIPTION.getName())</span>
+<span class="fc" id="L708">                .setShapeFactory(shapeFactory)</span>
+<span class="fc" id="L709">                .setPos(new Vector(x, yPos));</span>
+<span class="fc" id="L710">        clock.getElementAttributes()</span>
+<span class="fc" id="L711">                .set(Keys.LABEL, &quot;C&quot;)</span>
+<span class="fc" id="L712">                .set(Keys.ROTATE, new Rotation(3))</span>
+<span class="fc" id="L713">                .set(Keys.FREQUENCY, 2)</span>
+<span class="fc" id="L714">                .set(Keys.RUN_AT_REAL_TIME, true);</span>
+<span class="fc" id="L715">        circuit.add(clock);</span>
+<span class="fc" id="L716">    }</span>
+
+    private int addNetConnections(Circuit circuit, int xPos, int y) {
+<span class="fc bfc" id="L719" title="All 2 branches covered.">        for (Variable name : sequentialVars) {</span>
+<span class="fc" id="L720">            String oName = name.getIdentifier();</span>
+<span class="pc bpc" id="L721" title="1 of 2 branches missed.">            if (oName.endsWith(&quot;n&quot;)) {</span>
+<span class="nc" id="L722">                oName = oName.substring(0, oName.length() - 1);</span>
+<span class="nc bnc" id="L723" title="All 4 branches missed.">                if (oName.endsWith(&quot;_&quot;) || oName.endsWith(&quot;^&quot;)) oName = oName.substring(0, oName.length() - 1);</span>
+            }
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">            if (!combinatorialOutputs.containsKey(oName)) {</span>
+<span class="fc" id="L726">                VisualElement t = new VisualElement(Tunnel.DESCRIPTION.getName()).setShapeFactory(shapeFactory);</span>
+<span class="fc" id="L727">                t.getElementAttributes().set(Keys.NETNAME, name.getIdentifier());</span>
+<span class="fc" id="L728">                t.setPos(new Vector(xPos, y));</span>
+<span class="fc" id="L729">                t.setRotation(2);</span>
+<span class="fc" id="L730">                circuit.add(t);</span>
+<span class="fc" id="L731">                VisualElement o = new VisualElement(Out.DESCRIPTION.getName()).setShapeFactory(shapeFactory);</span>
+<span class="fc" id="L732">                o.getElementAttributes().set(Keys.LABEL, oName);</span>
+<span class="fc" id="L733">                o.setPos(new Vector(xPos + SIZE, y));</span>
+<span class="fc" id="L734">                checkPinNumber(o);</span>
+<span class="fc" id="L735">                circuit.add(o);</span>
+<span class="fc" id="L736">                circuit.add(new Wire(new Vector(xPos, y), new Vector(xPos + SIZE, y)));</span>
+<span class="fc" id="L737">                y += SIZE * 2;</span>
+            }
+<span class="fc" id="L739">        }</span>
+<span class="fc" id="L740">        return y;</span>
+    }
+
+    private void checkPinNumber(VisualElement pin) {
+<span class="fc bfc" id="L744" title="All 2 branches covered.">        if (mai != null) {</span>
+<span class="fc" id="L745">            String name = pin.getElementAttributes().getLabel();</span>
+<span class="fc" id="L746">            String num = mai.getPins().get(name);</span>
+<span class="pc bpc" id="L747" title="1 of 4 branches missed.">            if (num != null &amp;&amp; num.length() &gt; 0) {</span>
+<span class="fc" id="L748">                pin.getElementAttributes().set(Keys.PINNUMBER, num);</span>
+            }
+        }
+<span class="fc" id="L751">    }</span>
+
+    /**
+     * Sets the infos obtained from the model
+     *
+     * @param modelAnalyserInfo the model analyzer infos
+     * @return this for chained calls
+     */
+    public CircuitBuilder setModelAnalyzerInfo(ModelAnalyserInfo modelAnalyserInfo) {
+<span class="fc" id="L760">        mai = modelAnalyserInfo;</span>
+<span class="fc" id="L761">        return this;</span>
+    }
+
+<span class="fc" id="L764">    private static final class FindLUTVisitor implements FragmentVisitor {</span>
+<span class="fc" id="L765">        private boolean hasLUT = false;</span>
+
+        @Override
+        public void visit(Fragment fr) {
+<span class="fc bfc" id="L769" title="All 2 branches covered.">            if (fr instanceof FragmentVisualElement) {</span>
+<span class="fc bfc" id="L770" title="All 2 branches covered.">                if (((FragmentVisualElement) fr).getVisualElement().equalsDescription(LookUpTable.DESCRIPTION))</span>
+<span class="fc" id="L771">                    hasLUT = true;</span>
+            }
+<span class="fc" id="L773">        }</span>
+
+        private boolean containsLUT() {
+<span class="fc" id="L776">            return hasLUT;</span>
+        }
+    }
+
+    private static final class ReplaceOutputByTunnel implements FragmentVisitor {
+        private final String outName;
+        private final ShapeFactory shapeFactory;
+
+<span class="fc" id="L784">        private ReplaceOutputByTunnel(String outName, ShapeFactory shapeFactory) {</span>
+<span class="fc" id="L785">            this.outName = outName;</span>
+<span class="fc" id="L786">            this.shapeFactory = shapeFactory;</span>
+<span class="fc" id="L787">        }</span>
+
+        @Override
+        public void visit(Fragment fr) {
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">            if (fr instanceof FragmentVisualElement) {</span>
+<span class="fc" id="L792">                FragmentVisualElement fve = (FragmentVisualElement) fr;</span>
+<span class="fc" id="L793">                VisualElement ve = fve.getVisualElement();</span>
+<span class="pc bpc" id="L794" title="2 of 4 branches missed.">                if (ve.equalsDescription(Out.DESCRIPTION) &amp;&amp; ve.getElementAttributes().getLabel().equals(outName)) {</span>
+<span class="fc" id="L795">                    fve.setVisualElement(</span>
+<span class="fc" id="L796">                            new VisualElement(Tunnel.DESCRIPTION.getName())</span>
+<span class="fc" id="L797">                                    .setAttribute(Keys.NETNAME, outName)</span>
+<span class="fc" id="L798">                                    .setShapeFactory(shapeFactory));</span>
+                }
+            }
+<span class="fc" id="L801">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

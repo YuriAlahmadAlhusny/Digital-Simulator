@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FSM.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.fsm</a> &gt; <span class="el_source">FSM.java</span></div><h1>FSM.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.fsm;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.XStreamValid;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.graphics.VectorFloat;
+import de.neemann.digital.lang.Lang;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A simple finite state machine
+ */
+public class FSM {
+
+    /**
+     * The moving state of the fsm.
+     */
+<span class="fc" id="L31">    public enum MovingState {</span>
+        /**
+         * no elements are moving
+         */
+<span class="fc" id="L35">        STOP,</span>
+        /**
+         * only transitions are moving
+         */
+<span class="fc" id="L39">        TRANSITIONS,</span>
+        /**
+         * transitions and states are moving
+         */
+<span class="fc" id="L43">        BOTH</span>
+    }
+
+    private ArrayList&lt;State&gt; states;
+    private ArrayList&lt;Transition&gt; transitions;
+    private transient boolean modified;
+    private transient ModifiedListener modifiedListener;
+<span class="fc" id="L50">    private transient int activeState = -1;</span>
+    private transient File file;
+<span class="fc" id="L52">    private transient MovingState state = MovingState.STOP;</span>
+
+    /**
+     * Creates a proper configured XStream instance
+     *
+     * @return the XStream instance
+     */
+    public static XStream getxStream() {
+<span class="fc" id="L60">        XStream xStream = new XStreamValid();</span>
+<span class="fc" id="L61">        xStream.alias(&quot;fsm&quot;, FSM.class);</span>
+<span class="fc" id="L62">        xStream.alias(&quot;state&quot;, State.class);</span>
+<span class="fc" id="L63">        xStream.alias(&quot;transition&quot;, Transition.class);</span>
+<span class="fc" id="L64">        xStream.alias(&quot;vector&quot;, Vector.class);</span>
+<span class="fc" id="L65">        xStream.aliasAttribute(Vector.class, &quot;x&quot;, &quot;x&quot;);</span>
+<span class="fc" id="L66">        xStream.aliasAttribute(Vector.class, &quot;y&quot;, &quot;y&quot;);</span>
+<span class="fc" id="L67">        xStream.alias(&quot;vectorf&quot;, VectorFloat.class);</span>
+<span class="fc" id="L68">        xStream.aliasAttribute(VectorFloat.class, &quot;x&quot;, &quot;x&quot;);</span>
+<span class="fc" id="L69">        xStream.aliasAttribute(VectorFloat.class, &quot;y&quot;, &quot;y&quot;);</span>
+<span class="fc" id="L70">        return xStream;</span>
+    }
+
+    /**
+     * Creates a new circuit instance from a stored file
+     *
+     * @param filename filename
+     * @return the fsm
+     * @throws IOException IOException
+     */
+    public static FSM loadFSM(File filename) throws IOException {
+<span class="fc" id="L81">        final FSM fsm = loadFSM(new FileInputStream(filename));</span>
+<span class="fc" id="L82">        fsm.file = filename;</span>
+<span class="fc" id="L83">        return fsm;</span>
+    }
+
+    /**
+     * Creates a new fsm instance from a stored file
+     *
+     * @param in the input stream
+     * @return the fsm
+     * @throws IOException IOException
+     */
+    public static FSM loadFSM(InputStream in) throws IOException {
+        try {
+<span class="fc" id="L95">            XStream xStream = getxStream();</span>
+<span class="fc" id="L96">            final FSM fsm = (FSM) xStream.fromXML(in);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (Transition t : fsm.transitions)</span>
+<span class="fc" id="L98">                t.setFSM(fsm);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            for (State s : fsm.states)</span>
+<span class="fc" id="L100">                s.setFSM(fsm);</span>
+<span class="fc" id="L101">            fsm.modified = false;</span>
+<span class="fc" id="L102">            fsm.activeState = -1;</span>
+<span class="fc" id="L103">            return fsm;</span>
+<span class="nc" id="L104">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L105">            throw new IOException(Lang.get(&quot;err_invalidFileFormat&quot;), e);</span>
+        } finally {
+<span class="fc" id="L107">            in.close();</span>
+        }
+    }
+
+    /**
+     * Stores the fsm in the given file
+     *
+     * @param filename filename
+     * @throws IOException IOException
+     */
+    public void save(File filename) throws IOException {
+<span class="nc" id="L118">        save(new FileOutputStream(filename));</span>
+<span class="nc" id="L119">        file = filename;</span>
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Stores the circuit in the given file
+     *
+     * @param out the writer
+     * @throws IOException IOException
+     */
+    public void save(OutputStream out) throws IOException {
+<span class="nc" id="L129">        try (Writer w = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L130">            XStream xStream = getxStream();</span>
+<span class="nc" id="L131">            w.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="nc" id="L132">            xStream.marshal(this, new PrettyPrintWriter(w));</span>
+<span class="nc" id="L133">            modified = false;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (modifiedListener != null)</span>
+<span class="nc" id="L135">                modifiedListener.modifiedChanged(modified);</span>
+        }
+<span class="nc" id="L137">    }</span>
+
+    /**
+     * Creates a new FSM containing the given states
+     *
+     * @param state the states
+     */
+<span class="fc" id="L144">    public FSM(State... state) {</span>
+<span class="fc" id="L145">        states = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L146">        transitions = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (State s : state)</span>
+<span class="fc" id="L148">            add(s);</span>
+<span class="fc" id="L149">    }</span>
+
+    /**
+     * Creates a deep copy of this fsm
+     *
+     * @param other the fsm to copy
+     */
+<span class="fc" id="L156">    public FSM(FSM other) {</span>
+<span class="fc" id="L157">        states = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L158">        transitions = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (State s : other.getStates())</span>
+<span class="fc" id="L160">            add(new State(s));</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        for (Transition t : other.getTransitions())</span>
+<span class="fc" id="L162">            add(new Transition(t, states, other.getStates()));</span>
+<span class="fc" id="L163">    }</span>
+
+
+    /**
+     * Sets the moving state of this FSM
+     *
+     * @param state the state
+     */
+    public void setMovingState(MovingState state) {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (this.state != state) {</span>
+<span class="nc" id="L173">            this.state = state;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (state != MovingState.BOTH)</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                for (State s : states)</span>
+<span class="nc" id="L176">                    s.toRaster();</span>
+        }
+<span class="nc" id="L178">    }</span>
+
+    /**
+     * @return the moving state of this FSM
+     */
+    public MovingState getMovingState() {
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (state == null)</span>
+<span class="nc" id="L185">            state = MovingState.STOP;</span>
+<span class="nc" id="L186">        return state;</span>
+    }
+
+
+    /**
+     * Adds a state to the FSM
+     *
+     * @param state the state to add
+     * @return this for chained calls
+     */
+    public FSM add(State state) {
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (state.getNumber() &lt; 0)</span>
+<span class="fc" id="L198">            state.setNumber(states.size());</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (states.isEmpty())</span>
+<span class="fc" id="L200">            state.setInitial(true);</span>
+<span class="fc" id="L201">        state.setFSM(this);</span>
+<span class="fc" id="L202">        states.add(state);</span>
+<span class="fc" id="L203">        wasModified(state, Movable.Property.ADDED);</span>
+<span class="fc" id="L204">        return this;</span>
+    }
+
+    /**
+     * Adds a transition to the FSM
+     *
+     * @param transition the transition to add
+     * @return this for chained calls
+     */
+    public FSM add(Transition transition) {
+<span class="fc" id="L214">        transitions.add(transition);</span>
+<span class="fc" id="L215">        transition.setFSM(this);</span>
+<span class="fc" id="L216">        wasModified(transition, Movable.Property.ADDED);</span>
+<span class="fc" id="L217">        return this;</span>
+    }
+
+    /**
+     * Adds a transition to the FSM
+     *
+     * @param from      the from state
+     * @param to        the to state
+     * @param condition the condition
+     * @return this for chained calls
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    public FSM transition(String from, String to, String condition) throws FiniteStateMachineException {
+<span class="nc" id="L230">        return transition(findState(from), findState(to), condition);</span>
+    }
+
+    /**
+     * Adds a transition to the FSM
+     *
+     * @param from      the from state
+     * @param to        the to state
+     * @param condition the condition
+     * @return this for chained calls
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    public FSM transition(int from, int to, String condition) throws FiniteStateMachineException {
+<span class="nc" id="L243">        return transition(findState(from), findState(to), condition);</span>
+    }
+
+    /**
+     * Adds a transition to the FSM
+     *
+     * @param from      the from state
+     * @param to        the to state
+     * @param condition the condition
+     * @return this for chained calls
+     */
+    public FSM transition(State from, State to, String condition) {
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        if (!states.contains(from))</span>
+<span class="nc" id="L256">            add(from);</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        if (!states.contains(to))</span>
+<span class="nc" id="L258">            add(to);</span>
+<span class="fc" id="L259">        return add(new Transition(from, to, condition));</span>
+    }
+
+    private State findState(String name) throws FiniteStateMachineException {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            if (s.getName().equals(name))</span>
+<span class="nc" id="L265">                return s;</span>
+<span class="nc" id="L266">        throw new FiniteStateMachineException(Lang.get(&quot;err_fsmState_N_notFound&quot;, name));</span>
+    }
+
+    private State findState(int number) throws FiniteStateMachineException {
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            if (s.getNumber() == number)</span>
+<span class="nc" id="L272">                return s;</span>
+<span class="nc" id="L273">        throw new FiniteStateMachineException(Lang.get(&quot;err_fsmState_N_notFound&quot;, number));</span>
+    }
+
+
+    /**
+     * @return the file, maybe null
+     */
+    public File getFile() {
+<span class="nc" id="L281">        return file;</span>
+    }
+
+    /**
+     * Calculates all forces to move the elements
+     */
+    private void calculateForces() {
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc" id="L289">            s.calcExpansionForce(states);</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        for (Transition t : transitions)</span>
+<span class="nc" id="L291">            t.calcForce(states, transitions);</span>
+<span class="nc" id="L292">    }</span>
+
+    /**
+     * @return the states
+     */
+    public List&lt;State&gt; getStates() {
+<span class="fc" id="L298">        return states;</span>
+    }
+
+    /**
+     * Draws the FSM
+     *
+     * @param gr the Graphic instance to draw to
+     */
+    public void drawTo(Graphic gr) {
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc" id="L308">            s.drawTo(gr);</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        for (Transition t : transitions)</span>
+<span class="nc" id="L310">            t.drawTo(gr);</span>
+<span class="nc" id="L311">    }</span>
+
+    /**
+     * Moved the elements
+     *
+     * @param dt     the time step
+     * @param except element which is fixed
+     */
+    public void move(int dt, MouseMovable except) {
+<span class="nc bnc" id="L320" title="All 2 branches missed.">        if (state != MovingState.STOP) {</span>
+<span class="nc" id="L321">            calculateForces();</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">            if (state == MovingState.BOTH)</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">                for (State s : states)</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">                    if (s != except)</span>
+<span class="nc" id="L325">                        s.move(dt);</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">            for (Transition t : transitions)</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">                if (t != except)</span>
+<span class="nc" id="L328">                    t.move(dt);</span>
+        }
+<span class="nc" id="L330">    }</span>
+
+    /**
+     * Orders all states in a big circle
+     *
+     * @return this for chained calls
+     */
+    public FSM circle() {
+<span class="nc" id="L338">        double delta = 2 * Math.PI / states.size();</span>
+<span class="nc" id="L339">        double circumference = 0;</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc" id="L341">            circumference += s.getVisualRadius() * 2;</span>
+
+<span class="nc" id="L343">        circumference += states.size() * State.DEFAULT_RAD * 2;</span>
+<span class="nc" id="L344">        double rad = circumference / Math.PI / 2;</span>
+
+<span class="nc" id="L346">        double phi = 0;</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        for (State s : states) {</span>
+<span class="nc" id="L348">            s.setPosition(new VectorFloat((float) (Math.sin(phi) * rad), (float) (-Math.cos(phi) * rad)));</span>
+<span class="nc" id="L349">            phi += delta;</span>
+<span class="nc" id="L350">        }</span>
+
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        for (Transition t : transitions)</span>
+<span class="nc" id="L353">            t.initPos();</span>
+
+<span class="nc" id="L355">        return this;</span>
+    }
+
+    /**
+     * Creates the truth table which is defined by this finite state machine
+     *
+     * @param stateSignalName the name of the signal used to represent the state
+     * @return the truth table
+     * @throws ExpressionException         ExpressionException
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    public TruthTable createTruthTable(String stateSignalName) throws ExpressionException, FiniteStateMachineException {
+<span class="fc" id="L367">        return new TransitionTableCreator(this, stateSignalName).create();</span>
+    }
+
+    /**
+     * @return the initial state
+     * @throws FiniteStateMachineException FiniteStateMachineException
+     */
+    public int getInitState() throws FiniteStateMachineException {
+<span class="fc bfc" id="L375" title="All 2 branches covered.">        for (State s : states)</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            if (s.isInitial())</span>
+<span class="fc" id="L377">                return s.getNumber();</span>
+<span class="fc" id="L378">        throw new FiniteStateMachineException(Lang.get(&quot;err_fsmNoInitialState&quot;));</span>
+    }
+
+    /**
+     * Remove initial state
+     */
+    public void clearInitial() {
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc" id="L386">            s.setInitial(false);</span>
+<span class="nc" id="L387">    }</span>
+
+    /**
+     * Returns the element at the given position
+     *
+     * @param pos the position
+     * @return the element or null
+     */
+    public MouseMovable getMovable(Vector pos) {
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">            if (s.matchesInitial(pos))</span>
+<span class="nc" id="L398">                return s.getInitialMarkerMovable();</span>
+
+<span class="nc" id="L400">        MouseMovable found = null;</span>
+<span class="nc" id="L401">        float dist = Float.MAX_VALUE;</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        for (Transition t : transitions)</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">            if (t.matches(pos)) {</span>
+<span class="nc" id="L404">                float d = pos.sub(t.getPos()).len();</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                if (d &lt; dist) {</span>
+<span class="nc" id="L406">                    dist = d;</span>
+<span class="nc" id="L407">                    found = t;</span>
+                }
+            }
+
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (found != null)</span>
+<span class="nc" id="L412">            return found;</span>
+
+<span class="nc" id="L414">        dist = Float.MAX_VALUE;</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        for (State s : states)</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">            if (s.matches(pos)) {</span>
+<span class="nc" id="L417">                float d = pos.sub(s.getPos()).len();</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                if (d &lt; dist) {</span>
+<span class="nc" id="L419">                    dist = d;</span>
+<span class="nc" id="L420">                    found = s;</span>
+                }
+            }
+<span class="nc" id="L423">        return found;</span>
+    }
+
+    /**
+     * @return the transitions
+     */
+    public List&lt;Transition&gt; getTransitions() {
+<span class="fc" id="L430">        return transitions;</span>
+    }
+
+    /**
+     * Removes the given transition
+     *
+     * @param transition the transition to remove
+     */
+    public void remove(Transition transition) {
+<span class="nc" id="L439">        transitions.remove(transition);</span>
+<span class="nc" id="L440">        wasModified(transition, Movable.Property.REMOVED);</span>
+<span class="nc" id="L441">    }</span>
+
+    /**
+     * Removes the given state
+     *
+     * @param state the state to remove
+     */
+    public void remove(State state) {
+<span class="nc" id="L449">        states.remove(state);</span>
+<span class="nc bnc" id="L450" title="All 4 branches missed.">        transitions.removeIf(t -&gt; t.getStartState() == state || t.getTargetState() == state);</span>
+<span class="nc" id="L451">        wasModified(state, Movable.Property.REMOVED);</span>
+<span class="nc" id="L452">    }</span>
+
+    /**
+     * Marks the fsm as modified
+     *
+     * @param movable the element changed
+     * @param prop    the property which has changed
+     */
+    void wasModified(Movable&lt;?&gt; movable, Movable.Property prop) {
+<span class="fc" id="L461">        modified = true;</span>
+
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        if (movable instanceof State) {</span>
+<span class="fc" id="L464">            State st = (State) movable;</span>
+<span class="pc bpc" id="L465" title="3 of 4 branches missed.">            if (prop == Movable.Property.POS &amp;&amp; getMovingState() != MovingState.BOTH)</span>
+<span class="nc" id="L466">                st.toRaster();</span>
+
+<span class="pc bpc" id="L468" title="4 of 6 branches missed.">            if ((prop == Movable.Property.POS || prop == Movable.Property.MOUSEPOS) &amp;&amp; getMovingState() == MovingState.STOP)</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">                for (Transition t : transitions)</span>
+<span class="nc bnc" id="L470" title="All 4 branches missed.">                    if (t.getTargetState() == st || t.getStartState() == st)</span>
+<span class="nc" id="L471">                        t.setPos(t.getPos());</span>
+        }
+
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">        if (modifiedListener != null)</span>
+<span class="nc" id="L475">            modifiedListener.modifiedChanged(modified);</span>
+<span class="fc" id="L476">    }</span>
+
+    /**
+     * Sets a modified listener
+     *
+     * @param modifiedListener the listener called if fsm was modified
+     */
+    public void setModifiedListener(ModifiedListener modifiedListener) {
+<span class="nc" id="L484">        this.modifiedListener = modifiedListener;</span>
+<span class="nc" id="L485">    }</span>
+
+    /**
+     * @return true if fsm has changed
+     */
+    public boolean isModified() {
+<span class="nc" id="L491">        return modified;</span>
+    }
+
+    /**
+     * Sets the modified flag
+     *
+     * @param modified the modified flag
+     * @return this for chained calls
+     */
+    public FSM setModified(boolean modified) {
+<span class="nc bnc" id="L501" title="All 2 branches missed.">        if (modifiedListener != null)</span>
+<span class="nc" id="L502">            throw new RuntimeException(&quot;call not allowed&quot;);</span>
+<span class="nc" id="L503">        this.modified = modified;</span>
+<span class="nc" id="L504">        return this;</span>
+    }
+
+    /**
+     * Used to set the active state
+     *
+     * @param value the state number
+     * @return true if state has changed
+     */
+    public boolean setActiveState(int value) {
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        if (activeState != value) {</span>
+<span class="nc" id="L515">            activeState = value;</span>
+<span class="nc" id="L516">            return true;</span>
+        } else
+<span class="nc" id="L518">            return false;</span>
+    }
+
+    /**
+     * @return the active state
+     */
+    int getActiveState() {
+<span class="nc" id="L525">        return activeState;</span>
+    }
+
+    /**
+     * a modified listener
+     */
+    public interface ModifiedListener {
+        /**
+         * called if fsm was modified
+         *
+         * @param wasModified true is fsm is modified
+         */
+        void modifiedChanged(boolean wasModified);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

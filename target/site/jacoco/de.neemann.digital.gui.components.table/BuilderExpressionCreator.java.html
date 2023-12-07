@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BuilderExpressionCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">BuilderExpressionCreator.java</span></div><h1>BuilderExpressionCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+import de.neemann.digital.analyse.expression.modify.ExpressionModifier;
+import de.neemann.digital.builder.BuilderException;
+import de.neemann.digital.builder.BuilderInterface;
+import de.neemann.digital.lang.Lang;
+
+import java.util.HashSet;
+
+/**
+ * Helper to fill the a {@link BuilderInterface} with pre calculated expressions
+ * stored in {@link ExpressionListenerStore} instance.
+ * &lt;p&gt;
+ */
+public class BuilderExpressionCreator {
+    private final HashSet&lt;String&gt; contained;
+    private final BuilderInterface builder;
+    private final ExpressionModifier[] modifier;
+<span class="fc" id="L27">    private boolean useJKOptimizer = false;</span>
+
+    /**
+     * Create a new instance
+     *
+     * @param builder  the builder
+     * @param modifier the modifier tp modify the expression
+     */
+<span class="fc" id="L35">    public BuilderExpressionCreator(BuilderInterface builder, ExpressionModifier... modifier) {</span>
+<span class="fc" id="L36">        contained = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L37">        this.builder = builder;</span>
+<span class="fc" id="L38">        this.modifier = modifier;</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Fills the builder
+     *
+     * @param expressions the expressions to use
+     * @throws ExpressionException ExpressionException
+     * @throws FormatterException  FormatterException
+     */
+    public void create(ExpressionListenerStore expressions) throws ExpressionException, FormatterException {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (expressions == null)</span>
+<span class="nc" id="L50">            throw new ExpressionException(Lang.get(&quot;err_noExpressionsAvailable&quot;));</span>
+
+<span class="fc" id="L52">        ExpressionListener el = new ExpressionListener() {</span>
+            @Override
+            public void resultFound(String name, Expression expression) throws FormatterException, ExpressionException {
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                if (!contained.contains(name)) {</span>
+<span class="fc" id="L56">                    contained.add(name);</span>
+                    try {
+<span class="fc" id="L58">                        String n = ExpressionListenerJK.isSequentialVar(name);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                        if (n!=null) {</span>
+<span class="fc" id="L60">                            builder.addSequential(n, ExpressionModifier.modifyExpression(expression, modifier));</span>
+                        } else
+<span class="fc" id="L62">                            builder.addCombinatorial(name, ExpressionModifier.modifyExpression(expression, modifier));</span>
+<span class="nc" id="L63">                    } catch (BuilderException e) {</span>
+<span class="nc" id="L64">                        throw new RuntimeException(e);</span>
+<span class="fc" id="L65">                    }</span>
+                }
+<span class="fc" id="L67">            }</span>
+
+            @Override
+            public void close() {
+<span class="fc" id="L71">            }</span>
+        };
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (useJKOptimizer)</span>
+<span class="nc" id="L74">            el = new ExpressionListenerOptimizeJK(el);</span>
+
+<span class="fc" id="L76">        expressions.replayTo(el);</span>
+<span class="fc" id="L77">        el.close();</span>
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * Enables the usage of JK-Flipflops instead of D-Flipflops
+     *
+     * @param useJKOptimizer true if use JK flipflops
+     * @return this for chained calls
+     */
+    public BuilderExpressionCreator setUseJKOptimizer(boolean useJKOptimizer) {
+<span class="nc" id="L87">        this.useJKOptimizer = useJKOptimizer;</span>
+<span class="nc" id="L88">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

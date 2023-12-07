@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValueTable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.data</a> &gt; <span class="el_source">ValueTable.java</span></div><h1>ValueTable.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.data;
+
+import de.neemann.digital.StringList;
+import de.neemann.digital.core.IntFormat;
+import de.neemann.digital.core.Observable;
+import de.neemann.digital.core.ValueFormatter;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+
+/**
+ * Stores values in a table
+ */
+public class ValueTable extends Observable implements Iterable&lt;TestRow&gt; {
+
+    private final String[] names;
+    private final ArrayList&lt;TestRow&gt; values;
+    private ArrayList&lt;Integer&gt; tableRowIndex;
+    private final long[] max;
+<span class="fc" id="L29">    private int maxSize = 0;</span>
+
+    /**
+     * Creates a new table.
+     *
+     * @param names the signal names
+     */
+    public ValueTable(ArrayList&lt;String&gt; names) {
+<span class="fc" id="L37">        this(names.toArray(new String[names.size()]));</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Creates a new table.
+     *
+     * @param names the signal names
+     */
+<span class="fc" id="L45">    public ValueTable(String... names) {</span>
+<span class="fc" id="L46">        this.names = names;</span>
+<span class="fc" id="L47">        values = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L48">        max = new long[names.length];</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Creates a copy of the given ValueTable
+     *
+     * @param toCopy the ValueTable to copy
+     */
+<span class="fc" id="L56">    public ValueTable(ValueTable toCopy) {</span>
+<span class="fc" id="L57">        this.names = toCopy.names;</span>
+<span class="fc" id="L58">        values = (ArrayList&lt;TestRow&gt;) toCopy.values.clone();</span>
+<span class="fc" id="L59">        max = toCopy.max.clone();</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * @return number of rows
+     */
+    public int getRows() {
+<span class="fc" id="L66">        return values.size();</span>
+    }
+
+    /**
+     * @return number of rows in a table
+     */
+    public int getTableRows() {
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (tableRowIndex == null)</span>
+<span class="nc" id="L74">            return values.size();</span>
+        else
+<span class="fc" id="L76">            return tableRowIndex.size();</span>
+    }
+
+    /**
+     * add values without copying them
+     *
+     * @param row a row to insert, values are not copied!
+     * @return this for chained calls
+     */
+    public ValueTable add(TestRow row) {
+<span class="fc bfc" id="L86" title="All 4 branches covered.">        if (maxSize &gt; 0 &amp;&amp; values.size() &gt;= maxSize) {</span>
+
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">            if (tableRowIndex != null)</span>
+<span class="nc" id="L89">                throw new RuntimeException(&quot;delete not allowed if table index is present&quot;);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            while (values.size() &gt;= maxSize)</span>
+<span class="fc" id="L92">                values.remove(0);</span>
+        }
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (tableRowIndex != null)</span>
+<span class="fc" id="L95">            tableRowIndex.add(values.size());</span>
+<span class="fc" id="L96">        values.add(row);</span>
+
+<span class="fc" id="L98">        checkMax(row.getValues());</span>
+
+<span class="fc" id="L100">        fireHasChanged();</span>
+
+<span class="fc" id="L102">        return this;</span>
+    }
+
+    /**
+     * omit the last added value in a table representation
+     *
+     * @return this for chained calls
+     */
+    public ValueTable omitInTable() {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (tableRowIndex == null) {</span>
+<span class="fc" id="L112">            tableRowIndex = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (int i = 0; i &lt; values.size(); i++)</span>
+<span class="fc" id="L114">                tableRowIndex.add(i);</span>
+        }
+<span class="fc" id="L116">        tableRowIndex.remove(tableRowIndex.size() - 1);</span>
+<span class="fc" id="L117">        return this;</span>
+    }
+
+
+    private void checkMax(Value[] row) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (int i = 0; i &lt; row.length; i++)</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (Long.compareUnsigned(max[i], row[i].getValue()) &lt; 0) max[i] = row[i].getValue();</span>
+<span class="fc" id="L124">    }</span>
+
+    /**
+     * provides the values
+     *
+     * @param rowIndex    the row
+     * @param columnIndex the column
+     * @return the value stored at the given position
+     */
+    public Value getValue(int rowIndex, int columnIndex) {
+<span class="fc" id="L134">        return values.get(rowIndex).getValue(columnIndex);</span>
+    }
+
+    /**
+     * provides the values for the use in a table
+     *
+     * @param rowIndex    the row
+     * @param columnIndex the column
+     * @return the value stored at the given position
+     */
+    public Value getTableValue(int rowIndex, int columnIndex) {
+<span class="fc" id="L145">        return getTableRow(rowIndex).getValue(columnIndex);</span>
+    }
+
+    /**
+     * Returns a table row
+     *
+     * @param rowIndex the index of the table row
+     * @return the table row
+     */
+    public TestRow getTableRow(int rowIndex) {
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (tableRowIndex == null)</span>
+<span class="nc" id="L156">            return values.get(rowIndex);</span>
+        else
+<span class="fc" id="L158">            return values.get(tableRowIndex.get(rowIndex));</span>
+    }
+
+    /**
+     * Returns the rows description
+     *
+     * @param rowIndex the row index
+     * @return the source line number
+     */
+    public String getDescription(int rowIndex) {
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        if (tableRowIndex == null)</span>
+<span class="nc" id="L169">            return values.get(rowIndex).getDescription();</span>
+        else
+<span class="nc" id="L171">            return values.get(tableRowIndex.get(rowIndex)).getDescription();</span>
+    }
+
+    /**
+     * the number of signals
+     *
+     * @return the column count
+     */
+    public int getColumns() {
+<span class="fc" id="L180">        return names.length;</span>
+    }
+
+    /**
+     * Returns the column names
+     *
+     * @param col the column
+     * @return the name
+     */
+    public String getColumnName(int col) {
+<span class="fc" id="L190">        return names[col];</span>
+    }
+
+    @Override
+    public Iterator&lt;TestRow&gt; iterator() {
+<span class="fc" id="L195">        return values.iterator();</span>
+    }
+
+    /**
+     * Returns the max value stored in the given column
+     *
+     * @param col the column
+     * @return the max value
+     */
+    public long getMax(int col) {
+<span class="fc" id="L205">        return max[col];</span>
+    }
+
+    /**
+     * Stores the data in  csv file
+     *
+     * @param file the file
+     * @throws IOException IOException
+     */
+    public void saveCSV(File file) throws IOException {
+<span class="nc" id="L215">        saveCSV(file, null);</span>
+<span class="nc" id="L216">    }</span>
+
+    /**
+     * Stores the data in  csv file
+     *
+     * @param file       the file
+     * @param columnInfo information of how to format the values, maybe null
+     * @throws IOException IOException
+     */
+    public void saveCSV(File file, ColumnInfo[] columnInfo) throws IOException {
+<span class="nc" id="L226">        saveCSV(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), columnInfo);</span>
+<span class="nc" id="L227">    }</span>
+
+    /**
+     * Stores the data in  csv file
+     *
+     * @param w the writer
+     * @throws IOException IOException
+     */
+    public void saveCSV(BufferedWriter w) throws IOException {
+<span class="fc" id="L236">        saveCSV(w, null);</span>
+<span class="fc" id="L237">    }</span>
+
+    void saveCSV(BufferedWriter w, ColumnInfo[] columnInfo) throws IOException {
+        try {
+<span class="fc" id="L241">            w.write(&quot;\&quot;step\&quot;&quot;);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">            for (String s : names)</span>
+<span class="fc" id="L243">                w.write(&quot;,\&quot;&quot; + s + '&quot;');</span>
+<span class="fc" id="L244">            w.write(&quot;\n&quot;);</span>
+<span class="fc" id="L245">            int row = 0;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">            for (TestRow s : this) {</span>
+<span class="fc" id="L247">                w.write(&quot;\&quot;&quot; + (row++) + &quot;\&quot;&quot;);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">                if (columnInfo == null) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">                    for (Value value : s.getValues())</span>
+<span class="fc" id="L250">                        w.write(&quot;,\&quot;&quot; + value + &quot;\&quot;&quot;);</span>
+                } else {
+<span class="fc" id="L252">                    int i = 0;</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">                    for (Value value : s.getValues())</span>
+<span class="fc" id="L254">                        w.write(&quot;,\&quot;&quot; + columnInfo[i++].format(value) + &quot;\&quot;&quot;);</span>
+                }
+<span class="fc" id="L256">                w.write(&quot;\n&quot;);</span>
+<span class="fc" id="L257">            }</span>
+        } finally {
+<span class="fc" id="L259">            w.close();</span>
+        }
+<span class="fc" id="L261">    }</span>
+
+    /**
+     * clear all values
+     */
+    public void clear() {
+<span class="nc" id="L267">        values.clear();</span>
+<span class="nc" id="L268">        Arrays.fill(max, 0);</span>
+<span class="nc" id="L269">        fireHasChanged();</span>
+<span class="nc" id="L270">    }</span>
+
+    /**
+     * set the maximum size for this table
+     *
+     * @param maxSize the max size
+     * @return this for chained calls
+     */
+    public ValueTable setMaxSize(int maxSize) {
+<span class="fc" id="L279">        this.maxSize = maxSize;</span>
+<span class="fc" id="L280">        return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L285">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L286">        StringList sl = new StringList(sb);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        for (String n : names)</span>
+<span class="fc" id="L288">            sl.add(n);</span>
+<span class="fc" id="L289">        sb.append(&quot;\n&quot;);</span>
+
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        if (tableRowIndex == null)</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            for (TestRow row : values) {</span>
+<span class="fc" id="L293">                sl = new StringList(sb);</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">                for (Value v : row.getValues())</span>
+<span class="fc" id="L295">                    sl.add(v.toString());</span>
+<span class="fc" id="L296">                sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L297">            }</span>
+        else
+<span class="nc bnc" id="L299" title="All 2 branches missed.">            for (int i : tableRowIndex) {</span>
+<span class="nc" id="L300">                sl = new StringList(sb);</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                for (Value v : values.get(i).getValues())</span>
+<span class="nc" id="L302">                    sl.add(v.toString());</span>
+<span class="nc" id="L303">                sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L304">            }</span>
+
+<span class="fc" id="L306">        return sb.toString();</span>
+    }
+
+    /**
+     * Columns formatting information
+     */
+    public static final class ColumnInfo {
+        private final int bits;
+        private final ValueFormatter format;
+
+        /**
+         * Creates a new instance
+         *
+         * @param format the format to use
+         * @param bits   the number of bits to output
+         */
+<span class="fc" id="L322">        public ColumnInfo(ValueFormatter format, int bits) {</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">            if (format == null)</span>
+<span class="nc" id="L324">                format = IntFormat.HEX_FORMATTER;</span>
+<span class="pc bpc" id="L325" title="3 of 4 branches missed.">            else if (format.equals(IntFormat.DEFAULT_FORMATTER) &amp;&amp; (bits &gt; 3))</span>
+<span class="nc" id="L326">                format = IntFormat.HEX_FORMATTER;</span>
+<span class="fc" id="L327">            this.format = format;</span>
+<span class="fc" id="L328">            this.bits = bits;</span>
+<span class="fc" id="L329">        }</span>
+
+        private String format(Value value) {
+<span class="pc bpc" id="L332" title="2 of 4 branches missed.">            switch (value.getType()) {</span>
+                case HIGHZ:
+<span class="fc" id="L334">                    return &quot;Z&quot;;</span>
+                case DONTCARE:
+<span class="nc" id="L336">                    return &quot;X&quot;;</span>
+                case CLOCK:
+<span class="nc" id="L338">                    return &quot;C&quot;;</span>
+                default:
+<span class="fc" id="L340">                    return format.formatToEdit(new de.neemann.digital.core.Value(value.getValue(), bits));</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

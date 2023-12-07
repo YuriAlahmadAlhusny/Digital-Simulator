@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataEditor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">DataEditor.java</span></div><h1>DataEditor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.importer.Importer;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.MyFileChooser;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+/**
+ * Used to edit ROM data fields.
+ * Looks like a HEX editor.
+ */
+public class DataEditor extends JDialog {
+<span class="nc" id="L40">    private static final Color MYGRAY = new Color(230, 230, 230);</span>
+    private static File lastUsedFileName;
+    private final ValueFormatter addrFormat;
+    private final ValueFormatter dataFormat;
+    private final int addrBits;
+    private final int dataBits;
+    private final DataField localDataField;
+    private final JTable table;
+<span class="nc" id="L48">    private boolean ok = false;</span>
+    private File fileName;
+    private Node node;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent         the parent
+     * @param dataField      the data to edit
+     * @param dataBits       the bit count of the values to edit
+     * @param addrBits       the bit count of the adresses
+     * @param modelIsRunning true if model is running
+     * @param modelSync      used to access the running model
+     * @param dataFormat     the integer format to be used
+     */
+    public DataEditor(Component parent, DataField dataField, int dataBits, int addrBits, boolean modelIsRunning, SyncAccess modelSync, ValueFormatter dataFormat) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        super(SwingUtilities.windowForComponent(parent), Lang.get(&quot;key_Data&quot;), modelIsRunning ? ModalityType.MODELESS : ModalityType.APPLICATION_MODAL);</span>
+<span class="nc" id="L65">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L66">        this.addrBits = addrBits;</span>
+<span class="nc" id="L67">        this.dataBits = dataBits;</span>
+<span class="nc" id="L68">        this.dataFormat = dataFormat;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (dataFormat.isSuitedForAddresses())</span>
+<span class="nc" id="L70">            addrFormat = dataFormat;</span>
+        else
+<span class="nc" id="L72">            addrFormat = IntFormat.HEX_FORMATTER;</span>
+
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (modelIsRunning)</span>
+<span class="nc" id="L75">            localDataField = dataField;</span>
+        else
+<span class="nc" id="L77">            localDataField = new DataField(dataField);</span>
+
+<span class="nc" id="L79">        final int size = 1 &lt;&lt; addrBits;</span>
+<span class="nc" id="L80">        final int cols = calcCols(size, dataBits, dataFormat);</span>
+<span class="nc" id="L81">        final int rows = (size - 1) / cols + 1;</span>
+
+<span class="nc" id="L83">        int tableWidth = 0;</span>
+<span class="nc" id="L84">        MyTableModel dm = new MyTableModel(this.localDataField, cols, rows, modelSync);</span>
+<span class="nc" id="L85">        table = new JTable(dm);</span>
+<span class="nc" id="L86">        int widthOfZero = table.getFontMetrics(table.getFont()).stringWidth(&quot;00000000&quot;) / 8;</span>
+<span class="nc" id="L87">        int widthOfData = widthOfZero * (dataFormat.strLen(dataBits) + 1);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        for (int c = 1; c &lt; table.getColumnModel().getColumnCount(); c++) {</span>
+<span class="nc" id="L89">            tableWidth += widthOfData;</span>
+<span class="nc" id="L90">            TableColumn col = table.getColumnModel().getColumn(c);</span>
+<span class="nc" id="L91">            col.setPreferredWidth(widthOfData);</span>
+        }
+
+<span class="nc" id="L94">        DefaultTableCellRenderer dataRenderer = new MyRenderer(dataFormat, dataBits);</span>
+<span class="nc" id="L95">        dataRenderer.setHorizontalAlignment(JLabel.RIGHT);</span>
+<span class="nc" id="L96">        table.setDefaultRenderer(Long.class, dataRenderer);</span>
+<span class="nc" id="L97">        table.setDefaultEditor(Long.class, new MyEditor(dataFormat, dataBits));</span>
+
+<span class="nc" id="L99">        DefaultTableCellRenderer addrRenderer = new MyRenderer(addrFormat, addrBits);</span>
+<span class="nc" id="L100">        addrRenderer.setBackground(MYGRAY);</span>
+<span class="nc" id="L101">        addrRenderer.setHorizontalAlignment(JLabel.RIGHT);</span>
+<span class="nc" id="L102">        TableColumn addrColumn = table.getColumnModel().getColumn(0);</span>
+<span class="nc" id="L103">        addrColumn.setCellRenderer(addrRenderer);</span>
+<span class="nc" id="L104">        int widthOfAddr = widthOfZero * (addrFormat.strLen(addrBits) + 1);</span>
+<span class="nc" id="L105">        addrColumn.setPreferredWidth(widthOfAddr);</span>
+<span class="nc" id="L106">        tableWidth += widthOfAddr;</span>
+
+<span class="nc" id="L108">        JScrollPane scrollPane = new JScrollPane(table);</span>
+<span class="nc" id="L109">        getContentPane().add(scrollPane);</span>
+<span class="nc" id="L110">        Dimension dim = table.getPreferredScrollableViewportSize();</span>
+<span class="nc" id="L111">        scrollPane.setPreferredSize(new Dimension(tableWidth, dim.height));</span>
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (modelIsRunning) {</span>
+<span class="nc" id="L114">            dataField.addListener(dm);</span>
+<span class="nc" id="L115">            addWindowListener(new WindowAdapter() {</span>
+                @Override
+                public void windowClosed(WindowEvent e) {
+<span class="nc" id="L118">                    dataField.removeListener(dm);</span>
+<span class="nc" id="L119">                }</span>
+            });
+        } else {
+<span class="nc" id="L122">            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="nc" id="L123">            buttons.add(new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                    if (table.isEditing()) {</span>
+<span class="nc" id="L127">                        table.getCellEditor().stopCellEditing();</span>
+                    } else {
+<span class="nc" id="L129">                        ok = true;</span>
+<span class="nc" id="L130">                        dispose();</span>
+                    }
+<span class="nc" id="L132">                }</span>
+            }));
+<span class="nc" id="L134">            getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L136">            JMenuBar menuBar = new JMenuBar();</span>
+<span class="nc" id="L137">            JMenu data = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+
+<span class="nc" id="L139">            data.add(new ToolTipAction(Lang.get(&quot;btn_clearData&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L142">                    localDataField.clearAll();</span>
+<span class="nc" id="L143">                    dm.fireEvent(new TableModelEvent(dm));</span>
+<span class="nc" id="L144">                }</span>
+<span class="nc" id="L145">            }.setToolTip(Lang.get(&quot;btn_clearData_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L146">            data.add(new ToolTipAction(Lang.get(&quot;btn_load&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L149">                    JFileChooser fc = new MyFileChooser();</span>
+<span class="nc" id="L150">                    JCheckBox bigEndian = new JCheckBox(Lang.get(&quot;msg_bigEndian&quot;));</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">                    if (dataBits &gt; 8) {</span>
+<span class="nc" id="L152">                        bigEndian.setToolTipText(Lang.get(&quot;key_bigEndian_tt&quot;));</span>
+<span class="nc" id="L153">                        fc.setAccessory(bigEndian);</span>
+                    }
+<span class="nc" id="L155">                    setFileNameTo(fc);</span>
+<span class="nc" id="L156">                    fc.setFileFilter(new FileNameExtensionFilter(&quot;hex&quot;, &quot;hex&quot;));</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                    if (fc.showOpenDialog(DataEditor.this) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L158">                        setFileName(fc.getSelectedFile());</span>
+                        try {
+<span class="nc" id="L160">                            DataField dataRead = Importer.read(fc.getSelectedFile(), dataBits, bigEndian.isSelected())</span>
+<span class="nc" id="L161">                                    .trimValues(addrBits, dataBits);</span>
+<span class="nc" id="L162">                            localDataField.setDataFrom(dataRead);</span>
+<span class="nc" id="L163">                            dm.fireEvent(new TableModelEvent(dm));</span>
+<span class="nc" id="L164">                        } catch (IOException e1) {</span>
+<span class="nc" id="L165">                            new ErrorMessage(Lang.get(&quot;msg_errorReadingFile&quot;)).addCause(e1).show(DataEditor.this);</span>
+<span class="nc" id="L166">                        }</span>
+                    }
+<span class="nc" id="L168">                }</span>
+<span class="nc" id="L169">            }.createJMenuItem());</span>
+<span class="nc" id="L170">            data.add(new ToolTipAction(Lang.get(&quot;btn_save&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L173">                    JFileChooser fc = new MyFileChooser();</span>
+<span class="nc" id="L174">                    setFileNameTo(fc);</span>
+<span class="nc" id="L175">                    fc.setFileFilter(new FileNameExtensionFilter(&quot;hex&quot;, &quot;hex&quot;));</span>
+<span class="nc" id="L176">                    new SaveAsHelper(DataEditor.this, fc, &quot;hex&quot;).checkOverwrite(</span>
+                            file -&gt; {
+<span class="nc" id="L178">                                setFileName(file);</span>
+<span class="nc" id="L179">                                localDataField.saveTo(file);</span>
+<span class="nc" id="L180">                            }</span>
+                    );
+<span class="nc" id="L182">                }</span>
+<span class="nc" id="L183">            }.createJMenuItem());</span>
+
+
+<span class="nc" id="L186">            menuBar.add(data);</span>
+
+<span class="nc" id="L188">            setJMenuBar(menuBar);</span>
+        }
+
+<span class="nc" id="L191">        new ToolTipAction(Lang.get(&quot;menu_paste&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L194">                Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+                try {
+<span class="nc" id="L196">                    Object data = clpbrd.getData(DataFlavor.stringFlavor);</span>
+<span class="nc" id="L197">                    new PasteHandler(data.toString(), table).paste();</span>
+<span class="nc" id="L198">                } catch (UnsupportedFlavorException | IOException e1) {</span>
+<span class="nc" id="L199">                    new ErrorMessage(Lang.get(&quot;msg_errorPastingData&quot;)).addCause(e1).show();</span>
+<span class="nc" id="L200">                }</span>
+<span class="nc" id="L201">            }</span>
+<span class="nc" id="L202">        }.setAcceleratorCTRLplus('V').enableAcceleratorIn(table);</span>
+
+<span class="nc" id="L204">        new ToolTipAction(Lang.get(&quot;menu_copy&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L207">                int[] rows = table.getSelectedRows();</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                if (rows.length &gt; 0) {</span>
+<span class="nc" id="L209">                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+<span class="nc" id="L210">                    clipboard.setContents(new StringSelection(((MyTableModel) table.getModel()).toString(rows)), null);</span>
+                }
+<span class="nc" id="L212">            }</span>
+<span class="nc" id="L213">        }.setAcceleratorCTRLplus('C').enableAcceleratorIn(table);</span>
+
+<span class="nc" id="L215">        pack();</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (getWidth() &lt; 150)</span>
+<span class="nc" id="L217">            setSize(new Dimension(150, getHeight()));</span>
+<span class="nc" id="L218">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L219">    }</span>
+
+    private int calcCols(int size, int dataBits, ValueFormatter dataFormat) {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        if (size &lt;= 16) return 1;</span>
+
+<span class="nc" id="L224">        int colWidth = dataFormat.strLen(dataBits);</span>
+<span class="nc" id="L225">        int cols = 2;</span>
+        while (true) {
+<span class="nc" id="L227">            int newCols = cols * 2;</span>
+<span class="nc bnc" id="L228" title="All 4 branches missed.">            if (colWidth * newCols &gt; 100 || size / newCols &lt; newCols)</span>
+<span class="nc" id="L229">                break;</span>
+<span class="nc" id="L230">            cols = newCols;</span>
+<span class="nc" id="L231">        }</span>
+<span class="nc" id="L232">        return cols;</span>
+    }
+
+    /**
+     * @return the data field
+     */
+    public DataField getModifiedDataField() {
+<span class="nc" id="L239">        localDataField.trim();</span>
+<span class="nc" id="L240">        return localDataField;</span>
+    }
+
+    /**
+     * @return true if data is modified
+     */
+    public boolean showDialog() {
+<span class="nc" id="L247">        setVisible(true);</span>
+<span class="nc" id="L248">        return ok;</span>
+    }
+
+    /**
+     * Shows this dialog and attaches it to the given running model
+     *
+     * @param label the label of the RAM component
+     * @param model the model to use
+     */
+    public void showDialog(String label, Model model) {
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (label.length() &gt; 0)</span>
+<span class="nc" id="L259">            setTitle(label);</span>
+<span class="nc" id="L260">        showDialog();</span>
+
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (model != null) {</span>
+<span class="nc" id="L263">            model.getWindowPosManager().register(&quot;RAM_DATA_&quot; + label, this);</span>
+<span class="nc" id="L264">            model.addObserver(event -&gt; {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">                if (event.getType().equals(ModelEventType.CLOSED))</span>
+<span class="nc" id="L266">                    detachFromRunningModel();</span>
+<span class="nc" id="L267">            }, ModelEventType.CLOSED);</span>
+        }
+<span class="nc" id="L269">    }</span>
+
+    /**
+     * Called if dialog shows data from running model and model had stopped.
+     */
+    public void detachFromRunningModel() {
+<span class="nc" id="L275">        table.setForeground(Color.BLUE);</span>
+<span class="nc" id="L276">        table.setToolTipText(Lang.get(&quot;msg_dataNotUpdatedAnymore&quot;));</span>
+<span class="nc" id="L277">        table.setEnabled(false);</span>
+<span class="nc" id="L278">    }</span>
+
+    /**
+     * Sets the filename to use
+     *
+     * @param fileName the filename
+     */
+    public void setFileName(File fileName) {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (fileName.exists()) {</span>
+<span class="nc" id="L287">            this.fileName = fileName;</span>
+<span class="nc" id="L288">            lastUsedFileName = fileName;</span>
+        }
+<span class="nc" id="L290">    }</span>
+
+    private void setFileNameTo(JFileChooser fc) {
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (fileName != null)</span>
+<span class="nc" id="L294">            fc.setSelectedFile(fileName);</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">        else if (lastUsedFileName != null)</span>
+<span class="nc" id="L296">            fc.setSelectedFile(lastUsedFileName);</span>
+<span class="nc" id="L297">    }</span>
+
+    /**
+     * Sets the node if this DataEditor edits a DataField used in a running model.
+     *
+     * @param node the node
+     * @return this for chained calls
+     */
+    public DataEditor setNode(Node node) {
+<span class="nc" id="L306">        this.node = node;</span>
+<span class="nc" id="L307">        return this;</span>
+    }
+
+    private final class MyTableModel implements TableModel, DataField.DataListener {
+        private final DataField dataField;
+        private final int cols;
+        private final SyncAccess modelSync;
+        private final int rows;
+<span class="nc" id="L315">        private final ArrayList&lt;TableModelListener&gt; listener = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L317">        private MyTableModel(DataField dataField, int cols, int rows, SyncAccess modelSync) {</span>
+<span class="nc" id="L318">            this.dataField = dataField;</span>
+<span class="nc" id="L319">            this.cols = cols;</span>
+<span class="nc" id="L320">            this.rows = rows;</span>
+<span class="nc" id="L321">            this.modelSync = modelSync;</span>
+<span class="nc" id="L322">        }</span>
+
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L326">            return rows;</span>
+        }
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L331">            return cols + 1;</span>
+        }
+
+        @Override
+        public String getColumnName(int columnIndex) {
+<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (columnIndex == 0)</span>
+<span class="nc" id="L337">                return Lang.get(&quot;addr&quot;);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            else if (cols &gt; 1)</span>
+<span class="nc" id="L339">                return addrFormat.formatToView(new Value(columnIndex - 1, addrBits));</span>
+            else
+<span class="nc" id="L341">                return Lang.get(&quot;key_Value&quot;);</span>
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int columnIndex) {
+<span class="nc" id="L346">            return Long.class;</span>
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+<span class="nc bnc" id="L351" title="All 2 branches missed.">            return columnIndex &gt; 0;</span>
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+<span class="nc bnc" id="L356" title="All 2 branches missed.">            if (columnIndex == 0)</span>
+<span class="nc" id="L357">                return rowIndex * cols;</span>
+            else
+<span class="nc" id="L359">                return dataField.getDataWord(rowIndex * cols + (columnIndex - 1));</span>
+        }
+
+        @Override
+        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+<span class="nc" id="L364">            long decode = (long) aValue;</span>
+<span class="nc" id="L365">            modelSync.modify(() -&gt; {</span>
+<span class="nc" id="L366">                int addr = rowIndex * cols + (columnIndex - 1);</span>
+<span class="nc" id="L367">                boolean modified = dataField.setData(addr, decode);</span>
+<span class="nc bnc" id="L368" title="All 4 branches missed.">                if (modified &amp;&amp; node != null)</span>
+<span class="nc" id="L369">                    node.hasChanged();</span>
+<span class="nc" id="L370">            });</span>
+<span class="nc" id="L371">        }</span>
+
+        private void fireEvent(TableModelEvent e) {
+<span class="nc bnc" id="L374" title="All 2 branches missed.">            for (TableModelListener l : listener)</span>
+<span class="nc" id="L375">                l.tableChanged(e);</span>
+<span class="nc" id="L376">        }</span>
+
+        @Override
+        public void addTableModelListener(TableModelListener l) {
+<span class="nc" id="L380">            listener.add(l);</span>
+<span class="nc" id="L381">        }</span>
+
+        @Override
+        public void removeTableModelListener(TableModelListener l) {
+<span class="nc" id="L385">            listener.remove(l);</span>
+<span class="nc" id="L386">        }</span>
+
+        @Override
+        public void valueChanged(int addr) {
+<span class="nc bnc" id="L390" title="All 2 branches missed.">            if (addr &lt; 0) {</span>
+                // all values have changed!
+<span class="nc" id="L392">                fireEvent(new TableModelEvent(this));</span>
+            } else {
+                // only one value has changed
+<span class="nc" id="L395">                fireEvent(new TableModelEvent(this, addr / cols));</span>
+            }
+<span class="nc" id="L397">        }</span>
+
+        public String toString(int[] rows) {
+<span class="nc" id="L400">            StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">            for (int r : rows) {</span>
+<span class="nc" id="L402">                int offs = r * cols;</span>
+<span class="nc" id="L403">                sb.append(addrFormat.formatToEdit(new Value(offs, addrBits)));</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                for (int c = 0; c &lt; cols; c++) {</span>
+<span class="nc" id="L405">                    long val = dataField.getDataWord(offs + c);</span>
+<span class="nc" id="L406">                    sb.append(&quot;\t&quot;).append(dataFormat.formatToEdit(new Value(val, dataBits)));</span>
+                }
+<span class="nc" id="L408">                sb.append(System.lineSeparator());</span>
+            }
+<span class="nc" id="L410">            return sb.toString();</span>
+        }
+    }
+
+    private static final class MyRenderer extends DefaultTableCellRenderer {
+        private final ValueFormatter intFormat;
+        private final int bits;
+
+<span class="nc" id="L418">        private MyRenderer(ValueFormatter intFormat, int bits) {</span>
+<span class="nc" id="L419">            this.intFormat = intFormat;</span>
+<span class="nc" id="L420">            this.bits = bits;</span>
+<span class="nc" id="L421">        }</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+<span class="nc" id="L425">            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);</span>
+<span class="nc" id="L426">            long val = ((Number) value).longValue();</span>
+<span class="nc" id="L427">            setText(intFormat.formatToView(new Value(val, bits)));</span>
+<span class="nc" id="L428">            return this;</span>
+        }
+    }
+
+    private static final class MyEditor extends DefaultCellEditor {
+        private final ValueFormatter intFormat;
+        private final int bits;
+        private long value;
+
+        private static JTextField createTextField() {
+<span class="nc" id="L438">            JTextField tf = new JTextField();</span>
+<span class="nc" id="L439">            tf.setHorizontalAlignment(JTextField.RIGHT);</span>
+<span class="nc" id="L440">            return tf;</span>
+        }
+
+        private MyEditor(ValueFormatter intFormat, int bits) {
+<span class="nc" id="L444">            super(createTextField());</span>
+<span class="nc" id="L445">            this.intFormat = intFormat;</span>
+<span class="nc" id="L446">            this.bits = bits;</span>
+<span class="nc" id="L447">        }</span>
+
+
+        @Override
+        public Component getTableCellEditorComponent(JTable jTable, Object o, boolean isSelected, int row, int col) {
+<span class="nc" id="L452">            JTextField editor = (JTextField) super.getTableCellEditorComponent(jTable, o, isSelected, row, col);</span>
+<span class="nc" id="L453">            editor.setText(intFormat.formatToEdit(new Value((Long) o, bits)));</span>
+<span class="nc" id="L454">            return editor;</span>
+        }
+
+        @Override
+        public boolean stopCellEditing() {
+<span class="nc" id="L459">            String s = (String) super.getCellEditorValue();</span>
+
+            try {
+<span class="nc" id="L462">                this.value = Bits.decode(s);</span>
+<span class="nc" id="L463">            } catch (Exception e) {</span>
+<span class="nc" id="L464">                ((JComponent) this.getComponent()).setBorder(new LineBorder(Color.red));</span>
+<span class="nc" id="L465">                return false;</span>
+<span class="nc" id="L466">            }</span>
+
+<span class="nc" id="L468">            return super.stopCellEditing();</span>
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+<span class="nc" id="L473">            return value;</span>
+        }
+    }
+
+    private static final class PasteHandler {
+        private final String data;
+        private final int yOrigin;
+        private final int xOrigin;
+        private final MyTableModel model;
+
+        /**
+         * Creates a new Paste handler
+         *
+         * @param data  the datastrin give by the systems clipboard
+         * @param table the tabel to insert the data to
+         */
+<span class="nc" id="L489">        private PasteHandler(String data, JTable table) {</span>
+<span class="nc" id="L490">            this.data = data;</span>
+<span class="nc" id="L491">            xOrigin = table.getSelectedColumn();</span>
+<span class="nc" id="L492">            yOrigin = table.getSelectedRow();</span>
+<span class="nc" id="L493">            model = (MyTableModel) table.getModel();</span>
+<span class="nc" id="L494">        }</span>
+
+        /**
+         * called to handle the paste action
+         */
+        private void paste() {
+<span class="nc bnc" id="L500" title="All 4 branches missed.">            if (xOrigin &gt;= 0 &amp;&amp; yOrigin &gt;= 0) {</span>
+<span class="nc" id="L501">                StringTokenizer rows = new StringTokenizer(data, &quot;\n\r&quot;);</span>
+<span class="nc" id="L502">                int y = 0;</span>
+<span class="nc bnc" id="L503" title="All 2 branches missed.">                while (rows.hasMoreTokens()) {</span>
+<span class="nc" id="L504">                    String line = rows.nextToken();</span>
+<span class="nc" id="L505">                    StringTokenizer cols = new StringTokenizer(line, &quot;\t&quot;);</span>
+<span class="nc" id="L506">                    int x = 0;</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">                    while (cols.hasMoreTokens()) {</span>
+<span class="nc" id="L508">                        String cell = cols.nextToken();</span>
+<span class="nc" id="L509">                        setData(xOrigin + x, yOrigin + y, cell.trim());</span>
+<span class="nc" id="L510">                        x++;</span>
+<span class="nc" id="L511">                    }</span>
+<span class="nc" id="L512">                    y++;</span>
+<span class="nc" id="L513">                }</span>
+<span class="nc" id="L514">                model.fireEvent(new TableModelEvent(model));</span>
+            }
+<span class="nc" id="L516">        }</span>
+
+        private void setData(int col, int row, String value) {
+<span class="nc bnc" id="L519" title="All 4 branches missed.">            if (col &lt; model.getColumnCount() &amp;&amp; row &lt; model.getRowCount()) {</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">                if (model.isCellEditable(row, col)) {</span>
+<span class="nc" id="L521">                    Class&lt;?&gt; type = model.getColumnClass(col);</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">                    if (type == Long.class) {</span>
+                        try {
+<span class="nc" id="L524">                            model.setValueAt(Bits.decode(value), row, col);</span>
+<span class="nc" id="L525">                        } catch (Bits.NumberFormatException e) {</span>
+                            // do nothing on error
+<span class="nc" id="L527">                        }</span>
+                    }
+                }
+            }
+<span class="nc" id="L531">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

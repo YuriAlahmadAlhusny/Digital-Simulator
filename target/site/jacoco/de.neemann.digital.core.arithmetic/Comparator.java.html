@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Comparator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.arithmetic</a> &gt; <span class="el_source">Comparator.java</span></div><h1>Comparator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.arithmetic;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.stats.Countable;
+
+import static de.neemann.digital.core.ObservableValues.ovs;
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * A comparator
+ */
+public class Comparator extends Node implements Element, Countable {
+<span class="fc" id="L22">    private static final long MSB = Bits.signedFlagMask(64);</span>
+<span class="fc" id="L23">    private static final long LSB = ~MSB;</span>
+
+    /**
+     * The comparators description
+     */
+<span class="fc" id="L28">    public static final ElementTypeDescription DESCRIPTION =</span>
+<span class="fc" id="L29">            new ElementTypeDescription(Comparator.class, input(&quot;a&quot;), input(&quot;b&quot;))</span>
+<span class="fc" id="L30">                    .addAttribute(Keys.ROTATE)</span>
+<span class="fc" id="L31">                    .addAttribute(Keys.LABEL)</span>
+<span class="fc" id="L32">                    .addAttribute(Keys.BITS)</span>
+<span class="fc" id="L33">                    .addAttribute(Keys.SIGNED)</span>
+<span class="fc" id="L34">                    .setShortName(&quot;&quot;)</span>
+<span class="fc" id="L35">                    .supportsHDL();</span>
+
+    private final int bits;
+    private final Boolean signed;
+    private final ObservableValue aklb;
+    private final ObservableValue equals;
+    private final ObservableValue agrb;
+    private ObservableValue a;
+    private ObservableValue b;
+    private long valueA;
+    private long valueB;
+
+    /**
+     * Create a new instance
+     *
+     * @param attributes the attributes
+     */
+<span class="fc" id="L52">    public Comparator(ElementAttributes attributes) {</span>
+<span class="fc" id="L53">        signed = attributes.get(Keys.SIGNED);</span>
+<span class="fc" id="L54">        bits = attributes.get(Keys.BITS);</span>
+
+<span class="fc" id="L56">        this.agrb = new ObservableValue(&quot;&gt;&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L57">        this.equals = new ObservableValue(&quot;=&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L58">        this.aklb = new ObservableValue(&quot;&lt;&quot;, 1).setPinDescription(DESCRIPTION);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void readInputs() throws NodeException {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (signed) {</span>
+<span class="fc" id="L64">            valueA = a.getValueSigned();</span>
+<span class="fc" id="L65">            valueB = b.getValueSigned();</span>
+        } else {
+<span class="fc" id="L67">            valueA = a.getValue();</span>
+<span class="fc" id="L68">            valueB = b.getValue();</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void writeOutputs() throws NodeException {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (valueA == valueB) {</span>
+<span class="fc" id="L75">            equals.setValue(1);</span>
+<span class="fc" id="L76">            aklb.setValue(0);</span>
+<span class="fc" id="L77">            agrb.setValue(0);</span>
+        } else {
+<span class="fc" id="L79">            equals.setValue(0);</span>
+
+            boolean kl;
+<span class="fc bfc" id="L82" title="All 4 branches covered.">            if (bits &lt; 64 || signed)</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                kl = valueA &lt; valueB;</span>
+            else {
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                int a = (valueA &amp; MSB) == 0 ? 0 : 1;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">                int b = (valueB &amp; MSB) == 0 ? 0 : 1;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                if (a == b) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                    kl = (valueA &amp; LSB) &lt; (valueB &amp; LSB);</span>
+                } else {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                    kl = a &lt; b;</span>
+                }
+            }
+<span class="fc" id="L93">            aklb.setBool(kl);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            agrb.setBool(!kl);</span>
+        }
+<span class="fc" id="L96">    }</span>
+
+    @Override
+    public void setInputs(ObservableValues inputs) throws BitsException {
+<span class="fc" id="L100">        a = inputs.get(0).addObserverToValue(this).checkBits(bits, this, 0);</span>
+<span class="fc" id="L101">        b = inputs.get(1).addObserverToValue(this).checkBits(bits, this, 1);</span>
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public ObservableValues getOutputs() {
+<span class="fc" id="L106">        return ovs(agrb, equals, aklb);</span>
+    }
+
+    @Override
+    public int getDataBits() {
+<span class="nc" id="L111">        return bits;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

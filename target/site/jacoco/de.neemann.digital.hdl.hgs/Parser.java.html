@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Parser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs</a> &gt; <span class="el_source">Parser.java</span></div><h1>Parser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.hdl.hgs.function.FirstClassFunction;
+import de.neemann.digital.hdl.hgs.function.FirstClassFunctionCall;
+import de.neemann.digital.hdl.hgs.refs.*;
+import de.neemann.digital.testing.parser.OperatorPrecedence;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static de.neemann.digital.hdl.hgs.Tokenizer.Token.*;
+
+/**
+ * Parser to evaluate text templates
+ */
+public class Parser {
+
+    /**
+     * Creates a statement from the jar file using ClassLoader.getSystemResourceAsStream(path).
+     *
+     * @param path the path of the file to load
+     * @param cl   the classloader used to load the template. If set to null, the SystemClassLoader is used
+     * @return the statement
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public static Statement createFromJar(String path, ClassLoader cl) throws IOException, ParserException {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (cl == null)</span>
+<span class="fc" id="L38">            cl = ClassLoader.getSystemClassLoader();</span>
+<span class="fc" id="L39">        InputStream in = cl.getResourceAsStream(path);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (in == null)</span>
+<span class="nc" id="L41">            throw new FileNotFoundException(&quot;file not found: &quot; + path);</span>
+<span class="fc" id="L42">        try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L43">            Parser p = new Parser(r, path);</span>
+<span class="fc" id="L44">            return p.parse();</span>
+        }
+    }
+
+    /**
+     * Creates a statement from the jar file using ClassLoader.getSystemResourceAsStream(path).
+     * Throws only a RuntimeException so use with care!
+     *
+     * @param path the path of the file to load
+     * @return the statement
+     */
+    public static Statement createFromJarStatic(String path) {
+        try {
+<span class="fc" id="L57">            return createFromJar(path, null);</span>
+<span class="nc" id="L58">        } catch (IOException | ParserException e) {</span>
+<span class="nc" id="L59">            throw new RuntimeException(&quot;could not parse: &quot; + path, e);</span>
+        }
+    }
+
+
+    private ArrayList&lt;Reference&gt; refRead;
+    private final Tokenizer tok;
+
+    /**
+     * Create a new instance
+     *
+     * @param code the code to parse
+     */
+    public Parser(String code) {
+<span class="fc" id="L73">        this(new StringReader(code), &quot;&quot;);</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param reader  the reader to parse
+     * @param srcFile the source file name if any
+     */
+<span class="fc" id="L82">    public Parser(Reader reader, String srcFile) {</span>
+<span class="fc" id="L83">        tok = new Tokenizer(reader, srcFile);</span>
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * If called all read references are collected.
+     */
+    public void enableRefReadCollection() {
+<span class="nc" id="L90">        refRead = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * @return returns the references read
+     */
+    public ArrayList&lt;Reference&gt; getRefsRead() {
+<span class="nc" id="L97">        return refRead;</span>
+    }
+
+    private Statement lino(Statement statement) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (statement instanceof StatementWithLine)</span>
+<span class="nc" id="L102">            return statement;</span>
+        else
+<span class="fc" id="L104">            return new StatementWithLine(statement, tok.getLine());</span>
+    }
+
+    private Expression linoE(Expression expression) {
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (expression instanceof ExpressionWithLine)</span>
+<span class="nc" id="L109">            return expression;</span>
+        else
+<span class="fc" id="L111">            return new ExpressionWithLine(expression, tok.getLine());</span>
+    }
+
+    /**
+     * Parses the given template source
+     *
+     * @return the Statement to execute
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public Statement parse() throws IOException, ParserException {
+<span class="fc" id="L122">        return parse(true);</span>
+    }
+
+    /**
+     * Parses the given template source
+     *
+     * @param startsWithText true if code starts with text.
+     * @return the Statement to execute
+     * @throws IOException     IOException
+     * @throws ParserException ParserException
+     */
+    public Statement parse(boolean startsWithText) throws IOException, ParserException {
+<span class="fc" id="L134">        Statements s = new Statements();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (startsWithText) {</span>
+<span class="fc" id="L136">            String text = tok.readText();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (nextIs(SUB))</span>
+<span class="fc" id="L138">                text = Value.trimRight(text);</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (text.length() &gt; 0) {</span>
+<span class="fc" id="L141">                String t = text;</span>
+<span class="fc" id="L142">                s.add(c -&gt; c.print(t));</span>
+            }
+        }
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        while (!nextIs(EOF))</span>
+<span class="fc" id="L146">            s.add(parseStatement());</span>
+
+<span class="fc" id="L148">        return s.optimize();</span>
+    }
+
+    private Statement parseStatement() throws IOException, ParserException {
+<span class="fc" id="L152">        return parseStatement(true);</span>
+    }
+
+    /**
+     * If 'isRealStatement' is false, the statement is parsed like an expression.
+     * This mode is needed to implement the 'for' loop. In a C style for loop the pre and the
+     * post code are expressions which modify state. This is not supported by HGS. In the HGS
+     * for loop the pre and the post code are statements where the semicolon at the end is omitted.
+     */
+    private Statement parseStatement(boolean isRealStatement) throws IOException, ParserException {
+<span class="fc" id="L162">        final Tokenizer.Token token = tok.next();</span>
+<span class="fc" id="L163">        boolean export = false;</span>
+<span class="pc bpc" id="L164" title="1 of 13 branches missed.">        switch (token) {</span>
+            case EXPORT:
+<span class="fc" id="L166">                export = true;</span>
+<span class="fc" id="L167">                Tokenizer.Token ti = tok.next();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">                if (!ti.equals(IDENT))</span>
+<span class="nc" id="L169">                    throw newParserException(&quot;export must be followed by an identifier!&quot;);</span>
+            case IDENT:
+<span class="fc" id="L171">                final Reference ref = parseReference(tok.getIdent());</span>
+<span class="fc" id="L172">                Tokenizer.Token refToken = tok.next();</span>
+<span class="pc bpc" id="L173" title="1 of 6 branches missed.">                switch (refToken) {</span>
+                    case COLON:
+<span class="fc" id="L175">                        expect(EQUAL);</span>
+<span class="fc" id="L176">                        final Expression initVal = parseExpression();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                        if (isRealStatement) expect(SEMICOLON);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">                        if (export)</span>
+<span class="fc" id="L179">                            return lino(c -&gt; ref.exportVar(c, initVal.value(c)));</span>
+                        else
+<span class="fc" id="L181">                            return lino(c -&gt; ref.declareVar(c, initVal.value(c)));</span>
+                    case EQUAL:
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                        if (export)</span>
+<span class="nc" id="L184">                            throw newParserException(&quot;export is only allowed at variable declaration!&quot;);</span>
+<span class="fc" id="L185">                        final Expression val = parseExpression();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">                        if (isRealStatement) expect(SEMICOLON);</span>
+<span class="fc" id="L187">                        return lino(c -&gt; {</span>
+<span class="fc" id="L188">                            final Object value = val.value(c);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                            if (value == null)</span>
+<span class="fc" id="L190">                                throw new HGSEvalException(&quot;There is no value to assign!&quot;);</span>
+<span class="fc" id="L191">                            ref.set(c, value);</span>
+<span class="fc" id="L192">                        });</span>
+                    case ADD:
+<span class="fc" id="L194">                        expect(ADD);</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">                        if (export)</span>
+<span class="nc" id="L196">                            throw newParserException(&quot;export is only allowed at variable declaration!&quot;);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                        if (isRealStatement) expect(SEMICOLON);</span>
+<span class="fc" id="L198">                        return lino(c -&gt; ref.set(c, Value.toLong(ref.get(c)) + 1));</span>
+                    case SUB:
+<span class="fc" id="L200">                        expect(SUB);</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">                        if (export)</span>
+<span class="nc" id="L202">                            throw newParserException(&quot;export is only allowed at variable declaration!&quot;);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                        if (isRealStatement) expect(SEMICOLON);</span>
+<span class="fc" id="L204">                        return lino(c -&gt; ref.set(c, Value.toLong(ref.get(c)) - 1));</span>
+                    case SEMICOLON:
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                        if (export)</span>
+<span class="nc" id="L207">                            throw newParserException(&quot;export is only allowed at variable declaration!&quot;);</span>
+<span class="fc" id="L208">                        return lino(ref::get);</span>
+                    default:
+<span class="nc" id="L210">                        throw newUnexpectedToken(refToken);</span>
+                }
+            case CODEEND:
+<span class="fc" id="L213">                String str = tok.readText();</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">                if (nextIs(SUB))</span>
+<span class="fc" id="L215">                    str = Value.trimRight(str);</span>
+<span class="fc" id="L216">                final String strc = str;</span>
+<span class="fc" id="L217">                return c -&gt; c.print(strc);</span>
+            case SUB:
+<span class="fc" id="L219">                expect(CODEEND);</span>
+<span class="fc" id="L220">                final String strt = Value.trimLeft(tok.readText());</span>
+<span class="fc" id="L221">                return c -&gt; c.print(strt);</span>
+            case EQUAL:
+<span class="fc" id="L223">                final Expression exp = parseExpression();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">                if (tok.peek() != CODEEND) expect(SEMICOLON);</span>
+<span class="fc" id="L225">                return lino(c -&gt; c.print(exp.value(c).toString()));</span>
+            case IF:
+<span class="fc" id="L227">                expect(OPEN);</span>
+<span class="fc" id="L228">                final Expression ifCond = toBool(parseExpression());</span>
+<span class="fc" id="L229">                expect(CLOSE);</span>
+<span class="fc" id="L230">                final Statement ifStatement = parseStatement();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                if (nextIs(ELSE)) {</span>
+<span class="fc" id="L232">                    final Statement elseStatement = parseStatement();</span>
+<span class="fc" id="L233">                    return c -&gt; {</span>
+<span class="fc" id="L234">                        Context iC = new Context(c, false);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">                        if ((boolean) ifCond.value(iC))</span>
+<span class="fc" id="L236">                            ifStatement.execute(iC);</span>
+                        else
+<span class="fc" id="L238">                            elseStatement.execute(iC);</span>
+<span class="fc" id="L239">                    };</span>
+                } else
+<span class="fc" id="L241">                    return c -&gt; {</span>
+<span class="fc" id="L242">                        Context iC = new Context(c, false);</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">                        if ((boolean) ifCond.value(iC))</span>
+<span class="fc" id="L244">                            ifStatement.execute(iC);</span>
+<span class="fc" id="L245">                    };</span>
+            case FOR:
+<span class="fc" id="L247">                expect(OPEN);</span>
+<span class="fc" id="L248">                Statement init = parseStatement(false); // parse like an expression</span>
+<span class="fc" id="L249">                expect(SEMICOLON);</span>
+<span class="fc" id="L250">                final Expression forCond = toBool(parseExpression());</span>
+<span class="fc" id="L251">                expect(SEMICOLON);</span>
+<span class="fc" id="L252">                Statement inc = parseStatement(false); // parse like an expression</span>
+<span class="fc" id="L253">                expect(CLOSE);</span>
+<span class="fc" id="L254">                Statement inner = parseStatement();</span>
+<span class="fc" id="L255">                return c -&gt; {</span>
+<span class="fc" id="L256">                    Context iC = new Context(c, false);</span>
+<span class="fc" id="L257">                    init.execute(iC);</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">                    while ((boolean) forCond.value(iC)) {</span>
+<span class="fc" id="L259">                        inner.execute(new Context(iC, false));</span>
+<span class="fc" id="L260">                        inc.execute(iC);</span>
+                    }
+<span class="fc" id="L262">                };</span>
+            case WHILE:
+<span class="fc" id="L264">                expect(OPEN);</span>
+<span class="fc" id="L265">                final Expression whileCond = toBool(parseExpression());</span>
+<span class="fc" id="L266">                expect(CLOSE);</span>
+<span class="fc" id="L267">                inner = parseStatement();</span>
+<span class="fc" id="L268">                return c -&gt; {</span>
+<span class="fc" id="L269">                    Context iC = new Context(c, false);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                    while ((boolean) whileCond.value(iC)) inner.execute(iC);</span>
+<span class="fc" id="L271">                };</span>
+            case REPEAT:
+<span class="fc" id="L273">                final Statement repeatInner = parseStatement();</span>
+<span class="fc" id="L274">                expect(UNTIL);</span>
+<span class="fc" id="L275">                final Expression repeatCond = toBool(parseExpression());</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">                if (isRealStatement) expect(SEMICOLON);</span>
+<span class="fc" id="L277">                return c -&gt; {</span>
+<span class="fc" id="L278">                    Context iC = new Context(c, false);</span>
+                    do {
+<span class="fc" id="L280">                        repeatInner.execute(iC);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                    } while (!(boolean) repeatCond.value(iC));</span>
+<span class="fc" id="L282">                };</span>
+            case OPENBRACE:
+<span class="fc" id="L284">                Statements s = new Statements();</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                while (!nextIs(CLOSEDBRACE))</span>
+<span class="fc" id="L286">                    s.add(parseStatement());</span>
+<span class="fc" id="L287">                return s.optimize();</span>
+            case RETURN:
+<span class="fc" id="L289">                Expression retExp = parseExpression();</span>
+<span class="fc" id="L290">                expect(SEMICOLON);</span>
+<span class="pc" id="L291">                return lino(c -&gt; FirstClassFunctionCall.returnFromFunc(retExp.value(c)));</span>
+            case FUNC:
+<span class="fc" id="L293">                expect(IDENT);</span>
+<span class="fc" id="L294">                String funcName = tok.getIdent();</span>
+<span class="fc" id="L295">                FirstClassFunction funcDecl = parseFunction();</span>
+<span class="fc" id="L296">                return lino(c -&gt; c.declareVar(funcName, new FirstClassFunctionCall(funcDecl, c)));</span>
+            default:
+<span class="nc" id="L298">                throw newUnexpectedToken(token);</span>
+        }
+    }
+
+    private Expression toBool(Expression expression) {
+<span class="fc" id="L303">        return linoE(c -&gt; Value.toBool(expression.value(c)));</span>
+    }
+
+    private ArrayList&lt;Expression&gt; parseArgList() throws IOException, ParserException {
+<span class="fc" id="L307">        ArrayList&lt;Expression&gt; args = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        if (!nextIs(CLOSE)) {</span>
+<span class="fc" id="L309">            args.add(parseExpression());</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            while (nextIs(COMMA))</span>
+<span class="fc" id="L311">                args.add(parseExpression());</span>
+<span class="fc" id="L312">            expect(CLOSE);</span>
+        }
+<span class="fc" id="L314">        return args;</span>
+    }
+
+    private Reference parseReference(String var) throws IOException, ParserException {
+<span class="fc" id="L318">        Reference r = new ReferenceToVar(var);</span>
+        while (true) {
+<span class="fc bfc" id="L320" title="All 2 branches covered.">            if (nextIs(OPENSQUARE)) {</span>
+<span class="fc" id="L321">                r = new ReferenceToArray(r, parseExpression());</span>
+<span class="fc" id="L322">                expect(CLOSEDSQUARE);</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">            } else if (nextIs(OPEN)) {</span>
+<span class="fc" id="L324">                r = new ReferenceToFunc(r, parseArgList());</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">            } else if (nextIs(DOT)) {</span>
+<span class="fc" id="L326">                expect(IDENT);</span>
+<span class="fc" id="L327">                r = new ReferenceToStruct(r, tok.getIdent());</span>
+            } else
+<span class="fc" id="L329">                return r;</span>
+        }
+    }
+
+    private boolean nextIs(Tokenizer.Token t) throws IOException {
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (tok.peek() == t) {</span>
+<span class="fc" id="L335">            tok.next();</span>
+<span class="fc" id="L336">            return true;</span>
+        }
+<span class="fc" id="L338">        return false;</span>
+    }
+
+    private void expect(Tokenizer.Token token) throws IOException, ParserException {
+<span class="fc" id="L342">        Tokenizer.Token t = tok.next();</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (t != token)</span>
+<span class="fc" id="L344">            throw newParserException(&quot;expected: &quot; + token + &quot;, but found: &quot; + t);</span>
+<span class="fc" id="L345">    }</span>
+
+    private long convToLong(String num) throws ParserException {
+        try {
+<span class="fc" id="L349">            return Bits.decode(num);</span>
+<span class="nc" id="L350">        } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L351">            throw newParserException(&quot;not a number: &quot; + tok.getIdent());</span>
+        }
+    }
+
+    private double convToDouble(String num) throws ParserException {
+        try {
+<span class="fc" id="L357">            return Double.parseDouble(num);</span>
+<span class="nc" id="L358">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L359">            throw newParserException(&quot;not a number: &quot; + tok.getIdent());</span>
+        }
+    }
+
+    private ParserException newUnexpectedToken(Tokenizer.Token token) {
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        String name = token == IDENT ? tok.getIdent() : token.name();</span>
+<span class="fc" id="L365">        return newParserException(&quot;unexpected Token: &quot; + name);</span>
+    }
+
+    private ParserException newParserException(String s) {
+<span class="fc" id="L369">        return new ParserException(s + &quot; (&quot; + tok.getSrcFile() + &quot;:&quot; + tok.getLine() + &quot;)&quot;);</span>
+    }
+
+    /**
+     * Parses a string to a simple expression
+     *
+     * @return the expression
+     * @throws IOException     IOException
+     * @throws ParserException IOException
+     */
+    public Expression parseExp() throws IOException, ParserException {
+<span class="fc" id="L380">        Expression ex = parseExpression();</span>
+<span class="fc" id="L381">        expect(EOF);</span>
+<span class="fc" id="L382">        return ex;</span>
+    }
+
+    private Expression parseExpression() throws IOException, ParserException {
+<span class="fc" id="L386">        return parseExpression(OperatorPrecedence.lowest());</span>
+    }
+
+    private Expression parseExpression(OperatorPrecedence op) throws IOException, ParserException {
+<span class="fc" id="L390">        Next next = getNextParser(op.getNextHigherPrecedence());</span>
+<span class="fc" id="L391">        Expression ac = next.next();</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">        while (tok.peek().getPrecedence() == op) {</span>
+<span class="fc" id="L393">            Tokenizer.Binary function = tok.next().getBinary();</span>
+<span class="fc" id="L394">            Expression a = ac;</span>
+<span class="fc" id="L395">            Expression b = next.next();</span>
+<span class="fc" id="L396">            ac = (c) -&gt; function.op(a.value(c), b.value(c));</span>
+<span class="fc" id="L397">        }</span>
+<span class="fc" id="L398">        return ac;</span>
+    }
+
+    private Next getNextParser(OperatorPrecedence pr) {
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        if (pr == null)</span>
+<span class="fc" id="L403">            return this::parseIdent;</span>
+        else
+<span class="fc" id="L405">            return () -&gt; parseExpression(pr);</span>
+    }
+
+    private Expression parseIdent() throws IOException, ParserException {
+<span class="fc" id="L409">        Tokenizer.Token t = tok.next();</span>
+<span class="fc bfc" id="L410" title="All 13 branches covered.">        switch (t) {</span>
+            case IDENT:
+<span class="fc" id="L412">                String name = tok.getIdent();</span>
+<span class="fc" id="L413">                Reference r = parseReference(name);</span>
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">                if (refRead != null)</span>
+<span class="nc" id="L415">                    refRead.add(r);</span>
+<span class="fc" id="L416">                return r::get;</span>
+            case NUMBER:
+<span class="fc" id="L418">                long num = convToLong(tok.getIdent());</span>
+<span class="fc" id="L419">                return c -&gt; num;</span>
+            case DOUBLE:
+<span class="fc" id="L421">                double d = convToDouble(tok.getIdent());</span>
+<span class="fc" id="L422">                return c -&gt; d;</span>
+            case TRUE:
+<span class="fc" id="L424">                return c -&gt; true;</span>
+            case FALSE:
+<span class="fc" id="L426">                return c -&gt; false;</span>
+            case STRING:
+<span class="fc" id="L428">                String s = tok.getIdent();</span>
+<span class="fc" id="L429">                return c -&gt; s;</span>
+            case SUB:
+<span class="fc" id="L431">                Expression negExp = parseIdent();</span>
+<span class="fc" id="L432">                return c -&gt; Value.neg(negExp.value(c));</span>
+            case NOT:
+<span class="fc" id="L434">                Expression notExp = parseIdent();</span>
+<span class="fc" id="L435">                return c -&gt; Value.not(notExp.value(c));</span>
+            case OPEN:
+<span class="fc" id="L437">                Expression exp = parseExpression();</span>
+<span class="fc" id="L438">                expect(CLOSE);</span>
+<span class="fc" id="L439">                return exp;</span>
+            case OPENBRACE:
+<span class="fc" id="L441">                return parseStructLiteral();</span>
+            case OPENSQUARE:
+<span class="fc" id="L443">                return parseListLiteral();</span>
+            case FUNC:
+<span class="fc" id="L445">                FirstClassFunction func = parseFunction();</span>
+<span class="fc" id="L446">                return c -&gt; new FirstClassFunctionCall(func, c);</span>
+            default:
+<span class="fc" id="L448">                throw newUnexpectedToken(t);</span>
+        }
+    }
+
+    private Expression parseListLiteral() throws IOException, ParserException {
+<span class="fc" id="L453">        ArrayList&lt;Expression&gt; al = new ArrayList&lt;&gt;();</span>
+        while (true) {
+<span class="fc bfc" id="L455" title="All 2 branches covered.">            if (tok.peek() == CLOSEDSQUARE) {</span>
+<span class="fc" id="L456">                tok.consume();</span>
+<span class="fc" id="L457">                return c -&gt; {</span>
+<span class="fc" id="L458">                    ArrayList&lt;Object&gt; l = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">                    for (Expression e : al)</span>
+<span class="fc" id="L460">                        l.add(e.value(c));</span>
+<span class="fc" id="L461">                    return l;</span>
+                };
+            } else {
+<span class="fc" id="L464">                al.add(parseExpression());</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">                if (tok.peek() == COMMA)</span>
+<span class="fc" id="L466">                    tok.consume();</span>
+            }
+        }
+    }
+
+    private Expression parseStructLiteral() throws IOException, ParserException {
+<span class="fc" id="L472">        StructLiteral sl = new StructLiteral();</span>
+        while (true) {
+<span class="fc" id="L474">            Tokenizer.Token t = tok.next();</span>
+<span class="pc bpc" id="L475" title="1 of 3 branches missed.">            switch (t) {</span>
+                case CLOSEDBRACE:
+<span class="fc" id="L477">                    return sl;</span>
+                case IDENT:
+<span class="fc" id="L479">                    String key = tok.getIdent();</span>
+<span class="fc" id="L480">                    expect(COLON);</span>
+<span class="fc" id="L481">                    Expression exp = parseExpression();</span>
+<span class="fc" id="L482">                    sl.add(key, exp);</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">                    if (nextIs(COMMA))</span>
+<span class="fc" id="L484">                        tok.consume();</span>
+                    else {
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">                        if (tok.peek() != CLOSEDBRACE)</span>
+<span class="nc" id="L487">                            throw newUnexpectedToken(t);</span>
+                    }
+                    break;
+                default:
+<span class="nc" id="L491">                    throw newUnexpectedToken(t);</span>
+            }
+<span class="fc" id="L493">        }</span>
+    }
+
+    private interface Next {
+        Expression next() throws IOException, ParserException;
+    }
+
+    private FirstClassFunction parseFunction() throws IOException, ParserException {
+<span class="fc" id="L501">        expect(OPEN);</span>
+<span class="fc" id="L502">        ArrayList&lt;String&gt; args = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        if (!nextIs(CLOSE)) {</span>
+<span class="fc" id="L504">            expect(IDENT);</span>
+<span class="fc" id="L505">            args.add(tok.getIdent());</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">            while (!nextIs(CLOSE)) {</span>
+<span class="fc" id="L507">                expect(COMMA);</span>
+<span class="fc" id="L508">                expect(IDENT);</span>
+<span class="fc" id="L509">                args.add(tok.getIdent());</span>
+            }
+        }
+<span class="fc" id="L512">        Statement st = parseStatement();</span>
+<span class="fc" id="L513">        return new FirstClassFunction(args, st);</span>
+    }
+
+    private static final class StatementWithLine implements Statement {
+        private final Statement statement;
+        private final int line;
+
+<span class="fc" id="L520">        private StatementWithLine(Statement statement, int line) {</span>
+<span class="fc" id="L521">            this.statement = statement;</span>
+<span class="fc" id="L522">            this.line = line;</span>
+<span class="fc" id="L523">        }</span>
+
+        @Override
+        public void execute(Context context) throws HGSEvalException {
+            try {
+<span class="fc" id="L528">                statement.execute(context);</span>
+<span class="fc" id="L529">            } catch (HGSEvalException e) {</span>
+<span class="fc" id="L530">                e.setLinNum(line);</span>
+<span class="fc" id="L531">                throw e;</span>
+<span class="fc" id="L532">            }</span>
+<span class="fc" id="L533">        }</span>
+    }
+
+    private static final class ExpressionWithLine implements Expression {
+        private final Expression expression;
+        private final int line;
+
+<span class="fc" id="L540">        private ExpressionWithLine(Expression expression, int line) {</span>
+<span class="fc" id="L541">            this.expression = expression;</span>
+<span class="fc" id="L542">            this.line = line;</span>
+<span class="fc" id="L543">        }</span>
+
+        @Override
+        public Object value(Context c) throws HGSEvalException {
+            try {
+<span class="fc" id="L548">                return expression.value(c);</span>
+<span class="fc" id="L549">            } catch (HGSEvalException e) {</span>
+<span class="fc" id="L550">                e.setLinNum(line);</span>
+<span class="fc" id="L551">                throw e;</span>
+            }
+        }
+    }
+
+    private static final class StructLiteral implements Expression {
+        private final HashMap&lt;String, Expression&gt; map;
+
+<span class="fc" id="L559">        private StructLiteral() {</span>
+<span class="fc" id="L560">            map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L561">        }</span>
+
+        private void add(String key, Expression exp) {
+<span class="fc" id="L564">            map.put(key, exp);</span>
+<span class="fc" id="L565">        }</span>
+
+        @Override
+        public Object value(Context c) throws HGSEvalException {
+<span class="fc" id="L569">            HashMap&lt;String, Object&gt; vmap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">            for (Map.Entry&lt;String, Expression&gt; e : map.entrySet())</span>
+<span class="fc" id="L571">                vmap.put(e.getKey(), e.getValue().value(c));</span>
+<span class="fc" id="L572">            return vmap;</span>
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

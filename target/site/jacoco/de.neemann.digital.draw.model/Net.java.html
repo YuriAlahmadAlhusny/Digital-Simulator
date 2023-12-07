@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Net.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">Net.java</span></div><h1>Net.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.core.element.PinDescription;
+import de.neemann.digital.core.wiring.bus.DataBus;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.elements.Wire;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.lang.Lang;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+
+/**
+ * Contains all pins which are connected together.
+ * Is created and filled by the ModelDescription constructor.
+ * After creation all the ObservableValues belonging to the outputs are set.
+ */
+public class Net {
+<span class="fc" id="L31">    private static final ObservableValue UNCONNECTED_WIRE = new ObservableValue(&quot;unconnected wire&quot;, 1).setToHighZ().setConstant();</span>
+
+    private final HashSet&lt;Vector&gt; points;
+    private final ArrayList&lt;Pin&gt; pins;
+    private final ArrayList&lt;Wire&gt; wires;
+    private final HashSet&lt;String&gt; labelSet;
+    private File origin;
+    private VisualElement visualElement; // only used to create better error messages
+    private HashMap&lt;Pin, Net&gt; pinMap;
+
+    /**
+     * Creates a copy of the given net
+     *
+     * @param toCopy        the net to copy
+     * @param visualElement the containing visual element, only used to create better error messages
+     */
+<span class="fc" id="L47">    public Net(Net toCopy, VisualElement visualElement) {</span>
+<span class="fc" id="L48">        points = toCopy.points;  // no deep copy of points necessary</span>
+<span class="fc" id="L49">        this.visualElement = visualElement;</span>
+<span class="fc" id="L50">        wires = null;            // wires not needed</span>
+<span class="fc" id="L51">        pins = new ArrayList&lt;&gt;(toCopy.pins); // Pins are changed so create a deep copy</span>
+<span class="fc" id="L52">        labelSet = new HashSet&lt;&gt;(toCopy.labelSet); //necessary because of label net merging</span>
+<span class="fc" id="L53">        origin = toCopy.origin;</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Creates a net containing a single wire
+     *
+     * @param w the wire
+     */
+<span class="fc" id="L61">    public Net(Wire w) {</span>
+<span class="fc" id="L62">        points = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L63">        points.add(w.p1);</span>
+<span class="fc" id="L64">        points.add(w.p2);</span>
+<span class="fc" id="L65">        pins = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L66">        wires = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L67">        wires.add(w);</span>
+<span class="fc" id="L68">        labelSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L69">    }</span>
+
+    /**
+     * Creates a single point net
+     *
+     * @param v the vector containing the points coordinates
+     */
+<span class="fc" id="L76">    public Net(Vector v) {</span>
+<span class="fc" id="L77">        points = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L78">        points.add(v);</span>
+<span class="fc" id="L79">        pins = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">        wires = null;</span>
+<span class="fc" id="L81">        labelSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Tries to add the given wire to this net
+     *
+     * @param wire the wire
+     * @return true if the given wire is connected to one of the old wires.
+     */
+    public Vector tryMerge(Wire wire) {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (points.contains(wire.p1)) {</span>
+<span class="fc" id="L92">            wires.add(wire);</span>
+<span class="fc" id="L93">            points.add(wire.p2);</span>
+<span class="fc" id="L94">            return wire.p2;</span>
+        }
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (points.contains(wire.p2)) {</span>
+<span class="fc" id="L97">            wires.add(wire);</span>
+<span class="fc" id="L98">            points.add(wire.p1);</span>
+<span class="fc" id="L99">            return wire.p1;</span>
+        }
+<span class="fc" id="L101">        return null;</span>
+    }
+
+    /**
+     * Checks if the given position is part of this net
+     *
+     * @param vector the position
+     * @return true if vector matches a wire end point
+     */
+    public boolean contains(Vector vector) {
+<span class="fc" id="L111">        return points.contains(vector);</span>
+    }
+
+    void addPointsTo(HashMap&lt;Vector, Net&gt; set) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (Vector p : points)</span>
+<span class="fc" id="L116">            set.put(p, this);</span>
+<span class="fc" id="L117">    }</span>
+
+    /**
+     * Add all wires of the given net to this net
+     *
+     * @param changedNet the net to add
+     */
+    void addAllPointsFrom(Net changedNet) {
+<span class="fc" id="L125">        points.addAll(changedNet.points);</span>
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        if (wires != null &amp;&amp; changedNet.wires != null)</span>
+<span class="fc" id="L127">            wires.addAll(changedNet.wires);</span>
+<span class="fc" id="L128">        labelSet.addAll(changedNet.labelSet);</span>
+<span class="fc" id="L129">    }</span>
+
+    /**
+     * Add a pin to this net
+     *
+     * @param pin the pin to add
+     */
+    public void add(Pin pin) {
+<span class="fc" id="L137">        pins.add(pin);</span>
+<span class="fc" id="L138">    }</span>
+
+    /**
+     * Add all given pins to the net.
+     * Used during custom component connection.
+     *
+     * @param pins the pins
+     */
+    public void addAll(Collection&lt;Pin&gt; pins) {
+<span class="fc" id="L147">        this.pins.addAll(pins);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (pinMap != null)</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            for (Pin p : pins)</span>
+<span class="fc" id="L150">                pinMap.put(p, this);</span>
+<span class="fc" id="L151">    }</span>
+
+    /**
+     * Add all given pins to the net.
+     * Used during custom component connection.
+     *
+     * @param otherNet the other net
+     */
+    public void addNet(Net otherNet) {
+<span class="fc" id="L160">        ArrayList&lt;Pin&gt; pins = otherNet.getPins();</span>
+<span class="fc" id="L161">        this.pins.addAll(pins);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (pinMap != null)</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            for (Pin p : pins)</span>
+<span class="fc" id="L164">                pinMap.put(p, this);</span>
+
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">        if (wires != null &amp;&amp; otherNet.getWires() != null)</span>
+<span class="fc" id="L167">            wires.addAll(otherNet.getWires());</span>
+<span class="fc" id="L168">        labelSet.addAll(otherNet.labelSet);</span>
+<span class="fc" id="L169">    }</span>
+
+    /**
+     * Do the interconnection.
+     * All inputs and outputs in the net are connected together.
+     * If there is no output an exception is thrown.
+     * If there is one single output, all input {@link ObservableValue}s are set to this output
+     * If there is more than one output, a {@link DataBus} is created.
+     * &lt;p&gt;
+     * At the end all wires get a reference to the {@link ObservableValue} the represent
+     *
+     * @param m           the model is needed to create the {@link DataBus}
+     * @param attachWires if true, the values are attached to the wires
+     * @throws PinException PinException
+     */
+    public void interconnect(Model m, boolean attachWires) throws PinException {
+<span class="fc" id="L185">        ArrayList&lt;Pin&gt; inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L186">        ArrayList&lt;Pin&gt; outputs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (Pin p : pins) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (p.getDirection() == Pin.Direction.input)</span>
+<span class="fc" id="L189">                inputs.add(p);</span>
+            else
+<span class="fc" id="L191">                outputs.add(p);</span>
+<span class="fc" id="L192">        }</span>
+
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">        if (outputs.size() == 0 &amp;&amp; inputs.size() &gt; 0)</span>
+<span class="fc" id="L195">            throw new PinException(Lang.get(&quot;err_noOutConnectedToWire&quot;, this.toString()), this);</span>
+
+        ObservableValue value;
+<span class="fc bfc" id="L198" title="All 4 branches covered.">        if (outputs.size() == 1 &amp;&amp; outputs.get(0).getPullResistor() == PinDescription.PullResistor.none) {</span>
+<span class="fc" id="L199">            value = outputs.get(0).getValue();</span>
+        } else {
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">            if (inputs.size() == 0 &amp;&amp; outputs.size() == 0) // unconnected wire</span>
+<span class="nc" id="L202">                value = UNCONNECTED_WIRE;</span>
+            else
+<span class="fc" id="L204">                value = new DataBus(this, m, outputs).getReadableOutput();</span>
+        }
+
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (outputs.size() &gt; 1) {</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            for (Pin o : outputs) {</span>
+<span class="fc" id="L209">                ObservableValue ov = o.getValue();</span>
+<span class="pc bpc" id="L210" title="1 of 4 branches missed.">                if (ov.isConstant() &amp;&amp; ov.isHighZ())</span>
+<span class="nc" id="L211">                    throw new PinException(Lang.get(&quot;err_notConnectedNotAllowed&quot;, o), this);</span>
+<span class="fc" id="L212">            }</span>
+        }
+
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (value == null)</span>
+<span class="nc" id="L216">            throw new PinException(Lang.get(&quot;err_output_N_notDefined&quot;, outputs.get(0)), this);</span>
+
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        for (Pin i : inputs)</span>
+<span class="fc" id="L219">            i.setValue(value);</span>
+
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (Pin o : outputs)  // set also the reader for bidirectional pins</span>
+<span class="fc" id="L222">            o.setReaderValue(value);</span>
+
+<span class="pc bpc" id="L224" title="1 of 4 branches missed.">        if (wires != null &amp;&amp; attachWires)</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">            for (Wire w : wires)</span>
+<span class="nc" id="L226">                w.setValue(value);</span>
+<span class="fc" id="L227">    }</span>
+
+    /**
+     * @return the wires building this net
+     */
+    public ArrayList&lt;Wire&gt; getWires() {
+<span class="fc" id="L233">        return wires;</span>
+    }
+
+    /**
+     * @param p the pin
+     * @return true if the given pin belongs to this net
+     */
+    public boolean containsPin(Pin p) {
+<span class="nc" id="L241">        return pins.contains(p);</span>
+    }
+
+    /**
+     * @return all the pins of this net
+     */
+    public ArrayList&lt;Pin&gt; getPins() {
+<span class="fc" id="L248">        return pins;</span>
+    }
+
+    /**
+     * Removes a pin from the net.
+     * Used during custom component connection.
+     *
+     * @param p the pin to remove
+     * @throws PinException is thrown if pin is not present
+     */
+    public void removePin(Pin p) throws PinException {
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (pinMap != null)</span>
+<span class="fc" id="L260">            pinMap.remove(p);</span>
+
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (!pins.remove(p))</span>
+<span class="nc" id="L263">            throw new PinException(Lang.get(&quot;err_pinNotPresent&quot;), this);</span>
+<span class="fc" id="L264">    }</span>
+
+    /**
+     * Adds a label this this net
+     *
+     * @param label the label to add
+     */
+    public void addLabel(String label) {
+<span class="fc" id="L272">        labelSet.add(label);</span>
+<span class="fc" id="L273">    }</span>
+
+    /**
+     * Returns true if the given net has at least one same net label.
+     *
+     * @param net the other net
+     * @return true if same net
+     */
+    public boolean matchesLabel(Net net) {
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        for (String l : labelSet) {</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            if (net.labelSet.contains(l))</span>
+<span class="nc" id="L284">                return true;</span>
+<span class="nc" id="L285">        }</span>
+<span class="nc" id="L286">        return false;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        if (labelSet.isEmpty())</span>
+<span class="fc" id="L292">            return pins.toString();</span>
+        else
+<span class="nc" id="L294">            return labelSet + &quot;/&quot; + pins;</span>
+    }
+
+    /**
+     * Sets the origin of this net
+     *
+     * @param origin the origin
+     */
+    public void setOrigin(File origin) {
+<span class="fc" id="L303">        this.origin = origin;</span>
+<span class="fc" id="L304">    }</span>
+
+    /**
+     * @return the origin of this net
+     */
+    public File getOrigin() {
+<span class="fc" id="L310">        return origin;</span>
+    }
+
+    /**
+     * @return the containing visual element
+     */
+    public VisualElement getVisualElement() {
+<span class="fc" id="L317">        return visualElement;</span>
+    }
+
+    /**
+     * @return the set of labels attached to this net
+     */
+    public HashSet&lt;String&gt; getLabels() {
+<span class="fc" id="L324">        return labelSet;</span>
+    }
+
+    void addPinsTo(HashMap&lt;Pin, Net&gt; pinMap) {
+<span class="fc" id="L328">        this.pinMap = pinMap;</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        for (Pin p : pins)</span>
+<span class="fc" id="L330">            pinMap.put(p, this);</span>
+<span class="fc" id="L331">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

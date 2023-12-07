@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EditorFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">EditorFactory.java</span></div><h1>EditorFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.extern.Application;
+import de.neemann.digital.core.extern.PortDefinition;
+import de.neemann.digital.core.io.InValue;
+import de.neemann.digital.core.io.MIDIHelper;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.rom.ROMManger;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.graphics.ColorScheme;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.model.InverterConfig;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.shapes.custom.CustomShapeDescription;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.components.table.ShowStringDialog;
+import de.neemann.digital.gui.components.testing.TestCaseDescriptionEditor;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.gui.*;
+import de.neemann.gui.language.Bundle;
+import de.neemann.gui.language.Language;
+
+import javax.swing.*;
+import javax.swing.text.JTextComponent;
+import javax.swing.undo.UndoManager;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+
+/**
+ * Factory used to create an editor for a given key/value pair.
+ */
+public final class EditorFactory {
+
+    /**
+     * The single EditorFactory instance.
+     */
+<span class="nc" id="L53">    static final EditorFactory INSTANCE = new EditorFactory();</span>
+<span class="nc" id="L54">    private final HashMap&lt;Class&lt;?&gt;, Class&lt;? extends Editor&gt;&gt; map = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L56">    private EditorFactory() {</span>
+<span class="nc" id="L57">        add(String.class, StringEditor.class);</span>
+<span class="nc" id="L58">        add(Integer.class, IntegerEditor.class);</span>
+<span class="nc" id="L59">        add(Long.class, LongEditor.class);</span>
+<span class="nc" id="L60">        add(InValue.class, InValueEditor.class);</span>
+<span class="nc" id="L61">        add(File.class, FileEditor.class);</span>
+<span class="nc" id="L62">        add(Color.class, ColorEditor.class);</span>
+<span class="nc" id="L63">        add(Boolean.class, BooleanEditor.class);</span>
+<span class="nc" id="L64">        add(DataField.class, DataFieldEditor.class);</span>
+<span class="nc" id="L65">        add(Rotation.class, RotationEditor.class);</span>
+<span class="nc" id="L66">        add(Language.class, LanguageEditor.class);</span>
+<span class="nc" id="L67">        add(TestCaseDescription.class, TestCaseDescriptionEditor.class);</span>
+<span class="nc" id="L68">        add(InverterConfig.class, InverterConfigEditor.class);</span>
+<span class="nc" id="L69">        add(ROMManger.class, ROMManagerEditor.class);</span>
+<span class="nc" id="L70">        add(Application.Type.class, ApplicationTypeEditor.class);</span>
+<span class="nc" id="L71">        add(CustomShapeDescription.class, CustomShapeEditor.class);</span>
+<span class="nc" id="L72">        add(ColorScheme.class, ColorSchemeEditor.class);</span>
+<span class="nc" id="L73">    }</span>
+
+    private &lt;T&gt; void add(Class&lt;T&gt; clazz, Class&lt;? extends Editor&lt;T&gt;&gt; editor) {
+<span class="nc" id="L76">        map.put(clazz, editor);</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Creates a new Editor
+     *
+     * @param key   the key
+     * @param value the value
+     * @param &lt;T&gt;   the type of the value
+     * @return the editor
+     */
+    public &lt;T&gt; Editor&lt;T&gt; create(Key&lt;T&gt; key, T value) {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (key == Keys.MIDI_INSTRUMENT)</span>
+<span class="nc" id="L89">            return (Editor&lt;T&gt;) new MidiInstrumentEditor(value.toString());</span>
+
+<span class="nc" id="L91">        Class&lt;? extends Editor&gt; fac = map.get(key.getValueClass());</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (fac == null) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            if (key instanceof Key.KeyEnum)</span>
+<span class="nc" id="L95">                return new EnumEditor((Enum) value, key);</span>
+<span class="nc" id="L96">            throw new RuntimeException(&quot;no editor found for &quot; + key.getValueClass().getSimpleName());</span>
+        }
+
+        try {
+<span class="nc" id="L100">            Constructor&lt;? extends Editor&gt; c = fac.getConstructor(value.getClass(), Key.class);</span>
+<span class="nc" id="L101">            return c.newInstance(value, key);</span>
+<span class="nc" id="L102">        } catch (Exception e) {</span>
+<span class="nc" id="L103">            throw new RuntimeException(&quot;error creating editor&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Simple single component editor
+     *
+     * @param &lt;T&gt; the type to edit
+     */
+<span class="nc" id="L112">    public static abstract class LabelEditor&lt;T&gt; implements Editor&lt;T&gt; {</span>
+        private AttributeDialog attributeDialog;
+<span class="nc" id="L114">        private boolean labelAtTop = false;</span>
+        private JComponent component;
+        private JLabel label;
+
+        @Override
+        public void addToPanel(EditorPanel panel, Key&lt;T&gt; key, ElementAttributes elementAttributes, AttributeDialog attributeDialog) {
+<span class="nc" id="L120">            this.attributeDialog = attributeDialog;</span>
+<span class="nc" id="L121">            label = new JLabel(key.getName() + &quot;:  &quot;);</span>
+<span class="nc" id="L122">            final String description = new LineBreaker().toHTML().breakLines(key.getDescription());</span>
+<span class="nc" id="L123">            label.setToolTipText(description);</span>
+<span class="nc" id="L124">            component = getComponent(elementAttributes);</span>
+<span class="nc" id="L125">            component.setToolTipText(description);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (labelAtTop) {</span>
+<span class="nc" id="L127">                panel.add(label, cb -&gt; cb.width(2));</span>
+<span class="nc" id="L128">                panel.nextRow();</span>
+<span class="nc" id="L129">                panel.add(component, cb -&gt; cb.width(2).dynamicWidth().dynamicHeight());</span>
+            } else {
+<span class="nc" id="L131">                panel.add(label);</span>
+<span class="nc" id="L132">                panel.add(component, cb -&gt; cb.x(1).dynamicWidth());</span>
+            }
+<span class="nc" id="L134">        }</span>
+
+        /**
+         * @return the containing dialog
+         */
+        public AttributeDialog getAttributeDialog() {
+<span class="nc" id="L140">            return attributeDialog;</span>
+        }
+
+        /**
+         * returns the editor component
+         *
+         * @param elementAttributes the elements attributes
+         * @return the component
+         */
+        protected abstract JComponent getComponent(ElementAttributes elementAttributes);
+
+        @Override
+        public void setEnabled(boolean enabled) {
+<span class="nc" id="L153">            label.setEnabled(enabled);</span>
+<span class="nc" id="L154">            component.setEnabled(enabled);</span>
+<span class="nc" id="L155">        }</span>
+
+        /**
+         * Sets the position of the label
+         *
+         * @param labelAtTop if true the label is placed at the top of the editing component.
+         */
+        void setLabelAtTop(boolean labelAtTop) {
+<span class="nc" id="L163">            this.labelAtTop = labelAtTop;</span>
+<span class="nc" id="L164">        }</span>
+    }
+
+    //Checkstyle flags redundant modifiers, which are not redundant. Maybe a bug in checkstyle?
+    //CHECKSTYLE.OFF: RedundantModifier
+    final static class StringEditor extends LabelEditor&lt;String&gt; {
+        private static final String FILE_KEY = &quot;_File&quot;;
+
+        private final JTextComponent text;
+        private final JComponent compToAdd;
+        private final UndoManager undoManager;
+        private JPopupMenu popup;
+
+<span class="nc" id="L177">        public StringEditor(String value, Key&lt;String&gt; key) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            if (key instanceof Key.LongString) {</span>
+<span class="nc" id="L179">                Key.LongString k = (Key.LongString) key;</span>
+<span class="nc" id="L180">                text = addF1Traversal(new JTextArea(k.getRows(), k.getColumns()));</span>
+<span class="nc" id="L181">                final JScrollPane scrollPane = new JScrollPane(text);</span>
+
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                if (k.getLineNumbers()) {</span>
+<span class="nc" id="L184">                    final TextLineNumber textLineNumber = new TextLineNumber(text, 3);</span>
+<span class="nc" id="L185">                    scrollPane.setRowHeaderView(textLineNumber);</span>
+<span class="nc" id="L186">                    text.setFont(new Font(Font.MONOSPACED, Font.PLAIN, Screen.getInstance().getFontSize()));</span>
+                }
+
+<span class="nc" id="L189">                text.addMouseListener(new MouseAdapter() {</span>
+                    public void mousePressed(MouseEvent e) {
+<span class="nc" id="L191">                        checkPopup(e);</span>
+<span class="nc" id="L192">                    }</span>
+
+                    public void mouseClicked(MouseEvent e) {
+<span class="nc" id="L195">                        checkPopup(e);</span>
+<span class="nc" id="L196">                    }</span>
+
+                    public void mouseReleased(MouseEvent e) {
+<span class="nc" id="L199">                        checkPopup(e);</span>
+<span class="nc" id="L200">                    }</span>
+
+                    private void checkPopup(MouseEvent e) {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">                        if (e.isPopupTrigger()) {</span>
+<span class="nc" id="L204">                            getPopupMenu(key.getKey()).show(text, e.getX(), e.getY());</span>
+                        }
+<span class="nc" id="L206">                    }</span>
+                });
+
+<span class="nc" id="L209">                this.compToAdd = scrollPane;</span>
+
+<span class="nc" id="L211">                setLabelAtTop(true);</span>
+<span class="nc" id="L212">            } else {</span>
+<span class="nc" id="L213">                text = addF1Traversal(new JTextField(10));</span>
+<span class="nc" id="L214">                compToAdd = text;</span>
+            }
+<span class="nc" id="L216">            text.setText(value);</span>
+
+<span class="nc" id="L218">            undoManager = createUndoManager(text);</span>
+<span class="nc" id="L219">        }</span>
+
+        JPopupMenu getPopupMenu(String keyName) {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (popup == null) {</span>
+<span class="nc" id="L223">                final String fileKey = keyName + FILE_KEY;</span>
+<span class="nc" id="L224">                popup = new JPopupMenu();</span>
+<span class="nc" id="L225">                popup.add(new ToolTipAction(Lang.get(&quot;btn_load&quot;)) {</span>
+                    @Override
+                    public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L228">                        ElementAttributes attr = getAttributeDialog().getModifiedAttributes();</span>
+<span class="nc" id="L229">                        JFileChooser fc = new MyFileChooser();</span>
+<span class="nc" id="L230">                        fc.setSelectedFile(attr.getFile(fileKey));</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                        if (fc.showOpenDialog(getAttributeDialog()) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L232">                            File f = fc.getSelectedFile();</span>
+<span class="nc" id="L233">                            attr.setFile(fileKey, f);</span>
+<span class="nc" id="L234">                            try (InputStream in = new FileInputStream(f)) {</span>
+<span class="nc" id="L235">                                StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L236">                                byte[] data = new byte[4096];</span>
+                                int len;
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                                while ((len = in.read(data)) &gt; 0)</span>
+<span class="nc" id="L239">                                    sb.append(new String(data, 0, len));</span>
+
+<span class="nc" id="L241">                                text.setText(sb.toString());</span>
+<span class="nc" id="L242">                            } catch (IOException e) {</span>
+<span class="nc" id="L243">                                new ErrorMessage(Lang.get(&quot;msg_errorReadingFile&quot;))</span>
+<span class="nc" id="L244">                                        .addCause(e)</span>
+<span class="nc" id="L245">                                        .show(getAttributeDialog());</span>
+<span class="nc" id="L246">                            }</span>
+                        }
+<span class="nc" id="L248">                    }</span>
+<span class="nc" id="L249">                }.createJMenuItem());</span>
+<span class="nc" id="L250">                popup.add(new ToolTipAction(Lang.get(&quot;btn_save&quot;)) {</span>
+                    @Override
+                    public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L253">                        ElementAttributes attr = getAttributeDialog().getModifiedAttributes();</span>
+<span class="nc" id="L254">                        JFileChooser fc = new MyFileChooser();</span>
+<span class="nc" id="L255">                        fc.setSelectedFile(attr.getFile(fileKey));</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                        if (fc.showSaveDialog(getAttributeDialog()) == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L257">                            File f = fc.getSelectedFile();</span>
+<span class="nc" id="L258">                            attr.setFile(fileKey, f);</span>
+<span class="nc" id="L259">                            try (OutputStream out = new FileOutputStream(f)) {</span>
+<span class="nc" id="L260">                                String s = text.getText();</span>
+<span class="nc" id="L261">                                out.write(s.getBytes());</span>
+<span class="nc" id="L262">                            } catch (IOException e) {</span>
+<span class="nc" id="L263">                                new ErrorMessage(Lang.get(&quot;msg_errorWritingFile&quot;))</span>
+<span class="nc" id="L264">                                        .addCause(e)</span>
+<span class="nc" id="L265">                                        .show(getAttributeDialog());</span>
+<span class="nc" id="L266">                            }</span>
+                        }
+<span class="nc" id="L268">                    }</span>
+<span class="nc" id="L269">                }.createJMenuItem());</span>
+            }
+<span class="nc" id="L271">            return popup;</span>
+        }
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L276">            return compToAdd;</span>
+        }
+
+        @Override
+        public String getValue() {
+<span class="nc" id="L281">            return text.getText().trim();</span>
+        }
+
+        @Override
+        public void setValue(String value) {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (!text.getText().equals(value)) {</span>
+<span class="nc" id="L287">                text.setText(value);</span>
+<span class="nc" id="L288">                undoManager.discardAllEdits();</span>
+            }
+<span class="nc" id="L290">        }</span>
+
+        public JTextComponent getTextComponent() {
+<span class="nc" id="L293">            return text;</span>
+        }
+    }
+
+    /**
+     * Adds F1 as a focus traversal key to a text components.
+     *
+     * @param text The text component
+     * @param &lt;TC&gt; the concrete type of the text component
+     * @return the given text component
+     */
+    public static &lt;TC extends JTextComponent&gt; TC addF1Traversal(TC text) {
+<span class="nc" id="L305">        HashSet&lt;AWTKeyStroke&gt; set = new HashSet&lt;&gt;(text.getFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS));</span>
+<span class="nc" id="L306">        set.add(KeyStroke.getKeyStroke(&quot;F1&quot;));</span>
+<span class="nc" id="L307">        text.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set);</span>
+<span class="nc" id="L308">        return text;</span>
+    }
+
+    private final static class IntegerEditor extends LabelEditor&lt;Integer&gt; {
+<span class="nc" id="L312">        private static final IntegerValue[] DEFAULTS = createIntegerValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);</span>
+
+        private static IntegerValue[] createIntegerValues(int... values) {
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            if (values == null)</span>
+<span class="nc" id="L316">                return null;</span>
+
+<span class="nc" id="L318">            IntegerValue[] v = new IntegerValue[values.length];</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            for (int i = 0; i &lt; v.length; i++)</span>
+<span class="nc" id="L320">                v[i] = new IntegerValue(values[i]);</span>
+<span class="nc" id="L321">            return v;</span>
+        }
+
+        private final JComboBox&lt;IntegerValue&gt; comboBox;
+        private final Key&lt;Integer&gt; key;
+
+<span class="nc" id="L327">        public IntegerEditor(Integer value, Key&lt;Integer&gt; key) {</span>
+<span class="nc" id="L328">            this.key = key;</span>
+<span class="nc" id="L329">            IntegerValue[] selects = null;</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (key instanceof Key.KeyInteger) {</span>
+<span class="nc" id="L331">                selects = createIntegerValues(((Key.KeyInteger) key).getComboBoxValues());</span>
+            }
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (selects == null)</span>
+<span class="nc" id="L334">                selects = DEFAULTS;</span>
+<span class="nc" id="L335">            comboBox = new JComboBox&lt;&gt;(selects);</span>
+<span class="nc" id="L336">            comboBox.setEditable(true);</span>
+<span class="nc" id="L337">            comboBox.setSelectedItem(new IntegerValue(value));</span>
+<span class="nc" id="L338">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L342">            return comboBox;</span>
+        }
+
+        @Override
+        public Integer getValue() throws EditorParseException {
+<span class="nc" id="L347">            Object item = comboBox.getSelectedItem();</span>
+<span class="nc" id="L348">            int value = 0;</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">            if (item instanceof Number)</span>
+<span class="nc" id="L350">                value = ((Number) item).intValue();</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">            else if (item instanceof IntegerValue)</span>
+<span class="nc" id="L352">                value = ((IntegerValue) item).getValue();</span>
+            else {
+                try {
+<span class="nc" id="L355">                    value = (int) Bits.decode(item.toString());</span>
+<span class="nc" id="L356">                } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L357">                    throw new EditorParseException(e);</span>
+<span class="nc" id="L358">                }</span>
+            }
+
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            if (key instanceof Key.KeyInteger) {</span>
+<span class="nc" id="L362">                int min = ((Key.KeyInteger) key).getMin();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (value &lt; min)</span>
+<span class="nc" id="L364">                    value = min;</span>
+<span class="nc" id="L365">                int max = ((Key.KeyInteger) key).getMax();</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                if (value &gt; max)</span>
+<span class="nc" id="L367">                    value = max;</span>
+            }
+
+<span class="nc" id="L370">            return value;</span>
+        }
+
+        @Override
+        public void setValue(Integer value) {
+<span class="nc" id="L375">            comboBox.setSelectedItem(new IntegerValue(value));</span>
+<span class="nc" id="L376">        }</span>
+
+        private static final class IntegerValue {
+            private final int value;
+
+<span class="nc" id="L381">            private IntegerValue(int value) {</span>
+<span class="nc" id="L382">                this.value = value;</span>
+<span class="nc" id="L383">            }</span>
+
+            private Integer getValue() {
+<span class="nc" id="L386">                return value;</span>
+            }
+
+            @Override
+            public String toString() {
+<span class="nc bnc" id="L391" title="All 2 branches missed.">                if (value == Integer.MAX_VALUE)</span>
+<span class="nc" id="L392">                    return Lang.get(&quot;maxValue&quot;);</span>
+                else
+<span class="nc" id="L394">                    return Integer.toString(value);</span>
+            }
+        }
+    }
+
+    private final static class LongEditor extends LabelEditor&lt;Long&gt; {
+<span class="nc" id="L400">        private static final Long[] DEFAULTS = {0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L};</span>
+        private final JComboBox&lt;Long&gt; comboBox;
+
+<span class="nc" id="L403">        public LongEditor(Long value, Key&lt;Long&gt; key) {</span>
+<span class="nc" id="L404">            comboBox = new JComboBox&lt;&gt;(DEFAULTS);</span>
+<span class="nc" id="L405">            comboBox.setEditable(true);</span>
+<span class="nc" id="L406">            comboBox.setSelectedItem(value.toString());</span>
+<span class="nc" id="L407">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L411">            return comboBox;</span>
+        }
+
+        @Override
+        public void addToPanel(EditorPanel panel, Key&lt;Long&gt; key, ElementAttributes attr, AttributeDialog attributeDialog) {
+<span class="nc bnc" id="L416" title="All 2 branches missed.">            if (key.isAdaptiveIntFormat()) {</span>
+<span class="nc" id="L417">                Value value = new Value(attr.get(key), attr.getBits());</span>
+<span class="nc" id="L418">                comboBox.setSelectedItem(attr.getValueFormatter().formatToEdit(value));</span>
+            }
+<span class="nc" id="L420">            super.addToPanel(panel, key, attr, attributeDialog);</span>
+<span class="nc" id="L421">        }</span>
+
+        @Override
+        public Long getValue() throws EditorParseException {
+<span class="nc" id="L425">            Object item = comboBox.getSelectedItem();</span>
+<span class="nc" id="L426">            long value = 0;</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            if (item instanceof Number)</span>
+<span class="nc" id="L428">                value = ((Number) item).longValue();</span>
+            else {
+                try {
+<span class="nc" id="L431">                    value = Bits.decode(item.toString());</span>
+<span class="nc" id="L432">                } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L433">                    throw new EditorParseException(e);</span>
+<span class="nc" id="L434">                }</span>
+            }
+<span class="nc" id="L436">            return value;</span>
+        }
+
+        @Override
+        public void setValue(Long value) {
+<span class="nc" id="L441">            comboBox.setSelectedItem(value.toString());</span>
+<span class="nc" id="L442">        }</span>
+    }
+
+    private final static class InValueEditor extends LabelEditor&lt;InValue&gt; {
+<span class="nc" id="L446">        private static final String[] DEFAULTS = {&quot;Z&quot;, &quot;0&quot;, &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;11&quot;, &quot;12&quot;, &quot;13&quot;, &quot;14&quot;, &quot;15&quot;, &quot;16&quot;};</span>
+        private final JComboBox&lt;String&gt; comboBox;
+
+<span class="nc" id="L449">        public InValueEditor(InValue value, Key&lt;Integer&gt; key) {</span>
+<span class="nc" id="L450">            comboBox = new JComboBox&lt;&gt;(DEFAULTS);</span>
+<span class="nc" id="L451">            comboBox.setEditable(true);</span>
+<span class="nc" id="L452">            comboBox.setSelectedItem(value.toString());</span>
+<span class="nc" id="L453">        }</span>
+
+        @Override
+        public void addToPanel(EditorPanel panel, Key&lt;InValue&gt; key, ElementAttributes attr, AttributeDialog attributeDialog) {
+<span class="nc bnc" id="L457" title="All 2 branches missed.">            if (key.isAdaptiveIntFormat()) {</span>
+<span class="nc" id="L458">                Value value = new Value(attr.get(key), attr.getBits());</span>
+<span class="nc" id="L459">                comboBox.setSelectedItem(attr.getValueFormatter().formatToEdit(value));</span>
+            }
+<span class="nc" id="L461">            super.addToPanel(panel, key, attr, attributeDialog);</span>
+<span class="nc" id="L462">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L466">            return comboBox;</span>
+        }
+
+        @Override
+        public InValue getValue() throws EditorParseException {
+<span class="nc" id="L471">            Object item = comboBox.getSelectedItem();</span>
+            try {
+<span class="nc" id="L473">                return new InValue(item.toString());</span>
+<span class="nc" id="L474">            } catch (Bits.NumberFormatException e) {</span>
+<span class="nc" id="L475">                throw new EditorParseException(e);</span>
+            }
+        }
+
+        @Override
+        public void setValue(InValue value) {
+<span class="nc" id="L481">            comboBox.setSelectedItem(value.toString());</span>
+<span class="nc" id="L482">        }</span>
+    }
+
+    final static class BooleanEditor implements Editor&lt;Boolean&gt; {
+
+        private final JCheckBox bool;
+
+<span class="nc" id="L489">        public BooleanEditor(Boolean value, Key&lt;Boolean&gt; key) {</span>
+<span class="nc" id="L490">            bool = new JCheckBox(key.getName(), value);</span>
+<span class="nc" id="L491">            bool.setToolTipText(new LineBreaker().toHTML().breakLines(key.getDescription()));</span>
+<span class="nc" id="L492">        }</span>
+
+        @Override
+        public Boolean getValue() {
+<span class="nc" id="L496">            return bool.isSelected();</span>
+        }
+
+        @Override
+        public void addToPanel(EditorPanel panel, Key key, ElementAttributes elementAttributes, AttributeDialog attributeDialog) {
+<span class="nc" id="L501">            panel.add(bool, cb -&gt; cb.width(2));</span>
+<span class="nc" id="L502">        }</span>
+
+        @Override
+        public void setEnabled(boolean enabled) {
+<span class="nc" id="L506">            bool.setEnabled(enabled);</span>
+<span class="nc" id="L507">        }</span>
+
+        @Override
+        public void setValue(Boolean value) {
+<span class="nc" id="L511">            bool.setEnabled(value);</span>
+<span class="nc" id="L512">        }</span>
+
+        @Override
+        public void addActionListener(ActionListener al) {
+<span class="nc" id="L516">            bool.addActionListener(al);</span>
+<span class="nc" id="L517">        }</span>
+    }
+
+    private final static class ColorEditor extends LabelEditor&lt;Color&gt; {
+
+        private Color color;
+        private final JButton button;
+
+<span class="nc" id="L525">        public ColorEditor(Color value, Key&lt;Color&gt; key) {</span>
+<span class="nc" id="L526">            this.color = value;</span>
+<span class="nc" id="L527">            button = new JButton(new AbstractAction() {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L530">                    Color col = JColorChooser.showDialog(button, Lang.get(&quot;msg_color&quot;), color);</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">                    if (col != null) {</span>
+                        // JColorChooser returns child classes from Color under certain circumstances.
+                        // The following line ensures that color is a Color instance.
+<span class="nc" id="L534">                        color = new Color(col.getRed(), col.getGreen(), col.getBlue(), col.getAlpha());</span>
+<span class="nc" id="L535">                        button.setBackground(color);</span>
+                    }
+<span class="nc" id="L537">                }</span>
+<span class="nc" id="L538">            }) {</span>
+                @Override
+                protected void paintComponent(Graphics graphics) {
+<span class="nc" id="L541">                    graphics.setColor(Color.WHITE);</span>
+<span class="nc" id="L542">                    graphics.fillRect(0, 0, getWidth(), getHeight());</span>
+<span class="nc" id="L543">                    super.paintComponent(graphics);</span>
+<span class="nc" id="L544">                }</span>
+            };
+<span class="nc" id="L546">            button.setPreferredSize(new Dimension(10, Screen.getInstance().getFontSize() * 3 / 2));</span>
+<span class="nc" id="L547">            button.setBackground(color);</span>
+<span class="nc" id="L548">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L552">            return button;</span>
+        }
+
+        @Override
+        public Color getValue() {
+<span class="nc" id="L557">            return color;</span>
+        }
+
+        @Override
+        public void setValue(Color value) {
+<span class="nc" id="L562">            this.color = value;</span>
+<span class="nc" id="L563">            button.setBackground(color);</span>
+<span class="nc" id="L564">        }</span>
+    }
+
+    private final static class FileEditor extends LabelEditor&lt;File&gt; {
+
+        private final JPanel panel;
+        private final JTextField textField;
+        private final boolean directoryOnly;
+        private final JButton button;
+
+<span class="nc" id="L574">        public FileEditor(File value, Key&lt;File&gt; key) {</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">            if (key instanceof Key.KeyFile)</span>
+<span class="nc" id="L576">                directoryOnly = ((Key.KeyFile) key).isDirectoryOnly();</span>
+            else
+<span class="nc" id="L578">                directoryOnly = false;</span>
+
+<span class="nc" id="L580">            panel = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L581">            textField = new JTextField(value.getPath(), 20);</span>
+<span class="nc" id="L582">            button = new JButton(new AbstractAction(&quot;...&quot;) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L585">                    JFileChooser fc = new MyFileChooser(FileEditor.this.getValue());</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">                    if (directoryOnly)</span>
+<span class="nc" id="L587">                        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);</span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">                    if (fc.showOpenDialog(panel) == JFileChooser.APPROVE_OPTION)</span>
+<span class="nc" id="L589">                        textField.setText(fc.getSelectedFile().getPath());</span>
+<span class="nc" id="L590">                }</span>
+            });
+<span class="nc" id="L592">            panel.add(textField, BorderLayout.CENTER);</span>
+<span class="nc" id="L593">            panel.add(button, BorderLayout.EAST);</span>
+<span class="nc" id="L594">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L598">            return panel;</span>
+        }
+
+        @Override
+        public File getValue() {
+<span class="nc" id="L603">            return new File(textField.getText());</span>
+        }
+
+        @Override
+        public void setValue(File value) {
+<span class="nc" id="L608">            textField.setText(value.getPath());</span>
+<span class="nc" id="L609">        }</span>
+
+        @Override
+        public void setEnabled(boolean enabled) {
+<span class="nc" id="L613">            super.setEnabled(enabled);</span>
+<span class="nc" id="L614">            textField.setEnabled(enabled);</span>
+<span class="nc" id="L615">            button.setEnabled(enabled);</span>
+<span class="nc" id="L616">        }</span>
+    }
+
+    private final static class DataFieldEditor extends LabelEditor&lt;DataField&gt; {
+
+        private DataField data;
+<span class="nc" id="L622">        private boolean majorModification = false;</span>
+
+<span class="nc" id="L624">        public DataFieldEditor(DataField data, Key&lt;DataField&gt; key) {</span>
+<span class="nc" id="L625">            this.data = data;</span>
+<span class="nc" id="L626">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes attr) {
+<span class="nc" id="L630">            JPanel panel = new JPanel(new GridLayout(1, 2));</span>
+<span class="nc" id="L631">            panel.add(new ToolTipAction(Lang.get(&quot;btn_edit&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+<span class="nc" id="L635">                        getAttributeDialog().storeEditedValues();</span>
+<span class="nc" id="L636">                        int dataBits = attr.get(Keys.BITS);</span>
+<span class="nc" id="L637">                        int addrBits = getAddrBits(attr);</span>
+<span class="nc" id="L638">                        DataEditor de = new DataEditor(panel, data, dataBits, addrBits, false, SyncAccess.NOSYNC, attr.getValueFormatter());</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">                        if (attr.get(Keys.AUTO_RELOAD_ROM))</span>
+<span class="nc" id="L640">                            de.setFileName(attr.getFile(Keys.LAST_DATA_FILE, getAttributeDialog().getRootFile()));</span>
+<span class="nc bnc" id="L641" title="All 2 branches missed.">                        if (de.showDialog()) {</span>
+<span class="nc" id="L642">                            DataField mod = de.getModifiedDataField();</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                            if (!data.equals(mod))</span>
+<span class="nc" id="L644">                                majorModification = true;</span>
+<span class="nc" id="L645">                            data = mod;</span>
+                        }
+<span class="nc" id="L647">                    } catch (EditorParseException e1) {</span>
+<span class="nc" id="L648">                        new ErrorMessage(Lang.get(&quot;msg_invalidEditorValue&quot;)).addCause(e1).show(panel);</span>
+<span class="nc" id="L649">                    }</span>
+<span class="nc" id="L650">                }</span>
+<span class="nc" id="L651">            }.createJButton());</span>
+<span class="nc" id="L652">            return panel;</span>
+        }
+
+        private int getAddrBits(ElementAttributes attr) {
+            // INPUT_COUNT and ADDR_BITS must have the same default value!!!
+            // If INPUT_COUNT is not present (default value is used) the default value of
+            // ADDR_BITS is used. This works only if both have the same default value!!!
+<span class="nc bnc" id="L659" title="All 2 branches missed.">            if (attr.contains(Keys.INPUT_COUNT)) {</span>
+                // used to handle the LUT
+<span class="nc" id="L661">                return attr.get(Keys.INPUT_COUNT);</span>
+            } else {
+                // memory, RAM/ROM
+<span class="nc" id="L664">                return attr.get(Keys.ADDR_BITS);</span>
+            }
+        }
+
+        @Override
+        public DataField getValue() {
+<span class="nc" id="L670">            data.trim();</span>
+<span class="nc" id="L671">            return data;</span>
+        }
+
+        @Override
+        public boolean invisibleModification() {
+<span class="nc" id="L676">            return majorModification;</span>
+        }
+
+        @Override
+        public void setValue(DataField value) {
+<span class="nc" id="L681">            this.data = value;</span>
+<span class="nc" id="L682">        }</span>
+    }
+
+    private final static class RotationEditor extends LabelEditor&lt;Rotation&gt; {
+<span class="nc" id="L686">        private static final String[] LIST = new String[]{Lang.get(&quot;rot_0&quot;), Lang.get(&quot;rot_90&quot;), Lang.get(&quot;rot_180&quot;), Lang.get(&quot;rot_270&quot;)};</span>
+
+        private final Rotation rotation;
+        private JComboBox&lt;String&gt; comb;
+
+<span class="nc" id="L691">        public RotationEditor(Rotation rotation, Key&lt;Rotation&gt; key) {</span>
+<span class="nc" id="L692">            this.rotation = rotation;</span>
+<span class="nc" id="L693">        }</span>
+
+        @Override
+        public JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L697">            comb = new JComboBox&lt;&gt;(LIST);</span>
+<span class="nc" id="L698">            comb.setSelectedIndex(rotation.getRotation());</span>
+<span class="nc" id="L699">            return comb;</span>
+        }
+
+        @Override
+        public Rotation getValue() {
+<span class="nc" id="L704">            return new Rotation(comb.getSelectedIndex());</span>
+        }
+
+        @Override
+        public void setValue(Rotation value) {
+<span class="nc" id="L709">            comb.setSelectedIndex(value.getRotation());</span>
+<span class="nc" id="L710">        }</span>
+    }
+
+    private static class EnumEditor&lt;E extends Enum&gt; extends LabelEditor&lt;E&gt; {
+        private final JComboBox comboBox;
+        private final E[] values;
+        private final String[] names;
+
+<span class="nc" id="L718">        public EnumEditor(Enum value, Key&lt;E&gt; key) {</span>
+<span class="nc bnc" id="L719" title="All 2 branches missed.">            if (!(key instanceof Key.KeyEnum))</span>
+<span class="nc" id="L720">                throw new RuntimeException(&quot;wrong enum type&quot;);</span>
+<span class="nc" id="L721">            this.names = ((Key.KeyEnum&lt;E&gt;) key).getNames();</span>
+<span class="nc" id="L722">            this.values = ((Key.KeyEnum&lt;E&gt;) key).getValues();</span>
+
+<span class="nc" id="L724">            comboBox = new JComboBox&lt;&gt;(names);</span>
+<span class="nc" id="L725">            comboBox.setSelectedIndex(value.ordinal());</span>
+<span class="nc" id="L726">        }</span>
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L730">            return comboBox;</span>
+        }
+
+        @Override
+        public E getValue() {
+<span class="nc" id="L735">            return values[comboBox.getSelectedIndex()];</span>
+        }
+
+        @Override
+        public void setValue(E value) {
+<span class="nc" id="L740">            comboBox.setSelectedIndex(value.ordinal());</span>
+<span class="nc" id="L741">        }</span>
+
+        @Override
+        public void addActionListener(ActionListener actionListener) {
+<span class="nc" id="L745">            comboBox.addActionListener(actionListener);</span>
+<span class="nc" id="L746">        }</span>
+    }
+
+    private static final class ApplicationTypeEditor extends EnumEditor&lt;Application.Type&gt; {
+        private JComboBox combo;
+        private JButton checkButton;
+
+        public ApplicationTypeEditor(Application.Type value, Key&lt;Application.Type&gt; key) {
+<span class="nc" id="L754">            super(value, key);</span>
+<span class="nc" id="L755">        }</span>
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L759">            combo = (JComboBox) super.getComponent(elementAttributes);</span>
+<span class="nc" id="L760">            checkButton = new ToolTipAction(Lang.get(&quot;btn_checkCode&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L763">                    int n = combo.getSelectedIndex();</span>
+<span class="nc bnc" id="L764" title="All 2 branches missed.">                    if (n &gt;= 0) {</span>
+<span class="nc" id="L765">                        Application.Type appType = Application.Type.values()[n];</span>
+<span class="nc" id="L766">                        Application app = Application.create(appType, elementAttributes);</span>
+<span class="nc bnc" id="L767" title="All 2 branches missed.">                        if (app != null) {</span>
+                            try {
+<span class="nc" id="L769">                                getAttributeDialog().storeEditedValues();</span>
+<span class="nc" id="L770">                                File root = getAttributeDialog().getRootFile();</span>
+<span class="nc" id="L771">                                final boolean consistent = app.ensureConsistency(elementAttributes, root);</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                                if (consistent)</span>
+<span class="nc" id="L773">                                    getAttributeDialog().updateEditedValues();</span>
+
+<span class="nc" id="L775">                                PortDefinition ins = new PortDefinition(elementAttributes.get(Keys.EXTERNAL_INPUTS));</span>
+<span class="nc" id="L776">                                PortDefinition outs = new PortDefinition(elementAttributes.get(Keys.EXTERNAL_OUTPUTS));</span>
+<span class="nc" id="L777">                                String label = elementAttributes.getLabel();</span>
+                                try {
+<span class="nc" id="L779">                                    String code = Application.getCode(elementAttributes, root);</span>
+
+<span class="nc" id="L781">                                    String message = app.checkCode(label, code, ins, outs, root);</span>
+<span class="nc bnc" id="L782" title="All 4 branches missed.">                                    if (message != null &amp;&amp; !message.isEmpty()) {</span>
+<span class="nc" id="L783">                                        createError(consistent, Lang.get(&quot;msg_checkResult&quot;) + &quot;\n\n&quot; + message).show(getAttributeDialog());</span>
+                                    }
+<span class="nc" id="L785">                                } catch (IOException e) {</span>
+<span class="nc" id="L786">                                    createError(consistent, Lang.get(&quot;msg_checkResult&quot;)).addCause(e).show(getAttributeDialog());</span>
+<span class="nc" id="L787">                                }</span>
+<span class="nc" id="L788">                            } catch (EditorParseException e) {</span>
+<span class="nc" id="L789">                                e.printStackTrace();</span>
+<span class="nc" id="L790">                            }</span>
+                        }
+                    }
+<span class="nc" id="L793">                }</span>
+
+                private ErrorMessage createError(boolean consistent, String message) {
+<span class="nc bnc" id="L796" title="All 2 branches missed.">                    if (!consistent)</span>
+<span class="nc" id="L797">                        message = Lang.get(&quot;msg_codeNotConsistent&quot;) + &quot;\n\n&quot; + message;</span>
+<span class="nc" id="L798">                    return new ErrorMessage(message);</span>
+                }
+
+<span class="nc" id="L801">            }.setToolTip(Lang.get(&quot;btn_checkCode_tt&quot;)).createJButton();</span>
+<span class="nc" id="L802">            combo.addActionListener(new AbstractAction() {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L805">                    enableButton(elementAttributes);</span>
+<span class="nc" id="L806">                }</span>
+            });
+
+
+<span class="nc" id="L810">            JPanel p = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L811">            p.add(combo);</span>
+<span class="nc" id="L812">            p.add(checkButton, BorderLayout.EAST);</span>
+
+<span class="nc" id="L814">            enableButton(elementAttributes);</span>
+
+<span class="nc" id="L816">            return p;</span>
+        }
+
+        void enableButton(ElementAttributes attr) {
+<span class="nc" id="L820">            int n = combo.getSelectedIndex();</span>
+<span class="nc bnc" id="L821" title="All 2 branches missed.">            if (n &gt;= 0) {</span>
+<span class="nc" id="L822">                Application.Type appType = Application.Type.values()[n];</span>
+<span class="nc" id="L823">                Application app = Application.create(appType, attr);</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">                if (app != null)</span>
+<span class="nc" id="L825">                    checkButton.setEnabled(app.checkSupported());</span>
+            }
+<span class="nc" id="L827">        }</span>
+    }
+
+    private static class LanguageEditor extends LabelEditor&lt;Language&gt; {
+        private final JComboBox&lt;Language&gt; comb;
+
+<span class="nc" id="L833">        public LanguageEditor(Language language, Key&lt;Language&gt; key) {</span>
+<span class="nc" id="L834">            Bundle b = Lang.getBundle();</span>
+<span class="nc" id="L835">            List&lt;Language&gt; supLang = b.getSupportedLanguages();</span>
+<span class="nc" id="L836">            comb = new JComboBox&lt;&gt;(supLang.toArray(new Language[0]));</span>
+<span class="nc" id="L837">            comb.setSelectedItem(language);</span>
+<span class="nc" id="L838">        }</span>
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L842">            return comb;</span>
+        }
+
+        @Override
+        public Language getValue() {
+<span class="nc" id="L847">            return (Language) comb.getSelectedItem();</span>
+        }
+
+        @Override
+        public void setValue(Language value) {
+<span class="nc" id="L852">            comb.setSelectedItem(value);</span>
+<span class="nc" id="L853">        }</span>
+    }
+
+    private static class InverterConfigEditor extends LabelEditor&lt;InverterConfig&gt; {
+
+        private final JButton button;
+        private InverterConfig inverterConfig;
+        private ElementAttributes elementAttributes;
+
+<span class="nc" id="L862">        public InverterConfigEditor(InverterConfig aInverterConfig, Key&lt;InverterConfig&gt; key) {</span>
+<span class="nc" id="L863">            this.inverterConfig = aInverterConfig;</span>
+<span class="nc" id="L864">            button = new JButton(new ToolTipAction(getButtonText()) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L867">                    VisualElement ve = getAttributeDialog().getVisualElement();</span>
+<span class="nc" id="L868">                    Window p = getAttributeDialog().getDialogParent();</span>
+<span class="nc bnc" id="L869" title="All 4 branches missed.">                    if (ve != null &amp;&amp; p instanceof Main) {</span>
+                        try {
+<span class="nc" id="L871">                            getAttributeDialog().storeEditedValues();</span>
+<span class="nc" id="L872">                            ElementTypeDescription d = ((Main) p).getCircuitComponent().getLibrary().getElementType(ve.getElementName());</span>
+<span class="nc" id="L873">                            PinDescriptions in = d.getInputDescription(elementAttributes);</span>
+<span class="nc" id="L874">                            InputSelectDialog dialog = new InputSelectDialog(getAttributeDialog(), in, inverterConfig);</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">                            if (dialog.showDialog()) {</span>
+<span class="nc" id="L876">                                inverterConfig = dialog.getInverterConfig();</span>
+<span class="nc" id="L877">                                button.setText(getButtonText());</span>
+                            }
+<span class="nc" id="L879">                        } catch (ElementNotFoundException | NodeException e) {</span>
+<span class="nc" id="L880">                            new ErrorMessage(Lang.get(&quot;msg_errGettingPinNames&quot;)).addCause(e).show(getAttributeDialog());</span>
+<span class="nc" id="L881">                        } catch (EditorParseException e) {</span>
+<span class="nc" id="L882">                            new ErrorMessage(Lang.get(&quot;msg_invalidEditorValue&quot;)).addCause(e).show(getAttributeDialog());</span>
+<span class="nc" id="L883">                        }</span>
+                    }
+<span class="nc" id="L885">                }</span>
+            });
+<span class="nc" id="L887">        }</span>
+
+        private String getButtonText() {
+<span class="nc bnc" id="L890" title="All 2 branches missed.">            if (inverterConfig.isEmpty())</span>
+<span class="nc" id="L891">                return Lang.get(&quot;msg_none&quot;);</span>
+<span class="nc" id="L892">            return inverterConfig.toString();</span>
+        }
+
+        @Override
+        public InverterConfig getValue() {
+<span class="nc" id="L897">            return inverterConfig;</span>
+        }
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L902">            this.elementAttributes = elementAttributes;</span>
+<span class="nc" id="L903">            return button;</span>
+        }
+
+        @Override
+        public void setValue(InverterConfig value) {
+<span class="nc" id="L908">            inverterConfig = value;</span>
+<span class="nc" id="L909">            button.setText(getButtonText());</span>
+<span class="nc" id="L910">        }</span>
+    }
+
+    private final static class InputSelectDialog extends JDialog {
+        private final ArrayList&lt;JCheckBox&gt; boxes;
+<span class="nc" id="L915">        private boolean ok = false;</span>
+
+        private InputSelectDialog(JDialog parent, PinDescriptions pins, InverterConfig inverterConfig) {
+<span class="nc" id="L918">            super(parent, Lang.get(&quot;msg_inputsToInvert&quot;), true);</span>
+<span class="nc" id="L919">            setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L921">            JPanel panel = new JPanel();</span>
+<span class="nc" id="L922">            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));</span>
+<span class="nc" id="L923">            boxes = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L924" title="All 2 branches missed.">            for (PinDescription p : pins) {</span>
+<span class="nc" id="L925">                JCheckBox cb = new JCheckBox(p.getName());</span>
+<span class="nc" id="L926">                cb.setSelected(inverterConfig.contains(p.getName()));</span>
+<span class="nc" id="L927">                boxes.add(cb);</span>
+<span class="nc" id="L928">                panel.add(cb);</span>
+<span class="nc" id="L929">            }</span>
+<span class="nc" id="L930">            int pad = Screen.getInstance().getFontSize();</span>
+<span class="nc" id="L931">            panel.setBorder(BorderFactory.createEmptyBorder(pad, pad, pad, pad));</span>
+<span class="nc" id="L932">            getContentPane().add(panel);</span>
+<span class="nc" id="L933">            getContentPane().add(new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L936">                    ok = true;</span>
+<span class="nc" id="L937">                    dispose();</span>
+<span class="nc" id="L938">                }</span>
+            }), BorderLayout.SOUTH);
+
+<span class="nc" id="L941">            pack();</span>
+<span class="nc" id="L942">            setLocationRelativeTo(parent);</span>
+<span class="nc" id="L943">        }</span>
+
+        public boolean showDialog() {
+<span class="nc" id="L946">            setVisible(true);</span>
+<span class="nc" id="L947">            return ok;</span>
+        }
+
+        private InverterConfig getInverterConfig() {
+<span class="nc" id="L951">            InverterConfig.Builder ic = new InverterConfig.Builder();</span>
+<span class="nc bnc" id="L952" title="All 2 branches missed.">            for (JCheckBox cb : boxes) {</span>
+<span class="nc bnc" id="L953" title="All 2 branches missed.">                if (cb.isSelected())</span>
+<span class="nc" id="L954">                    ic.add(cb.getText());</span>
+<span class="nc" id="L955">            }</span>
+<span class="nc" id="L956">            return ic.build();</span>
+        }
+    }
+
+    private static class ROMManagerEditor extends LabelEditor&lt;ROMManger&gt; {
+        private final JPanel buttons;
+        private ROMManger romManager;
+
+<span class="nc" id="L964">        public ROMManagerEditor(ROMManger aRomManager, Key&lt;ROMManger&gt; key) {</span>
+<span class="nc" id="L965">            this.romManager = aRomManager;</span>
+<span class="nc" id="L966">            buttons = new JPanel(new GridLayout(1, 2));</span>
+<span class="nc" id="L967">            buttons.add(new ToolTipAction(Lang.get(&quot;btn_help&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L970">                    new ShowStringDialog(</span>
+<span class="nc" id="L971">                            getAttributeDialog(),</span>
+<span class="nc" id="L972">                            Lang.get(&quot;win_romDialogHelpTitle&quot;),</span>
+<span class="nc" id="L973">                            Lang.get(&quot;msg_romDialogHelp&quot;), true)</span>
+<span class="nc" id="L974">                            .setVisible(true);</span>
+<span class="nc" id="L975">                }</span>
+<span class="nc" id="L976">            }.createJButton());</span>
+<span class="nc" id="L977">            buttons.add(new ToolTipAction(Lang.get(&quot;btn_edit&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L980">                    Main main = getAttributeDialog().getMain();</span>
+<span class="nc bnc" id="L981" title="All 2 branches missed.">                    if (main != null) {</span>
+                        final ROMEditorDialog romEditorDialog;
+                        try {
+<span class="nc" id="L984">                            CircuitComponent circuitComponent = main.getCircuitComponent();</span>
+<span class="nc" id="L985">                            Model model = new ModelCreator(circuitComponent.getCircuit(), circuitComponent.getLibrary()).createModel(false);</span>
+                            try {
+<span class="nc" id="L987">                                romEditorDialog = new ROMEditorDialog(</span>
+<span class="nc" id="L988">                                        getAttributeDialog(),</span>
+                                        model,
+<span class="nc" id="L990">                                        romManager);</span>
+<span class="nc bnc" id="L991" title="All 2 branches missed.">                                if (romEditorDialog.showDialog())</span>
+<span class="nc" id="L992">                                    romManager = romEditorDialog.getROMManager();</span>
+                            } finally {
+<span class="nc" id="L994">                                model.close();</span>
+                            }
+<span class="nc" id="L996">                        } catch (ElementNotFoundException | PinException | NodeException e) {</span>
+<span class="nc" id="L997">                            new ErrorMessage(Lang.get(&quot;msg_errorCreatingModel&quot;)).addCause(e).show(getAttributeDialog());</span>
+<span class="nc" id="L998">                        }</span>
+                    }
+<span class="nc" id="L1000">                }</span>
+<span class="nc" id="L1001">            }.createJButton());</span>
+<span class="nc" id="L1002">        }</span>
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L1006">            return buttons;</span>
+        }
+
+        @Override
+        public ROMManger getValue() {
+<span class="nc" id="L1011">            return romManager;</span>
+        }
+
+        @Override
+        public void setValue(ROMManger value) {
+<span class="nc" id="L1016">            romManager = value;</span>
+<span class="nc" id="L1017">        }</span>
+    }
+
+    private static final class MidiInstrumentEditor extends LabelEditor&lt;String&gt; {
+        private JComboBox&lt;String&gt; comb;
+
+<span class="nc" id="L1023">        private MidiInstrumentEditor(String instrument) {</span>
+            String[] instruments;
+            try {
+<span class="nc" id="L1026">                instruments = MIDIHelper.getInstance().getInstruments();</span>
+<span class="nc" id="L1027">            } catch (NodeException e) {</span>
+<span class="nc" id="L1028">                instruments = new String[]{&quot;MIDI not available&quot;};</span>
+<span class="nc" id="L1029">            }</span>
+<span class="nc" id="L1030">            comb = new JComboBox&lt;&gt;(instruments);</span>
+<span class="nc" id="L1031">            comb.setSelectedItem(instrument);</span>
+<span class="nc" id="L1032">        }</span>
+
+        @Override
+        protected JComponent getComponent(ElementAttributes elementAttributes) {
+<span class="nc" id="L1036">            return comb;</span>
+        }
+
+        @Override
+        public String getValue() {
+<span class="nc" id="L1041">            return (String) comb.getSelectedItem();</span>
+        }
+
+        @Override
+        public void setValue(String value) {
+<span class="nc" id="L1046">            comb.setSelectedItem(value);</span>
+<span class="nc" id="L1047">        }</span>
+    }
+
+    /**
+     * Enables undo in the given text component.
+     *
+     * @param text the text component
+     * @return the undo manager
+     */
+    public static UndoManager createUndoManager(JTextComponent text) {
+        final UndoManager undoManager;
+<span class="nc" id="L1058">        undoManager = new UndoManager();</span>
+<span class="nc" id="L1059">        text.getDocument().addUndoableEditListener(undoManager);</span>
+<span class="nc" id="L1060">        text.addKeyListener(new KeyAdapter() {</span>
+            @Override
+            public void keyPressed(KeyEvent e) {
+<span class="nc bnc" id="L1063" title="All 4 branches missed.">                if (e.getKeyCode() == KeyEvent.VK_Z &amp;&amp; (e.getModifiersEx() &amp; ToolTipAction.getCTRLMask()) != 0) {</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">                    if (undoManager.canUndo())</span>
+<span class="nc" id="L1065">                        undoManager.undo();</span>
+<span class="nc bnc" id="L1066" title="All 4 branches missed.">                } else if (e.getKeyCode() == KeyEvent.VK_Y &amp;&amp; (e.getModifiersEx() &amp; ToolTipAction.getCTRLMask()) != 0) {</span>
+<span class="nc bnc" id="L1067" title="All 2 branches missed.">                    if (undoManager.canRedo())</span>
+<span class="nc" id="L1068">                        undoManager.redo();</span>
+                }
+<span class="nc" id="L1070">            }</span>
+        });
+<span class="nc" id="L1072">        return undoManager;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

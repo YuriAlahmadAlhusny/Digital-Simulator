@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SyncAccess.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core</a> &gt; <span class="el_source">SyncAccess.java</span></div><h1>SyncAccess.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core;
+
+/**
+ * Simple sync interface.
+ * Is used to access a running model. Every access to a running model needs to be synchronized.
+ * Also a access to a {@link ObservableValues} which is part of the model needs to be synchronized.
+ * The {@link Model} implements this interface, so you can use the model itself to synchronize the
+ * access to the model.
+ * Dialogs which can appear either if a model is running or even if no model exists can use this interface
+ * to synchronize a possible model access. It there is no model, pass the the {@link SyncAccess#NOSYNC} instance
+ * to the dialog, if there is a model simply pass the model to the dialog.
+ * The most obvious example is the {@link de.neemann.digital.gui.components.CircuitComponent}. If a model is
+ * running it uses the model to synchronize modifications. If the the simulation is stopped and there is no model
+ * it uses the {@link SyncAccess#NOSYNC} instance instead.
+ */
+public interface SyncAccess {
+
+    /**
+     * Does no synchronization at all.
+     * Used if there are modifications which use sometimes a running model and sometimes do not.
+     * If there is no running model you can use this instance. But use this instance only if you are
+     * sure that there is no running model!
+     */
+<span class="fc" id="L29">    SyncAccess NOSYNC = new SyncAccess() {</span>
+        @Override
+        public &lt;A extends Runnable&gt; A modify(A run) {
+<span class="nc" id="L32">            run.run();</span>
+<span class="nc" id="L33">            return run;</span>
+        }
+
+        @Override
+        public &lt;A extends Runnable&gt; A read(A run) {
+<span class="fc" id="L38">            run.run();</span>
+<span class="fc" id="L39">            return run;</span>
+        }
+    };
+
+    /**
+     * Calls the given runnable.
+     * The runnable is allowed to modify the model.
+     *
+     * @param run the runnable to execute
+     * @param &lt;A&gt; the type oth the runnable
+     * @return the given runnable. Used for chained calls
+     */
+    &lt;A extends Runnable&gt; A modify(A run);
+
+    /**
+     * Calls the given runnable
+     * The runnable is NOT allowed to modify the model.
+     *
+     * @param run the runnable to execute
+     * @param &lt;A&gt; the type oth the runnable
+     * @return the given runnable. Used for chained calls
+     */
+    &lt;A extends Runnable&gt; A read(A run);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

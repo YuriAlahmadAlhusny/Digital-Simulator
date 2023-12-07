@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextFormatLaTeX.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">TextFormatLaTeX.java</span></div><h1>TextFormatLaTeX.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import de.neemann.digital.draw.graphics.text.ParseException;
+import de.neemann.digital.draw.graphics.text.Parser;
+import de.neemann.digital.draw.graphics.text.formatter.LaTeXFormatter;
+import de.neemann.digital.draw.graphics.text.text.Decorate;
+import de.neemann.digital.draw.graphics.text.text.Text;
+
+import java.awt.*;
+import java.util.ArrayList;
+
+/**
+ * Formats text in LaTeX style.
+ */
+public class TextFormatLaTeX implements GraphicSVG.TextStyle {
+<span class="fc" id="L21">    private static final ArrayList&lt;FontSize&gt; FONT_SIZES = new ArrayList&lt;&gt;();</span>
+    private boolean pinStyleInMathMode;
+
+    /**
+     * Creates a new instance.
+     *
+     * @param pinStyleInMathMode if true pin lables are set in math mode
+     */
+<span class="fc" id="L29">    public TextFormatLaTeX(boolean pinStyleInMathMode) {</span>
+<span class="fc" id="L30">        this.pinStyleInMathMode = pinStyleInMathMode;</span>
+<span class="fc" id="L31">    }</span>
+
+    private static final class FontSize {
+
+        private final String name;
+        private final int size;
+
+<span class="fc" id="L38">        private FontSize(String name, int size) {</span>
+<span class="fc" id="L39">            this.name = name;</span>
+<span class="fc" id="L40">            this.size = size;</span>
+<span class="fc" id="L41">        }</span>
+    }
+
+    static {
+<span class="fc" id="L45">        add(&quot;tiny&quot;, 35);     // measured pixel sizes in a BEAMER created PDF</span>
+<span class="fc" id="L46">        add(&quot;scriptsize&quot;, 46);</span>
+<span class="fc" id="L47">        add(&quot;footnotesize&quot;, 52);</span>
+<span class="fc" id="L48">        add(&quot;small&quot;, 58);</span>
+<span class="fc" id="L49">        add(&quot;normalsize&quot;, 63);</span>
+<span class="fc" id="L50">        add(&quot;large&quot;, 69);</span>
+<span class="fc" id="L51">        add(&quot;Large&quot;, 83);</span>
+<span class="fc" id="L52">        add(&quot;LARGE&quot;, 100);</span>
+<span class="fc" id="L53">        add(&quot;huge&quot;, 120);</span>
+<span class="fc" id="L54">        add(&quot;Huge&quot;, 143);</span>
+<span class="fc" id="L55">    }</span>
+
+    private static void add(String name, int size) {
+<span class="fc" id="L58">        FONT_SIZES.add(new FontSize(name, (size * Style.NORMAL.getFontSize()) / 63));</span>
+<span class="fc" id="L59">    }</span>
+
+    private static String getFontSizeName(int fontSize) {
+<span class="fc" id="L62">        String best = &quot;normalsize&quot;;</span>
+<span class="fc" id="L63">        int diff = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (FontSize fs : FONT_SIZES) {</span>
+<span class="fc" id="L65">            int d = Math.abs(fontSize - fs.size);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            if (d &lt; diff) {</span>
+<span class="fc" id="L67">                diff = d;</span>
+<span class="fc" id="L68">                best = fs.name;</span>
+            }
+<span class="fc" id="L70">        }</span>
+<span class="fc" id="L71">        return best;</span>
+    }
+
+    @Override
+    public String format(String text, Style style) {
+        try {
+<span class="fc" id="L77">            Text t = new Parser(text).parse();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            boolean decorate = style.getFontStyle() == Font.ITALIC;</span>
+
+<span class="fc bfc" id="L80" title="All 4 branches covered.">            if (style == Style.INOUT &amp;&amp; !pinStyleInMathMode)</span>
+<span class="fc" id="L81">                decorate = false;</span>
+<span class="fc bfc" id="L82" title="All 4 branches covered.">            else if (style == Style.SHAPE_PIN &amp;&amp; pinStyleInMathMode)</span>
+<span class="fc" id="L83">                decorate = true;</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (decorate)</span>
+<span class="fc" id="L86">                t = Decorate.math(t);</span>
+<span class="fc" id="L87">            text = LaTeXFormatter.format(t);</span>
+<span class="nc" id="L88">        } catch (ParseException e) {</span>
+<span class="nc" id="L89">            e.printStackTrace();</span>
+<span class="fc" id="L90">        }</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (style.getFontSize() != Style.NORMAL.getFontSize()) {</span>
+<span class="fc" id="L92">            final String fontSizeName = getFontSizeName(style.getFontSize());</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">            if (!fontSizeName.equals(&quot;normalsize&quot;))</span>
+<span class="fc" id="L94">                text = &quot;{\\&quot; + fontSizeName + &quot; &quot; + text + &quot;}&quot;;</span>
+        }
+<span class="fc" id="L96">        return GraphicSVG.escapeXML(text);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

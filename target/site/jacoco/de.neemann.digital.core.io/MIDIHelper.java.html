@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MIDIHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.io</a> &gt; <span class="el_source">MIDIHelper.java</span></div><h1>MIDIHelper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.io;
+
+import de.neemann.digital.core.Model;
+import de.neemann.digital.core.ModelEventType;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sound.midi.*;
+import java.util.ArrayList;
+import java.util.TreeMap;
+
+/**
+ * Helper for MIDI functions
+ */
+public final class MIDIHelper {
+<span class="fc" id="L23">    private static final Logger LOGGER = LoggerFactory.getLogger(MIDIHelper.class);</span>
+<span class="fc" id="L24">    private static MIDIHelper ourInstance = new MIDIHelper();</span>
+
+    /**
+     * @return the MIDIHelper
+     */
+    public static MIDIHelper getInstance() {
+<span class="fc" id="L30">        return ourInstance;</span>
+    }
+
+    private SynthesizerInterface synthesizer;
+    private boolean isOpen;
+    private TreeMap&lt;String, Instrument&gt; instrumentMap;
+
+    private MIDIHelper() {
+    }
+
+    private SynthesizerInterface getSynthesizer() throws NodeException {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (synthesizer == null) {</span>
+            try {
+<span class="fc" id="L43">                final Synthesizer synth = MidiSystem.getSynthesizer();</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">                if (synth == null)</span>
+<span class="nc" id="L45">                    throw new NodeException(Lang.get(&quot;err_midiSystemNotAvailable&quot;));</span>
+<span class="fc" id="L46">                synthesizer = new RealSynthesizer(synth);</span>
+<span class="nc" id="L47">            } catch (MidiUnavailableException e) {</span>
+<span class="nc" id="L48">                throw new NodeException(Lang.get(&quot;err_midiSystemNotAvailable&quot;), e);</span>
+<span class="fc" id="L49">            }</span>
+        }
+<span class="fc" id="L51">        return synthesizer;</span>
+    }
+
+    /**
+     * Opens the synthesizer
+     *
+     * @param model the mode used. If the model is closed also the synthesizer is closed
+     * @throws NodeException NodeException
+     */
+    private void ensureOpen(Model model) throws NodeException {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (!isOpen) {</span>
+            try {
+<span class="fc" id="L63">                getSynthesizer().open();</span>
+<span class="nc" id="L64">            } catch (MidiUnavailableException e) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                if (System.getProperty(&quot;testdata&quot;) == null) {</span>
+<span class="nc" id="L66">                    throw new NodeException(Lang.get(&quot;err_midiSystemNotAvailable&quot;), e);</span>
+                } else {
+<span class="nc" id="L68">                    LOGGER.info(&quot;Use fake MIDI interface!&quot;);</span>
+<span class="nc" id="L69">                    synthesizer = new SynthesizerMock();</span>
+                }
+<span class="fc" id="L71">            }</span>
+
+<span class="fc" id="L73">            isOpen = true;</span>
+
+<span class="fc" id="L75">            model.addObserver(event -&gt; {</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                if (event.getType().equals(ModelEventType.CLOSED))</span>
+<span class="nc" id="L77">                    close();</span>
+<span class="nc" id="L78">            }, ModelEventType.CLOSED);</span>
+        }
+<span class="fc" id="L80">    }</span>
+
+    private void close() {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (isOpen) {</span>
+<span class="nc" id="L84">            synthesizer.close();</span>
+<span class="nc" id="L85">            isOpen = false;</span>
+        }
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * Creates the channel to use
+     *
+     * @param num        the channel number
+     * @param instrument the instrument to use
+     * @param model      the model
+     * @return the channel
+     * @throws NodeException NodeException
+     */
+    public MidiChannel getChannel(int num, String instrument, Model model) throws NodeException {
+<span class="fc" id="L99">        ensureOpen(model);</span>
+
+<span class="fc" id="L101">        Instrument instr = null;</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (!instrument.isEmpty())</span>
+<span class="nc" id="L103">            instr = getInstrument(instrument);</span>
+
+<span class="fc" id="L105">        MidiChannel[] channels = getSynthesizer().getChannels();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (num &gt;= channels.length) {</span>
+<span class="nc" id="L107">            close();</span>
+<span class="nc" id="L108">            throw new NodeException(Lang.get(&quot;err_midiChannel_N_NotAvailable&quot;, num));</span>
+        }
+
+<span class="fc" id="L111">        MidiChannel channel = channels[num];</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (channel == null) {</span>
+<span class="nc" id="L113">            close();</span>
+<span class="nc" id="L114">            throw new NodeException(Lang.get(&quot;err_midiChannel_N_NotAvailable&quot;, num));</span>
+        }
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (instr != null) {</span>
+<span class="nc" id="L118">            final Patch patch = instr.getPatch();</span>
+<span class="nc" id="L119">            channel.programChange(patch.getBank(), patch.getProgram());</span>
+        }
+
+<span class="fc" id="L122">        return channel;</span>
+    }
+
+    /**
+     * @return the list of available instruments
+     * @throws NodeException NodeException
+     */
+    public String[] getInstruments() throws NodeException {
+<span class="nc" id="L130">        return new ArrayList&lt;&gt;(getInstumentMap().keySet()).toArray(new String[0]);</span>
+    }
+
+    private Instrument getInstrument(String instrument) throws NodeException {
+<span class="nc" id="L134">        Instrument i = getInstumentMap().get(instrument);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (i == null)</span>
+<span class="nc" id="L136">            throw new NodeException(Lang.get(&quot;err_midiInstrument_N_NotAvailable&quot;, instrument));</span>
+<span class="nc" id="L137">        return i;</span>
+    }
+
+    private TreeMap&lt;String, Instrument&gt; getInstumentMap() throws NodeException {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (instrumentMap == null) {</span>
+<span class="nc" id="L142">            instrumentMap = new TreeMap&lt;&gt;();</span>
+<span class="nc" id="L143">            instrumentMap.put(&quot;&quot;, null);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            for (Instrument i : getSynthesizer().getAvailableInstruments()) {</span>
+<span class="nc" id="L145">                instrumentMap.put(i.getName(), i);</span>
+            }
+        }
+<span class="nc" id="L148">        return instrumentMap;</span>
+    }
+
+    private interface SynthesizerInterface {
+        void open() throws MidiUnavailableException;
+
+        void close();
+
+        Instrument[] getAvailableInstruments();
+
+        MidiChannel[] getChannels();
+    }
+
+    private static final class RealSynthesizer implements SynthesizerInterface {
+        private final Synthesizer synthesizer;
+
+<span class="fc" id="L164">        private RealSynthesizer(Synthesizer synthesizer) {</span>
+<span class="fc" id="L165">            this.synthesizer = synthesizer;</span>
+<span class="fc" id="L166">        }</span>
+
+        @Override
+        public void open() throws MidiUnavailableException {
+<span class="fc" id="L170">            synthesizer.open();</span>
+
+<span class="fc" id="L172">            Soundbank soundbank = synthesizer.getDefaultSoundbank();</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (soundbank == null)</span>
+<span class="nc" id="L174">                throw new MidiUnavailableException(Lang.get(&quot;err_midiInstrumentsNotAvailable&quot;));</span>
+
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">            if (!synthesizer.loadAllInstruments(soundbank))</span>
+<span class="nc" id="L177">                throw new MidiUnavailableException(Lang.get(&quot;err_midiInstrumentsNotAvailable&quot;));</span>
+<span class="fc" id="L178">        }</span>
+
+        @Override
+        public void close() {
+<span class="nc" id="L182">            synthesizer.close();</span>
+<span class="nc" id="L183">        }</span>
+
+        @Override
+        public Instrument[] getAvailableInstruments() {
+<span class="nc" id="L187">            return synthesizer.getAvailableInstruments();</span>
+        }
+
+        @Override
+        public MidiChannel[] getChannels() {
+<span class="fc" id="L192">            return synthesizer.getChannels();</span>
+        }
+    }
+
+    private static final class SynthesizerMock implements SynthesizerInterface {
+        @Override
+        public void open() {
+<span class="nc" id="L199">        }</span>
+
+        @Override
+        public void close() {
+<span class="nc" id="L203">        }</span>
+
+        @Override
+        public Instrument[] getAvailableInstruments() {
+<span class="nc" id="L207">            return new Instrument[0];</span>
+        }
+
+        @Override
+        public MidiChannel[] getChannels() {
+<span class="nc" id="L212">            final MidiChannel dummy = new MidiChannel() {</span>
+                @Override
+                public void noteOn(int i, int i1) {
+<span class="nc" id="L215">                }</span>
+
+                @Override
+                public void noteOff(int i, int i1) {
+<span class="nc" id="L219">                }</span>
+
+                @Override
+                public void noteOff(int i) {
+<span class="nc" id="L223">                }</span>
+
+                @Override
+                public void setPolyPressure(int i, int i1) {
+<span class="nc" id="L227">                }</span>
+
+                @Override
+                public int getPolyPressure(int i) {
+<span class="nc" id="L231">                    return 0;</span>
+                }
+
+                @Override
+                public void setChannelPressure(int i) {
+
+<span class="nc" id="L237">                }</span>
+
+                @Override
+                public int getChannelPressure() {
+<span class="nc" id="L241">                    return 0;</span>
+                }
+
+                @Override
+                public void controlChange(int i, int i1) {
+
+<span class="nc" id="L247">                }</span>
+
+                @Override
+                public int getController(int i) {
+<span class="nc" id="L251">                    return 0;</span>
+                }
+
+                @Override
+                public void programChange(int i) {
+
+<span class="nc" id="L257">                }</span>
+
+                @Override
+                public void programChange(int i, int i1) {
+
+<span class="nc" id="L262">                }</span>
+
+                @Override
+                public int getProgram() {
+<span class="nc" id="L266">                    return 0;</span>
+                }
+
+                @Override
+                public void setPitchBend(int i) {
+
+<span class="nc" id="L272">                }</span>
+
+                @Override
+                public int getPitchBend() {
+<span class="nc" id="L276">                    return 0;</span>
+                }
+
+                @Override
+                public void resetAllControllers() {
+
+<span class="nc" id="L282">                }</span>
+
+                @Override
+                public void allNotesOff() {
+
+<span class="nc" id="L287">                }</span>
+
+                @Override
+                public void allSoundOff() {
+
+<span class="nc" id="L292">                }</span>
+
+                @Override
+                public boolean localControl(boolean b) {
+<span class="nc" id="L296">                    return false;</span>
+                }
+
+                @Override
+                public void setMono(boolean b) {
+
+<span class="nc" id="L302">                }</span>
+
+                @Override
+                public boolean getMono() {
+<span class="nc" id="L306">                    return false;</span>
+                }
+
+                @Override
+                public void setOmni(boolean b) {
+
+<span class="nc" id="L312">                }</span>
+
+                @Override
+                public boolean getOmni() {
+<span class="nc" id="L316">                    return false;</span>
+                }
+
+                @Override
+                public void setMute(boolean b) {
+
+<span class="nc" id="L322">                }</span>
+
+                @Override
+                public boolean getMute() {
+<span class="nc" id="L326">                    return false;</span>
+                }
+
+                @Override
+                public void setSolo(boolean b) {
+
+<span class="nc" id="L332">                }</span>
+
+                @Override
+                public boolean getSolo() {
+<span class="nc" id="L336">                    return false;</span>
+                }
+            };
+<span class="nc" id="L339">            return new MidiChannel[]{</span>
+                    dummy, dummy, dummy, dummy,
+                    dummy, dummy, dummy, dummy,
+                    dummy, dummy, dummy, dummy,
+                    dummy, dummy, dummy, dummy};
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

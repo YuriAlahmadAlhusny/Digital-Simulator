@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Function.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs.function</a> &gt; <span class="el_source">Function.java</span></div><h1>Function.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs.function;
+
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.Expression;
+
+import java.util.ArrayList;
+
+/**
+ * Class to implement a function with already evaluated arguments.
+ * Its the easiest way to implement a pure function, which means a mathematical function
+ * which only uses the arguments given to the function.
+ */
+public abstract class Function extends InnerFunction {
+    /**
+     * Creates a new function
+     *
+     * @param argCount the number of arguments, The value -1 means any number is allowed!
+     */
+    public Function(int argCount) {
+<span class="fc" id="L26">        super(argCount);</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc" id="L31">        Object[] data = new Object[args.size()];</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        for (int i = 0; i &lt; args.size(); i++)</span>
+<span class="fc" id="L33">            data[i] = args.get(i).value(c);</span>
+<span class="fc" id="L34">        return f(data);</span>
+    }
+
+    /**
+     * Use this method to call the function from your java code.
+     *
+     * @param args the arguments of this function
+     * @return the function result
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Object call(Object... args) throws HGSEvalException {
+<span class="pc bpc" id="L45" title="2 of 4 branches missed.">        if (getArgCount() &gt;= 0 &amp;&amp; getArgCount() != args.length)</span>
+<span class="nc" id="L46">            throw new HGSEvalException(&quot;wrong number of arguments! found: &quot; + args.length + &quot;, expected: &quot; + getArgCount());</span>
+<span class="fc" id="L47">        return f(args);</span>
+    }
+
+    /**
+     * Evaluates this function.
+     * If you did not use -1 as the argument number, you don't have to check the argument count.
+     * If you used -1 as the argument number, you have!
+     *
+     * @param args the arguments
+     * @return the result
+     * @throws HGSEvalException HGSEvalException
+     */
+    protected abstract Object f(Object... args) throws HGSEvalException;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

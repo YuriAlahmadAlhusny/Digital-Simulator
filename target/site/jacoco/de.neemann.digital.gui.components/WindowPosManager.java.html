@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WindowPosManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components</a> &gt; <span class="el_source">WindowPosManager.java</span></div><h1>WindowPosManager.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Keeps positions of windows if it is necessary to replace a window by an other.
+ * If a old window is found it is closed by calling dispose.
+ */
+public class WindowPosManager {
+    private final Map&lt;String, Window&gt; windows;
+    private final JFrame main;
+    private boolean shutdown;
+
+    /**
+     * Creates a new instance
+     *
+     * @param main the main window
+     */
+<span class="nc" id="L27">    public WindowPosManager(JFrame main) {</span>
+<span class="nc" id="L28">        this.main = main;</span>
+<span class="nc" id="L29">        this.windows = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L30">    }</span>
+
+    /**
+     * @return the main window, maybe null
+     */
+    public JFrame getMainFrame() {
+<span class="nc" id="L36">        return main;</span>
+    }
+
+    /**
+     * Registers a new window.
+     * If an old window with the same id is found, its position and size is set to the new window.
+     * After that the old window is disposed.
+     *
+     * @param id     the id of the window
+     * @param window the window itself
+     * @param &lt;T&gt;    the type of the window
+     * @return the window for chained calls
+     */
+    public &lt;T extends Window&gt; T register(String id, T window) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (windows.containsKey(id)) {</span>
+<span class="nc" id="L51">            Window oldWindow = windows.get(id);</span>
+<span class="nc" id="L52">            window.setLocation(oldWindow.getLocation());</span>
+<span class="nc" id="L53">            window.setSize(oldWindow.getSize());</span>
+<span class="nc" id="L54">            oldWindow.dispose();</span>
+        }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (shutdown)</span>
+<span class="nc" id="L57">            window.dispose();</span>
+        else
+<span class="nc" id="L59">            windows.put(id, window);</span>
+<span class="nc" id="L60">        return window;</span>
+    }
+
+    /**
+     * Closes all registered windows and avoids a reopening them.
+     */
+    public void shutdown() {
+<span class="nc" id="L67">        shutdown = true;</span>
+<span class="nc" id="L68">        closeAll();</span>
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * Closes all registered windows
+     */
+    public void closeAll() {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        for (Window w : windows.values())</span>
+<span class="nc" id="L76">            w.dispose();</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Returns true if the window with the given id is visible
+     *
+     * @param id the id of the window
+     * @return true if window is visible
+     */
+    public boolean isVisible(String id) {
+<span class="nc" id="L86">        Window w = windows.get(id);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (w == null) return false;</span>
+<span class="nc" id="L88">        return w.isVisible();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

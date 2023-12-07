@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImmutableList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.element</a> &gt; <span class="el_source">ImmutableList.java</span></div><h1>ImmutableList.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.element;
+
+import java.util.*;
+
+/**
+ * A simple immutable array
+ *
+ * @param &lt;T&gt; the items type
+ */
+public class ImmutableList&lt;T&gt; implements List&lt;T&gt; {
+    private final T[] items;
+
+    /**
+     * Combines two lists
+     *
+     * @param a   first list
+     * @param b   second list
+     * @param &lt;T&gt; the Type of the elements
+     * @return the new combined list
+     */
+    public static &lt;T&gt; ImmutableList&lt;T&gt; combine(ImmutableList&lt;T&gt; a, ImmutableList&lt;T&gt; b) {
+<span class="fc" id="L27">        T[] com = Arrays.copyOf(a.items, a.size() + b.size());</span>
+<span class="fc" id="L28">        System.arraycopy(b.items, 0, com, a.size(), b.size());</span>
+<span class="fc" id="L29">        return new ImmutableList&lt;&gt;(com);</span>
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param items items
+     */
+<span class="fc" id="L37">    public ImmutableList(T... items) {</span>
+<span class="fc" id="L38">        this.items = items;</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param items items
+     * @param &lt;U&gt;   the item type
+     */
+<span class="fc" id="L47">    public &lt;U extends T&gt; ImmutableList(ImmutableList&lt;U&gt; items) {</span>
+<span class="fc" id="L48">        this.items = items.items;</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Creates a partial list
+     *
+     * @param items the original list
+     * @param from  inclusive
+     * @param to    exclusive
+     * @param &lt;U&gt;   type of items
+     */
+<span class="fc" id="L59">    public &lt;U extends T&gt; ImmutableList(ImmutableList&lt;U&gt; items, int from, int to) {</span>
+<span class="fc" id="L60">        this.items = Arrays.copyOfRange(items.items, from, to);</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * @return the size
+     */
+    public int size() {
+<span class="fc" id="L67">        return items.length;</span>
+    }
+
+    /**
+     * Return the item with given index
+     *
+     * @param i index
+     * @return the item
+     */
+    public T get(int i) {
+<span class="fc" id="L77">        return items[i];</span>
+    }
+
+
+    @Override
+    public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L83">        return new Iterator&lt;T&gt;() {</span>
+<span class="fc" id="L84">            private int pos = 0;</span>
+
+            @Override
+            public boolean hasNext() {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                return pos &lt; items.length;</span>
+            }
+
+            @Override
+            public T next() {
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                if (pos &gt;= items.length)</span>
+<span class="nc" id="L94">                    throw new IndexOutOfBoundsException();</span>
+<span class="fc" id="L95">                return items[pos++];</span>
+            }
+        };
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        return size() == 0;</span>
+    }
+
+    @Override
+    public Object[] toArray() {
+<span class="fc" id="L107">        return Arrays.copyOf(items, items.length);</span>
+    }
+
+    // ***************************************************
+    // Dummy list implementations
+    // All are throwing an UnsupportedOperationException
+    // ***************************************************
+
+    @Override
+    public &lt;T1&gt; T1[] toArray(T1[] a) {
+<span class="nc" id="L117">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public T set(int index, T element) {
+<span class="nc" id="L122">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean add(T t) {
+<span class="nc" id="L127">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public void add(int index, T element) {
+<span class="nc" id="L132">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public T remove(int index) {
+<span class="nc" id="L137">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean remove(Object o) {
+<span class="nc" id="L142">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public int indexOf(Object o) {
+<span class="nc" id="L147">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+<span class="nc" id="L152">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public ListIterator&lt;T&gt; listIterator() {
+<span class="nc" id="L157">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public ListIterator&lt;T&gt; listIterator(int index) {
+<span class="nc" id="L162">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public List&lt;T&gt; subList(int fromIndex, int toIndex) {
+<span class="nc" id="L167">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean contains(Object o) {
+<span class="nc" id="L172">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean containsAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L177">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean addAll(Collection&lt;? extends T&gt; c) {
+<span class="nc" id="L182">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean addAll(int index, Collection&lt;? extends T&gt; c) {
+<span class="nc" id="L187">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean removeAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L192">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean retainAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L197">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public void clear() {
+<span class="nc" id="L202">        throw new UnsupportedOperationException();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

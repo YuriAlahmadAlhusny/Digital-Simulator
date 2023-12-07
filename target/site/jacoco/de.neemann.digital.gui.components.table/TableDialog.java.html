@@ -1,0 +1,1065 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TableDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">TableDialog.java</span></div><h1>TableDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.AnalyseException;
+import de.neemann.digital.analyse.ModelAnalyserInfo;
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.TruthTableTableModel;
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.analyse.expression.ExpressionException;
+import de.neemann.digital.analyse.expression.NamedExpression;
+import de.neemann.digital.analyse.expression.Variable;
+import de.neemann.digital.analyse.expression.format.FormatterException;
+import de.neemann.digital.analyse.expression.modify.*;
+import de.neemann.digital.analyse.format.TruthTableFormatter;
+import de.neemann.digital.analyse.format.TruthTableFormatterCSV;
+import de.neemann.digital.analyse.format.TruthTableFormatterHex;
+import de.neemann.digital.analyse.format.TruthTableFormatterTestCase;
+import de.neemann.digital.analyse.quinemc.BoolTableByteArray;
+import de.neemann.digital.builder.ATF150x.ATFDevice;
+import de.neemann.digital.builder.ExpressionToFileExporter;
+import de.neemann.digital.builder.Gal16v8.CuplExporter;
+import de.neemann.digital.builder.Gal16v8.Gal16v8JEDECExporter;
+import de.neemann.digital.builder.Gal22v10.Gal22v10CuplExporter;
+import de.neemann.digital.builder.Gal22v10.Gal22v10JEDECExporter;
+import de.neemann.digital.builder.circuit.CircuitBuilder;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Key;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.graphics.text.ParseException;
+import de.neemann.digital.draw.graphics.text.Parser;
+import de.neemann.digital.draw.graphics.text.formatter.PlainTextFormatter;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.gui.components.AttributeDialog;
+import de.neemann.digital.gui.components.ElementOrderer;
+import de.neemann.digital.gui.components.karnaugh.KarnaughMapDialog;
+import de.neemann.digital.gui.components.table.hardware.GenerateCUPL;
+import de.neemann.digital.gui.components.table.hardware.GenerateFile;
+import de.neemann.digital.gui.components.table.hardware.HardwareDescriptionGenerator;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.undo.ModifyException;
+import de.neemann.digital.undo.UndoManager;
+import de.neemann.gui.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.prefs.Preferences;
+
+import static de.neemann.digital.analyse.ModelAnalyser.addOne;
+
+/**
+ * The dialog used to show the truth table.
+ */
+public class TableDialog extends JDialog {
+<span class="nc" id="L80">    private static final Logger LOGGER = LoggerFactory.getLogger(TableDialog.class);</span>
+<span class="nc" id="L81">    private static final Preferences PREFS = Preferences.userRoot().node(&quot;dig&quot;).node(&quot;generator&quot;);</span>
+<span class="nc" id="L82">    private static final Color MYGRAY = new Color(230, 230, 230);</span>
+<span class="nc" id="L83">    private static final Color ODDWHITE = new Color(255, 255, 220);</span>
+<span class="nc" id="L84">    private static final List&lt;Key&gt; LIST = new ArrayList&lt;&gt;();</span>
+
+    static {
+<span class="nc" id="L87">        LIST.add(Keys.LABEL);</span>
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * Opens the given file in a new dialog
+     *
+     * @param file the file to open
+     */
+    public static void openFile(File file) {
+        try {
+<span class="nc" id="L97">            TruthTable tt = TruthTable.readFromFile(file);</span>
+<span class="nc" id="L98">            ElementLibrary library = new ElementLibrary();</span>
+<span class="nc" id="L99">            new ShapeFactory(library);</span>
+<span class="nc" id="L100">            SwingUtilities.invokeLater(() -&gt; new TableDialog(null, tt, library, file).setVisible(true));</span>
+<span class="nc" id="L101">        } catch (IOException e) {</span>
+<span class="nc" id="L102">            new ErrorMessage().addCause(e).show();</span>
+<span class="nc" id="L103">        }</span>
+<span class="nc" id="L104">    }</span>
+
+    private final ExpressionComponent statusBar;
+    private final JTable table;
+    private final Font font;
+    private final ElementLibrary library;
+    private final ShapeFactory shapeFactory;
+    private final ToolTipAction karnaughMenuAction;
+<span class="nc" id="L112">    private final HashMap&lt;String, HardwareDescriptionGenerator&gt; availGenerators = new HashMap&lt;&gt;();</span>
+    private final JMenu hardwareMenu;
+    private final TruthTableTableModel model;
+    private final AllSolutionsDialog allSolutionsDialog;
+    private final KarnaughMapDialog kvMap;
+<span class="nc" id="L117">    private final Mouse mouse = Mouse.getMouse();</span>
+    private final UndoManager&lt;TruthTable&gt; undoManager;
+    private JCheckBoxMenuItem createJK;
+    private File filename;
+    private int columnIndex;
+    private ExpressionListenerStore lastGeneratedExpressions;
+    private JMenuItem lastUsedGenratorMenuItem;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent     the parent frame
+     * @param truthTable the table to show
+     * @param library    the library to use
+     * @param filename   the file name used to create the names of the created files
+     */
+    public TableDialog(Window parent, TruthTable truthTable, ElementLibrary library, File filename) {
+<span class="nc" id="L134">        super(parent, Lang.get(&quot;win_table&quot;));</span>
+<span class="nc" id="L135">        undoManager = new UndoManager&lt;&gt;(truthTable);</span>
+<span class="nc" id="L136">        this.library = library;</span>
+<span class="nc" id="L137">        this.shapeFactory = library.getShapeFactory();</span>
+<span class="nc" id="L138">        this.filename = filename;</span>
+<span class="nc" id="L139">        setDefaultCloseOperation(DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L141">        model = new TruthTableTableModel(undoManager);</span>
+<span class="nc" id="L142">        model.addTableModelListener(new CalculationTableModelListener());</span>
+
+<span class="nc" id="L144">        kvMap = new KarnaughMapDialog(this, model::incValue);</span>
+
+<span class="nc" id="L146">        statusBar = new ExpressionComponent();</span>
+<span class="nc" id="L147">        font = Screen.getInstance().getFont(1.66f);</span>
+<span class="nc" id="L148">        statusBar.setFont(font);</span>
+<span class="nc" id="L149">        table = new JTable(model);</span>
+<span class="nc" id="L150">        JComboBox&lt;String&gt; comboBox = new JComboBox&lt;&gt;(TruthTableTableModel.STATENAMES);</span>
+<span class="nc" id="L151">        table.setDefaultEditor(Integer.class, new DefaultCellEditor(comboBox));</span>
+<span class="nc" id="L152">        table.setDefaultRenderer(Integer.class, new CenterDefaultTableCellRenderer());</span>
+<span class="nc" id="L153">        table.getTableHeader().setDefaultRenderer(new StringDefaultTableCellRenderer());</span>
+<span class="nc" id="L154">        table.setRowHeight(font.getSize() * 6 / 5);</span>
+
+<span class="nc" id="L156">        table.getInputMap().put(KeyStroke.getKeyStroke(&quot;0&quot;), &quot;0_ACTION&quot;);</span>
+<span class="nc" id="L157">        table.getActionMap().put(&quot;0_ACTION&quot;, new SetAction(0));</span>
+<span class="nc" id="L158">        table.getInputMap().put(KeyStroke.getKeyStroke(&quot;1&quot;), &quot;1_ACTION&quot;);</span>
+<span class="nc" id="L159">        table.getActionMap().put(&quot;1_ACTION&quot;, new SetAction(1));</span>
+<span class="nc" id="L160">        table.getInputMap().put(KeyStroke.getKeyStroke(&quot;X&quot;), &quot;X_ACTION&quot;);</span>
+<span class="nc" id="L161">        table.getActionMap().put(&quot;X_ACTION&quot;, new SetAction(2));</span>
+
+<span class="nc" id="L163">        new TableReorderManager(this, table);</span>
+
+<span class="nc" id="L165">        allSolutionsDialog = new AllSolutionsDialog(this, font);</span>
+
+<span class="nc" id="L167">        JTableHeader header = table.getTableHeader();</span>
+<span class="nc" id="L168">        header.addMouseListener(new MouseAdapter() {</span>
+            @Override
+            public void mouseClicked(MouseEvent event) {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                if (mouse.isSecondaryClick(event)) {</span>
+<span class="nc" id="L172">                    columnIndex = header.columnAtPoint(event.getPoint());</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                    if (columnIndex != -1)</span>
+<span class="nc" id="L174">                        editColumnName(columnIndex, new Point(event.getXOnScreen(), event.getYOnScreen()));</span>
+                }
+<span class="nc" id="L176">            }</span>
+        });
+
+<span class="nc" id="L179">        JMenuBar bar = new JMenuBar();</span>
+<span class="nc" id="L180">        bar.add(createFileMenu());</span>
+
+<span class="nc" id="L182">        JMenu sizeMenu = new JMenu(Lang.get(&quot;menu_table_new&quot;));</span>
+
+<span class="nc" id="L184">        JMenu combinatorial = new JMenu(Lang.get(&quot;menu_table_new_combinatorial&quot;));</span>
+<span class="nc" id="L185">        sizeMenu.add(combinatorial);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (int i = 2; i &lt;= 8; i++)</span>
+<span class="nc" id="L187">            combinatorial.add(new JMenuItem(new SizeAction(i)));</span>
+<span class="nc" id="L188">        JMenu sequential = new JMenu(Lang.get(&quot;menu_table_new_sequential&quot;));</span>
+<span class="nc" id="L189">        sizeMenu.add(sequential);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        for (int i = 2; i &lt;= 8; i++)</span>
+<span class="nc" id="L191">            sequential.add(new JMenuItem(new SizeSequentialAction(i)));</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (Main.isExperimentalMode()) {</span>
+<span class="nc" id="L193">            JMenu sequentialBiDir = new JMenu(Lang.get(&quot;menu_table_new_sequential_bidir&quot;));</span>
+<span class="nc" id="L194">            sizeMenu.add(sequentialBiDir);</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            for (int i = 2; i &lt;= 8; i++)</span>
+<span class="nc" id="L196">                sequentialBiDir.add(new JMenuItem(new SizeSequentialBidirectionalAction(i)));</span>
+        }
+<span class="nc" id="L198">        bar.add(sizeMenu);</span>
+
+<span class="nc" id="L200">        JMenu edit = new JMenu(Lang.get(&quot;menu_edit&quot;));</span>
+<span class="nc" id="L201">        bar.add(edit);</span>
+
+<span class="nc" id="L203">        addUndoRedo(edit);</span>
+
+<span class="nc" id="L205">        edit.addSeparator();</span>
+
+<span class="nc" id="L207">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_reorder_inputs&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L210">                ArrayList&lt;String&gt; varNames = undoManager.getActual().getVarNames();</span>
+<span class="nc" id="L211">                if (new ElementOrderer&lt;&gt;(TableDialog.this, Lang.get(&quot;menu_table_reorder_inputs&quot;), new ElementOrderer.ListOrder&lt;&gt;(varNames))</span>
+<span class="nc" id="L212">                        .addDeleteButton(2)</span>
+<span class="nc" id="L213">                        .addOkButton()</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                        .showDialog()) {</span>
+
+                    try {
+<span class="nc" id="L217">                        undoManager.apply(tt -&gt; {</span>
+                            try {
+<span class="nc" id="L219">                                new ReorderInputs(tt, varNames).reorder();</span>
+<span class="nc" id="L220">                            } catch (ExpressionException ex) {</span>
+<span class="nc" id="L221">                                throw new ModifyException(&quot;failed to reorder&quot;, ex);</span>
+<span class="nc" id="L222">                            }</span>
+<span class="nc" id="L223">                        });</span>
+<span class="nc" id="L224">                        tableChanged();</span>
+<span class="nc" id="L225">                    } catch (ModifyException e1) {</span>
+<span class="nc" id="L226">                        new ErrorMessage().addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L227">                    }</span>
+                }
+<span class="nc" id="L229">            }</span>
+<span class="nc" id="L230">        }.createJMenuItem());</span>
+
+<span class="nc" id="L232">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_columnsAddVariable&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L236">                    undoManager.apply(TruthTable::addVariable);</span>
+<span class="nc" id="L237">                    tableChanged();</span>
+<span class="nc" id="L238">                } catch (ModifyException e) {</span>
+<span class="nc" id="L239">                    new ErrorMessage().addCause(e).show(TableDialog.this);</span>
+<span class="nc" id="L240">                }</span>
+<span class="nc" id="L241">            }</span>
+<span class="nc" id="L242">        }.setToolTip(Lang.get(&quot;menu_table_columnsAddVariable_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L244">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_reorder_outputs&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L247">                ArrayList&lt;String&gt; resultNames = undoManager.getActual().getResultNames();</span>
+<span class="nc" id="L248">                if (new ElementOrderer&lt;&gt;(TableDialog.this, Lang.get(&quot;menu_table_reorder_outputs&quot;), new ElementOrderer.ListOrder&lt;&gt;(resultNames))</span>
+<span class="nc" id="L249">                        .addDeleteButton(1)</span>
+<span class="nc" id="L250">                        .addOkButton()</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                        .showDialog()) {</span>
+                    try {
+<span class="nc" id="L253">                        undoManager.apply(tt -&gt; {</span>
+                            try {
+<span class="nc" id="L255">                                new ReorderOutputs(tt, resultNames).reorder();</span>
+<span class="nc" id="L256">                            } catch (ExpressionException ex) {</span>
+<span class="nc" id="L257">                                throw new ModifyException(&quot;failed to reorder&quot;, ex);</span>
+<span class="nc" id="L258">                            }</span>
+<span class="nc" id="L259">                        });</span>
+<span class="nc" id="L260">                        tableChanged();</span>
+<span class="nc" id="L261">                    } catch (ModifyException e1) {</span>
+<span class="nc" id="L262">                        new ErrorMessage().addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L263">                    }</span>
+                }
+<span class="nc" id="L265">            }</span>
+<span class="nc" id="L266">        }.createJMenuItem());</span>
+
+<span class="nc" id="L268">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_columnsAdd&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                try {
+<span class="nc" id="L272">                    undoManager.apply(TruthTable::addResult);</span>
+<span class="nc" id="L273">                    tableChanged();</span>
+<span class="nc" id="L274">                } catch (ModifyException e) {</span>
+<span class="nc" id="L275">                    new ErrorMessage().addCause(e).show(TableDialog.this);</span>
+<span class="nc" id="L276">                }</span>
+
+<span class="nc" id="L278">            }</span>
+<span class="nc" id="L279">        }.setToolTip(Lang.get(&quot;menu_table_columnsAdd_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L281">        edit.addSeparator();</span>
+
+<span class="nc" id="L283">        createSetMenuEntries(edit);</span>
+
+<span class="nc" id="L285">        hardwareMenu = createCreateMenu();</span>
+<span class="nc" id="L286">        bar.add(hardwareMenu);</span>
+<span class="nc" id="L287">        checkLastUsedGenerator();</span>
+
+<span class="nc" id="L289">        JMenu karnaughMenu = new JMenu(Lang.get(&quot;menu_karnaughMap&quot;));</span>
+<span class="nc" id="L290">        karnaughMenuAction = new ToolTipAction(Lang.get(&quot;menu_karnaughMap&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L293">                kvMap.setVisible(true);</span>
+<span class="nc" id="L294">            }</span>
+<span class="nc" id="L295">        }.setToolTip(Lang.get(&quot;menu_karnaughMap_tt&quot;)).setAccelerator(&quot;F1&quot;);</span>
+<span class="nc" id="L296">        karnaughMenu.add(karnaughMenuAction.createJMenuItem());</span>
+<span class="nc" id="L297">        bar.add(karnaughMenu);</span>
+
+<span class="nc" id="L299">        setJMenuBar(bar);</span>
+
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        karnaughMenuAction.setEnabled(undoManager.getActual().getVars().size() &lt;= 4);</span>
+<span class="nc" id="L302">        calculateExpressions();</span>
+
+<span class="nc" id="L304">        getContentPane().add(new JScrollPane(table));</span>
+<span class="nc" id="L305">        getContentPane().add(statusBar, BorderLayout.SOUTH);</span>
+<span class="nc" id="L306">        pack();</span>
+<span class="nc" id="L307">        setLocationRelativeTo(parent);</span>
+<span class="nc" id="L308">    }</span>
+
+    private void addUndoRedo(JMenu edit) {
+<span class="nc" id="L311">        final ToolTipAction undo = new ToolTipAction(Lang.get(&quot;menu_undo&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                if (undoManager.undoAvailable()) {</span>
+                    try {
+<span class="nc" id="L316">                        undoManager.undo();</span>
+<span class="nc" id="L317">                        tableChanged();</span>
+<span class="nc" id="L318">                    } catch (ModifyException e) {</span>
+<span class="nc" id="L319">                        new ErrorMessage().addCause(e).show(TableDialog.this);</span>
+<span class="nc" id="L320">                    }</span>
+                }
+<span class="nc" id="L322">            }</span>
+<span class="nc" id="L323">        }.setAcceleratorCTRLplus(&quot;Z&quot;);</span>
+<span class="nc" id="L324">        final ToolTipAction redo = new ToolTipAction(Lang.get(&quot;menu_redo&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L327" title="All 2 branches missed.">                if (undoManager.redoAvailable()) {</span>
+                    try {
+<span class="nc" id="L329">                        undoManager.redo();</span>
+<span class="nc" id="L330">                        tableChanged();</span>
+<span class="nc" id="L331">                    } catch (ModifyException e) {</span>
+<span class="nc" id="L332">                        new ErrorMessage().addCause(e).show(TableDialog.this);</span>
+<span class="nc" id="L333">                    }</span>
+                }
+<span class="nc" id="L335">            }</span>
+<span class="nc" id="L336">        }.setAcceleratorCTRLplus(&quot;Y&quot;);</span>
+
+<span class="nc" id="L338">        edit.add(undo.createJMenuItem());</span>
+<span class="nc" id="L339">        edit.add(redo.createJMenuItem());</span>
+<span class="nc" id="L340">        undoManager.addListener(() -&gt; {</span>
+<span class="nc" id="L341">            undo.setEnabled(undoManager.undoAvailable());</span>
+<span class="nc" id="L342">            redo.setEnabled(undoManager.redoAvailable());</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            if (undoManager.isModified())</span>
+<span class="nc" id="L344">                setTitle(&quot;*&quot; + Lang.get(&quot;win_table&quot;));</span>
+            else
+<span class="nc" id="L346">                setTitle(Lang.get(&quot;win_table&quot;));</span>
+<span class="nc" id="L347">        }).hasChanged();</span>
+<span class="nc" id="L348">    }</span>
+
+    /**
+     * Called if table was modified.
+     */
+    public void tableChanged() {
+<span class="nc bnc" id="L354" title="All 2 branches missed.">        karnaughMenuAction.setEnabled(undoManager.getActual().getVars().size() &lt;= 4);</span>
+<span class="nc" id="L355">        calculateExpressions();</span>
+<span class="nc" id="L356">        model.fireTableChanged();</span>
+<span class="nc" id="L357">    }</span>
+
+    private void editColumnName(int columnIndex, Point pos) {
+<span class="nc" id="L360">        ElementAttributes attr = new ElementAttributes();</span>
+<span class="nc" id="L361">        final String name = model.getColumnName(columnIndex);</span>
+<span class="nc" id="L362">        attr.set(Keys.LABEL, name);</span>
+<span class="nc" id="L363">        ElementAttributes modified = new AttributeDialog(this, pos, LIST, attr).showDialog();</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">        if (modified != null) {</span>
+<span class="nc" id="L365">            final String newName = modified.get(Keys.LABEL).trim().replace(' ', '-');</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">            if (!newName.equals(name))</span>
+<span class="nc" id="L367">                model.setColumnName(columnIndex, newName);</span>
+        }
+<span class="nc" id="L369">    }</span>
+
+    private JMenu createFileMenu() {
+<span class="nc" id="L372">        JMenu fileMenu = new JMenu(Lang.get(&quot;menu_file&quot;));</span>
+
+<span class="nc" id="L374">        fileMenu.add(new ToolTipAction(Lang.get(&quot;menu_open&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L377">                JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">                if (TableDialog.this.filename != null)</span>
+<span class="nc" id="L379">                    fc.setSelectedFile(SaveAsHelper.checkSuffix(TableDialog.this.filename, &quot;tru&quot;));</span>
+<span class="nc" id="L380">                fc.setFileFilter(new FileNameExtensionFilter(Lang.get(&quot;msg_truthTableCSV&quot;), &quot;csv&quot;));</span>
+<span class="nc" id="L381">                fc.setFileFilter(new FileNameExtensionFilter(Lang.get(&quot;msg_truthTable&quot;), &quot;tru&quot;));</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                if (fc.showOpenDialog(TableDialog.this) == JFileChooser.APPROVE_OPTION) {</span>
+                    try {
+<span class="nc" id="L384">                        File file = fc.getSelectedFile();</span>
+<span class="nc" id="L385">                        TruthTable truthTable = TruthTable.readFromFile(file);</span>
+<span class="nc" id="L386">                        undoManager.setInitial(truthTable);</span>
+<span class="nc" id="L387">                        tableChanged();</span>
+<span class="nc" id="L388">                        TableDialog.this.filename = file;</span>
+<span class="nc" id="L389">                    } catch (IOException e1) {</span>
+<span class="nc" id="L390">                        new ErrorMessage().addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L391">                    }</span>
+                }
+<span class="nc" id="L393">            }</span>
+        });
+
+<span class="nc" id="L396">        fileMenu.add(new ToolTipAction(Lang.get(&quot;menu_save&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L399">                JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                if (TableDialog.this.filename != null)</span>
+<span class="nc" id="L401">                    fc.setSelectedFile(SaveAsHelper.checkSuffix(TableDialog.this.filename, &quot;tru&quot;));</span>
+<span class="nc" id="L402">                fc.setFileFilter(new FileNameExtensionFilter(Lang.get(&quot;msg_truthTable&quot;), &quot;tru&quot;));</span>
+<span class="nc" id="L403">                new SaveAsHelper(TableDialog.this, fc, &quot;tru&quot;).checkOverwrite(</span>
+                        file -&gt; {
+<span class="nc" id="L405">                            undoManager.getActual().save(file);</span>
+<span class="nc" id="L406">                            TableDialog.this.filename = file;</span>
+<span class="nc" id="L407">                        }</span>
+                );
+<span class="nc" id="L409">            }</span>
+        });
+
+<span class="nc" id="L412">        fileMenu.add(new TextExportAction(Lang.get(&quot;menu_table_exportTablePlainText&quot;)) {</span>
+            @Override
+            ExpressionListener createExpressionListener() {
+<span class="nc" id="L415">                return new PlainTextExpressionListener();</span>
+            }
+        });
+
+<span class="nc" id="L419">        fileMenu.add(new TextExportAction(Lang.get(&quot;menu_table_exportTableLaTeX&quot;)) {</span>
+            @Override
+            ExpressionListener createExpressionListener() throws ExpressionException {
+<span class="nc" id="L422">                return new LaTeXExpressionListener(undoManager.getActual());</span>
+            }
+        });
+
+<span class="nc" id="L426">        fileMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createFunctionFixture&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L430">                    ModelAnalyserInfo modelAnalyzerInfo = undoManager.getActual().getModelAnalyzerInfo();</span>
+<span class="nc bnc" id="L431" title="All 4 branches missed.">                    if (modelAnalyzerInfo != null &amp;&amp; modelAnalyzerInfo.isSequential())</span>
+<span class="nc" id="L432">                        JOptionPane.showMessageDialog(</span>
+                                TableDialog.this,
+<span class="nc" id="L434">                                Lang.get(&quot;menu_table_createFunctionFixture_isSequential&quot;));</span>
+<span class="nc" id="L435">                    TruthTableFormatter test = new TruthTableFormatterTestCase(modelAnalyzerInfo);</span>
+<span class="nc" id="L436">                    String testCase = test.format(undoManager.getActual());</span>
+<span class="nc" id="L437">                    new ShowStringDialog(TableDialog.this, Lang.get(&quot;win_table_exportDialog&quot;),</span>
+<span class="nc" id="L438">                            testCase).setVisible(true);</span>
+<span class="nc" id="L439">                } catch (ExpressionException e1) {</span>
+<span class="nc" id="L440">                    new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L441">                }</span>
+<span class="nc" id="L442">            }</span>
+<span class="nc" id="L443">        }.setToolTip(Lang.get(&quot;menu_table_createFunctionFixture_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L445">        JMenu export = new JMenu(Lang.get(&quot;menu_export&quot;));</span>
+<span class="nc" id="L446">        fileMenu.add(export);</span>
+<span class="nc" id="L447">        export.add(new FileExportActionConfirm(Lang.get(&quot;menu_table_exportHex&quot;), &quot;hex&quot;) {</span>
+            @Override
+            protected String getString() throws ExpressionException {
+<span class="nc" id="L450">                return new TruthTableFormatterHex().format(undoManager.getActual());</span>
+            }
+<span class="nc" id="L452">        }.setToolTip(Lang.get(&quot;menu_table_exportHex_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L453">        export.add(new FileExportAction(Lang.get(&quot;menu_table_exportCSVCondensed&quot;), &quot;csv&quot;) {</span>
+            @Override
+            protected String getString() throws FormatterException, ExpressionException {
+<span class="nc" id="L456">                ExpressionListenerCSVCondensed expressionListener = new ExpressionListenerCSVCondensed();</span>
+<span class="nc" id="L457">                lastGeneratedExpressions.replayTo(expressionListener);</span>
+<span class="nc" id="L458">                expressionListener.close();</span>
+<span class="nc" id="L459">                return expressionListener.toString();</span>
+            }
+<span class="nc" id="L461">        }.setToolTip(Lang.get(&quot;menu_table_exportCSVCondensed_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L462">        export.add(new FileExportActionConfirm(Lang.get(&quot;menu_table_exportCSV&quot;), &quot;csv&quot;) {</span>
+            @Override
+            protected String getString() throws ExpressionException {
+<span class="nc" id="L465">                return new TruthTableFormatterCSV().format(undoManager.getActual());</span>
+            }
+<span class="nc" id="L467">        }.setToolTip(Lang.get(&quot;menu_table_exportCSV_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L469">        createJK = new JCheckBoxMenuItem(Lang.get(&quot;menu_table_JK&quot;));</span>
+<span class="nc" id="L470">        createJK.addActionListener(e -&gt; calculateExpressions());</span>
+<span class="nc" id="L471">        fileMenu.add(createJK);</span>
+
+<span class="nc" id="L473">        fileMenu.add(allSolutionsDialog.getReopenAction());</span>
+
+<span class="nc" id="L475">        return fileMenu;</span>
+    }
+
+    private void createSetMenuEntries(JMenu edit) {
+<span class="nc" id="L479">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_setXTo0&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L482" title="All 2 branches missed.">                modifyTable(v -&gt; v &gt; 1 ? 0 : v);</span>
+<span class="nc" id="L483">            }</span>
+<span class="nc" id="L484">        }.setToolTip(Lang.get(&quot;menu_table_setXTo0_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L485">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_setXTo1&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L488" title="All 2 branches missed.">                modifyTable(v -&gt; v &gt; 1 ? 1 : v);</span>
+<span class="nc" id="L489">            }</span>
+<span class="nc" id="L490">        }.setToolTip(Lang.get(&quot;menu_table_setXTo1_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L491">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_setAllToX&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L494">                modifyTable(v -&gt; (byte) 2);</span>
+<span class="nc" id="L495">            }</span>
+<span class="nc" id="L496">        }.setToolTip(Lang.get(&quot;menu_table_setAllToX_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L497">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_setAllTo0&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L500">                modifyTable(v -&gt; (byte) 0);</span>
+<span class="nc" id="L501">            }</span>
+<span class="nc" id="L502">        }.setToolTip(Lang.get(&quot;menu_table_setAllTo0_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L503">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_setAllTo1&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L506">                modifyTable(v -&gt; (byte) 1);</span>
+<span class="nc" id="L507">            }</span>
+<span class="nc" id="L508">        }.setToolTip(Lang.get(&quot;menu_table_setAllTo1_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L509">        edit.add(new ToolTipAction(Lang.get(&quot;menu_table_invert&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L512" title="All 2 branches missed.">                modifyTable(v -&gt; v &gt; 1 ? v : (byte) (1 - v));</span>
+<span class="nc" id="L513">            }</span>
+<span class="nc" id="L514">        }.setToolTip(Lang.get(&quot;menu_table_invert_tt&quot;)).createJMenuItem());</span>
+<span class="nc" id="L515">    }</span>
+
+    private void modifyTable(BoolTableByteArray.TableModifier m) {
+        try {
+<span class="nc" id="L519">            undoManager.apply(truthTable -&gt; truthTable.modifyValues(m));</span>
+<span class="nc" id="L520">            tableChanged();</span>
+<span class="nc" id="L521">        } catch (ModifyException e) {</span>
+<span class="nc" id="L522">            e.printStackTrace();</span>
+<span class="nc" id="L523">            new ErrorMessage().addCause(e).show(TableDialog.this);</span>
+<span class="nc" id="L524">        }</span>
+<span class="nc" id="L525">    }</span>
+
+    private JMenu createCreateMenu() {
+<span class="nc" id="L528">        JMenu createMenu = new JMenu(Lang.get(&quot;menu_table_create&quot;));</span>
+<span class="nc" id="L529">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createCircuit&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L532">                createCircuit(ExpressionModifier.IDENTITY);</span>
+<span class="nc" id="L533">            }</span>
+<span class="nc" id="L534">        }.setToolTip(Lang.get(&quot;menu_table_createCircuit_tt&quot;)).setAccelerator(&quot;F2&quot;).enableAcceleratorIn(table).createJMenuItem());</span>
+
+<span class="nc" id="L536">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createCircuitJK&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L539">                createCircuit(true, false, ExpressionModifier.IDENTITY);</span>
+<span class="nc" id="L540">            }</span>
+<span class="nc" id="L541">        }.setToolTip(Lang.get(&quot;menu_table_createCircuitJK_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L543">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createCircuitLUT&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L546">                createCircuit(false, true, ExpressionModifier.IDENTITY);</span>
+<span class="nc" id="L547">            }</span>
+<span class="nc" id="L548">        }.setToolTip(Lang.get(&quot;menu_table_createCircuitLUT_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L550">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createTwo&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L553">                createCircuit(new TwoInputs());</span>
+<span class="nc" id="L554">            }</span>
+<span class="nc" id="L555">        }.setToolTip(Lang.get(&quot;menu_table_createTwo_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L557">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createThree&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L560">                createCircuit(new ThreeInputs());</span>
+<span class="nc" id="L561">            }</span>
+<span class="nc" id="L562">        }.setToolTip(Lang.get(&quot;menu_table_createThree_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L564">        createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createNAnd&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L567">                createCircuit(new NAnd());</span>
+<span class="nc" id="L568">            }</span>
+<span class="nc" id="L569">        }.setToolTip(Lang.get(&quot;menu_table_createNAnd_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (Main.isExperimentalMode()) {</span>
+<span class="nc" id="L572">            createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createNAndTwo&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L575">                    createCircuit(new TwoInputs(), new NAnd());</span>
+<span class="nc" id="L576">                }</span>
+<span class="nc" id="L577">            }.setToolTip(Lang.get(&quot;menu_table_createNAndTwo_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L579">            createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createNOr&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L582">                    createCircuit(new NOr());</span>
+<span class="nc" id="L583">                }</span>
+<span class="nc" id="L584">            }.setToolTip(Lang.get(&quot;menu_table_createNOr_tt&quot;)).createJMenuItem());</span>
+
+<span class="nc" id="L586">            createMenu.add(new ToolTipAction(Lang.get(&quot;menu_table_createNOrTwo&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L589">                    createCircuit(new TwoInputs(), new NOr());</span>
+<span class="nc" id="L590">                }</span>
+<span class="nc" id="L591">            }.setToolTip(Lang.get(&quot;menu_table_createNOrTwo_tt&quot;)).createJMenuItem());</span>
+
+        }
+
+<span class="nc" id="L595">        JMenu hardware = new JMenu(Lang.get(&quot;menu_table_create_hardware&quot;));</span>
+<span class="nc" id="L596">        register(hardware, new GenerateCUPL(CuplExporter::new, &quot;GAL16v8/CUPL&quot;));</span>
+<span class="nc" id="L597">        register(hardware, new GenerateFile(&quot;jed&quot;, () -&gt; new ExpressionToFileExporter(new Gal16v8JEDECExporter()),</span>
+<span class="nc" id="L598">                &quot;GAL16v8/JEDEC&quot;, Lang.get(&quot;menu_table_create_jedec_tt&quot;)));</span>
+<span class="nc" id="L599">        register(hardware, new GenerateCUPL(Gal22v10CuplExporter::new, &quot;GAL22v10/CUPL&quot;));</span>
+<span class="nc" id="L600">        register(hardware, new GenerateFile(&quot;jed&quot;, () -&gt; new ExpressionToFileExporter(new Gal22v10JEDECExporter()),</span>
+<span class="nc" id="L601">                &quot;GAL22v10/JEDEC&quot;, Lang.get(&quot;menu_table_create_jedec_tt&quot;)));</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">        for (ATFDevice atfDev : ATFDevice.values()) {</span>
+<span class="nc" id="L603">            register(hardware, new GenerateCUPL(atfDev::getCuplExporter, &quot;ATF150x/&quot; + atfDev.getMenuName() + &quot;/CUPL&quot;));</span>
+<span class="nc" id="L604">            register(hardware, new GenerateFile(&quot;tt2&quot;,</span>
+<span class="nc" id="L605">                    () -&gt; atfDev.createExpressionToFileExporter(TableDialog.this, getProjectName()),</span>
+<span class="nc" id="L606">                    &quot;ATF150x/&quot; + atfDev.getMenuName() + &quot;/TT2, JEDEC&quot;,</span>
+<span class="nc" id="L607">                    Lang.get(&quot;menu_table_createTT2_tt&quot;)));</span>
+        }
+<span class="nc" id="L609">        createMenu.add(hardware);</span>
+
+<span class="nc" id="L611">        return createMenu;</span>
+    }
+
+    private void register(JMenu hardware, final HardwareDescriptionGenerator generator) {
+<span class="nc" id="L615">        availGenerators.put(generator.getMenuPath(), generator);</span>
+<span class="nc" id="L616">        JMenu m = hardware;</span>
+<span class="nc" id="L617">        String path = generator.getMenuPath();</span>
+<span class="nc" id="L618">        StringTokenizer tok = new StringTokenizer(path, &quot;/&quot;);</span>
+<span class="nc bnc" id="L619" title="All 2 branches missed.">        while (tok.hasMoreTokens()) {</span>
+<span class="nc" id="L620">            String menuName = tok.nextToken();</span>
+<span class="nc bnc" id="L621" title="All 2 branches missed.">            if (tok.hasMoreTokens()) {</span>
+<span class="nc" id="L622">                JMenu toUse = null;</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">                for (int i = 0; i &lt; m.getMenuComponentCount(); i++) {</span>
+<span class="nc" id="L624">                    Component menuComponent = m.getMenuComponent(i);</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">                    if (menuComponent instanceof JMenu) {</span>
+<span class="nc" id="L626">                        JMenu menu = (JMenu) menuComponent;</span>
+<span class="nc bnc" id="L627" title="All 2 branches missed.">                        if (menu.getText().equalsIgnoreCase(menuName))</span>
+<span class="nc" id="L628">                            toUse = menu;</span>
+                    }
+                }
+<span class="nc bnc" id="L631" title="All 2 branches missed.">                if (toUse == null) {</span>
+<span class="nc" id="L632">                    toUse = new JMenu(menuName);</span>
+<span class="nc" id="L633">                    m.add(toUse);</span>
+                }
+<span class="nc" id="L635">                m = toUse;</span>
+<span class="nc" id="L636">            } else {</span>
+<span class="nc" id="L637">                m.add(new HardwareToolTipAction(menuName, generator).createJMenuItem());</span>
+            }
+<span class="nc" id="L639">        }</span>
+<span class="nc" id="L640">    }</span>
+
+    private void createCircuit(ExpressionModifier... modifier) {
+<span class="nc" id="L643">        createCircuit(false, false, modifier);</span>
+<span class="nc" id="L644">    }</span>
+
+    private void createCircuit(boolean useJKff, boolean useLUTs, ExpressionModifier... modifier) {
+        try {
+<span class="nc" id="L648">            final ModelAnalyserInfo modelAnalyzerInfo = undoManager.getActual().getModelAnalyzerInfo();</span>
+<span class="nc" id="L649">            CircuitBuilder circuitBuilder = new CircuitBuilder(shapeFactory, undoManager.getActual().getVars())</span>
+<span class="nc" id="L650">                    .setUseJK(useJKff)</span>
+<span class="nc" id="L651">                    .setUseLUTs(useLUTs)</span>
+<span class="nc" id="L652">                    .setModelAnalyzerInfo(modelAnalyzerInfo);</span>
+<span class="nc" id="L653">            new BuilderExpressionCreator(circuitBuilder, modifier)</span>
+<span class="nc" id="L654">                    .setUseJKOptimizer(useJKff)</span>
+<span class="nc" id="L655">                    .create(lastGeneratedExpressions);</span>
+<span class="nc" id="L656">            Circuit circuit = circuitBuilder.createCircuit();</span>
+
+<span class="nc" id="L658">            new Main.MainBuilder()</span>
+<span class="nc" id="L659">                    .setParent(TableDialog.this)</span>
+<span class="nc" id="L660">                    .setLibrary(library)</span>
+<span class="nc" id="L661">                    .setCircuit(circuit)</span>
+<span class="nc" id="L662">                    .setBaseFileName(filename)</span>
+<span class="nc" id="L663">                    .openLater();</span>
+<span class="nc" id="L664">        } catch (ExpressionException | FormatterException | RuntimeException e) {</span>
+<span class="nc" id="L665">            new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L666">        }</span>
+<span class="nc" id="L667">    }</span>
+
+    /**
+     * @return the used table model
+     */
+    public TruthTableTableModel getModel() {
+<span class="nc" id="L673">        return model;</span>
+    }
+
+    private String getProjectName() {
+<span class="nc bnc" id="L677" title="All 2 branches missed.">        if (filename == null)</span>
+<span class="nc" id="L678">            return &quot;unknown&quot;;</span>
+<span class="nc" id="L679">        else return filename.getName();</span>
+    }
+
+    /**
+     * @return the all solutions dialog
+     */
+    public AllSolutionsDialog getAllSolutionsDialog() {
+<span class="nc" id="L686">        return allSolutionsDialog;</span>
+    }
+
+    private void setLastUsedGenerator(HardwareDescriptionGenerator generator) {
+<span class="nc bnc" id="L690" title="All 2 branches missed.">        if (lastUsedGenratorMenuItem != null)</span>
+<span class="nc" id="L691">            hardwareMenu.remove(lastUsedGenratorMenuItem);</span>
+<span class="nc" id="L692">        lastUsedGenratorMenuItem = new HardwareToolTipAction(generator.getMenuPath().replace(&quot;/&quot;, &quot; → &quot;), generator).createJMenuItem();</span>
+<span class="nc" id="L693">        hardwareMenu.add(lastUsedGenratorMenuItem);</span>
+<span class="nc" id="L694">        PREFS.put(&quot;gen&quot;, generator.getMenuPath());</span>
+<span class="nc" id="L695">    }</span>
+
+    private void checkLastUsedGenerator() {
+<span class="nc" id="L698">        String lu = PREFS.get(&quot;gen&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L699" title="All 2 branches missed.">        if (lu.length() &gt; 0) {</span>
+<span class="nc" id="L700">            HardwareDescriptionGenerator gen = availGenerators.get(lu);</span>
+<span class="nc bnc" id="L701" title="All 2 branches missed.">            if (gen != null)</span>
+<span class="nc" id="L702">                setLastUsedGenerator(gen);</span>
+        }
+<span class="nc" id="L704">    }</span>
+
+    /**
+     * @return the undoManager
+     */
+    public UndoManager&lt;TruthTable&gt; getUndoManager() {
+<span class="nc" id="L710">        return undoManager;</span>
+    }
+
+<span class="nc" id="L713">    private class CalculationTableModelListener implements TableModelListener {</span>
+        @Override
+        public void tableChanged(TableModelEvent tableModelEvent) {
+<span class="nc" id="L716">            calculateExpressions();</span>
+<span class="nc" id="L717">        }</span>
+    }
+
+    private void calculateExpressions() {
+        try {
+<span class="nc" id="L722">            LOGGER.info(&quot;start optimization&quot;);</span>
+<span class="nc" id="L723">            ExpressionListener expressionListener = new OutputExpressionListener();</span>
+
+<span class="nc bnc" id="L725" title="All 2 branches missed.">            if (createJK.isSelected())</span>
+<span class="nc" id="L726">                expressionListener = new ExpressionListenerJK(expressionListener);</span>
+
+<span class="nc" id="L728">            final TruthTable table = undoManager.getActual();</span>
+<span class="nc bnc" id="L729" title="All 2 branches missed.">            if (table.getVars().size() &gt;= 8) {</span>
+<span class="nc" id="L730">                ProgressDialog progress = new ProgressDialog(this);</span>
+
+<span class="nc" id="L732">                ExpressionListener finalExpressionListener = expressionListener;</span>
+<span class="nc" id="L733">                new Thread(() -&gt; {</span>
+<span class="nc" id="L734">                    ExpressionListenerStore storage = new ExpressionListenerStore(null);</span>
+                    try {
+<span class="nc" id="L736">                        new ExpressionCreator(table).setProgressListener(progress).create(storage);</span>
+<span class="nc" id="L737">                    } catch (ExpressionException | FormatterException | AnalyseException e) {</span>
+<span class="nc" id="L738">                        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L739">                            progress.dispose();</span>
+<span class="nc" id="L740">                            lastGeneratedExpressions = null;</span>
+<span class="nc" id="L741">                            new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L742">                        });</span>
+<span class="nc" id="L743">                        return;</span>
+<span class="nc" id="L744">                    }</span>
+
+<span class="nc" id="L746">                    SwingUtilities.invokeLater(() -&gt; {</span>
+                        try {
+<span class="nc" id="L748">                            lastGeneratedExpressions = new ExpressionListenerStore(finalExpressionListener);</span>
+<span class="nc" id="L749">                            storage.replayTo(lastGeneratedExpressions);</span>
+<span class="nc" id="L750">                            lastGeneratedExpressions.close();</span>
+<span class="nc" id="L751">                            kvMap.setResult(table, lastGeneratedExpressions.getResults());</span>
+<span class="nc" id="L752">                        } catch (FormatterException | ExpressionException e) {</span>
+<span class="nc" id="L753">                            lastGeneratedExpressions = null;</span>
+<span class="nc" id="L754">                            new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e).show(this);</span>
+<span class="nc" id="L755">                        }</span>
+<span class="nc" id="L756">                    });</span>
+
+<span class="nc" id="L758">                }).start();</span>
+<span class="nc" id="L759">            } else {</span>
+<span class="nc" id="L760">                lastGeneratedExpressions = new ExpressionListenerStore(expressionListener);</span>
+<span class="nc" id="L761">                new ExpressionCreator(table).create(lastGeneratedExpressions);</span>
+<span class="nc" id="L762">                kvMap.setResult(table, lastGeneratedExpressions.getResults());</span>
+            }
+
+<span class="nc" id="L765">            LOGGER.info(&quot;optimization finished&quot;);</span>
+<span class="nc" id="L766">        } catch (ExpressionException | FormatterException | AnalyseException e1) {</span>
+<span class="nc" id="L767">            lastGeneratedExpressions = null;</span>
+<span class="nc" id="L768">            new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e1).show(this);</span>
+<span class="nc" id="L769">        }</span>
+<span class="nc" id="L770">    }</span>
+
+    /**
+     * @return the last generated expressions
+     */
+    public ExpressionListenerStore getLastGeneratedExpressions() {
+<span class="nc" id="L776">        return lastGeneratedExpressions;</span>
+    }
+
+    private final class SizeAction extends AbstractAction {
+        private final int n;
+
+<span class="nc" id="L782">        private SizeAction(int n) {</span>
+<span class="nc" id="L783">            super(Lang.get(&quot;menu_table_N_variables&quot;, n));</span>
+<span class="nc" id="L784">            this.n = n;</span>
+<span class="nc" id="L785">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L789">            undoManager.setInitial(new TruthTable(n).addResult());</span>
+<span class="nc" id="L790">            tableChanged();</span>
+<span class="nc" id="L791">        }</span>
+    }
+
+    private final class SizeSequentialAction extends AbstractAction {
+        private final int n;
+
+<span class="nc" id="L797">        private SizeSequentialAction(int n) {</span>
+<span class="nc" id="L798">            super(Lang.get(&quot;menu_table_N_variables&quot;, n));</span>
+<span class="nc" id="L799">            this.n = n;</span>
+<span class="nc" id="L800">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L804">            ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L805" title="All 2 branches missed.">            for (int i = n - 1; i &gt;= 0; i--)</span>
+<span class="nc" id="L806">                vars.add(new Variable(&quot;Q_&quot; + i + &quot;^n&quot;));</span>
+<span class="nc" id="L807">            TruthTable truthTable = new TruthTable(vars);</span>
+<span class="nc" id="L808">            int i = n - 1;</span>
+<span class="nc" id="L809">            int rows = 1 &lt;&lt; n;</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">            for (Variable v : vars) {</span>
+<span class="nc" id="L811">                BoolTableByteArray val = new BoolTableByteArray(rows);</span>
+<span class="nc bnc" id="L812" title="All 2 branches missed.">                for (int n = 0; n &lt; rows; n++)</span>
+<span class="nc" id="L813">                    val.set(n, ((n + 1) &gt;&gt; i) &amp; 1);</span>
+<span class="nc" id="L814">                truthTable.addResult(addOne(v.getIdentifier()), val);</span>
+<span class="nc" id="L815">                i--;</span>
+<span class="nc" id="L816">            }</span>
+
+<span class="nc" id="L818">            undoManager.setInitial(truthTable);</span>
+<span class="nc" id="L819">            tableChanged();</span>
+<span class="nc" id="L820">        }</span>
+    }
+
+    private final class SizeSequentialBidirectionalAction extends AbstractAction {
+        private final int n;
+
+<span class="nc" id="L826">        private SizeSequentialBidirectionalAction(int n) {</span>
+<span class="nc" id="L827">            super(Lang.get(&quot;menu_table_N_variables&quot;, n));</span>
+<span class="nc" id="L828">            this.n = n;</span>
+<span class="nc" id="L829">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L833">            ArrayList&lt;Variable&gt; vars = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L834">            vars.add(new Variable(&quot;D&quot;));</span>
+<span class="nc bnc" id="L835" title="All 2 branches missed.">            for (int i = n - 1; i &gt;= 0; i--)</span>
+<span class="nc" id="L836">                vars.add(new Variable(&quot;Q_&quot; + i + &quot;^n&quot;));</span>
+<span class="nc" id="L837">            TruthTable truthTable = new TruthTable(vars);</span>
+<span class="nc" id="L838">            int i = n - 1;</span>
+<span class="nc" id="L839">            int rows = 1 &lt;&lt; (n + 1);</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">            for (int vi = 1; vi &lt; vars.size(); vi++) {</span>
+<span class="nc" id="L841">                BoolTableByteArray val = new BoolTableByteArray(rows);</span>
+<span class="nc bnc" id="L842" title="All 2 branches missed.">                for (int n = 0; n &lt; rows; n++) {</span>
+<span class="nc bnc" id="L843" title="All 2 branches missed.">                    if (n &gt;= rows / 2)</span>
+<span class="nc" id="L844">                        val.set(n, ((n - 1) &gt;&gt; i) &amp; 1);</span>
+                    else
+<span class="nc" id="L846">                        val.set(n, ((n + 1) &gt;&gt; i) &amp; 1);</span>
+                }
+<span class="nc" id="L848">                truthTable.addResult(addOne(vars.get(vi).getIdentifier()), val);</span>
+<span class="nc" id="L849">                i--;</span>
+            }
+
+<span class="nc" id="L852">            undoManager.setInitial(truthTable);</span>
+<span class="nc" id="L853">            tableChanged();</span>
+<span class="nc" id="L854">        }</span>
+    }
+
+<span class="nc" id="L857">    private final class CenterDefaultTableCellRenderer extends DefaultTableCellRenderer {</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+<span class="nc" id="L861">            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);</span>
+<span class="nc" id="L862">            label.setHorizontalAlignment(SwingConstants.CENTER);</span>
+<span class="nc" id="L863">            label.setFont(font);</span>
+<span class="nc bnc" id="L864" title="All 2 branches missed.">            if (column &lt; undoManager.getActual().getVars().size())</span>
+<span class="nc" id="L865">                label.setBackground(MYGRAY);</span>
+            else {
+<span class="nc bnc" id="L867" title="All 2 branches missed.">                if ((row &amp; 4) == 0)</span>
+<span class="nc" id="L868">                    label.setBackground(Color.WHITE);</span>
+                else
+<span class="nc" id="L870">                    label.setBackground(ODDWHITE);</span>
+            }
+
+<span class="nc bnc" id="L873" title="All 2 branches missed.">            if (value instanceof Integer) {</span>
+<span class="nc" id="L874">                int v = (int) value;</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">                if (v &gt; 1)</span>
+<span class="nc" id="L876">                    label.setText(&quot;x&quot;);</span>
+            }
+
+<span class="nc" id="L879">            return label;</span>
+        }
+    }
+
+    private static final class StringDefaultTableCellRenderer extends DefaultTableCellRenderer {
+<span class="nc" id="L884">        private StringDefaultTableCellRenderer() {</span>
+<span class="nc" id="L885">            setHorizontalAlignment(SwingConstants.CENTER);</span>
+<span class="nc" id="L886">        }</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+<span class="nc" id="L890">            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);</span>
+<span class="nc" id="L891">            label.setBackground(MYGRAY);</span>
+
+            try {
+<span class="nc" id="L894">                label.setText(PlainTextFormatter.format(new Parser(value.toString()).parse()));</span>
+<span class="nc" id="L895">            } catch (ParseException e) {</span>
+<span class="nc" id="L896">                label.setText(value.toString());</span>
+<span class="nc" id="L897">            }</span>
+<span class="nc" id="L898">            setBorder(BorderFactory.createRaisedBevelBorder());</span>
+
+<span class="nc" id="L900">            return label;</span>
+        }
+    }
+
+    private final class OutputExpressionListener implements ExpressionListener {
+        private final ArrayList&lt;Expression&gt; expressions;
+
+<span class="nc" id="L907">        private OutputExpressionListener() {</span>
+<span class="nc" id="L908">            expressions = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L909">        }</span>
+
+        @Override
+        public void resultFound(String name, Expression expression) {
+<span class="nc bnc" id="L913" title="All 2 branches missed.">            if (name.endsWith(&quot;^n+1&quot;))</span>
+<span class="nc" id="L914">                name = name.substring(0, name.length() - 4) + &quot;^{n+1}&quot;;</span>
+<span class="nc" id="L915">            expressions.add(new NamedExpression(name, expression));</span>
+<span class="nc" id="L916">        }</span>
+
+        @Override
+        public void close() {
+<span class="nc" id="L920">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc bnc" id="L921" title="All 3 branches missed.">                switch (expressions.size()) {</span>
+                    case 0:
+<span class="nc" id="L923">                        statusBar.setVisible(false);</span>
+<span class="nc" id="L924">                        allSolutionsDialog.setNeeded(false, TableDialog.this.getBounds());</span>
+<span class="nc" id="L925">                        break;</span>
+                    case 1:
+<span class="nc" id="L927">                        statusBar.setVisible(true);</span>
+<span class="nc" id="L928">                        statusBar.setExpression(expressions.get(0));</span>
+<span class="nc" id="L929">                        allSolutionsDialog.setNeeded(false, TableDialog.this.getBounds());</span>
+<span class="nc" id="L930">                        break;</span>
+                    default:
+<span class="nc" id="L932">                        statusBar.setVisible(false);</span>
+<span class="nc" id="L933">                        allSolutionsDialog.setExpressions(expressions);</span>
+<span class="nc" id="L934">                        allSolutionsDialog.setNeeded(true, TableDialog.this.getBounds());</span>
+<span class="nc" id="L935">                        toFront();</span>
+                }
+<span class="nc" id="L937">            });</span>
+<span class="nc" id="L938">        }</span>
+    }
+
+    private final class SetAction extends AbstractAction {
+        private final int value;
+
+<span class="nc" id="L944">        private SetAction(int value) {</span>
+<span class="nc" id="L945">            this.value = value;</span>
+<span class="nc" id="L946">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L950">            int r = table.getSelectedRow();</span>
+<span class="nc" id="L951">            int c = table.getSelectedColumn();</span>
+<span class="nc bnc" id="L952" title="All 4 branches missed.">            if (r &lt; 0 || c &lt; 0) {</span>
+<span class="nc" id="L953">                r = 0;</span>
+<span class="nc" id="L954">                c = undoManager.getActual().getVars().size();</span>
+            }
+<span class="nc" id="L956">            model.setValueAt(value, r, c);</span>
+
+<span class="nc" id="L958">            c++;</span>
+<span class="nc bnc" id="L959" title="All 2 branches missed.">            if (c &gt;= table.getColumnCount()) {</span>
+<span class="nc" id="L960">                c = undoManager.getActual().getVars().size();</span>
+<span class="nc" id="L961">                r++;</span>
+<span class="nc bnc" id="L962" title="All 2 branches missed.">                if (r &gt;= model.getRowCount())</span>
+<span class="nc" id="L963">                    r = 0;</span>
+            }
+<span class="nc" id="L965">            table.changeSelection(r, c, false, false);</span>
+<span class="nc" id="L966">        }</span>
+    }
+
+    private final class HardwareToolTipAction extends ToolTipAction {
+        private final HardwareDescriptionGenerator generator;
+
+<span class="nc" id="L972">        private HardwareToolTipAction(String menuName, HardwareDescriptionGenerator generator) {</span>
+<span class="nc" id="L973">            super(menuName);</span>
+<span class="nc" id="L974">            this.generator = generator;</span>
+<span class="nc" id="L975">            setToolTip(generator.getDescription());</span>
+<span class="nc" id="L976">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+<span class="nc" id="L981">                generator.generate(TableDialog.this, filename, undoManager.getActual(), lastGeneratedExpressions);</span>
+<span class="nc" id="L982">                setLastUsedGenerator(generator);</span>
+<span class="nc" id="L983">            } catch (Exception e1) {</span>
+<span class="nc" id="L984">                new ErrorMessage(Lang.get(&quot;msg_errorDuringHardwareExport&quot;)).addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L985">            }</span>
+<span class="nc" id="L986">        }</span>
+    }
+
+    private abstract class TextExportAction extends ToolTipAction {
+<span class="nc" id="L990">        private TextExportAction(String name) {</span>
+<span class="nc" id="L991">            super(name);</span>
+<span class="nc" id="L992">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+<span class="nc" id="L997">                final ExpressionListener laTeXExpressionListener = createExpressionListener();</span>
+<span class="nc" id="L998">                ExpressionListener expressionListener = laTeXExpressionListener;</span>
+<span class="nc bnc" id="L999" title="All 2 branches missed.">                if (createJK.isSelected())</span>
+<span class="nc" id="L1000">                    expressionListener = new ExpressionListenerJK(expressionListener);</span>
+<span class="nc" id="L1001">                lastGeneratedExpressions.replayTo(expressionListener);</span>
+<span class="nc" id="L1002">                expressionListener.close();</span>
+
+<span class="nc" id="L1004">                new ShowStringDialog(TableDialog.this, Lang.get(&quot;win_table_exportDialog&quot;),</span>
+<span class="nc" id="L1005">                        laTeXExpressionListener.toString()).setVisible(true);</span>
+<span class="nc" id="L1006">            } catch (ExpressionException | FormatterException e1) {</span>
+<span class="nc" id="L1007">                new ErrorMessage(Lang.get(&quot;msg_errorDuringCalculation&quot;)).addCause(e1).show(TableDialog.this);</span>
+<span class="nc" id="L1008">            }</span>
+<span class="nc" id="L1009">        }</span>
+
+        abstract ExpressionListener createExpressionListener() throws ExpressionException;
+    }
+
+    private abstract class FileExportAction extends ToolTipAction {
+        private final String suffix;
+
+<span class="nc" id="L1017">        private FileExportAction(String name, String suffix) {</span>
+<span class="nc" id="L1018">            super(name);</span>
+<span class="nc" id="L1019">            this.suffix = suffix;</span>
+<span class="nc" id="L1020">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">            if (confirmExport()) {</span>
+<span class="nc" id="L1025">                JFileChooser fc = new MyFileChooser();</span>
+<span class="nc bnc" id="L1026" title="All 2 branches missed.">                if (TableDialog.this.filename != null)</span>
+<span class="nc" id="L1027">                    fc.setSelectedFile(SaveAsHelper.checkSuffix(TableDialog.this.filename, suffix));</span>
+<span class="nc" id="L1028">                new SaveAsHelper(TableDialog.this, fc, suffix)</span>
+<span class="nc" id="L1029">                        .checkOverwrite(file -&gt; {</span>
+                            try {
+<span class="nc" id="L1031">                                try (Writer w = new FileWriter(file)) {</span>
+<span class="nc" id="L1032">                                    w.write(getString());</span>
+                                }
+<span class="nc" id="L1034">                            } catch (FormatterException | ExpressionException ex) {</span>
+<span class="nc" id="L1035">                                throw new IOException(ex);</span>
+<span class="nc" id="L1036">                            }</span>
+<span class="nc" id="L1037">                        });</span>
+            }
+<span class="nc" id="L1039">        }</span>
+
+        protected boolean confirmExport() {
+<span class="nc" id="L1042">            return true;</span>
+        }
+
+        protected abstract String getString() throws FormatterException, ExpressionException;
+    }
+
+    private abstract class FileExportActionConfirm extends FileExportAction {
+
+<span class="nc" id="L1050">        private FileExportActionConfirm(String name, String suffix) {</span>
+<span class="nc" id="L1051">            super(name, suffix);</span>
+<span class="nc" id="L1052">        }</span>
+
+        @Override
+        protected boolean confirmExport() {
+<span class="nc" id="L1056">            int res = JOptionPane.OK_OPTION;</span>
+<span class="nc bnc" id="L1057" title="All 2 branches missed.">            if (undoManager.getActual().getVars().size() &gt; 20)</span>
+<span class="nc" id="L1058">                res = JOptionPane.showConfirmDialog(TableDialog.this, Lang.get(&quot;msg_tableHasManyRowsConfirm&quot;));</span>
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">            return res == JOptionPane.OK_OPTION;</span>
+        }
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,736 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Context.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.hgs</a> &gt; <span class="el_source">Context.java</span></div><h1>Context.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.hgs;
+
+import de.neemann.digital.FileLocator;
+import de.neemann.digital.core.Bits;
+import de.neemann.digital.core.extern.Application;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.importer.Importer;
+import de.neemann.digital.hdl.hgs.function.Func;
+import de.neemann.digital.hdl.hgs.function.Function;
+import de.neemann.digital.hdl.hgs.function.InnerFunction;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * The evaluation context
+ */
+public class Context implements HGSMap {
+<span class="fc" id="L28">    private static final Logger LOGGER = LoggerFactory.getLogger(Context.class);</span>
+    // declare some functions which are always present
+<span class="fc" id="L30">    private static final HashMap&lt;String, InnerFunction&gt; BUILT_IN = new HashMap&lt;&gt;();</span>
+
+    /**
+     * Key used to store the base file name in the context
+     */
+    public static final String BASE_FILE_KEY = &quot;baseFile&quot;;
+
+    static {
+<span class="fc" id="L38">        BUILT_IN.put(&quot;bitsNeededFor&quot;, new FunctionBitsNeeded());</span>
+<span class="fc" id="L39">        BUILT_IN.put(&quot;ceil&quot;, new FunctionCeil());</span>
+<span class="fc" id="L40">        BUILT_IN.put(&quot;floor&quot;, new FunctionFloor());</span>
+<span class="fc" id="L41">        BUILT_IN.put(&quot;round&quot;, new FunctionRound());</span>
+<span class="fc" id="L42">        BUILT_IN.put(&quot;random&quot;, new FunctionRandom());</span>
+<span class="fc" id="L43">        BUILT_IN.put(&quot;float&quot;, new FunctionFloat());</span>
+<span class="fc" id="L44">        BUILT_IN.put(&quot;int&quot;, new FunctionInt());</span>
+<span class="fc" id="L45">        BUILT_IN.put(&quot;min&quot;, new FunctionMin());</span>
+<span class="fc" id="L46">        BUILT_IN.put(&quot;max&quot;, new FunctionMax());</span>
+<span class="fc" id="L47">        BUILT_IN.put(&quot;abs&quot;, new FunctionAbs());</span>
+<span class="fc" id="L48">        BUILT_IN.put(&quot;print&quot;, new FunctionPrint());</span>
+<span class="fc" id="L49">        BUILT_IN.put(&quot;printf&quot;, new FunctionPrintf());</span>
+<span class="fc" id="L50">        BUILT_IN.put(&quot;println&quot;, new FunctionPrintln());</span>
+<span class="fc" id="L51">        BUILT_IN.put(&quot;log&quot;, new FunctionLog());</span>
+<span class="fc" id="L52">        BUILT_IN.put(&quot;format&quot;, new FunctionFormat());</span>
+<span class="fc" id="L53">        BUILT_IN.put(&quot;isPresent&quot;, new FunctionIsPresent());</span>
+<span class="fc" id="L54">        BUILT_IN.put(&quot;panic&quot;, new FunctionPanic());</span>
+<span class="fc" id="L55">        BUILT_IN.put(&quot;output&quot;, new FunctionOutput());</span>
+<span class="fc" id="L56">        BUILT_IN.put(&quot;splitString&quot;, new FunctionSplitString());</span>
+<span class="fc" id="L57">        BUILT_IN.put(&quot;identifier&quot;, new FunctionIdentifier());</span>
+<span class="fc" id="L58">        BUILT_IN.put(&quot;loadHex&quot;, new FunctionLoadHex());</span>
+<span class="fc" id="L59">        BUILT_IN.put(&quot;loadFile&quot;, new FunctionLoadFile());</span>
+<span class="fc" id="L60">        BUILT_IN.put(&quot;sizeOf&quot;, new Func(1, args -&gt; Value.toArray(args[0]).hgsArraySize()));</span>
+<span class="fc" id="L61">    }</span>
+
+    private final Context parent;
+    private final StringBuilder code;
+    private final HashMap&lt;String, Object&gt; map;
+    private File rootPath;
+<span class="fc" id="L67">    private boolean loggingEnabled = true;</span>
+
+    /**
+     * Creates a new context
+     *
+     * @param rootPath the projects main folder
+     */
+    public Context(File rootPath) {
+<span class="fc" id="L75">        this(null, true);</span>
+<span class="fc" id="L76">        this.rootPath = rootPath;</span>
+<span class="fc" id="L77">    }</span>
+
+    /**
+     * Creates a new context
+     *
+     * @param parent the parent context
+     */
+    public Context(Context parent) {
+<span class="fc" id="L85">        this(parent, true);</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * Creates a new context
+     *
+     * @param parent      the parent context
+     * @param enablePrint enables the print, if false, the printing goes to the parent of this context
+     */
+<span class="fc" id="L94">    public Context(Context parent, boolean enablePrint) {</span>
+<span class="fc" id="L95">        this.parent = parent;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (enablePrint)</span>
+<span class="fc" id="L97">            this.code = new StringBuilder();</span>
+        else
+<span class="fc" id="L99">            this.code = null;</span>
+<span class="fc" id="L100">        map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Returns true if this context contains a mapping for the specified key.
+     *
+     * @param name the key
+     * @return true if value is present
+     */
+    public boolean contains(String name) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (map.containsKey(name))</span>
+<span class="fc" id="L111">            return true;</span>
+        else {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (parent != null)</span>
+<span class="nc" id="L114">                return parent.contains(name);</span>
+            else
+<span class="fc" id="L116">                return false;</span>
+        }
+    }
+
+    /**
+     * @return the models root path
+     */
+    public File getRootPath() {
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (parent != null)</span>
+<span class="nc" id="L125">            return parent.getRootPath();</span>
+<span class="fc" id="L126">        return rootPath;</span>
+    }
+
+    /**
+     * Sets the models root path
+     *
+     * @param rootPath the models root path
+     */
+    public void setRootPath(File rootPath) {
+<span class="nc" id="L135">        this.rootPath = rootPath;</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * Get a variable
+     *
+     * @param name the name
+     * @return the value
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Object getVar(String name) throws HGSEvalException {
+<span class="fc" id="L146">        Object v = map.get(name);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (v == null) {</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (parent == null) {</span>
+<span class="fc" id="L149">                InnerFunction builtIn = BUILT_IN.get(name);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                if (builtIn != null)</span>
+<span class="fc" id="L151">                    return builtIn;</span>
+
+<span class="fc" id="L153">                throw new HGSEvalException(&quot;Variable not found: &quot; + name);</span>
+            } else
+<span class="fc" id="L155">                return parent.getVar(name);</span>
+        } else
+<span class="fc" id="L157">            return v;</span>
+    }
+
+    /**
+     * Set a variable.
+     * This method is not able to create a new variable.
+     *
+     * @param name name
+     * @param val  value
+     * @throws HGSEvalException HGSEvalException
+     */
+    public void setVar(String name, Object val) throws HGSEvalException {
+<span class="fc" id="L169">        Object v = map.get(name);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (v != null) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            if (v.getClass().isAssignableFrom(val.getClass()))</span>
+<span class="fc" id="L172">                map.put(name, val);</span>
+            else
+<span class="fc" id="L174">                throw new HGSEvalException(&quot;Variable '&quot; + name + &quot;' has wrong type. Needs to be &quot;</span>
+<span class="fc" id="L175">                        + v.getClass().getSimpleName() + &quot;, is &quot; + val.getClass().getSimpleName());</span>
+        } else {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            if (parent != null)</span>
+<span class="fc" id="L178">                parent.setVar(name, val);</span>
+            else
+<span class="fc" id="L180">                throw new HGSEvalException(&quot;Variable '&quot; + name + &quot;' not declared!&quot;);</span>
+        }
+<span class="fc" id="L182">    }</span>
+
+
+    /**
+     * Exports a new variable.
+     * Exporting means the value is declared in the root context.
+     *
+     * @param name  the name of the variable
+     * @param value the value of the variable
+     * @return this for chained calls
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Context exportVar(String name, Object value) throws HGSEvalException {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (parent == null)</span>
+<span class="fc" id="L196">            declareVar(name, value);</span>
+        else
+<span class="fc" id="L198">            parent.exportVar(name, value);</span>
+<span class="fc" id="L199">        return this;</span>
+    }
+
+    /**
+     * Declares a new variable
+     *
+     * @param name  the name of the variable
+     * @param value the value of the variable
+     * @return this for chained calls
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Context declareVar(String name, Object value) throws HGSEvalException {
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (map.containsKey(name))</span>
+<span class="nc" id="L212">            throw new HGSEvalException(&quot;Variable '&quot; + name + &quot;' already declared!&quot;);</span>
+<span class="fc" id="L213">        map.put(name, value);</span>
+<span class="fc" id="L214">        return this;</span>
+    }
+
+    /**
+     * Adds a function to the context.
+     * Only needed for type checking. Calls setVar().
+     *
+     * @param name the name
+     * @param func the function
+     * @return this for chained calls
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Context declareFunc(String name, InnerFunction func) throws HGSEvalException {
+<span class="fc" id="L227">        return declareVar(name, func);</span>
+    }
+
+    /**
+     * Prints code to the context
+     *
+     * @param str the string to print
+     * @return this for chained calls
+     */
+    public Context print(String str) {
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        if (code != null)</span>
+<span class="fc" id="L238">            code.append(str);</span>
+        else
+<span class="fc" id="L240">            parent.print(str);</span>
+<span class="fc" id="L241">        return this;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (code != null)</span>
+<span class="fc" id="L247">            return code.toString();</span>
+        else
+<span class="nc" id="L249">            return parent.toString();</span>
+    }
+
+    /**
+     * @return a string representation of the contained keys
+     */
+    public String toStringKeys() {
+<span class="fc" id="L256">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (Map.Entry&lt;String, Object&gt; k : map.entrySet()) {</span>
+<span class="fc" id="L258">            sb.append(k.getKey()).append(&quot;:&quot;);</span>
+<span class="fc" id="L259">            Object val = k.getValue();</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">            if (val instanceof Context)</span>
+<span class="nc" id="L261">                sb.append(&quot;[&quot;).append(((Context) val).toStringKeys()).append(&quot;]&quot;);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            else if (val instanceof File)</span>
+<span class="fc" id="L263">                sb.append(&quot;.../&quot;).append(((File) val).getName());</span>
+            else
+<span class="fc" id="L265">                sb.append(val.toString());</span>
+
+<span class="fc" id="L267">            sb.append(&quot;; &quot;);</span>
+<span class="fc" id="L268">        }</span>
+<span class="fc" id="L269">        return sb.toString();</span>
+    }
+
+    /**
+     * Clears the output of this context.
+     */
+    public void clearOutput() {
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (code != null)</span>
+<span class="fc" id="L277">            code.setLength(0);</span>
+        else
+<span class="nc" id="L279">            parent.clearOutput();</span>
+
+<span class="fc" id="L281">    }</span>
+
+    /**
+     * Logs a message
+     *
+     * @param o the object to log
+     */
+    private void log(Object o) {
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        if (loggingEnabled) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (parent != null)</span>
+<span class="fc" id="L291">                parent.log(o);</span>
+            else
+<span class="fc" id="L293">                LOGGER.info(o.toString());</span>
+        }
+<span class="fc" id="L295">    }</span>
+
+    /**
+     * @return the output length
+     */
+    public int length() {
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (code != null)</span>
+<span class="nc" id="L302">            return code.length();</span>
+        else
+<span class="nc" id="L304">            return parent.length();</span>
+    }
+
+    /**
+     * Disables the logging in this context.
+     *
+     * @return this for chained calls
+     */
+    public Context disableLogging() {
+<span class="fc" id="L313">        loggingEnabled = false;</span>
+<span class="fc" id="L314">        return this;</span>
+    }
+
+    /**
+     * Returns a function from this context.
+     * A helper function to obtain a function from java code.
+     *
+     * @param funcName the functions name
+     * @return the function
+     * @throws HGSEvalException HGSEvalException
+     */
+    public Function getFunction(String funcName) throws HGSEvalException {
+<span class="fc" id="L326">        Object fObj = getVar(funcName);</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">        if (fObj instanceof Function)</span>
+<span class="fc" id="L328">            return (Function) fObj;</span>
+        else
+<span class="nc" id="L330">            throw new HGSEvalException(&quot;Variable '&quot; + funcName + &quot;' is not a function&quot;);</span>
+    }
+
+    @Override
+    public Object hgsMapGet(String key) {
+<span class="fc" id="L335">        return map.get(key);</span>
+    }
+
+    /**
+     * @return the set of all contained values
+     */
+    public HashSet&lt;String&gt; getKeySet() {
+<span class="fc" id="L342">        return new HashSet&lt;&gt;(map.keySet());</span>
+    }
+
+    private static final class FunctionPrint extends InnerFunction {
+        private FunctionPrint() {
+<span class="fc" id="L347">            super(-1);</span>
+<span class="fc" id="L348">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc bfc" id="L352" title="All 2 branches covered.">            for (Expression arg : args)</span>
+<span class="fc" id="L353">                c.print(arg.value(c).toString());</span>
+<span class="fc" id="L354">            return null;</span>
+        }
+    }
+
+    private static final class FunctionPrintln extends InnerFunction {
+        private FunctionPrintln() {
+<span class="fc" id="L360">            super(-1);</span>
+<span class="fc" id="L361">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            for (Expression arg : args)</span>
+<span class="nc" id="L366">                c.print(arg.value(c).toString());</span>
+<span class="nc" id="L367">            c.print(System.lineSeparator());</span>
+<span class="nc" id="L368">            return null;</span>
+        }
+    }
+
+    private static final class FunctionPrintf extends InnerFunction {
+        private FunctionPrintf() {
+<span class="fc" id="L374">            super(-1);</span>
+<span class="fc" id="L375">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc" id="L379">            c.print(format(c, args));</span>
+<span class="fc" id="L380">            return null;</span>
+        }
+    }
+
+    private static final class FunctionFormat extends InnerFunction {
+        private FunctionFormat() {
+<span class="fc" id="L386">            super(-1);</span>
+<span class="fc" id="L387">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc" id="L391">            return format(c, args);</span>
+        }
+    }
+
+    private static String format(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">        if (args.size() &lt; 2)</span>
+<span class="nc" id="L397">            throw new HGSEvalException(&quot;format/printf needs at least two arguments!&quot;);</span>
+
+<span class="fc" id="L399">        ArrayList&lt;Object&gt; eval = new ArrayList&lt;&gt;(args.size() - 1);</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">        for (int i = 1; i &lt; args.size(); i++)</span>
+<span class="fc" id="L401">            eval.add(args.get(i).value(c));</span>
+
+<span class="fc" id="L403">        return String.format(Locale.US, Value.toString(args.get(0).value(c)), eval.toArray());</span>
+    }
+
+    private static final class FunctionIsPresent extends InnerFunction {
+        private FunctionIsPresent() {
+<span class="fc" id="L408">            super(1);</span>
+<span class="fc" id="L409">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) {
+            try {
+<span class="fc" id="L414">                args.get(0).value(c);</span>
+<span class="fc" id="L415">                return true;</span>
+<span class="fc" id="L416">            } catch (HGSEvalException e) {</span>
+<span class="fc" id="L417">                return false;</span>
+            }
+        }
+    }
+
+    private static final class FunctionPanic extends Function {
+        private FunctionPanic() {
+<span class="fc" id="L424">            super(-1);</span>
+<span class="fc" id="L425">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">            if (args.length == 0)</span>
+<span class="nc" id="L430">                throw new HGSEvalException(&quot;panic&quot;);</span>
+
+<span class="fc" id="L432">            String message = args[0].toString();</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">            if (message.startsWith(&quot;err_&quot;)) {</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">                if (args.length == 1)</span>
+<span class="nc" id="L435">                    message = Lang.get(message);</span>
+                else {
+<span class="fc" id="L437">                    Object[] ar = new String[args.length - 1];</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">                    for (int i = 0; i &lt; args.length - 1; i++)</span>
+<span class="fc" id="L439">                        ar[i] = args[i + 1].toString();</span>
+<span class="fc" id="L440">                    message = Lang.get(message, ar);</span>
+                }
+            }
+
+<span class="fc" id="L444">            throw new HGSEvalException(message);</span>
+        }
+    }
+
+    private static final class FunctionOutput extends InnerFunction {
+        private FunctionOutput() {
+<span class="fc" id="L450">            super(0);</span>
+<span class="fc" id="L451">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) {
+<span class="fc" id="L455">            return c.toString();</span>
+        }
+    }
+
+    private static final class FunctionCeil extends Function {
+        private FunctionCeil() {
+<span class="fc" id="L461">            super(1);</span>
+<span class="fc" id="L462">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">            if (args[0] instanceof Double)</span>
+<span class="fc" id="L467">                return (long) Math.ceil((Double) args[0]);</span>
+<span class="nc" id="L468">            return Value.toLong(args[0]);</span>
+        }
+    }
+
+    private static final class FunctionFloor extends Function {
+        private FunctionFloor() {
+<span class="fc" id="L474">            super(1);</span>
+<span class="fc" id="L475">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="pc bpc" id="L479" title="1 of 2 branches missed.">            if (args[0] instanceof Double)</span>
+<span class="fc" id="L480">                return (long) Math.floor((Double) args[0]);</span>
+<span class="nc" id="L481">            return Value.toLong(args[0]);</span>
+        }
+    }
+
+    private static final class FunctionRound extends Function {
+        private FunctionRound() {
+<span class="fc" id="L487">            super(1);</span>
+<span class="fc" id="L488">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">            if (args[0] instanceof Double)</span>
+<span class="fc" id="L493">                return Math.round((Double) args[0]);</span>
+<span class="nc" id="L494">            return Value.toLong(args[0]);</span>
+        }
+    }
+
+    private static final class FunctionRandom extends Function {
+        private final Random rand;
+
+        private FunctionRandom() {
+<span class="fc" id="L502">            super(1);</span>
+<span class="fc" id="L503">            rand = new Random();</span>
+<span class="fc" id="L504">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L508">            int bound = Value.toInt(args[0]);</span>
+<span class="fc" id="L509">            return new Long(rand.nextInt(bound));</span>
+        }
+    }
+
+    private static final class FunctionFloat extends Function {
+        private FunctionFloat() {
+<span class="fc" id="L515">            super(1);</span>
+<span class="fc" id="L516">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L520">            return Value.toDouble(args[0]);</span>
+        }
+    }
+
+    private static final class FunctionInt extends Function {
+        private FunctionInt() {
+<span class="fc" id="L526">            super(1);</span>
+<span class="fc" id="L527">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L531">            return Value.toInt(args[0]);</span>
+        }
+    }
+
+    private static final class FunctionBitsNeeded extends Function {
+
+        private FunctionBitsNeeded() {
+<span class="fc" id="L538">            super(1);</span>
+<span class="fc" id="L539">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L543">            return Bits.binLn2(Value.toLong(args[0]));</span>
+        }
+    }
+
+    private static final class FunctionAbs extends Function {
+
+        private FunctionAbs() {
+<span class="fc" id="L550">            super(1);</span>
+<span class="fc" id="L551">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc bfc" id="L555" title="All 2 branches covered.">            if (args[0] instanceof Double)</span>
+<span class="fc" id="L556">                return Math.abs((Double) args[0]);</span>
+
+<span class="fc" id="L558">            return Math.abs(Value.toLong(args[0]));</span>
+        }
+    }
+
+    private static final class FunctionSplitString extends Function {
+
+        private FunctionSplitString() {
+<span class="fc" id="L565">            super(1);</span>
+<span class="fc" id="L566">        }</span>
+
+        @Override
+        protected Object f(Object... args) {
+<span class="nc" id="L570">            StringTokenizer st = new StringTokenizer(args[0].toString(), &quot; \r\t\n,:;&quot;);</span>
+<span class="nc" id="L571">            ArrayList&lt;String&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">            while (st.hasMoreTokens())</span>
+<span class="nc" id="L573">                list.add(st.nextToken());</span>
+<span class="nc" id="L574">            return list;</span>
+        }
+    }
+
+    private static final class FunctionIdentifier extends Function {
+
+        private FunctionIdentifier() {
+<span class="fc" id="L581">            super(1);</span>
+<span class="fc" id="L582">        }</span>
+
+        @Override
+        protected Object f(Object... args) {
+<span class="fc" id="L586">            String str = args[0].toString();</span>
+<span class="fc" id="L587">            StringBuilder sb = new StringBuilder(str.length());</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">            for (int p = 0; p &lt; str.length(); p++) {</span>
+<span class="fc" id="L589">                char c = str.charAt(p);</span>
+<span class="fc bfc" id="L590" title="All 4 branches covered.">                if (c &gt;= '0' &amp;&amp; c &lt;= '9') {</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">                    if (sb.length() == 0)</span>
+<span class="fc" id="L592">                        sb.append('n');</span>
+<span class="fc" id="L593">                    sb.append(c);</span>
+<span class="pc bpc" id="L594" title="1 of 10 branches missed.">                } else if ((c &gt;= 'A' &amp;&amp; c &lt;= 'Z')</span>
+                        || (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+                        || c == '_') {
+<span class="fc" id="L597">                    sb.append(c);</span>
+                }
+            }
+<span class="fc" id="L600">            return sb.toString();</span>
+        }
+    }
+
+    private static final class FunctionLog extends InnerFunction {
+
+        private FunctionLog() {
+<span class="fc" id="L607">            super(1);</span>
+<span class="fc" id="L608">        }</span>
+
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="pc bpc" id="L613" title="1 of 2 branches missed.">            if (args.size() != 1)</span>
+<span class="nc" id="L614">                throw new HGSEvalException(&quot;wrong number of arguments! found: &quot; + args.size() + &quot;, expected: &quot; + getArgCount());</span>
+<span class="fc" id="L615">            Object v = args.get(0).value(c);</span>
+<span class="fc" id="L616">            c.log(v);</span>
+<span class="fc" id="L617">            return v;</span>
+        }
+    }
+
+    private static final class FunctionMin extends Function {
+        private FunctionMin() {
+<span class="fc" id="L623">            super(-1);</span>
+<span class="fc" id="L624">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L628">            long minL = Long.MAX_VALUE;</span>
+<span class="fc" id="L629">            double minD = Double.MAX_VALUE;</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">            for (Object v : args) {</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">                if (v instanceof Double) {</span>
+<span class="fc" id="L632">                    double l = (Double) v;</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">                    if (minD &gt; l) minD = l;</span>
+<span class="fc" id="L634">                } else {</span>
+<span class="fc" id="L635">                    long l = Value.toLong(v);</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">                    if (minL &gt; l) minL = l;</span>
+                }
+            }
+
+<span class="fc bfc" id="L640" title="All 4 branches covered.">            if (minD &lt; Double.MAX_VALUE &amp;&amp; minL &lt; Long.MAX_VALUE) {</span>
+<span class="fc" id="L641">                return Math.min(minD, minL);</span>
+<span class="fc bfc" id="L642" title="All 2 branches covered.">            } else if (minD &lt; Double.MAX_VALUE)</span>
+<span class="fc" id="L643">                return minD;</span>
+            else
+<span class="fc" id="L645">                return minL;</span>
+        }
+    }
+
+    private static final class FunctionMax extends Function {
+        private FunctionMax() {
+<span class="fc" id="L651">            super(-1);</span>
+<span class="fc" id="L652">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L656">            long maxL = Long.MIN_VALUE;</span>
+<span class="fc" id="L657">            double maxD = -Double.MAX_VALUE;</span>
+<span class="fc bfc" id="L658" title="All 2 branches covered.">            for (Object v : args) {</span>
+<span class="fc bfc" id="L659" title="All 2 branches covered.">                if (v instanceof Double) {</span>
+<span class="fc" id="L660">                    double l = (Double) v;</span>
+<span class="pc bpc" id="L661" title="1 of 2 branches missed.">                    if (maxD &lt; l) maxD = l;</span>
+<span class="fc" id="L662">                } else {</span>
+<span class="fc" id="L663">                    long l = Value.toLong(v);</span>
+<span class="fc bfc" id="L664" title="All 2 branches covered.">                    if (maxL &lt; l) maxL = l;</span>
+                }
+            }
+
+<span class="fc bfc" id="L668" title="All 4 branches covered.">            if (maxD &gt; -Double.MAX_VALUE &amp;&amp; maxL &gt; Long.MIN_VALUE) {</span>
+<span class="fc" id="L669">                return Math.max(maxD, maxL);</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">            } else if (maxD &gt; -Double.MAX_VALUE)</span>
+<span class="fc" id="L671">                return maxD;</span>
+            else
+<span class="fc" id="L673">                return maxL;</span>
+        }
+    }
+
+    private static final class FunctionLoadHex extends InnerFunction {
+        private FunctionLoadHex() {
+<span class="fc" id="L679">            super(-1);</span>
+<span class="fc" id="L680">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="fc" id="L684">            File name = new File(args.get(0).value(c).toString());</span>
+<span class="fc" id="L685">            int dataBits = Value.toInt(args.get(1).value(c));</span>
+<span class="fc" id="L686">            boolean bigEndian = false;</span>
+<span class="pc bpc" id="L687" title="1 of 2 branches missed.">            if (args.size() &gt; 2)</span>
+<span class="nc" id="L688">                bigEndian = Value.toBool(args.get(2).value(c));</span>
+<span class="fc" id="L689">            File hexFile = new FileLocator(name).setLibraryRoot(c.getRootPath()).locate();</span>
+
+<span class="pc bpc" id="L691" title="2 of 4 branches missed.">            if (hexFile == null || !hexFile.exists())</span>
+<span class="nc" id="L692">                throw new HGSEvalException(&quot;File &quot; + name + &quot; not found! Is circuit saved?&quot;);</span>
+
+            try {
+<span class="fc" id="L695">                DataField dataField = Importer.read(hexFile, dataBits, bigEndian);</span>
+<span class="fc" id="L696">                dataField.trim();</span>
+<span class="fc" id="L697">                return dataField;</span>
+<span class="nc" id="L698">            } catch (IOException e) {</span>
+<span class="nc" id="L699">                throw new HGSEvalException(&quot;error reading the file &quot; + hexFile.getPath(), e);</span>
+            }
+        }
+    }
+
+    private static final class FunctionLoadFile extends InnerFunction {
+        private FunctionLoadFile() {
+<span class="fc" id="L706">            super(1);</span>
+<span class="fc" id="L707">        }</span>
+
+        @Override
+        public Object call(Context c, ArrayList&lt;Expression&gt; args) throws HGSEvalException {
+<span class="nc" id="L711">            File f = new File(args.get(0).value(c).toString());</span>
+<span class="nc" id="L712">            f = new FileLocator(f).setLibraryRoot(c.getRootPath()).locate();</span>
+            try {
+<span class="nc" id="L714">                return Application.readCode(f);</span>
+<span class="nc" id="L715">            } catch (IOException e) {</span>
+<span class="nc" id="L716">                throw new HGSEvalException(&quot;error reading the file &quot; + f.getPath(), e);</span>
+            }
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L723" title="All 2 branches covered.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L724" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L725">        Context context = (Context) o;</span>
+<span class="pc bpc" id="L726" title="1 of 2 branches missed.">        return Objects.equals(parent, context.parent)</span>
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">                &amp;&amp; map.equals(context.map);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L732">        return Objects.hash(parent, map);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

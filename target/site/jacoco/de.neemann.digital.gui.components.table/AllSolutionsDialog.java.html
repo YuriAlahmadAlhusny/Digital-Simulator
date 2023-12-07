@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AllSolutionsDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">AllSolutionsDialog.java</span></div><h1>AllSolutionsDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.Screen;
+import de.neemann.gui.ToolTipAction;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+
+/**
+ * Simple Dialog to show all possible functions of a truth table.
+ */
+public class AllSolutionsDialog extends JDialog {
+    private final ExpressionComponent expressionComponent;
+<span class="nc" id="L25">    private boolean userHasClosed = false;</span>
+    private boolean needed;
+    private ToolTipAction reopenAction;
+
+    /**
+     * Creates a new Frame.
+     *
+     * @param owner the owner frame
+     * @param font  the font to use
+     */
+    AllSolutionsDialog(JDialog owner, Font font) {
+<span class="nc" id="L36">        super(owner, Lang.get(&quot;win_allSolutions&quot;), false);</span>
+<span class="nc" id="L37">        setDefaultCloseOperation(HIDE_ON_CLOSE);</span>
+
+<span class="nc" id="L39">        expressionComponent = new ExpressionComponent();</span>
+<span class="nc" id="L40">        expressionComponent.setPreferredSize(Screen.getInstance().scale(new Dimension(600, 300)));</span>
+<span class="nc" id="L41">        expressionComponent.setFont(font);</span>
+<span class="nc" id="L42">        expressionComponent.setBackground(Color.WHITE);</span>
+
+<span class="nc" id="L44">        final JScrollPane scrollPane = new JScrollPane(expressionComponent);</span>
+<span class="nc" id="L45">        scrollPane.getVerticalScrollBar().setUnitIncrement(16);</span>
+<span class="nc" id="L46">        getContentPane().add(scrollPane);</span>
+
+<span class="nc" id="L48">        addWindowListener(new WindowAdapter() {</span>
+            @Override
+            public void windowClosing(WindowEvent windowEvent) {
+<span class="nc" id="L51">                userHasClosed = true;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">                if (reopenAction != null)</span>
+<span class="nc" id="L53">                    reopenAction.setEnabled(true);</span>
+<span class="nc" id="L54">            }</span>
+        });
+
+<span class="nc" id="L57">        pack();</span>
+<span class="nc" id="L58">        setLocation(0, 0);</span>
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Is called from table dialog if this dialog is needed.
+     *
+     * @param needed            true if needed
+     * @param tableDialogBounds the table dialogs bounds
+     */
+    public void setNeeded(boolean needed, Rectangle tableDialogBounds) {
+<span class="nc" id="L68">        this.needed = needed;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (!userHasClosed) {</span>
+<span class="nc" id="L70">            setVisible(needed);</span>
+<span class="nc" id="L71">            int x = (int) (tableDialogBounds.x - (getWidth() - tableDialogBounds.getWidth()) / 2);</span>
+<span class="nc" id="L72">            int y = tableDialogBounds.y + tableDialogBounds.height + 10;</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (getHeight() &lt; tableDialogBounds.y - 10) {</span>
+<span class="nc" id="L74">                y = tableDialogBounds.y - getHeight() - 10;</span>
+            }
+<span class="nc" id="L76">            setLocation(x, y);</span>
+<span class="nc bnc" id="L77" title="All 4 branches missed.">            if (needed &amp;&amp; reopenAction != null)</span>
+<span class="nc" id="L78">                reopenAction.setEnabled(false);</span>
+        }
+<span class="nc" id="L80">    }</span>
+
+    /**
+     * Sets the expressions
+     *
+     * @param expressions the expressions to show
+     */
+    public void setExpressions(ArrayList&lt;Expression&gt; expressions) {
+<span class="nc" id="L88">        expressionComponent.setExpressions(expressions);</span>
+<span class="nc" id="L89">    }</span>
+
+    ToolTipAction getReopenAction() {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (reopenAction == null) {</span>
+<span class="nc" id="L93">            reopenAction = new ToolTipAction(Lang.get(&quot;menu_table_showAllSolutions&quot;)) {</span>
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L96">                    userHasClosed = false;</span>
+<span class="nc" id="L97">                    reopenAction.setEnabled(false);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                    if (needed)</span>
+<span class="nc" id="L99">                        setVisible(true);</span>
+<span class="nc" id="L100">                }</span>
+<span class="nc" id="L101">            }.setToolTip(Lang.get(&quot;menu_table_showAllSolutions_tt&quot;)).setEnabledChain(false);</span>
+        }
+<span class="nc" id="L103">        return reopenAction;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

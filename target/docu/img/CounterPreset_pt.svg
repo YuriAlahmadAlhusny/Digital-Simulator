@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Digital by H.Neemann -->
+<!-- created: Mon May 23 11:53:28 PDT 2022 -->
+
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="15.6mm"
+   height="29.2mm"
+   viewBox="-9 -12 78 146">
+<g stroke-linecap="square">
+<path d="M 1,-10 L 59,-10 L 59,110 L 1,110 Z" stroke="#000000" stroke-width="4.0" fill="none"/>
+<text text-anchor="start" x="4.0" y="6.75" fill="#808080" style="font-size:18px">en</text>
+<path d="M 1,27 L 8,20 L 1,13" stroke="#000000" stroke-width="2.0" fill="none"/>
+<text text-anchor="start" x="11.0" y="26.75" fill="#808080" style="font-size:18px">C</text>
+<text text-anchor="start" x="4.0" y="46.75" fill="#808080" style="font-size:18px">dir</text>
+<text text-anchor="start" x="4.0" y="66.75" fill="#808080" style="font-size:18px">in</text>
+<text text-anchor="start" x="4.0" y="86.75" fill="#808080" style="font-size:18px">ld</text>
+<text text-anchor="start" x="4.0" y="106.75" fill="#808080" style="font-size:18px">clr</text>
+<text text-anchor="end" x="56.0" y="6.75" fill="#808080" style="font-size:18px">out</text>
+<text text-anchor="end" x="56.0" y="26.75" fill="#808080" style="font-size:18px">ovf</text>
+<text text-anchor="middle" x="30.0" y="127.5" fill="#808080" style="font-size:18px">Contador</text>
+<circle cx="0.0" cy="0.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="20.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="40.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="60.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="80.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="0.0" cy="100.0" r="2.0" stroke="#0000b2" stroke-width="4.0" fill="#0000b2" />
+<circle cx="60.0" cy="0.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+<circle cx="60.0" cy="20.0" r="2.0" stroke="#b20000" stroke-width="4.0" fill="#b20000" />
+</g>
+</svg>

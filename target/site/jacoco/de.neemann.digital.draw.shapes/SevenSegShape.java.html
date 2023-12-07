@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SevenSegShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">SevenSegShape.java</span></div><h1>SevenSegShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.core.io.CommonConnectionType;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.Graphic;
+import de.neemann.digital.draw.graphics.Style;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.draw.model.ModelEntry;
+
+import java.util.ArrayList;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+/**
+ * A seven seg display with seven single controllable inputs
+ */
+public class SevenSegShape extends SevenShape {
+    private final PinDescriptions inputPins;
+    private final boolean commonConnection;
+    private final int persistenceTime;
+    private final boolean anode;
+    private LEDState[] ledStates;
+    private final boolean[] displayStates;
+    private Pins pins;
+    private PersistenceHandler persistenceHandler;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+    public SevenSegShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {
+<span class="fc" id="L48">        super(attr);</span>
+<span class="fc" id="L49">        this.inputPins = inputs;</span>
+<span class="fc" id="L50">        commonConnection = attr.get(Keys.COMMON_CONNECTION);</span>
+<span class="fc" id="L51">        anode = attr.get(Keys.COMMON_CONNECTION_TYPE).equals(CommonConnectionType.anode);</span>
+<span class="fc" id="L52">        persistenceTime = attr.get(Keys.LED_PERSIST_TIME);</span>
+<span class="fc" id="L53">        displayStates = new boolean[8];</span>
+<span class="fc" id="L54">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (pins == null) {</span>
+<span class="fc" id="L59">            pins = new Pins();</span>
+<span class="fc" id="L60">            pins.add(new Pin(new Vector(0, 0), inputPins.get(0)));</span>
+<span class="fc" id="L61">            pins.add(new Pin(new Vector(SIZE, 0), inputPins.get(1)));</span>
+<span class="fc" id="L62">            pins.add(new Pin(new Vector(SIZE * 2, 0), inputPins.get(2)));</span>
+<span class="fc" id="L63">            pins.add(new Pin(new Vector(SIZE * 3, 0), inputPins.get(3)));</span>
+<span class="fc" id="L64">            pins.add(new Pin(new Vector(0, SIZE * HEIGHT), inputPins.get(4)));</span>
+<span class="fc" id="L65">            pins.add(new Pin(new Vector(SIZE, SIZE * HEIGHT), inputPins.get(5)));</span>
+<span class="fc" id="L66">            pins.add(new Pin(new Vector(SIZE * 2, SIZE * HEIGHT), inputPins.get(6)));</span>
+<span class="fc" id="L67">            pins.add(new Pin(new Vector(SIZE * 3, SIZE * HEIGHT), inputPins.get(7)));</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (commonConnection)</span>
+<span class="nc" id="L69">                pins.add(new Pin(new Vector(SIZE * 4, SIZE * HEIGHT), inputPins.get(8)));</span>
+        }
+<span class="fc" id="L71">        return pins;</span>
+    }
+
+    @Override
+    public Interactor applyStateMonitor(IOState ioState) {
+<span class="fc" id="L76">        ledStates = new LEDState[8];</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; i++) {</span>
+<span class="fc" id="L78">            LEDState ledState = createLEDState(i, ioState.getInputs());</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (persistenceTime == 0)</span>
+<span class="fc" id="L80">                ledStates[i] = ledState;</span>
+            else
+<span class="nc" id="L82">                ledStates[i] = persistenceHandler.persist(ledState, persistenceTime);</span>
+        }
+<span class="fc" id="L84">        return null;</span>
+    }
+
+    @Override
+    public void registerModel(ModelCreator modelCreator, Model model, ModelEntry element) {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (persistenceTime &gt; 0)</span>
+<span class="nc" id="L90">            persistenceHandler = model.getOrCreateObserver(PersistenceHandler.class, PersistenceHandler::new);</span>
+<span class="fc" id="L91">    }</span>
+
+    private LEDState createLEDState(int i, ObservableValues inputs) {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (commonConnection) {</span>
+<span class="fc" id="L95">            return new CommonConnection(inputs.get(i), inputs.get(8), anode);</span>
+        } else {
+<span class="nc" id="L97">            ObservableValue in = inputs.get(i);</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">            return () -&gt; !in.isHighZ() &amp;&amp; in.getBool();</span>
+        }
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style highLight) {
+<span class="fc" id="L104">        super.drawTo(graphic, highLight);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (commonConnection)</span>
+<span class="nc" id="L106">            graphic.drawLine(</span>
+                    new Vector(SIZE * 4 - SIZE2, SIZE * HEIGHT - 1),
+                    new Vector(SIZE * 4, SIZE * HEIGHT - 1), Style.NORMAL);
+<span class="fc" id="L109">    }</span>
+
+    @Override
+    public void readObservableValues() {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (ledStates != null)</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            for (int i = 0; i &lt; 8; i++)</span>
+<span class="fc" id="L115">                displayStates[i] = ledStates[i].getState();</span>
+<span class="fc" id="L116">    }</span>
+
+    @Override
+    protected boolean getStyle(int i) {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (ledStates == null)</span>
+<span class="fc" id="L121">            return true;</span>
+        else
+<span class="fc" id="L123">            return displayStates[i];</span>
+    }
+
+    interface LEDState {
+        boolean getState();
+    }
+
+    private static final class CommonConnection implements LEDState {
+        private final ObservableValue led;
+        private final ObservableValue cc;
+        private final boolean anode;
+
+<span class="fc" id="L135">        private CommonConnection(ObservableValue led, ObservableValue cc, boolean anode) {</span>
+<span class="fc" id="L136">            this.led = led;</span>
+<span class="fc" id="L137">            this.cc = cc;</span>
+<span class="fc" id="L138">            this.anode = anode;</span>
+<span class="fc" id="L139">        }</span>
+
+        @Override
+        public boolean getState() {
+<span class="fc bfc" id="L143" title="All 4 branches covered.">            boolean highZ = led.isHighZ() || cc.isHighZ();</span>
+<span class="fc bfc" id="L144" title="All 4 branches covered.">            boolean on = (led.getBool() != cc.getBool()) &amp;&amp; (led.getBool() ^ anode);</span>
+<span class="fc bfc" id="L145" title="All 4 branches covered.">            return !highZ &amp;&amp; on;</span>
+        }
+    }
+
+    private static final class PersistenceOfVision implements LEDState {
+        private final LEDState parent;
+        private final int persistenceTime;
+        private int timeVisible;
+
+<span class="nc" id="L154">        private PersistenceOfVision(LEDState parent, int persistenceTime) {</span>
+<span class="nc" id="L155">            this.parent = parent;</span>
+<span class="nc" id="L156">            this.persistenceTime = persistenceTime;</span>
+<span class="nc" id="L157">        }</span>
+
+        @Override
+        public boolean getState() {
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            return timeVisible &gt; 0;</span>
+        }
+
+        public void check() {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (parent.getState())</span>
+<span class="nc" id="L166">                timeVisible = persistenceTime;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (timeVisible &gt; 0)</span>
+<span class="nc" id="L168">                timeVisible--;</span>
+<span class="nc" id="L169">        }</span>
+    }
+
+    private static final class PersistenceHandler implements ModelStateObserverTyped {
+        private final ArrayList&lt;PersistenceOfVision&gt; segments;
+
+<span class="nc" id="L175">        private PersistenceHandler() {</span>
+<span class="nc" id="L176">            segments = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L177">        }</span>
+
+        @Override
+        public void handleEvent(ModelEvent event) {
+<span class="nc bnc" id="L181" title="All 4 branches missed.">            if (event.getType() == ModelEventType.STEP || event.getType() == ModelEventType.CHECKBURN)</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">                for (PersistenceOfVision ag : segments)</span>
+<span class="nc" id="L183">                    ag.check();</span>
+<span class="nc" id="L184">        }</span>
+
+        @Override
+        public ModelEventType[] getEvents() {
+<span class="nc" id="L188">            return new ModelEventType[]{ModelEventType.STEP, ModelEventType.CHECKBURN};</span>
+        }
+
+        public PersistenceOfVision persist(LEDState state, int persistenceTime) {
+<span class="nc" id="L192">            PersistenceOfVision ag = new PersistenceOfVision(state, persistenceTime);</span>
+<span class="nc" id="L193">            segments.add(ag);</span>
+<span class="nc" id="L194">            return ag;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

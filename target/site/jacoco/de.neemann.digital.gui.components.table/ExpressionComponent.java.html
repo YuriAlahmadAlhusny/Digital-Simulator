@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionComponent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.table</a> &gt; <span class="el_source">ExpressionComponent.java</span></div><h1>ExpressionComponent.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.table;
+
+import de.neemann.digital.analyse.expression.Expression;
+import de.neemann.digital.draw.graphics.text.formatter.GraphicsFormatter;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+
+import static de.neemann.digital.draw.graphics.text.formatter.GraphicsFormatter.createFragment;
+
+/**
+ * Component to show an expression
+ */
+<span class="nc" id="L20">public class ExpressionComponent extends JComponent {</span>
+    private static final int XPAD = 5;
+    private ArrayList&lt;Expression&gt; expressions;
+<span class="nc" id="L23">    private boolean wrongSize = true;</span>
+
+    /**
+     * Sets a single expression to visualize
+     *
+     * @param expression the expression
+     */
+    public void setExpression(Expression expression) {
+<span class="nc" id="L31">        ArrayList&lt;Expression&gt; l = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (expression != null)</span>
+<span class="nc" id="L33">            l.add(expression);</span>
+<span class="nc" id="L34">        setExpressions(l);</span>
+<span class="nc" id="L35">    }</span>
+
+    /**
+     * Sets the expressions to visualize
+     *
+     * @param expressions expressions
+     */
+    public void setExpressions(ArrayList&lt;Expression&gt; expressions) {
+<span class="nc" id="L43">        this.expressions = expressions;</span>
+<span class="nc" id="L44">        updateComponentSize(getGraphics());</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Updates the components size
+     *
+     * @param gr the Graphics instance to use
+     */
+    protected void updateComponentSize(Graphics gr) {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (gr != null) {</span>
+<span class="nc" id="L54">            final Dimension preferredSize = calcSize(gr);</span>
+<span class="nc" id="L55">            setPreferredSize(preferredSize);</span>
+<span class="nc" id="L56">            revalidate();</span>
+<span class="nc" id="L57">            repaint();</span>
+<span class="nc" id="L58">            wrongSize = false;</span>
+<span class="nc" id="L59">        } else {</span>
+<span class="nc" id="L60">            wrongSize = true;</span>
+        }
+<span class="nc" id="L62">    }</span>
+
+    @Override
+    protected void paintComponent(Graphics graphics) {
+<span class="nc" id="L66">        graphics.setColor(getBackground());</span>
+<span class="nc" id="L67">        graphics.fillRect(0, 0, getWidth(), getHeight());</span>
+<span class="nc" id="L68">        graphics.setColor(getForeground());</span>
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (expressions == null)</span>
+<span class="nc" id="L71">            return;</span>
+
+<span class="nc" id="L73">        final Graphics2D gr = getGraphics2D(graphics);</span>
+<span class="nc" id="L74">        int lineSpacing = getFont().getSize() / 2;</span>
+<span class="nc" id="L75">        int y = 0;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (Expression e : expressions) {</span>
+            try {
+<span class="nc" id="L78">                GraphicsFormatter.Fragment fr = createFragment(gr, e);</span>
+<span class="nc" id="L79">                y += fr.getHeight();</span>
+<span class="nc" id="L80">                fr.draw(gr, XPAD, y);</span>
+<span class="nc" id="L81">                y += lineSpacing;</span>
+<span class="nc" id="L82">            } catch (GraphicsFormatter.FormatterException ex) {</span>
+                // ignore on error
+<span class="nc" id="L84">            }</span>
+<span class="nc" id="L85">        }</span>
+
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (wrongSize)</span>
+<span class="nc" id="L88">            SwingUtilities.invokeLater(() -&gt; updateComponentSize(graphics));</span>
+<span class="nc" id="L89">    }</span>
+
+    private Graphics2D getGraphics2D(Graphics graphics) {
+<span class="nc" id="L92">        final Graphics2D gr = (Graphics2D) graphics;</span>
+<span class="nc" id="L93">        gr.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="nc" id="L94">        gr.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);</span>
+<span class="nc" id="L95">        return gr;</span>
+    }
+
+    private Dimension calcSize(Graphics graphics) {
+<span class="nc" id="L99">        Graphics2D gr = getGraphics2D(graphics);</span>
+<span class="nc" id="L100">        int lineSpacing = gr.getFont().getSize() / 2;</span>
+<span class="nc" id="L101">        int dx = 0;</span>
+<span class="nc" id="L102">        int y = 0;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (Expression e : expressions) {</span>
+            try {
+<span class="nc" id="L105">                GraphicsFormatter.Fragment fr = createFragment(gr, e);</span>
+<span class="nc" id="L106">                y += fr.getHeight() + lineSpacing;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                if (dx &lt; fr.getWidth())</span>
+<span class="nc" id="L108">                    dx = fr.getWidth();</span>
+<span class="nc" id="L109">            } catch (GraphicsFormatter.FormatterException ex) {</span>
+                // ignore on error
+<span class="nc" id="L111">            }</span>
+<span class="nc" id="L112">        }</span>
+<span class="nc" id="L113">        return new Dimension(dx + XPAD * 2, y);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

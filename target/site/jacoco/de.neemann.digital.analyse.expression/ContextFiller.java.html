@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContextFiller.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.analyse.expression</a> &gt; <span class="el_source">ContextFiller.java</span></div><h1>ContextFiller.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.analyse.expression;
+
+import java.util.*;
+
+/**
+ */
+public class ContextFiller extends ContextMap implements Iterable&lt;Variable&gt; {
+
+    private final List&lt;Variable&gt; vars;
+    private final int rowCount;
+    private final BitSetter bitSetter;
+
+    /**
+     * Creates a new instance.
+     * The needed variables are taken from the expression
+     *
+     * @param expression the expression to extravt the variables
+     */
+    public ContextFiller(Expression expression) {
+<span class="fc" id="L25">        this(new ArrayList&lt;&gt;(expression.traverse(new VariableVisitor()).getVariables()));</span>
+<span class="fc" id="L26">        Collections.sort(vars);</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param variables the variables to use
+     */
+    public ContextFiller(Variable... variables) {
+<span class="fc" id="L35">        this(Arrays.asList(variables));</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param variables the variables to use
+     */
+<span class="fc" id="L43">    public ContextFiller(List&lt;Variable&gt; variables) {</span>
+<span class="fc" id="L44">        vars = variables;</span>
+<span class="fc" id="L45">        rowCount = 1 &lt;&lt; vars.size();</span>
+<span class="fc" id="L46">        bitSetter = new BitSetter(vars.size()) {</span>
+            @Override
+            public void setBit(int row, int i, boolean value) {
+<span class="fc" id="L49">                set(vars.get(i), value);</span>
+<span class="fc" id="L50">            }</span>
+        };
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public Iterator&lt;Variable&gt; iterator() {
+<span class="fc" id="L56">        return vars.iterator();</span>
+    }
+
+    /**
+     * Returns the variable with the given index
+     *
+     * @param index the index
+     * @return the variable
+     */
+    public Variable getVar(int index) {
+<span class="nc" id="L66">        return vars.get(index);</span>
+    }
+
+    /**
+     * @return the number of variables
+     */
+    public int getVarCount() {
+<span class="fc" id="L73">        return vars.size();</span>
+    }
+
+    /**
+     * @return the number of tablerows to describe all variable combinations
+     */
+    public int getRowCount() {
+<span class="fc" id="L80">        return rowCount;</span>
+    }
+
+    /**
+     * Fills the context with the given rows bit value
+     *
+     * @param bitValue the bit value, in most cases the tables row
+     * @return this for call chaining
+     */
+    public ContextFiller setContextTo(int bitValue) {
+<span class="fc" id="L90">        bitSetter.fill(bitValue);</span>
+<span class="fc" id="L91">        return this;</span>
+    }
+
+    /**
+     * @return the variables to use
+     */
+    public List&lt;Variable&gt; getVariables() {
+<span class="fc" id="L98">        return vars;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

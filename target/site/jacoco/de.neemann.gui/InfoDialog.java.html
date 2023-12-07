@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InfoDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.gui</a> &gt; <span class="el_source">InfoDialog.java</span></div><h1>InfoDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2015 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.gui;
+
+import de.neemann.digital.lang.Lang;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.jar.JarFile;
+import java.util.prefs.Preferences;
+
+/**
+ * Helper to show the info dialog!
+ * Reads Build-Version and Build-Date from the Manifest.
+ */
+public final class InfoDialog implements Iterable&lt;InfoDialog.Manifest&gt; {
+    /**
+     * Unknown release
+     */
+    public static final String UNKNOWN = &quot;unknown&quot;;
+    private static InfoDialog instance;
+    private final ArrayList&lt;Manifest&gt; infos;
+<span class="nc" id="L35">    private String revision = UNKNOWN;</span>
+
+    /**
+     * @return the singleton instance
+     */
+    public static InfoDialog getInstance() {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (instance == null)</span>
+            try {
+<span class="nc" id="L43">                instance = new InfoDialog();</span>
+<span class="nc" id="L44">            } catch (IOException e) {</span>
+<span class="nc" id="L45">                System.out.println(&quot;error reading InfoDialog &quot; + e.getMessage());</span>
+<span class="nc" id="L46">            }</span>
+<span class="nc" id="L47">        return instance;</span>
+    }
+
+<span class="nc" id="L50">    private InfoDialog() throws IOException {</span>
+<span class="nc" id="L51">        infos = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L52">        Enumeration&lt;URL&gt; resEnum = Thread.currentThread().getContextClassLoader().getResources(JarFile.MANIFEST_NAME);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        while (resEnum.hasMoreElements()) {</span>
+<span class="nc" id="L54">            Manifest m = new Manifest(resEnum.nextElement());</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (m.get(Manifest.REVISION) != null) {</span>
+<span class="nc" id="L56">                infos.add(m);</span>
+<span class="nc" id="L57">                revision = m.get(Manifest.REVISION);</span>
+            }
+<span class="nc" id="L59">        }</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Creates a message by taking the given message and adding the manifest infos to it
+     *
+     * @param message the given message
+     * @return message and added manifest infos
+     */
+    private String createMessage(String message) {
+<span class="nc" id="L69">        StringBuilder sb = new StringBuilder(&quot;&lt;html&gt;&quot;);</span>
+<span class="nc" id="L70">        sb.append(message.replace(&quot;\n\n&quot;, &quot;&lt;br/&gt;&lt;br/&gt;&quot;));</span>
+<span class="nc" id="L71">        sb.append(&quot;&lt;br/&gt;&lt;br/&gt;&quot;);</span>
+
+<span class="nc" id="L73">        append(sb, &quot;OS&quot;, &quot;os.name&quot;);</span>
+<span class="nc" id="L74">        append(sb, &quot;OS version&quot;, &quot;os.version&quot;);</span>
+<span class="nc" id="L75">        append(sb, &quot;JRE&quot;, &quot;java.version&quot;);</span>
+<span class="nc" id="L76">        append(sb, &quot;VM&quot;, &quot;java.vm.version&quot;);</span>
+
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (Manifest m : infos) {</span>
+<span class="nc" id="L79">            m.createInfoString(sb);</span>
+<span class="nc" id="L80">        }</span>
+<span class="nc" id="L81">        return sb.append(&quot;&lt;/html&gt;&quot;).toString();</span>
+    }
+
+    private void append(StringBuilder sb, String name, String key) {
+<span class="nc" id="L85">        sb.append(name).append(&quot;: &quot;).append(System.getProperties().getProperty(key)).append(&quot;&lt;br/&gt;&quot;);</span>
+<span class="nc" id="L86">    }</span>
+
+    /**
+     * Shows the message in a dialog
+     *
+     * @param parent   the parent component
+     * @param message  the message
+     * @param revision the &quot;{{version}}&quot; url version replacement
+     */
+    public static void showInfo(Window parent, String message, String revision) {
+<span class="nc" id="L96">        final JDialog dialog = new JDialog(parent, Lang.get(&quot;menu_about&quot;), Dialog.ModalityType.APPLICATION_MODAL);</span>
+<span class="nc" id="L97">        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);</span>
+
+<span class="nc" id="L99">        JEditorPane ta = new JEditorPane(&quot;text/html&quot;, message);</span>
+<span class="nc" id="L100">        ta.setCaretPosition(0);</span>
+<span class="nc" id="L101">        ta.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);</span>
+<span class="nc" id="L102">        ta.setEditable(false);</span>
+<span class="nc" id="L103">        ta.setBackground(new JLabel().getBackground());</span>
+<span class="nc" id="L104">        ta.setSize(new Dimension(400, 800));</span>
+<span class="nc" id="L105">        ta.setPreferredSize(new Dimension(400, ta.getPreferredSize().height + 30));</span>
+
+<span class="nc" id="L107">        Font font = ta.getFont().deriveFont(Font.BOLD);</span>
+<span class="nc" id="L108">        ta.setFont(font);</span>
+<span class="nc" id="L109">        int border = font.getSize();</span>
+<span class="nc" id="L110">        ta.setBorder(BorderFactory.createEmptyBorder(border, border, border, border));</span>
+<span class="nc" id="L111">        dialog.getContentPane().add(ta);</span>
+<span class="nc" id="L112">        ta.addHyperlinkListener(hyperlinkEvent -&gt; {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (hyperlinkEvent.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">                Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;</span>
+<span class="nc bnc" id="L115" title="All 4 branches missed.">                if (desktop != null &amp;&amp; desktop.isSupported(Desktop.Action.BROWSE)) {</span>
+                    try {
+<span class="nc" id="L117">                        String name = Preferences.userRoot().node(&quot;dig&quot;).get(&quot;newname&quot;, &quot;Digital&quot;);</span>
+<span class="nc" id="L118">                        URL url = hyperlinkEvent.getURL();</span>
+<span class="nc" id="L119">                        url = new URL(url.toString()</span>
+<span class="nc" id="L120">                                .replace(&quot;[[version]]&quot;, revision)</span>
+<span class="nc" id="L121">                                .replace(&quot;[[name]]&quot;, name));</span>
+<span class="nc" id="L122">                        desktop.browse(url.toURI());</span>
+<span class="nc" id="L123">                    } catch (IOException | URISyntaxException e) {</span>
+<span class="nc" id="L124">                        e.printStackTrace();</span>
+<span class="nc" id="L125">                    }</span>
+                }
+            }
+<span class="nc" id="L128">        });</span>
+
+<span class="nc" id="L130">        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="nc" id="L131">        JButton button = new JButton(new AbstractAction(Lang.get(&quot;ok&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L134">                dialog.dispose();</span>
+<span class="nc" id="L135">            }</span>
+        });
+<span class="nc" id="L137">        buttons.add(button);</span>
+<span class="nc" id="L138">        dialog.getContentPane().add(buttons, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L140">        JLabel l = new JLabel(IconCreator.create(&quot;icon64.png&quot;));</span>
+<span class="nc" id="L141">        l.setVerticalAlignment(JLabel.TOP);</span>
+<span class="nc" id="L142">        l.setBorder(BorderFactory.createEmptyBorder(border, border, border, 0));</span>
+<span class="nc" id="L143">        dialog.getContentPane().add(l, BorderLayout.WEST);</span>
+
+<span class="nc" id="L145">        dialog.pack();</span>
+<span class="nc" id="L146">        dialog.setLocationRelativeTo(parent);</span>
+<span class="nc" id="L147">        dialog.setVisible(true);</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * Adds the help menu to a JFrame
+     *
+     * @param frame   the frame
+     * @param message the message
+     * @return the help menu
+     */
+    public JMenuItem createMenuItem(final JFrame frame, final String message) {
+<span class="nc" id="L158">        return new JMenuItem(new AbstractAction(Lang.get(&quot;menu_about&quot;)) {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L161">                showInfo(frame, createMessage(message), revision);</span>
+<span class="nc" id="L162">            }</span>
+        });
+    }
+
+    @Override
+    public Iterator&lt;Manifest&gt; iterator() {
+<span class="nc" id="L168">        return infos.iterator();</span>
+    }
+
+    /**
+     * @return the revision
+     */
+    public String getRevision() {
+<span class="nc" id="L175">        return revision;</span>
+    }
+
+    /**
+     * A simple Manifest parser
+     */
+    public static final class Manifest {
+        private static final String REVISION = &quot;Build-SCM-Revision&quot;;
+        private static final String TIME = &quot;Build-Time&quot;;
+
+        private final HashMap&lt;String, String&gt; manifest;
+        private final URL url;
+
+<span class="nc" id="L188">        private Manifest(URL url) throws IOException {</span>
+<span class="nc" id="L189">            this.url = url;</span>
+<span class="nc" id="L190">            manifest = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L191">            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {</span>
+                String line;
+<span class="nc bnc" id="L193" title="All 2 branches missed.">                while ((line = reader.readLine()) != null) {</span>
+<span class="nc" id="L194">                    int p = line.indexOf(':');</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">                    if (p &gt;= 0) {</span>
+<span class="nc" id="L196">                        String key = line.substring(0, p).trim();</span>
+<span class="nc" id="L197">                        String value = line.substring(p + 1).trim();</span>
+<span class="nc" id="L198">                        manifest.put(key, value);</span>
+                    }
+<span class="nc" id="L200">                }</span>
+            }
+<span class="nc" id="L202">        }</span>
+
+        private String get(String key) {
+<span class="nc" id="L205">            return manifest.get(key);</span>
+        }
+
+        /**
+         * @return returns all entries
+         */
+        public HashMap&lt;String, String&gt; getEntries() {
+<span class="nc" id="L212">            return manifest;</span>
+        }
+
+        /**
+         * @return the manifest url
+         */
+        public URL getUrl() {
+<span class="nc" id="L219">            return url;</span>
+        }
+
+        private void createInfoString(StringBuilder sb) {
+<span class="nc" id="L223">            String path = url.getPath();</span>
+<span class="nc" id="L224">            int p = path.lastIndexOf(&quot;!/&quot;);</span>
+<span class="nc" id="L225">            path = path.substring(0, p);</span>
+<span class="nc" id="L226">            p = path.lastIndexOf('/');</span>
+<span class="nc" id="L227">            sb.append(&quot;&lt;p&gt;&quot;);</span>
+<span class="nc" id="L228">            sb.append(path.substring(p + 1)).append(&quot;&lt;br/&gt;&quot;);</span>
+<span class="nc" id="L229">            sb.append(&quot;Build git-Revision&quot;).append(&quot;: &quot;);</span>
+<span class="nc" id="L230">            sb.append(get(REVISION)).append(&quot;&lt;br/&gt;&quot;);</span>
+<span class="nc" id="L231">            sb.append(&quot;Build Time&quot;).append(&quot;: &quot;);</span>
+<span class="nc" id="L232">            sb.append(get(TIME)).append(&quot;&lt;br/&gt;&lt;/p&gt;&quot;);</span>
+<span class="nc" id="L233">        }</span>
+
+        @Override
+        public String toString() {
+<span class="nc" id="L237">            return &quot;Manifest{&quot;</span>
+                    + &quot;manifest=&quot; + manifest
+                    + &quot;, url=&quot; + url + '}';
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

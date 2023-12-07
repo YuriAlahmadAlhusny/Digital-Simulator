@@ -1,0 +1,865 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Circuit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.elements</a> &gt; <span class="el_source">Circuit.java</span></div><h1>Circuit.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.elements;
+
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import de.neemann.digital.XStreamValid;
+import de.neemann.digital.analyse.expression.format.FormatToExpression;
+import de.neemann.digital.core.Observer;
+import de.neemann.digital.core.*;
+import de.neemann.digital.core.arithmetic.BarrelShifterMode;
+import de.neemann.digital.core.arithmetic.LeftRightFormat;
+import de.neemann.digital.core.element.*;
+import de.neemann.digital.core.extern.Application;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.InValue;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.memory.DataField;
+import de.neemann.digital.core.memory.DataFieldConverter;
+import de.neemann.digital.core.memory.rom.ROMManger;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.model.InverterConfig;
+import de.neemann.digital.draw.shapes.CustomCircuitShapeType;
+import de.neemann.digital.draw.shapes.Drawable;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.draw.shapes.custom.CustomShapeDescription;
+import de.neemann.digital.gui.components.TransformHolder;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.TestCaseElement;
+import de.neemann.digital.undo.Copyable;
+import de.neemann.gui.language.Language;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static de.neemann.digital.core.element.PinInfo.input;
+
+/**
+ * This class contains all the visual elements which form the visual representation of a circuit.
+ * Such a Circuit instance is used by the {@link de.neemann.digital.draw.model.ModelCreator} to
+ * create a runnable model representation (see {@link de.neemann.digital.core.Model}).
+ * This class is also serialized to store a circuit on disk.
+ */
+public class Circuit implements Copyable&lt;Circuit&gt; {
+<span class="fc" id="L54">    private static final Logger LOGGER = LoggerFactory.getLogger(Circuit.class);</span>
+<span class="fc" id="L55">    private static final Set&lt;Drawable&gt; EMPTY_SET = Collections.emptySet();</span>
+
+<span class="fc" id="L57">    private int version = 1;</span>
+    private ElementAttributes attributes;
+    private final ArrayList&lt;VisualElement&gt; visualElements;
+    private ArrayList&lt;Wire&gt; wires;
+    private List&lt;String&gt; measurementOrdering;
+<span class="fc" id="L62">    private transient boolean dotsPresent = false;</span>
+    private transient File origin;
+
+    /**
+     * Creates a proper configured XStream instance
+     *
+     * @return the XStream instance
+     */
+    public static XStream getxStream() {
+<span class="fc" id="L71">        XStream xStream = new XStreamValid();</span>
+<span class="fc" id="L72">        xStream.alias(&quot;attributes&quot;, ElementAttributes.class);</span>
+<span class="fc" id="L73">        xStream.alias(&quot;visualElement&quot;, VisualElement.class);</span>
+<span class="fc" id="L74">        xStream.alias(&quot;wire&quot;, Wire.class);</span>
+<span class="fc" id="L75">        xStream.alias(&quot;circuit&quot;, Circuit.class);</span>
+<span class="fc" id="L76">        xStream.alias(&quot;intFormat&quot;, IntFormat.class);</span>
+<span class="fc" id="L77">        xStream.alias(&quot;exprFormat&quot;, FormatToExpression.class);</span>
+<span class="fc" id="L78">        xStream.alias(&quot;barrelShifterMode&quot;, BarrelShifterMode.class);</span>
+<span class="fc" id="L79">        xStream.alias(&quot;direction&quot;, LeftRightFormat.class);</span>
+<span class="fc" id="L80">        xStream.alias(&quot;rotation&quot;, Rotation.class);</span>
+<span class="fc" id="L81">        xStream.aliasAttribute(Rotation.class, &quot;rotation&quot;, &quot;rotation&quot;);</span>
+<span class="fc" id="L82">        xStream.alias(&quot;language&quot;, Language.class);</span>
+<span class="fc" id="L83">        xStream.aliasAttribute(Language.class, &quot;name&quot;, &quot;name&quot;);</span>
+<span class="fc" id="L84">        xStream.alias(&quot;vector&quot;, Vector.class);</span>
+<span class="fc" id="L85">        xStream.aliasAttribute(Vector.class, &quot;x&quot;, &quot;x&quot;);</span>
+<span class="fc" id="L86">        xStream.aliasAttribute(Vector.class, &quot;y&quot;, &quot;y&quot;);</span>
+<span class="fc" id="L87">        xStream.alias(&quot;value&quot;, InValue.class);</span>
+<span class="fc" id="L88">        xStream.aliasAttribute(InValue.class, &quot;value&quot;, &quot;v&quot;);</span>
+<span class="fc" id="L89">        xStream.aliasAttribute(InValue.class, &quot;highZ&quot;, &quot;z&quot;);</span>
+<span class="fc" id="L90">        xStream.addImplicitCollection(ElementAttributes.class, &quot;attributes&quot;);</span>
+<span class="fc" id="L91">        xStream.alias(&quot;data&quot;, DataField.class);</span>
+<span class="fc" id="L92">        xStream.registerConverter(new DataFieldConverter());</span>
+<span class="fc" id="L93">        xStream.alias(&quot;testData&quot;, TestCaseDescription.class);</span>
+<span class="fc" id="L94">        xStream.alias(&quot;inverterConfig&quot;, InverterConfig.class);</span>
+<span class="fc" id="L95">        xStream.addImplicitCollection(InverterConfig.class, &quot;inputs&quot;);</span>
+<span class="fc" id="L96">        xStream.alias(&quot;storedRoms&quot;, ROMManger.class);</span>
+<span class="fc" id="L97">        xStream.addImplicitCollection(ROMManger.class, &quot;roms&quot;);</span>
+<span class="fc" id="L98">        xStream.alias(&quot;appType&quot;, Application.Type.class);</span>
+<span class="fc" id="L99">        xStream.ignoreUnknownElements();</span>
+<span class="fc" id="L100">        xStream.alias(&quot;shape&quot;, CustomShapeDescription.class);</span>
+<span class="fc" id="L101">        xStream.alias(&quot;pin&quot;, CustomShapeDescription.Pin.class);</span>
+<span class="fc" id="L102">        xStream.alias(&quot;circle&quot;, CustomShapeDescription.CircleHolder.class);</span>
+<span class="fc" id="L103">        xStream.alias(&quot;line&quot;, CustomShapeDescription.LineHolder.class);</span>
+<span class="fc" id="L104">        xStream.alias(&quot;poly&quot;, CustomShapeDescription.PolygonHolder.class);</span>
+<span class="fc" id="L105">        xStream.alias(&quot;text&quot;, CustomShapeDescription.TextHolder.class);</span>
+<span class="fc" id="L106">        xStream.alias(&quot;polygon&quot;, Polygon.class);</span>
+<span class="fc" id="L107">        xStream.alias(&quot;shapeType&quot;, CustomCircuitShapeType.class);</span>
+<span class="fc" id="L108">        xStream.alias(&quot;transform&quot;, TransformHolder.class);</span>
+<span class="fc" id="L109">        xStream.registerConverter(new PolygonConverter());</span>
+<span class="fc" id="L110">        return xStream;</span>
+    }
+
+    /**
+     * Creates a new circuit instance from a stored file
+     *
+     * @param filename     filename
+     * @param shapeFactory shapeFactory used to create the shapes
+     * @return the circuit
+     * @throws IOException IOException
+     */
+    public static Circuit loadCircuit(File filename, ShapeFactory shapeFactory) throws IOException {
+<span class="fc" id="L122">        LOGGER.debug(&quot;load &quot; + filename);</span>
+<span class="fc" id="L123">        final Circuit circuit = loadCircuit(new FileInputStream(filename), shapeFactory);</span>
+<span class="fc" id="L124">        circuit.origin = filename;</span>
+<span class="fc" id="L125">        return circuit;</span>
+    }
+
+    /**
+     * Creates a new circuit instance from a stored file
+     *
+     * @param in           the input stream
+     * @param shapeFactory shapeFactory used to create the shapes
+     * @return the circuit
+     * @throws IOException IOException
+     */
+    public static Circuit loadCircuit(InputStream in, ShapeFactory shapeFactory) throws IOException {
+<span class="fc" id="L137">        LOGGER.debug(&quot;load stream&quot;);</span>
+        try {
+<span class="fc" id="L139">            XStream xStream = getxStream();</span>
+<span class="fc" id="L140">            Circuit circuit = (Circuit) xStream.fromXML(in);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            for (VisualElement ve : circuit.getElements())</span>
+<span class="fc" id="L142">                ve.setShapeFactory(shapeFactory);</span>
+
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (circuit.version == 0) {</span>
+                // convert to version 1
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                for (Wire w : circuit.getWires()) {</span>
+<span class="fc" id="L147">                    w.p1 = w.p1.mul(2);</span>
+<span class="fc" id="L148">                    w.p2 = w.p2.mul(2);</span>
+<span class="fc" id="L149">                }</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                for (VisualElement e : circuit.getElements())</span>
+<span class="fc" id="L151">                    e.setPos(e.getPos().mul(2));</span>
+<span class="fc" id="L152">                circuit.version = 1;</span>
+            }
+<span class="fc" id="L154">            return circuit;</span>
+<span class="nc" id="L155">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L156">            throw new IOException(Lang.get(&quot;err_invalidFileFormat&quot;), e);</span>
+        } finally {
+<span class="fc" id="L158">            in.close();</span>
+        }
+    }
+
+    /**
+     * Stores the circuit in the given file
+     *
+     * @param filename filename
+     * @throws IOException IOException
+     */
+    public void save(File filename) throws IOException {
+<span class="nc" id="L169">        save(new FileOutputStream(filename));</span>
+<span class="nc" id="L170">    }</span>
+
+    /**
+     * Stores the circuit in the given file
+     *
+     * @param out the writer
+     * @throws IOException IOException
+     */
+    public void save(OutputStream out) throws IOException {
+<span class="fc" id="L179">        try (Writer w = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L180">            XStream xStream = Circuit.getxStream();</span>
+<span class="fc" id="L181">            w.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);</span>
+<span class="fc" id="L182">            xStream.marshal(this, new PrettyPrintWriter(w));</span>
+        }
+<span class="fc" id="L184">    }</span>
+
+    /**
+     * Creates a new empty circuit instance
+     */
+<span class="fc" id="L189">    public Circuit() {</span>
+<span class="fc" id="L190">        visualElements = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L191">        wires = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L192">    }</span>
+
+    /**
+     * Creates a copy of the given circuit
+     *
+     * @param original the original
+     */
+    private Circuit(Circuit original) {
+<span class="fc" id="L200">        this();</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (VisualElement ve : original.visualElements)</span>
+<span class="fc" id="L202">            visualElements.add(new VisualElement(ve));</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (Wire w : original.wires)</span>
+<span class="fc" id="L204">            wires.add(new Wire(w));</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (original.attributes != null)</span>
+<span class="fc" id="L206">            attributes = new ElementAttributes(original.attributes);</span>
+
+<span class="fc" id="L208">        measurementOrdering = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (original.measurementOrdering != null)</span>
+<span class="fc" id="L210">            measurementOrdering.addAll(original.measurementOrdering);</span>
+
+<span class="fc" id="L212">        origin = original.origin;</span>
+
+<span class="fc" id="L214">        version = 1;</span>
+<span class="fc" id="L215">    }</span>
+
+    @Override
+    public Circuit createDeepCopy() {
+<span class="fc" id="L219">        return new Circuit(this);</span>
+    }
+
+    /**
+     * Create a shallow copy of this circuit
+     *
+     * @return the shallow copy
+     */
+    public Circuit createShallowCopy() {
+<span class="nc" id="L228">        Circuit circuit = new Circuit();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (attributes != null)</span>
+<span class="nc" id="L230">            circuit.attributes = new ElementAttributes(attributes);</span>
+<span class="nc" id="L231">        circuit.wires.addAll(wires);</span>
+<span class="nc" id="L232">        circuit.visualElements.addAll(visualElements);</span>
+<span class="nc" id="L233">        circuit.origin = origin;</span>
+<span class="nc" id="L234">        return circuit;</span>
+    }
+
+    /**
+     * returns the elements attributes
+     *
+     * @return the attributes
+     */
+    public ElementAttributes getAttributes() {
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        if (attributes == null)</span>
+<span class="fc" id="L244">            attributes = new ElementAttributes();</span>
+<span class="fc" id="L245">        return attributes;</span>
+    }
+
+    /**
+     * Draws tis circuit using the given graphic instance
+     *
+     * @param graphic the graphic instance used
+     */
+    public void drawTo(Graphic graphic) {
+<span class="fc" id="L254">        drawTo(graphic, EMPTY_SET, null, SyncAccess.NOSYNC);</span>
+<span class="fc" id="L255">    }</span>
+
+    /**
+     * Draws this circuit using the given graphic instance
+     *
+     * @param graphic     the graphic instance used
+     * @param highLighted a list of Drawables to highlight
+     * @param highlight   style used to draw the highlighted elements
+     * @param modelSync   sync interface to access the model. Is locked while drawing circuit
+     */
+    public void drawTo(Graphic graphic, Collection&lt;Drawable&gt; highLighted, Style highlight, SyncAccess modelSync) {
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (!dotsPresent) {</span>
+<span class="fc" id="L267">            new DotCreator(wires).applyDots();</span>
+<span class="fc" id="L268">            dotsPresent = true;</span>
+        }
+
+        // reads the models state which is a fast operation
+<span class="fc" id="L272">        modelSync.read(() -&gt; {</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            for (Wire w : wires)</span>
+<span class="fc" id="L274">                w.readObservableValues();</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            for (VisualElement p : visualElements)</span>
+<span class="fc" id="L276">                p.getShape().readObservableValues();</span>
+<span class="fc" id="L277">        });</span>
+
+        // after that draw the model which is rather slow
+<span class="fc" id="L280">        graphic.openGroup();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (Wire w : wires)</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">            w.drawTo(graphic, highLighted.contains(w) ? highlight : null);</span>
+<span class="fc" id="L283">        graphic.closeGroup();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        for (VisualElement p : visualElements) {</span>
+<span class="fc" id="L285">            graphic.openGroup();</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">            p.drawTo(graphic, highLighted.contains(p) ? highlight : null);</span>
+<span class="fc" id="L287">            graphic.closeGroup();</span>
+<span class="fc" id="L288">        }</span>
+<span class="fc" id="L289">    }</span>
+
+    /**
+     * Adds a ne VisualElement
+     *
+     * @param visualElement the visual element to add
+     * @return this for chained calls
+     */
+    public Circuit add(VisualElement visualElement) {
+<span class="fc" id="L298">        visualElements.add(visualElement);</span>
+<span class="fc" id="L299">        return this;</span>
+    }
+
+    /**
+     * Adds a new Wire
+     *
+     * @param newWire the wire to add
+     * @return this for chained calls
+     */
+    public Circuit add(Wire newWire) {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        if (newWire.p1.equals(newWire.p2))</span>
+<span class="fc" id="L310">            return null;</span>
+
+<span class="fc" id="L312">        wires.add(newWire);</span>
+<span class="fc" id="L313">        WireConsistencyChecker checker = new WireConsistencyChecker(wires);</span>
+<span class="fc" id="L314">        wires = checker.check();</span>
+
+<span class="fc" id="L316">        dotsPresent = false;</span>
+<span class="fc" id="L317">        return this;</span>
+    }
+
+    /**
+     * Adds a a list of wires
+     *
+     * @param newWires the wires to add
+     * @return this for chained calls
+     */
+    public Circuit add(ArrayList&lt;Wire&gt; newWires) {
+<span class="fc" id="L327">        wires.addAll(newWires);</span>
+<span class="fc" id="L328">        WireConsistencyChecker checker = new WireConsistencyChecker(wires);</span>
+<span class="fc" id="L329">        wires = checker.check();</span>
+
+<span class="fc" id="L331">        dotsPresent = false;</span>
+<span class="fc" id="L332">        return this;</span>
+    }
+
+    /**
+     * Called if elements are moved
+     */
+    public void elementsMoved() {
+<span class="nc" id="L339">        WireConsistencyChecker checker = new WireConsistencyChecker(wires);</span>
+<span class="nc" id="L340">        wires = checker.check();</span>
+
+<span class="nc" id="L342">        dotsPresent = false;</span>
+<span class="nc" id="L343">    }</span>
+
+    /**
+     * Returns a list of all visual elements
+     *
+     * @return the list
+     */
+    public ArrayList&lt;VisualElement&gt; getElements() {
+<span class="fc" id="L351">        return visualElements;</span>
+    }
+
+    /**
+     * Find specific visual elements
+     *
+     * @param filter the filter
+     * @return the elements
+     */
+    public List&lt;VisualElement&gt; getElements(Circuit.ElementFilter filter) {
+<span class="fc" id="L361">        ArrayList&lt;VisualElement&gt; found = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (VisualElement v : visualElements)</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">            if (filter.accept(v))</span>
+<span class="fc" id="L364">                found.add(v);</span>
+<span class="fc" id="L365">        return found;</span>
+    }
+
+    /**
+     * Returns all enabled test cases in the circuit
+     *
+     * @return the test case elements
+     */
+    public List&lt;TestCase&gt; getTestCases() {
+<span class="fc" id="L374">        ArrayList&lt;TestCase&gt; tc = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L375" title="All 6 branches covered.">        for (VisualElement ve : getElements(v -&gt; v.equalsDescription(TestCaseElement.DESCRIPTION) &amp;&amp; v.getElementAttributes().get(Keys.ENABLED))) {</span>
+<span class="fc" id="L376">            tc.add(new TestCase(ve));</span>
+<span class="fc" id="L377">        }</span>
+<span class="fc" id="L378">        return tc;</span>
+    }
+
+    /**
+     * A simple java bean to encapsulate a test case description
+     */
+    public static final class TestCase implements Comparable&lt;TestCase&gt; {
+        private final String label;
+        private final TestCaseDescription testCaseDescription;
+        private final boolean hasGenericCode;
+        private final VisualElement visualElement;
+
+<span class="fc" id="L390">        private TestCase(VisualElement visualElement) {</span>
+<span class="fc" id="L391">            this.visualElement = visualElement;</span>
+<span class="fc" id="L392">            ElementAttributes attr = visualElement.getElementAttributes();</span>
+<span class="fc" id="L393">            this.label = attr.getLabel();</span>
+<span class="fc" id="L394">            this.testCaseDescription = attr.get(Keys.TESTDATA);</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">            this.hasGenericCode = !attr.get(Keys.GENERIC).isEmpty();</span>
+<span class="fc" id="L396">        }</span>
+
+        /**
+         * @return the label of the test case
+         */
+        public String getLabel() {
+<span class="fc" id="L402">            return label;</span>
+        }
+
+        /**
+         * @return the test case description
+         */
+        public TestCaseDescription getTestCaseDescription() {
+<span class="fc" id="L409">            return testCaseDescription;</span>
+        }
+
+        /**
+         * @return true if the test case has generic code
+         */
+        public boolean hasGenericCode() {
+<span class="fc" id="L416">            return hasGenericCode;</span>
+        }
+
+        /**
+         * @return the visual element which contains the test case
+         */
+        public VisualElement getVisualElement() {
+<span class="fc" id="L423">            return visualElement;</span>
+        }
+
+        @Override
+        public int compareTo(TestCase o) {
+<span class="nc" id="L428">            return label.compareTo(o.label);</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="nc bnc" id="L433" title="All 2 branches missed.">            if (this == o) return true;</span>
+<span class="nc bnc" id="L434" title="All 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="nc" id="L436">            TestCase testCase = (TestCase) o;</span>
+
+<span class="nc" id="L438">            return label.equals(testCase.label);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L443">            return label.hashCode();</span>
+        }
+
+    }
+
+    /**
+     * Returns a list of all Moveables in the given rectangle.
+     *
+     * @param min upper left corner of the rectangle
+     * @param max lower right corner of the rectangle
+     * @return the list
+     */
+    public ArrayList&lt;Movable&gt; getElementsToMove(Vector min, Vector max) {
+<span class="nc" id="L456">        ArrayList&lt;Movable&gt; m = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">        for (VisualElement vp : visualElements)</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">            if (vp.matches(min, max))</span>
+<span class="nc" id="L459">                m.add(vp);</span>
+
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        for (Wire w : wires) {</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">            if (w.p1.inside(min, max))</span>
+<span class="nc" id="L463">                m.add(w.getMovableP1());</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">            if (w.p2.inside(min, max))</span>
+<span class="nc" id="L465">                m.add(w.getMovableP2());</span>
+<span class="nc" id="L466">        }</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (m.isEmpty())</span>
+<span class="nc" id="L468">            return null;</span>
+        else
+<span class="nc" id="L470">            return m;</span>
+    }
+
+    /**
+     * Returns a list of all Drawables in the given rectangle.
+     *
+     * @param min upper left corner of the rectangle
+     * @param max lower right corner of the rectangle
+     * @return the list
+     */
+    public ArrayList&lt;Drawable&gt; getElementsToHighlight(Vector min, Vector max) {
+<span class="nc" id="L481">        ArrayList&lt;Drawable&gt; m = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">        for (VisualElement vp : visualElements)</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">            if (vp.matches(min, max))</span>
+<span class="nc" id="L484">                m.add(vp);</span>
+
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        for (Wire w : wires) {</span>
+<span class="nc bnc" id="L487" title="All 4 branches missed.">            if (w.p1.inside(min, max) || w.p2.inside(min, max))</span>
+<span class="nc" id="L488">                m.add(w);</span>
+<span class="nc" id="L489">        }</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">        if (m.isEmpty())</span>
+<span class="nc" id="L491">            return null;</span>
+        else
+<span class="nc" id="L493">            return m;</span>
+    }
+
+
+    /**
+     * Returns a list of all Moveables in the given rectangle.
+     * It creates a deep copy of all elements.
+     *
+     * @param min          upper left corner of the rectangle
+     * @param max          lower right corner of the rectangle
+     * @param shapeFactory the shape factory
+     * @return the list
+     */
+    public ArrayList&lt;Movable&gt; copyElementsToMove(Vector min, Vector max, ShapeFactory shapeFactory) {
+<span class="nc" id="L507">        ArrayList&lt;Movable&gt; m = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (VisualElement vp : visualElements)</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            if (vp.matches(min, max))</span>
+<span class="nc" id="L510">                m.add(new VisualElement(vp).setShapeFactory(shapeFactory));</span>
+
+<span class="nc bnc" id="L512" title="All 2 branches missed.">        for (Wire w : wires)</span>
+<span class="nc bnc" id="L513" title="All 4 branches missed.">            if (w.p1.inside(min, max) &amp;&amp; w.p2.inside(min, max))</span>
+<span class="nc" id="L514">                m.add(new Wire(w));</span>
+
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (m.isEmpty())</span>
+<span class="nc" id="L517">            return null;</span>
+        else
+<span class="nc" id="L519">            return m;</span>
+    }
+
+    /**
+     * Returns a list of all Drawables and Moveables in the given rectangle.
+     * It creates a deep copy of all elements.
+     *
+     * @param min          upper left corner of the rectangle
+     * @param max          lower right corner of the rectangle
+     * @param shapeFactory the shape factory
+     * @return the list
+     */
+    public RectContainer copyElementsInRect(Vector min, Vector max, ShapeFactory shapeFactory) {
+<span class="nc" id="L532">        ArrayList&lt;Drawable&gt; d = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L533">        ArrayList&lt;Movable&gt; m = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (VisualElement vp : visualElements)</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">            if (vp.matches(min, max)) {</span>
+<span class="nc" id="L536">                final VisualElement ve = new VisualElement(vp).setShapeFactory(shapeFactory);</span>
+<span class="nc" id="L537">                m.add(ve);</span>
+<span class="nc" id="L538">                d.add(ve);</span>
+            }
+
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        for (Wire w : wires) {</span>
+<span class="nc" id="L542">            final boolean p1Inside = w.p1.inside(min, max);</span>
+<span class="nc" id="L543">            final boolean p2Inside = w.p2.inside(min, max);</span>
+<span class="nc bnc" id="L544" title="All 4 branches missed.">            if (p1Inside || p2Inside) {</span>
+<span class="nc" id="L545">                final Wire ww = new Wire(w);</span>
+<span class="nc" id="L546">                d.add(ww);</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">                if (p1Inside)</span>
+<span class="nc" id="L548">                    m.add(ww.getMovableP1());</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">                if (p2Inside)</span>
+<span class="nc" id="L550">                    m.add(ww.getMovableP2());</span>
+            }
+<span class="nc" id="L552">        }</span>
+
+<span class="nc bnc" id="L554" title="All 4 branches missed.">        if (m.isEmpty() &amp;&amp; d.isEmpty())</span>
+<span class="nc" id="L555">            return null;</span>
+        else
+<span class="nc" id="L557">            return new RectContainer(d, m);</span>
+    }
+
+
+    /**
+     * Deletes all elements in the given rectangle
+     *
+     * @param min upper left corner of the rectangle
+     * @param max lower right corner of the rectangle
+     */
+    public void delete(Vector min, Vector max) {
+<span class="nc" id="L568">        Iterator&lt;VisualElement&gt; veIt = visualElements.iterator();</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        while (veIt.hasNext())</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">            if (veIt.next().matches(min, max))</span>
+<span class="nc" id="L571">                veIt.remove();</span>
+
+<span class="nc" id="L573">        boolean wireDeleted = false;</span>
+<span class="nc" id="L574">        Iterator&lt;Wire&gt; wIt = wires.iterator();</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        while (wIt.hasNext()) {</span>
+<span class="nc" id="L576">            Wire w = wIt.next();</span>
+<span class="nc bnc" id="L577" title="All 4 branches missed.">            if (w.p1.inside(min, max) || w.p2.inside(min, max)) {</span>
+<span class="nc" id="L578">                wIt.remove();</span>
+<span class="nc" id="L579">                wireDeleted = true;</span>
+            }
+<span class="nc" id="L581">        }</span>
+
+<span class="nc bnc" id="L583" title="All 2 branches missed.">        if (wireDeleted) {</span>
+<span class="nc" id="L584">            WireConsistencyChecker checker = new WireConsistencyChecker(wires);</span>
+<span class="nc" id="L585">            wires = checker.check();</span>
+        }
+
+<span class="nc" id="L588">        dotsPresent = false;</span>
+<span class="nc" id="L589">    }</span>
+
+    /**
+     * Deletes a single visual element
+     *
+     * @param partToDelete the element to delete
+     */
+    public void delete(VisualElement partToDelete) {
+<span class="fc" id="L597">        visualElements.remove(partToDelete);</span>
+<span class="fc" id="L598">    }</span>
+
+    /**
+     * Deletes a single wire
+     *
+     * @param wireToDelete the wire to delete
+     */
+    public void delete(Wire wireToDelete) {
+<span class="nc bnc" id="L606" title="All 2 branches missed.">        if (wires.remove(wireToDelete)) {</span>
+<span class="nc" id="L607">            WireConsistencyChecker checker = new WireConsistencyChecker(wires);</span>
+<span class="nc" id="L608">            wires = checker.check();</span>
+<span class="nc" id="L609">            dotsPresent = false;</span>
+        }
+<span class="nc" id="L611">    }</span>
+
+
+    /**
+     * Returns the element at the given position
+     *
+     * @param pos the cursor position
+     * @return the first element or null if there is no element at the given position
+     */
+    public VisualElement getElementAt(Vector pos) {
+<span class="fc" id="L621">        return getElementAt(pos, false);</span>
+    }
+
+    /**
+     * Returns the element at the given position
+     *
+     * @param pos         the cursor position
+     * @param includeText if true the label text is included in matching
+     * @return the first element or null if there is no element at the given position
+     */
+    public VisualElement getElementAt(Vector pos, boolean includeText) {
+<span class="fc bfc" id="L632" title="All 2 branches covered.">        for (VisualElement element : visualElements)</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">            if (element.matches(pos, includeText))</span>
+<span class="fc" id="L634">                return element;</span>
+<span class="fc" id="L635">        return null;</span>
+    }
+
+    /**
+     * Returns a list of elements at the given position.
+     *
+     * @param pos         the cursor position
+     * @param includeText if true the element is also returned if only the text matches the given position
+     * @return the elements or an empty list if there is no element at the given position
+     */
+    public List&lt;VisualElement&gt; getElementListAt(Vector pos, boolean includeText) {
+<span class="nc" id="L646">        ArrayList&lt;VisualElement&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">        for (VisualElement element : visualElements)</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">            if (element.matches(pos, includeText))</span>
+<span class="nc" id="L649">                list.add(element);</span>
+<span class="nc" id="L650">        return list;</span>
+    }
+
+
+    /**
+     * Returns true if there is a pin at the given position
+     *
+     * @param pos the position
+     * @return true if position is a pin position
+     */
+    public boolean isPinPos(Vector pos) {
+<span class="nc" id="L661">        VisualElement el = getElementAt(pos);</span>
+<span class="nc bnc" id="L662" title="All 2 branches missed.">        if (el == null) return false;</span>
+
+<span class="nc" id="L664">        return el.isPinPos(pos);</span>
+    }
+
+    /**
+     * @return a list of all wires
+     */
+    public ArrayList&lt;Wire&gt; getWires() {
+<span class="fc" id="L671">        return wires;</span>
+    }
+
+    /**
+     * Returns true if there is a wire at the given position
+     *
+     * @param pos the position
+     * @return true if there is a wire at the given position
+     */
+    public boolean isWireAt(Vector pos) {
+<span class="nc bnc" id="L681" title="All 2 branches missed.">        for (Wire w : wires)</span>
+<span class="nc bnc" id="L682" title="All 2 branches missed.">            if (w.isPosOnWire(pos))</span>
+<span class="nc" id="L683">                return true;</span>
+<span class="nc" id="L684">        return false;</span>
+    }
+
+    /**
+     * Returns the matching wire
+     *
+     * @param pos    the position
+     * @param radius the catching distance
+     * @return the matching wire or null
+     */
+    public Wire getWireAt(Vector pos, int radius) {
+<span class="nc" id="L695">        float minDist = 0;</span>
+<span class="nc" id="L696">        Wire best = null;</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">        for (Wire w : wires)</span>
+<span class="nc bnc" id="L698" title="All 2 branches missed.">            if (w.contains(pos, radius)) {</span>
+<span class="nc" id="L699">                float d = w.distance(pos);</span>
+<span class="nc bnc" id="L700" title="All 4 branches missed.">                if (best == null || d &lt; minDist) {</span>
+<span class="nc" id="L701">                    minDist = d;</span>
+<span class="nc" id="L702">                    best = w;</span>
+                }
+            }
+<span class="nc" id="L705">        return best;</span>
+    }
+
+    /**
+     * Deletes the references to the ObservableValues representing the elements or wire state.
+     * So this circuit is detached from a generated model.
+     */
+    public void clearState() {
+<span class="nc bnc" id="L713" title="All 2 branches missed.">        for (VisualElement vp : visualElements)</span>
+<span class="nc" id="L714">            vp.setState(null);</span>
+<span class="nc bnc" id="L715" title="All 2 branches missed.">        for (Wire w : wires)</span>
+<span class="nc" id="L716">            w.setValue(null);</span>
+<span class="nc" id="L717">    }</span>
+
+    /**
+     * returns a list of all input names of this circuit
+     *
+     * @return the list of input names
+     * @throws PinException PinException
+     */
+    public PinDescription[] getInputNames() throws PinException {
+<span class="fc" id="L726">        ArrayList&lt;PinDescription&gt; pinList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">        for (VisualElement ve : visualElements) {</span>
+<span class="fc bfc" id="L728" title="All 4 branches covered.">            if (ve.equalsDescription(In.DESCRIPTION) || ve.equalsDescription(Clock.DESCRIPTION)) {</span>
+<span class="fc" id="L729">                final ElementAttributes attr = ve.getElementAttributes();</span>
+<span class="fc" id="L730">                String name = attr.getLabel();</span>
+<span class="pc bpc" id="L731" title="2 of 4 branches missed.">                if (name == null || name.length() == 0) {</span>
+<span class="nc bnc" id="L732" title="All 2 branches missed.">                    if (ve.equalsDescription(Clock.DESCRIPTION))</span>
+<span class="nc" id="L733">                        throw new PinException(Lang.get(&quot;err_clockWithoutName&quot;));</span>
+                    else
+<span class="nc" id="L735">                        throw new PinException(Lang.get(&quot;err_pinWithoutName&quot;));</span>
+                }
+
+                PinInfo pin;
+<span class="fc bfc" id="L739" title="All 2 branches covered.">                if (ve.equalsDescription(Clock.DESCRIPTION))</span>
+<span class="fc" id="L740">                    pin = input(name, Lang.get(&quot;elem_Clock&quot;)).setClock();</span>
+                else
+<span class="fc" id="L742">                    pin = input(name, Lang.evalMultilingualContent(attr.get(Keys.DESCRIPTION)));</span>
+<span class="fc" id="L743">                pinList.add(pin.setPinNumber(attr.get(Keys.PINNUMBER)));</span>
+            }
+<span class="fc" id="L745">        }</span>
+<span class="fc" id="L746">        return pinList.toArray(new PinDescription[0]);</span>
+    }
+
+    /**
+     * Returns a list of all output ObservableNames.
+     * The ObservableValue is not connected to a model! Its just a wrapper for the outputs name.
+     * This method is used to create dummy outputs for a nested element.
+     * They are not used, because during creation of a model all inputs and outputs which connect a model
+     * with a nested model are removed from the model and replaced by a direct connection of the input or output
+     * and the wires of the containing model.
+     *
+     * @return the list of output ObservableValues
+     * @throws PinException PinException
+     */
+    public ObservableValues getOutputNames() throws PinException {
+<span class="fc" id="L761">        ArrayList&lt;ObservableValue&gt; pinList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">        for (VisualElement ve : visualElements) {</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">            if (ve.equalsDescription(Out.DESCRIPTION)) {</span>
+<span class="fc" id="L764">                final ElementAttributes attr = ve.getElementAttributes();</span>
+<span class="fc" id="L765">                String name = attr.getLabel();</span>
+<span class="pc bpc" id="L766" title="2 of 4 branches missed.">                if (name == null || name.length() == 0)</span>
+<span class="nc" id="L767">                    throw new PinException(Lang.get(&quot;err_pinWithoutName&quot;));</span>
+
+<span class="fc" id="L769">                String descr = Lang.evalMultilingualContent(attr.get(Keys.DESCRIPTION));</span>
+<span class="fc" id="L770">                pinList.add(new ObservableValue(name, 0) {</span>
+                    @Override
+                    public long getValue() {
+<span class="nc" id="L773">                        throw new RuntimeException(&quot;invalid call!&quot;);</span>
+                    }
+
+                    @Override
+                    public ObservableValue addObserverToValue(Observer observer) {
+<span class="nc" id="L778">                        throw new RuntimeException(&quot;invalid call!&quot;);</span>
+                    }
+
+                    @Override
+                    public int getBits() {
+<span class="nc" id="L783">                        throw new RuntimeException(&quot;invalid call!&quot;);</span>
+                    }
+<span class="fc" id="L785">                }.setDescription(descr).setPinNumber(attr.get(Keys.PINNUMBER)));</span>
+            }
+<span class="fc" id="L787">        }</span>
+<span class="fc" id="L788">        return new ObservableValues(pinList);</span>
+    }
+
+    /**
+     * Gets the ordering of values used to show measurements
+     *
+     * @return list of names
+     */
+    public List&lt;String&gt; getMeasurementOrdering() {
+<span class="fc" id="L797">        return measurementOrdering;</span>
+    }
+
+    /**
+     * Sets the ordering of values used to show measurements
+     *
+     * @param measurementOrdering list of names
+     */
+    public void setMeasurementOrdering(List&lt;String&gt; measurementOrdering) {
+<span class="nc" id="L806">        this.measurementOrdering = measurementOrdering;</span>
+<span class="nc" id="L807">    }</span>
+
+    /**
+     * @return the file origin of this circuit, may be null
+     */
+    public File getOrigin() {
+<span class="fc" id="L813">        return origin;</span>
+    }
+
+    /**
+     * Sets the file name
+     *
+     * @param filename the file name
+     */
+    public void setOrigin(File filename) {
+<span class="nc" id="L822">        this.origin = filename;</span>
+<span class="nc" id="L823">    }</span>
+
+    /**
+     * Visual element filter
+     */
+    public interface ElementFilter {
+        /**
+         * Accepts a specific visible element
+         *
+         * @param v the element
+         * @return true if accepted
+         */
+        boolean accept(VisualElement v);
+    }
+
+    /**
+     * Container to return movables and drawables at once.
+     */
+    public static final class RectContainer {
+        private final ArrayList&lt;Drawable&gt; d;
+        private final ArrayList&lt;Movable&gt; m;
+
+<span class="nc" id="L845">        private RectContainer(ArrayList&lt;Drawable&gt; d, ArrayList&lt;Movable&gt; m) {</span>
+<span class="nc" id="L846">            this.d = d;</span>
+<span class="nc" id="L847">            this.m = m;</span>
+<span class="nc" id="L848">        }</span>
+
+        /**
+         * @return the list of drawables
+         */
+        public ArrayList&lt;Drawable&gt; getDrawables() {
+<span class="nc" id="L854">            return d;</span>
+        }
+
+        /**
+         * @return the list of movables
+         */
+        public ArrayList&lt;Movable&gt; getMovables() {
+<span class="nc" id="L861">            return m;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

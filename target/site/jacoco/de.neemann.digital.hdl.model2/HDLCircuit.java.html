@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLCircuit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLCircuit.java</span></div><h1>HDLCircuit.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+import de.neemann.digital.core.BitsException;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.basic.Not;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.io.In;
+import de.neemann.digital.core.io.Out;
+import de.neemann.digital.core.io.PowerSupply;
+import de.neemann.digital.core.io.Probe;
+import de.neemann.digital.core.wiring.Break;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.core.wiring.Splitter;
+import de.neemann.digital.draw.elements.*;
+import de.neemann.digital.draw.library.GenericCode;
+import de.neemann.digital.draw.library.GenericInitCode;
+import de.neemann.digital.draw.model.Net;
+import de.neemann.digital.draw.model.NetList;
+import de.neemann.digital.gui.components.data.DummyElement;
+import de.neemann.digital.gui.components.graphics.VGA;
+import de.neemann.digital.hdl.model2.clock.ClockInfo;
+import de.neemann.digital.hdl.model2.clock.HDLClockIntegrator;
+import de.neemann.digital.hdl.model2.expression.ExprNot;
+import de.neemann.digital.hdl.model2.expression.ExprVar;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.optimizations.*;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseElement;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * The representation of a circuit
+ */
+public class HDLCircuit implements Iterable&lt;HDLNode&gt;, HDLModel.BitProvider, Printable {
+    private final String elementName;
+    private final int depth;
+    private final ArrayList&lt;HDLPort&gt; outputs;
+    private final ArrayList&lt;HDLPort&gt; inputs;
+    private final ArrayList&lt;HDLNet&gt; listOfNets;
+    private final String description;
+    private final File origin;
+    private final ArrayList&lt;HDLNode&gt; nodes;
+    private final boolean skipHDL;
+    private ArrayList&lt;HDLPort&gt; ports;
+    private NetList netList;
+    private HashMap&lt;Net, HDLNet&gt; nets;
+    private String hdlEntityName;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit     the circuit
+     * @param elementName the name of the circuit
+     * @param c           the context to create the circuits
+     * @param depth       the depth of this circuit in the circuits hierarchy
+     * @throws PinException  PinException
+     * @throws HDLException  HDLException
+     * @throws NodeException NodeException
+     */
+    HDLCircuit(Circuit circuit, String elementName, HDLModel c, int depth) throws PinException, HDLException, NodeException {
+<span class="fc" id="L71">        this(circuit, elementName, c, depth, null);</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Creates a new instance.
+     *
+     * @param circuit         the circuit
+     * @param elementName     the name of the circuit
+     * @param c               the context to create the circuits
+     * @param depth           the depth of this circuit in the circuits hierarchy
+     * @param clockIntegrator the clock integrator
+     * @throws PinException  PinException
+     * @throws HDLException  HDLException
+     * @throws NodeException NodeException
+     */
+<span class="fc" id="L86">    public HDLCircuit(Circuit circuit, String elementName, HDLModel c, int depth, HDLClockIntegrator clockIntegrator) throws PinException, HDLException, NodeException {</span>
+<span class="fc" id="L87">        this.elementName = elementName;</span>
+<span class="fc" id="L88">        this.depth = depth;</span>
+
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (elementName.toLowerCase().endsWith(&quot;.dig&quot;))</span>
+<span class="fc" id="L91">            hdlEntityName = elementName.substring(0, elementName.length() - 4);</span>
+        else
+<span class="fc" id="L93">            hdlEntityName = elementName;</span>
+
+<span class="fc" id="L95">        inputs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L96">        outputs = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L98">        nodes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L99">        nets = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L100">        listOfNets = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L101">        netList = new NetList(circuit);</span>
+<span class="fc" id="L102">        description = Lang.evalMultilingualContent(circuit.getAttributes().get(Keys.DESCRIPTION));</span>
+<span class="fc" id="L103">        this.origin = circuit.getOrigin();</span>
+
+<span class="fc" id="L105">        this.skipHDL = circuit.getAttributes().get(Keys.SKIP_HDL);</span>
+
+<span class="fc" id="L107">        ArrayList&lt;ClockInfo&gt; clocks = new ArrayList&lt;&gt;();</span>
+
+        try {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (VisualElement v : circuit.getElements()) {</span>
+<span class="fc bfc" id="L111" title="All 4 branches covered.">                if (v.equalsDescription(In.DESCRIPTION) || v.equalsDescription(Clock.DESCRIPTION)) {</span>
+<span class="fc" id="L112">                    final HDLPort port = new HDLPort(</span>
+<span class="fc" id="L113">                            v.getElementAttributes().getLabel(),</span>
+<span class="fc" id="L114">                            getNetOfPin(v.getPins().get(0)),</span>
+                            HDLPort.Direction.OUT,  // from inside the node this is an output because it defines a value
+<span class="fc" id="L116">                            v.getElementAttributes().getBits())</span>
+<span class="fc" id="L117">                            .setPinNumber(v.getElementAttributes().get(Keys.PINNUMBER))</span>
+<span class="fc" id="L118">                            .setDescription(Lang.evalMultilingualContent(v.getElementAttributes().get(Keys.DESCRIPTION)));</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (v.equalsDescription(Clock.DESCRIPTION)) {</span>
+<span class="fc" id="L120">                        clocks.add(new ClockInfo(port, v.getElementAttributes().get(Keys.FREQUENCY)));</span>
+<span class="fc" id="L121">                        port.setIsClock();</span>
+                    }
+<span class="fc" id="L123">                    addInput(port);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                } else if (v.equalsDescription(Out.DESCRIPTION))</span>
+<span class="fc" id="L125">                    addOutput(new HDLPort(</span>
+<span class="fc" id="L126">                            v.getElementAttributes().getLabel(),</span>
+<span class="fc" id="L127">                            getNetOfPin(v.getPins().get(0)),</span>
+                            HDLPort.Direction.IN,  // from inside the node this is an input because it reads the value to output
+<span class="fc" id="L129">                            v.getElementAttributes().getBits())</span>
+<span class="fc" id="L130">                            .setPinNumber(v.getElementAttributes().get(Keys.PINNUMBER))</span>
+<span class="fc" id="L131">                            .setDescription(Lang.evalMultilingualContent(v.getElementAttributes().get(Keys.DESCRIPTION))));</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                else if (v.equalsDescription(Splitter.DESCRIPTION))</span>
+<span class="fc" id="L133">                    handleSplitter(c.createNode(v, this));</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                else if (isRealElement(v))</span>
+<span class="fc" id="L135">                    nodes.add(c.createNode(v, this));</span>
+<span class="fc" id="L136">            }</span>
+<span class="nc" id="L137">        } catch (HDLException e) {</span>
+<span class="nc" id="L138">            throw new HDLException(Lang.get(&quot;err_errorAnalysingCircuit_N&quot;, circuit.getOrigin()), e);</span>
+<span class="fc" id="L139">        }</span>
+
+<span class="fc" id="L141">        netList = null;</span>
+<span class="fc" id="L142">        nets = null;</span>
+
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">        if (clockIntegrator != null &amp;&amp; !clocks.isEmpty())</span>
+<span class="fc" id="L145">            clockIntegrator.integrateClocks(this, clocks);</span>
+
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (HDLNet n : listOfNets)</span>
+<span class="fc" id="L148">            n.fixBits();</span>
+
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (HDLNet n : listOfNets)</span>
+<span class="fc" id="L151">            n.checkPinControlUsage();</span>
+
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        for (HDLPort i : inputs)</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">            if (i.getNet() != null) {</span>
+<span class="fc" id="L155">                i.getNet().setIsInput(i.getName());</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (i.getNet().isInOutNet())</span>
+<span class="nc" id="L157">                    i.setInOut();</span>
+            }
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (HDLPort o : outputs) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (o.getNet().needsVariable())</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">                o.getNet().setIsOutput(o.getName(), o.getNet().getInputs().size() == 1);</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            if (o.getNet().isInOutNet())</span>
+<span class="nc" id="L164">                o.setInOut();</span>
+<span class="fc" id="L165">        }</span>
+
+<span class="fc" id="L167">    }</span>
+
+    private void handleSplitter(HDLNode node) throws BitsException, HDLException {
+<span class="fc" id="L170">        Splitter.Ports inputSplit = new Splitter.Ports(node.getElementAttributes().get(Keys.INPUT_SPLIT));</span>
+<span class="fc" id="L171">        Splitter.Ports outputSplit = new Splitter.Ports(node.getElementAttributes().get(Keys.OUTPUT_SPLIT));</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (node.getInputs().size() == 1) {</span>
+<span class="fc" id="L173">            nodes.add(new HDLNodeSplitterOneToMany(node, outputSplit));</span>
+<span class="fc" id="L174">            return;</span>
+        }
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">        if (node.getOutputs().size() == 1 &amp;&amp; node.getOutput().getBits() == inputSplit.getBits()) {</span>
+<span class="fc" id="L177">            nodes.add(new HDLNodeSplitterManyToOne(node, inputSplit));</span>
+<span class="fc" id="L178">            return;</span>
+        }
+
+<span class="fc" id="L181">        int bits = inputSplit.getBits();</span>
+<span class="fc" id="L182">        HDLNet net = new HDLNet(null);</span>
+<span class="fc" id="L183">        listOfNets.add(net);</span>
+<span class="fc" id="L184">        HDLPort left = new HDLPort(&quot;single&quot;, net, HDLPort.Direction.OUT, bits);</span>
+<span class="fc" id="L185">        HDLPort right = new HDLPort(&quot;single&quot;, net, HDLPort.Direction.IN, bits);</span>
+
+<span class="fc" id="L187">        HDLNodeSplitterManyToOne manyToOne = new HDLNodeSplitterManyToOne(node, inputSplit);</span>
+<span class="fc" id="L188">        HDLNodeSplitterOneToMany oneToMany = new HDLNodeSplitterOneToMany(node, outputSplit);</span>
+
+<span class="fc" id="L190">        manyToOne.getOutputs().clear();</span>
+<span class="fc" id="L191">        manyToOne.addPort(left);</span>
+
+<span class="fc" id="L193">        oneToMany.getInputs().clear();</span>
+<span class="fc" id="L194">        oneToMany.addPort(right);</span>
+
+<span class="fc" id="L196">        nodes.add(manyToOne);</span>
+<span class="fc" id="L197">        nodes.add(oneToMany);</span>
+<span class="fc" id="L198">    }</span>
+
+    HDLNet createNot(HDLNet inNet) throws HDLException, NodeException, PinException {
+<span class="fc" id="L201">        int bits = 1;</span>
+<span class="fc" id="L202">        final ElementAttributes attr = new ElementAttributes().setBits(bits);</span>
+<span class="pc" id="L203">        HDLNodeAssignment n = new HDLNodeAssignment(Not.DESCRIPTION.getName(), attr, name -&gt; bits);</span>
+<span class="fc" id="L204">        HDLNet outNet = new HDLNet(null);</span>
+<span class="fc" id="L205">        listOfNets.add(outNet);</span>
+
+<span class="fc" id="L207">        HDLPort notOut = new HDLPort(Not.DESCRIPTION.getOutputDescriptions(attr).get(0).getName(), outNet, HDLPort.Direction.OUT, 0);</span>
+<span class="fc" id="L208">        n.addPort(notOut);</span>
+<span class="fc" id="L209">        n.addPort(new HDLPort(Not.DESCRIPTION.getInputDescription(attr).get(0).getName(), inNet, HDLPort.Direction.IN, 0) {</span>
+            @Override
+            public void setBits(int bits) {
+<span class="fc" id="L212">                super.setBits(bits);</span>
+<span class="fc" id="L213">                notOut.setBits(bits);</span>
+<span class="fc" id="L214">            }</span>
+        });
+
+<span class="fc" id="L217">        n.setExpression(new ExprNot(new ExprVar(inNet)));</span>
+
+<span class="fc" id="L219">        nodes.add(n);</span>
+
+<span class="fc" id="L221">        return outNet;</span>
+    }
+
+    private void addOutput(HDLPort port) {
+<span class="fc" id="L225">        outputs.add(port);</span>
+<span class="fc" id="L226">        ports = null;</span>
+<span class="fc" id="L227">    }</span>
+
+    private void addInput(HDLPort port) {
+<span class="fc" id="L230">        inputs.add(port);</span>
+<span class="fc" id="L231">        ports = null;</span>
+<span class="fc" id="L232">    }</span>
+
+    private boolean isRealElement(VisualElement v) {
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        return !v.equalsDescription(Tunnel.DESCRIPTION)</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">                &amp;&amp; !v.equalsDescription(Break.DESCRIPTION)</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(Probe.DESCRIPTION)</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(VGA.DESCRIPTION)</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(PowerSupply.DESCRIPTION)</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">                &amp;&amp; !v.equalsDescription(DummyElement.TEXTDESCRIPTION)</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(DummyElement.DATADESCRIPTION)</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(DummyElement.RECTDESCRIPTION)</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">                &amp;&amp; !v.equalsDescription(TestCaseElement.DESCRIPTION)</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(GenericInitCode.DESCRIPTION)</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                &amp;&amp; !v.equalsDescription(GenericCode.DESCRIPTION);</span>
+    }
+
+    HDLNet getNetOfPin(Pin pin) {
+<span class="fc" id="L249">        Net n = netList.getNetOfPos(pin.getPos());</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (n == null)</span>
+<span class="fc" id="L251">            return null;</span>
+
+<span class="fc" id="L253">        return nets.computeIfAbsent(n, net -&gt; {</span>
+<span class="fc" id="L254">            final HDLNet hdlNet = new HDLNet(createNetName(net));</span>
+<span class="fc" id="L255">            listOfNets.add(hdlNet);</span>
+<span class="fc" id="L256">            return hdlNet;</span>
+        });
+    }
+
+    private String createNetName(Net net) {
+<span class="fc" id="L261">        final HashSet&lt;String&gt; labels = net.getLabels();</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (labels.size() == 1)</span>
+<span class="fc" id="L263">            return labels.iterator().next();</span>
+        else
+<span class="fc" id="L265">            return null;</span>
+    }
+
+    @Override
+    public Iterator&lt;HDLNode&gt; iterator() {
+<span class="fc" id="L270">        return nodes.iterator();</span>
+    }
+
+    @Override
+    public int getBits(String name) {
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        for (HDLPort o : outputs)</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            if (o.getName().equals(name))</span>
+<span class="fc" id="L277">                return o.getBits();</span>
+<span class="nc" id="L278">        return 0;</span>
+    }
+
+    /**
+     * @return the elements name
+     */
+    public String getElementName() {
+<span class="fc" id="L285">        return elementName;</span>
+    }
+
+    /**
+     * @return the circuits outputs
+     */
+    public ArrayList&lt;HDLPort&gt; getOutputs() {
+<span class="fc" id="L292">        return outputs;</span>
+    }
+
+    /**
+     * @return the circuits inputs
+     */
+    public ArrayList&lt;HDLPort&gt; getInputs() {
+<span class="fc" id="L299">        return inputs;</span>
+    }
+
+    /**
+     * @return a list containing input and output ports
+     */
+    public ArrayList&lt;HDLPort&gt; getPorts() {
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        if (ports == null) {</span>
+<span class="fc" id="L307">            ports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L308">            ports.addAll(inputs);</span>
+<span class="fc" id="L309">            ports.addAll(outputs);</span>
+        }
+<span class="fc" id="L311">        return ports;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L316">        return &quot;HDLCircuit{elementName='&quot; + elementName + &quot;'}&quot;;</span>
+    }
+
+    /**
+     * Name the unnamed nets.
+     *
+     * @param netNaming the net naming algorithm
+     * @return this for chained calls
+     */
+    public HDLCircuit nameUnnamedSignals(NetNaming netNaming) {
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        for (HDLNet n : listOfNets)</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">            if (n.getName() == null)</span>
+<span class="fc" id="L328">                n.setName(netNaming.createName(n));</span>
+<span class="fc" id="L329">        return this;</span>
+    }
+
+    /**
+     * Names the nets with the default naming algorithm
+     *
+     * @return this for chained calls
+     */
+    public HDLCircuit nameUnnamedSignals() {
+<span class="fc" id="L338">        return nameUnnamedSignals(new DefaultNetNaming());</span>
+    }
+
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L344">        out.print(&quot;circuit &quot;).println(elementName).inc();</span>
+<span class="fc" id="L345">        out.print(&quot;in&quot;);</span>
+<span class="fc" id="L346">        printList(out, inputs);</span>
+<span class="fc" id="L347">        out.print(&quot;out&quot;);</span>
+<span class="fc" id="L348">        printList(out, outputs);</span>
+<span class="fc" id="L349">        out.print(&quot;sig&quot;);</span>
+<span class="fc" id="L350">        printList(out, listOfNets);</span>
+
+<span class="fc" id="L352">        out.println();</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        for (HDLNode n : nodes) {</span>
+<span class="fc" id="L354">            out.print(&quot;node &quot;).println(n.getElementName()).inc();</span>
+<span class="fc" id="L355">            n.print(out);</span>
+<span class="fc" id="L356">            out.dec();</span>
+<span class="fc" id="L357">        }</span>
+<span class="fc" id="L358">        out.println();</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (HDLPort p : outputs) {</span>
+<span class="fc" id="L360">            final HDLNet net = p.getNet();</span>
+<span class="fc bfc" id="L361" title="All 4 branches covered.">            if (net.needsVariable() || net.isInput()) {</span>
+<span class="fc" id="L362">                p.print(out);</span>
+<span class="fc" id="L363">                out.print(&quot; := &quot;);</span>
+<span class="fc" id="L364">                net.print(out);</span>
+<span class="fc" id="L365">                out.println();</span>
+            }
+<span class="fc" id="L367">        }</span>
+
+<span class="fc" id="L369">        out.dec().print(&quot;end circuit &quot;).println(elementName);</span>
+<span class="fc" id="L370">    }</span>
+
+    private void printList(CodePrinter out, Collection&lt;? extends Printable&gt; ports) throws IOException {
+<span class="fc" id="L373">        boolean first = true;</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        for (Printable p : ports) {</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">            if (first) {</span>
+<span class="fc" id="L376">                first = false;</span>
+<span class="fc" id="L377">                out.print(&quot;(&quot;);</span>
+            } else
+<span class="fc" id="L379">                out.print(&quot;, &quot;);</span>
+<span class="fc" id="L380">            p.print(out);</span>
+<span class="fc" id="L381">        }</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (first)</span>
+<span class="nc" id="L383">            out.print(&quot;(&quot;);</span>
+<span class="fc" id="L384">        out.println(&quot;)&quot;);</span>
+<span class="fc" id="L385">    }</span>
+
+    private void printList(CodePrinter out, ArrayList&lt;HDLNet&gt; nets) throws IOException {
+<span class="fc" id="L388">        boolean first = true;</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        for (HDLNet net : nets) {</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">            if (net.needsVariable()) {</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">                if (first) {</span>
+<span class="fc" id="L392">                    first = false;</span>
+<span class="fc" id="L393">                    out.print(&quot;(&quot;);</span>
+                } else
+<span class="fc" id="L395">                    out.print(&quot;, &quot;);</span>
+<span class="fc" id="L396">                net.print(out);</span>
+            }
+<span class="fc" id="L398">        }</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">        if (first)</span>
+<span class="fc" id="L400">            out.print(&quot;(&quot;);</span>
+<span class="fc" id="L401">        out.println(&quot;)&quot;);</span>
+<span class="fc" id="L402">    }</span>
+
+    /**
+     * Removed an obsolete net
+     *
+     * @param net the net to remove
+     */
+    public void removeNet(HDLNet net) {
+<span class="fc" id="L410">        listOfNets.remove(net);</span>
+<span class="fc" id="L411">    }</span>
+
+    /**
+     * @return the list of nets
+     */
+    public ArrayList&lt;HDLNet&gt; getNets() {
+<span class="fc" id="L417">        return listOfNets;</span>
+    }
+
+    /**
+     * Renames the names in this model to satisfy constrains of the final target language.
+     *
+     * @param renaming the renaming algorithm
+     * @throws HDLException HDLException
+     */
+    public void rename(HDLModel.Renaming renaming) throws HDLException {
+        try {
+<span class="fc bfc" id="L428" title="All 2 branches covered.">            for (HDLPort p : outputs)</span>
+<span class="fc" id="L429">                p.rename(renaming);</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">            for (HDLPort p : inputs)</span>
+<span class="fc" id="L431">                p.rename(renaming);</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">            for (HDLNet p : listOfNets)</span>
+<span class="fc" id="L433">                p.rename(renaming);</span>
+
+<span class="fc bfc" id="L435" title="All 2 branches covered.">            for (HDLNode n : nodes)</span>
+<span class="fc" id="L436">                n.rename(renaming);</span>
+
+<span class="fc" id="L438">            hdlEntityName = renaming.checkName(hdlEntityName);</span>
+
+<span class="fc" id="L440">            checkUnique(getPorts());</span>
+<span class="fc" id="L441">            checkUnique(listOfNets);</span>
+<span class="nc" id="L442">        } catch (HDLException e) {</span>
+<span class="nc" id="L443">            e.setOrigin(origin);</span>
+<span class="nc" id="L444">            throw e;</span>
+<span class="fc" id="L445">        }</span>
+<span class="fc" id="L446">    }</span>
+
+    private void checkUnique(Collection&lt;? extends HasName&gt; names) throws HDLException {
+<span class="fc" id="L449">        HashSet&lt;String&gt; set = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        for (HasName hn : names) {</span>
+<span class="fc" id="L451">            String name = hn.getName();</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">            if (set.contains(name))</span>
+<span class="nc" id="L453">                throw new HDLException(Lang.get(&quot;err_namesAreNotUnique_N&quot;, name));</span>
+            else
+<span class="fc" id="L455">                set.add(name);</span>
+<span class="fc" id="L456">        }</span>
+<span class="fc" id="L457">    }</span>
+
+    /**
+     * The entity name which should be used in the target language.
+     *
+     * @return the name
+     */
+    public String getHdlEntityName() {
+<span class="fc" id="L465">        return hdlEntityName;</span>
+    }
+
+    /**
+     * @return the description of this circuit
+     */
+    public String getDescription() {
+<span class="fc" id="L472">        return description;</span>
+    }
+
+    /**
+     * @return true if the circuit has a description
+     */
+    public boolean hasDescription() {
+<span class="pc bpc" id="L479" title="1 of 4 branches missed.">        return description != null &amp;&amp; description.trim().length() &gt; 0;</span>
+    }
+
+    /**
+     * @return true if HDL export should be skipped for this circuit
+     */
+    public boolean shouldSkipHDLExport() {
+<span class="fc" id="L486">        return this.skipHDL;</span>
+    }
+
+    /**
+     * Integrates a clock node.
+     *
+     * @param clock     the clock port
+     * @param clockNode the new clock node
+     * @throws HDLException HDLException
+     */
+    public void integrateClockNode(HDLPort clock, HDLNodeBuildIn clockNode) throws HDLException {
+<span class="fc" id="L497">        HDLNet outNet = clock.getNet();</span>
+<span class="fc" id="L498">        HDLNet inNet = new HDLNet(null);</span>
+
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">        if (outNet == null)</span>
+<span class="nc" id="L501">            throw new HDLException(Lang.get(&quot;err_clockIsNotUsed&quot;));</span>
+
+<span class="fc" id="L503">        outNet.resetOutput();</span>
+<span class="fc" id="L504">        clock.setNet(inNet);</span>
+<span class="fc" id="L505">        listOfNets.add(inNet);</span>
+
+<span class="fc" id="L507">        clockNode</span>
+<span class="fc" id="L508">                .addPort(new HDLPort(&quot;cout&quot;, outNet, HDLPort.Direction.OUT, 1))</span>
+<span class="fc" id="L509">                .addPort(new HDLPort(&quot;cin&quot;, inNet, HDLPort.Direction.IN, 1));</span>
+
+<span class="fc" id="L511">        clockNode.createExpressions();</span>
+
+<span class="fc" id="L513">        nodes.add(clockNode);</span>
+<span class="fc" id="L514">    }</span>
+
+    /**
+     * @return the list of nodes
+     */
+    public ArrayList&lt;HDLNode&gt; getNodes() {
+<span class="fc" id="L520">        return nodes;</span>
+    }
+
+    /**
+     * Applies the given optimization to this circuit
+     *
+     * @param optimization the optimization
+     * @return this for chained calls
+     * @throws HDLException HDLException
+     */
+    public HDLCircuit apply(Optimization optimization) throws HDLException {
+        try {
+<span class="fc" id="L532">            optimization.optimize(this);</span>
+<span class="nc" id="L533">        } catch (HDLException e) {</span>
+<span class="nc" id="L534">            e.setOrigin(origin);</span>
+<span class="nc" id="L535">            throw e;</span>
+<span class="fc" id="L536">        }</span>
+<span class="fc" id="L537">        return this;</span>
+    }
+
+    /**
+     * Applies the default optimizations to the model.
+     * Should be sufficient for VHDL and Verilog.
+     *
+     * @return this for chained calls
+     * @throws HDLException HDLException
+     */
+    public HDLCircuit applyDefaultOptimizations() throws HDLException {
+<span class="fc" id="L548">        apply(new ReplaceOneToMany());</span>
+<span class="fc" id="L549">        apply(new MergeAssignments());</span>
+<span class="fc" id="L550">        apply(new OptimizeExpressions(new ExprNot.OptimizeNotNot()));</span>
+<span class="fc" id="L551">        apply(new InlineManyToOne());</span>
+<span class="fc" id="L552">        apply(new RemoveConstantSignals());</span>
+<span class="fc" id="L553">        apply(new MergeConstants());  // under certain circumstances there are still constants</span>
+<span class="fc" id="L554">        apply(new NameConstantSignals());</span>
+<span class="fc" id="L555">        apply(new NodeSorterExpressionBased());</span>
+<span class="fc" id="L556">        return nameUnnamedSignals();</span>
+    }
+
+    /**
+     * Called to replace a net by an expression
+     *
+     * @param net        the net to replace
+     * @param expression the expression to use instead
+     */
+    public void replaceNetByExpression(HDLNet net, Expression expression) {
+<span class="fc bfc" id="L566" title="All 2 branches covered.">        for (HDLNode n : nodes)</span>
+<span class="fc" id="L567">            n.replaceNetByExpression(net, expression);</span>
+<span class="fc" id="L568">    }</span>
+
+    /**
+     * @return the origin of this HDLCircuit
+     */
+    public File getOrigin() {
+<span class="nc" id="L574">        return origin;</span>
+    }
+
+    /**
+     * @return the depth of this circuit in the circuits hierarchy
+     */
+    public int getDepth() {
+<span class="fc" id="L581">        return depth;</span>
+    }
+
+    /**
+     * The net naming algorithm
+     */
+    public interface NetNaming {
+        /**
+         * Returns a name for the given net
+         *
+         * @param n the net to name
+         * @return the name to use
+         */
+        String createName(HDLNet n);
+    }
+
+    private final class DefaultNetNaming implements NetNaming {
+        private final HashSet&lt;String&gt; map;
+<span class="fc" id="L599">        private int num = 0;</span>
+
+<span class="fc" id="L601">        private DefaultNetNaming() {</span>
+<span class="fc" id="L602">            this.map = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L603" title="All 2 branches covered.">            for (HDLPort p : inputs)</span>
+<span class="fc" id="L604">                map.add(p.getName().toLowerCase());</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">            for (HDLPort p : outputs)</span>
+<span class="fc" id="L606">                map.add(p.getName().toLowerCase());</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">            for (HDLNet n : listOfNets)</span>
+<span class="fc bfc" id="L608" title="All 2 branches covered.">                if (n.getName() != null)</span>
+<span class="fc" id="L609">                    map.add(n.getName().toLowerCase());</span>
+<span class="fc" id="L610">        }</span>
+
+        @Override
+        public String createName(HDLNet n) {
+            String name;
+            do {
+<span class="fc" id="L616">                name = &quot;s&quot; + (num++);</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">            } while (isDuplicate(name));</span>
+<span class="fc" id="L618">            return name;</span>
+        }
+
+        private boolean isDuplicate(String name) {
+<span class="fc" id="L622">            return map.contains(name.toLowerCase());</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

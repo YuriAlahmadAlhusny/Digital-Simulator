@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VerilogTestBenchCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.verilog2</a> &gt; <span class="el_source">VerilogTestBenchCreator.java</span></div><h1>VerilogTestBenchCreator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Ivan Deras
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.verilog2;
+
+import de.neemann.digital.data.Value;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.hdl.model2.HDLCircuit;
+import de.neemann.digital.hdl.model2.HDLException;
+import de.neemann.digital.hdl.model2.HDLModel;
+import de.neemann.digital.hdl.model2.HDLPort;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.hdl.printer.CodePrinterStr;
+import de.neemann.digital.hdl.vhdl2.Separator;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.TestCaseDescription;
+import de.neemann.digital.testing.TestingDataException;
+import de.neemann.digital.testing.parser.Context;
+import de.neemann.digital.testing.parser.LineListener;
+import de.neemann.digital.testing.parser.ParserException;
+import de.neemann.digital.testing.parser.TestRow;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Creates a test bench for a model.
+ * The needed test date is taken from the test cases in the circuit
+ */
+public class VerilogTestBenchCreator {
+    private final List&lt;Circuit.TestCase&gt; testCases;
+    private final HDLCircuit main;
+    private final String topModuleName;
+    private final HDLModel.Renaming renaming;
+    private final ArrayList&lt;File&gt; testFileWritten;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit       the circuit
+     * @param model         the model
+     * @param topModuleName the name of the module under test
+     */
+<span class="fc" id="L50">    public VerilogTestBenchCreator(Circuit circuit, HDLModel model, String topModuleName) {</span>
+<span class="fc" id="L51">        this.main = model.getMain();</span>
+<span class="fc" id="L52">        this.topModuleName = topModuleName;</span>
+<span class="fc" id="L53">        testCases = circuit.getTestCases();</span>
+<span class="fc" id="L54">        testFileWritten = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L55">        renaming = model.getRenaming();</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Writes the test benches
+     *
+     * @param file the original verilog file
+     * @return this for chained calls
+     * @throws IOException  IOException
+     * @throws HDLException HDLException
+     */
+    public VerilogTestBenchCreator write(File file) throws IOException, HDLException {
+<span class="fc" id="L67">        String filename = file.getName();</span>
+<span class="fc" id="L68">        int p = filename.indexOf('.');</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (p &gt; 0)</span>
+<span class="fc" id="L70">            filename = filename.substring(0, p);</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (Circuit.TestCase tc : testCases) {</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (tc.hasGenericCode())</span>
+<span class="nc" id="L74">                throw new HDLException(Lang.get(&quot;err_hdlTestCaseHasGenericCode&quot;));</span>
+
+<span class="fc" id="L76">            String testName = tc.getLabel();</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">            if (testName.length() &gt; 0)</span>
+<span class="nc" id="L78">                testName = filename + &quot;_&quot; + testName + &quot;_tb&quot;;</span>
+            else
+<span class="fc" id="L80">                testName = filename + &quot;_tb&quot;;</span>
+
+            //testName = HDLPort.getHDLName(testName);
+
+<span class="fc" id="L84">            File f = new File(file.getParentFile(), testName + &quot;.v&quot;);</span>
+<span class="fc" id="L85">            testFileWritten.add(f);</span>
+<span class="fc" id="L86">            try (CodePrinter out = new CodePrinter(f)) {</span>
+                try {
+<span class="fc" id="L88">                    writeTestBench(out, topModuleName, testName, tc);</span>
+<span class="nc" id="L89">                } catch (RuntimeException e) {</span>
+<span class="nc" id="L90">                    throw new HDLException(Lang.get(&quot;err_vhdlErrorWritingTestBench&quot;), e);</span>
+<span class="nc" id="L91">                } catch (TestingDataException | ParserException ex) {</span>
+<span class="nc" id="L92">                    Logger.getLogger(VerilogTestBenchCreator.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L93">                }</span>
+            }
+<span class="fc" id="L95">        }</span>
+
+<span class="fc" id="L97">        return this;</span>
+    }
+
+    /**
+     * @return returns the files which are written
+     */
+    public ArrayList&lt;File&gt; getTestFileWritten() {
+<span class="fc" id="L104">        return testFileWritten;</span>
+    }
+
+    private void writeTestBench(CodePrinter out, String moduleName, String testName, Circuit.TestCase tc) throws IOException, HDLException, TestingDataException, ParserException {
+<span class="fc" id="L108">        out.print(&quot;//  A testbench for &quot;).println(testName);</span>
+<span class="fc" id="L109">        out.println(&quot;`timescale 1us/1ns&quot;).println();</span>
+<span class="fc" id="L110">        out.print(&quot;module &quot;).print(testName).println(&quot;;&quot;);</span>
+
+        // Write local port declaration
+<span class="fc" id="L113">        out.inc();</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (HDLPort p : main.getPorts()) {</span>
+<span class="fc" id="L116">            out.print(&quot;  &quot;).print(getSignalDeclarationCode(p)).println(&quot;;&quot;);</span>
+<span class="fc" id="L117">        }</span>
+
+<span class="fc" id="L119">        out.println();</span>
+<span class="fc" id="L120">        out.print(moduleName).print(&quot; &quot;).print(moduleName).print(&quot;0 (&quot;).println();</span>
+<span class="fc" id="L121">        out.inc();</span>
+
+<span class="fc" id="L123">        Separator comma = new Separator(out, &quot;,\n&quot;);</span>
+
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (HDLPort p : main.getPorts()) {</span>
+<span class="fc" id="L126">            comma.check();</span>
+<span class="fc" id="L127">            out.print(&quot;.&quot;).print(p.getName()).print(&quot;(&quot;).print(p.getName()).print(&quot;)&quot;);</span>
+<span class="fc" id="L128">        }</span>
+<span class="fc" id="L129">        out.dec().println().print(&quot;);&quot;).println().println();</span>
+
+<span class="fc" id="L131">        TestCaseDescription testdata = tc.getTestCaseDescription();</span>
+
+<span class="fc" id="L133">        ArrayList&lt;HDLPort&gt; dataOrder = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L134">        ArrayList&lt;HDLPort&gt; inputsInOrder = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L135">        ArrayList&lt;HDLPort&gt; outputsInOrder = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (String name : testdata.getNames()) {</span>
+<span class="fc" id="L137">            String saveName = renaming.checkName(name);</span>
+<span class="fc" id="L138">            boolean found = false;</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            for (HDLPort p : main.getPorts()) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                if (p.getName().equals(saveName)) {</span>
+<span class="fc" id="L141">                    dataOrder.add(p);</span>
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                    if (p.getDirection() == HDLPort.Direction.OUT) {</span>
+<span class="fc" id="L144">                        inputsInOrder.add(p);</span>
+                    } else {
+<span class="fc" id="L146">                        outputsInOrder.add(p);</span>
+                    }
+
+<span class="fc" id="L149">                    found = true;</span>
+<span class="fc" id="L150">                    break;</span>
+                }
+<span class="fc" id="L152">            }</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            if (!found)</span>
+<span class="nc" id="L154">                throw new TestingDataException(Lang.get(&quot;err_testSignal_N_notFound&quot;, name));</span>
+<span class="fc" id="L155">        }</span>
+
+<span class="fc" id="L157">        int rowBits = 0;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (HDLPort p : dataOrder) {</span>
+<span class="fc" id="L159">            rowBits += p.getBits();</span>
+<span class="fc" id="L160">        }</span>
+
+<span class="fc" id="L162">        CodePrinterStr outTmp = new CodePrinterStr();</span>
+
+<span class="fc" id="L164">        outTmp.inc();</span>
+<span class="fc" id="L165">        LineListener parent = new LineListenerVerilog(outTmp, dataOrder, rowBits);</span>
+<span class="fc" id="L166">        testdata.getLines().emitLines(parent, new Context());</span>
+<span class="fc" id="L167">        int lineCount = ((LineListenerVerilog) parent).getLineCount();</span>
+
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        String patternRange1 = rowBits == 1 ? &quot;&quot; : String.format(&quot;[%d:0] &quot;, rowBits - 1);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        String patternRange2 = lineCount == 1 ? &quot;&quot; : String.format(&quot;[0:%d]&quot;, lineCount - 1);</span>
+
+<span class="fc" id="L172">        out.inc();</span>
+<span class="fc" id="L173">        out.print(&quot;reg &quot;).print(patternRange1).print(&quot;patterns&quot;).print(patternRange2).println(&quot;;&quot;);</span>
+
+<span class="fc" id="L175">        String loopVar = &quot;i&quot;;</span>
+<span class="fc" id="L176">        int lv = 0;</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        while (loopVarExists(loopVar, main.getPorts()))</span>
+<span class="nc" id="L178">            loopVar = &quot;i&quot; + (lv++);</span>
+
+<span class="fc" id="L180">        out.print(&quot;integer &quot;).print(loopVar).println(&quot;;&quot;);</span>
+
+<span class="fc" id="L182">        out.println().println(&quot;initial begin&quot;);</span>
+<span class="fc" id="L183">        out.println(outTmp.toString());</span>
+
+<span class="fc" id="L185">        out.inc();</span>
+<span class="fc" id="L186">        out.print(String.format(&quot;for (%1$s = 0; %1$s &lt; %2$d; %1$s = %1$s + 1)\n&quot;, loopVar, lineCount));</span>
+<span class="fc" id="L187">        out.println(&quot;begin&quot;).inc();</span>
+
+<span class="fc" id="L189">        int rangeStart = rowBits - 1;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (HDLPort p : inputsInOrder) {</span>
+<span class="fc" id="L191">            int rangeEnd = rangeStart - p.getBits() + 1;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            String rangeStr = (rangeStart != rangeEnd) ? (&quot;[&quot; + rangeStart + &quot;:&quot; + rangeEnd + &quot;]&quot;) : (&quot;[&quot; + rangeStart + &quot;]&quot;);</span>
+
+<span class="fc" id="L194">            out.print(p.getName()).print(&quot; = patterns[&quot;).print(loopVar).print(&quot;]&quot;).print(rangeStr).println(&quot;;&quot;);</span>
+<span class="fc" id="L195">            rangeStart -= p.getBits();</span>
+<span class="fc" id="L196">        }</span>
+<span class="fc" id="L197">        out.println(&quot;#10;&quot;);</span>
+
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (HDLPort p : outputsInOrder) {</span>
+<span class="fc" id="L200">            String dontCareValue = (p.getBits()) + &quot;'hx&quot;;</span>
+<span class="fc" id="L201">            int rangeEnd = rangeStart - p.getBits() + 1;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">            String rangeStr = (rangeStart != rangeEnd) ? (&quot;[&quot; + rangeStart + &quot;:&quot; + rangeEnd + &quot;]&quot;) : (&quot;[&quot; + rangeStart + &quot;]&quot;);</span>
+
+<span class="fc" id="L204">            out.print(&quot;if (patterns[&quot;).print(loopVar).print(&quot;]&quot;).print(rangeStr).print(&quot; !== &quot;).print(dontCareValue).println(&quot;)&quot;)</span>
+<span class="fc" id="L205">                    .println(&quot;begin&quot;);</span>
+<span class="fc" id="L206">            out.inc();</span>
+<span class="fc" id="L207">            out.print(&quot;if (&quot;).print(p.getName()).print(&quot; !== patterns[&quot;).print(loopVar).print(&quot;]&quot;).print(rangeStr).println(&quot;)&quot;)</span>
+<span class="fc" id="L208">                    .println(&quot;begin&quot;);</span>
+<span class="fc" id="L209">            out.inc();</span>
+<span class="fc" id="L210">            out.print(&quot;$display(\&quot;%d:&quot;)</span>
+<span class="fc" id="L211">                    .print(p.getName()).print(&quot;: (assertion error). Expected %h, found %h\&quot;, &quot;)</span>
+<span class="fc" id="L212">                    .print(loopVar).print(&quot;, &quot;).print(&quot;patterns[&quot;).print(loopVar).print(&quot;]&quot;).print(rangeStr).print(&quot;, &quot;)</span>
+<span class="fc" id="L213">                    .print(p.getName()).print(&quot;);&quot;)</span>
+<span class="fc" id="L214">                    .println();</span>
+<span class="fc" id="L215">            out.println(&quot;$finish;&quot;);</span>
+<span class="fc" id="L216">            out.dec().println(&quot;end&quot;);</span>
+<span class="fc" id="L217">            out.dec().println(&quot;end&quot;);</span>
+
+<span class="fc" id="L219">            rangeStart -= p.getBits();</span>
+<span class="fc" id="L220">        }</span>
+<span class="fc" id="L221">        out.dec();</span>
+<span class="fc" id="L222">        out.println(&quot;end&quot;);</span>
+
+<span class="fc" id="L224">        out.println().println(&quot;$display(\&quot;All tests passed.\&quot;);&quot;);</span>
+
+<span class="fc" id="L226">        out.dec().println(&quot;end&quot;);</span>
+<span class="fc" id="L227">        out.println(&quot;endmodule&quot;);</span>
+<span class="fc" id="L228">    }</span>
+
+    private boolean loopVarExists(String loopVar, ArrayList&lt;HDLPort&gt; ports) {
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (HDLPort p : ports)</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">            if (p.getName().equals(loopVar))</span>
+<span class="nc" id="L233">                return true;</span>
+<span class="fc" id="L234">        return false;</span>
+    }
+
+    private String getSignalDeclarationCode(HDLPort p) throws HDLException {
+        String declCode;
+
+<span class="pc bpc" id="L240" title="1 of 3 branches missed.">        switch (p.getDirection()) {</span>
+            case IN:
+<span class="fc" id="L242">                declCode = &quot;wire &quot;;</span>
+<span class="fc" id="L243">                break;</span>
+            case OUT:
+<span class="fc" id="L245">                declCode = &quot;reg &quot;;</span>
+<span class="fc" id="L246">                break;</span>
+            default:
+<span class="nc" id="L248">                declCode = &quot;/* Invalid port */&quot;;</span>
+        }
+
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (p.getBits() &gt; 1)</span>
+<span class="fc" id="L252">            declCode += &quot;[&quot; + Integer.toString(p.getBits() - 1) + &quot;:0] &quot;;</span>
+
+<span class="fc" id="L254">        declCode += p.getName();</span>
+
+<span class="fc" id="L256">        return declCode;</span>
+    }
+
+    private static final class LineListenerVerilog implements LineListener {
+        private final CodePrinter out;
+        private final ArrayList&lt;HDLPort&gt; dataOrder;
+        private final int rowBits;
+        private int rowIndex;
+
+<span class="fc" id="L265">        private LineListenerVerilog(CodePrinter out, ArrayList&lt;HDLPort&gt; dataOrder, int rowBits) {</span>
+<span class="fc" id="L266">            this.out = out;</span>
+<span class="fc" id="L267">            this.dataOrder = dataOrder;</span>
+<span class="fc" id="L268">            this.rowBits = rowBits;</span>
+<span class="fc" id="L269">            rowIndex = 0;</span>
+<span class="fc" id="L270">        }</span>
+
+        @Override
+        public void add(TestRow row) {
+            try {
+<span class="fc" id="L275">                boolean containsClock = false;</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                for (Value v : row.getValues())</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">                    if (v.getType() == Value.Type.CLOCK)</span>
+<span class="fc" id="L278">                        containsClock = true;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (containsClock) {</span>
+<span class="fc" id="L280">                    writeValues(row.getValues(), true, 0);</span>
+<span class="fc" id="L281">                    writeValues(row.getValues(), true, 1);</span>
+                }
+<span class="fc" id="L283">                writeValues(row.getValues(), false, 0);</span>
+<span class="nc" id="L284">            } catch (IOException | HDLException e) {</span>
+<span class="nc" id="L285">                throw new RuntimeException(e);</span>
+<span class="fc" id="L286">            }</span>
+<span class="fc" id="L287">        }</span>
+
+        /**
+         * Returns the number of lines emitted
+         *
+         * @return the number of lines
+         */
+        public int getLineCount() {
+<span class="fc" id="L295">            return rowIndex;</span>
+        }
+
+        private void writeValues(Value[] values, boolean isClock, int clock) throws IOException, HDLException {
+<span class="fc" id="L299">            out.print(&quot;patterns[&quot;).print(rowIndex).print(&quot;] = &quot;).print(rowBits).print(&quot;'b&quot;);</span>
+
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (int i = 0; i &lt; values.length; i++) {</span>
+<span class="fc" id="L302">                HDLPort p = dataOrder.get(i);</span>
+
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                if (p.getDirection() == HDLPort.Direction.OUT) {</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">                    if (values[i].getType() == Value.Type.CLOCK) {</span>
+<span class="fc" id="L306">                        out.print(clock);</span>
+                    } else {
+<span class="fc" id="L308">                        out.print(toBinaryString(values[i], p.getBits()));</span>
+                    }
+<span class="fc" id="L310">                    out.print(&quot;_&quot;);</span>
+                }
+            }
+
+<span class="fc" id="L314">            Separator sep = new Separator(out, &quot;_&quot;);</span>
+
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            for (int i = 0; i &lt; values.length; i++) {</span>
+<span class="fc" id="L317">                HDLPort p = dataOrder.get(i);</span>
+
+<span class="fc bfc" id="L319" title="All 2 branches covered.">                if (p.getDirection() == HDLPort.Direction.IN) {</span>
+<span class="fc" id="L320">                    sep.check();</span>
+
+<span class="fc bfc" id="L322" title="All 2 branches covered.">                    if (isClock) {</span>
+<span class="fc" id="L323">                        out.print(toBinaryString(0, Value.Type.DONTCARE, p.getBits()));</span>
+                    } else {
+<span class="fc" id="L325">                        out.print(toBinaryString(values[i], p.getBits()));</span>
+                    }
+                }
+            }
+
+<span class="fc" id="L330">            out.println(&quot;;&quot;);</span>
+
+<span class="fc" id="L332">            rowIndex++;</span>
+<span class="fc" id="L333">        }</span>
+
+        private String toBinaryString(Value v, int bits) {
+<span class="fc" id="L336">            return toBinaryString(v.getValue(), v.getType(), bits);</span>
+        }
+
+        private String toBinaryString(long val, Value.Type type, int bits) {
+<span class="fc" id="L340">            String binStr = &quot;&quot;;</span>
+<span class="fc" id="L341">            char fillCh = '0';</span>
+
+<span class="pc bpc" id="L343" title="1 of 3 branches missed.">            switch (type) {</span>
+                case DONTCARE:
+<span class="fc" id="L345">                    fillCh = 'x';</span>
+<span class="fc" id="L346">                    break;</span>
+                case HIGHZ:
+<span class="nc" id="L348">                    fillCh = 'z';</span>
+<span class="nc" id="L349">                    break;</span>
+                default:
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">                    long mask = (bits &lt; 64) ? ((1L &lt;&lt; bits) - 1) : 0xffffffffffffffffL;</span>
+<span class="fc" id="L352">                    binStr = Long.toBinaryString(val &amp; mask);</span>
+            }
+
+<span class="fc" id="L355">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">            if (binStr.length() &lt; bits) {</span>
+<span class="fc" id="L357">                int diff = bits - binStr.length();</span>
+
+<span class="fc bfc" id="L359" title="All 2 branches covered.">                for (int i = 0; i &lt; diff; i++) {</span>
+<span class="fc" id="L360">                    sb.append(fillCh);</span>
+                }
+            }
+<span class="fc" id="L363">            sb.append(binStr);</span>
+
+<span class="fc" id="L365">            return sb.toString();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

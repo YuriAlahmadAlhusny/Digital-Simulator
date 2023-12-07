@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Configuration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.toolchain</a> &gt; <span class="el_source">Configuration.java</span></div><h1>Configuration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.toolchain;
+
+import com.thoughtworks.xstream.XStream;
+import de.neemann.digital.XStreamValid;
+import de.neemann.digital.builder.tt2.OSExecute;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.core.wiring.Clock;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.PinException;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.library.ElementNotFoundException;
+import de.neemann.digital.draw.model.ModelCreator;
+import de.neemann.digital.gui.SaveAsHelper;
+import de.neemann.digital.gui.StatusInterface;
+import de.neemann.digital.hdl.hgs.*;
+import de.neemann.digital.hdl.model2.HDLCircuit;
+import de.neemann.digital.hdl.model2.HDLModel;
+import de.neemann.digital.hdl.model2.HDLPort;
+import de.neemann.digital.hdl.model2.clock.ClockIntegratorGeneric;
+import de.neemann.digital.hdl.printer.CodePrinter;
+import de.neemann.digital.hdl.verilog2.VerilogGenerator;
+import de.neemann.digital.hdl.vhdl2.VHDLGenerator;
+import de.neemann.digital.lang.Lang;
+import de.neemann.gui.ErrorMessage;
+import de.neemann.gui.language.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Used to create the IDE integration
+ */
+public final class Configuration {
+<span class="fc" id="L47">    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);</span>
+    static final String LOOK_AT_ALIAS = &quot;lookAt&quot;;
+    static final String REF_ALIAS = &quot;ref&quot;;
+
+    /**
+     * Loads a configuration
+     *
+     * @param file the file to load
+     * @return the configuration
+     * @throws IOException IOException
+     */
+    public static Configuration load(File file) throws IOException {
+<span class="fc" id="L59">        final Configuration configuration = load(new FileInputStream(file));</span>
+<span class="fc" id="L60">        configuration.origin = file;</span>
+<span class="fc" id="L61">        return configuration;</span>
+    }
+
+    /**
+     * Loads a configuration
+     *
+     * @param in the file to load
+     * @return the configuration
+     * @throws IOException IOException
+     */
+    public static Configuration load(InputStream in) throws IOException {
+        try {
+<span class="fc" id="L73">            XStream xStream = getxStream();</span>
+<span class="fc" id="L74">            return (Configuration) xStream.fromXML(in);</span>
+<span class="nc" id="L75">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L76">            throw new IOException(&quot;error reading XML&quot;, e);</span>
+        }
+    }
+
+    private static XStream getxStream() {
+<span class="fc" id="L81">        final XStream xStream = new XStreamValid();</span>
+<span class="fc" id="L82">        xStream.alias(&quot;toolchain&quot;, Configuration.class);</span>
+<span class="fc" id="L83">        xStream.aliasAttribute(Configuration.class, &quot;name&quot;, &quot;name&quot;);</span>
+<span class="fc" id="L84">        xStream.aliasAttribute(Configuration.class, &quot;frequency&quot;, &quot;frequency&quot;);</span>
+<span class="fc" id="L85">        xStream.aliasAttribute(Configuration.class, &quot;clockGenerator&quot;, &quot;clockGenerator&quot;);</span>
+<span class="fc" id="L86">        xStream.aliasAttribute(Configuration.class, &quot;params&quot;, &quot;params&quot;);</span>
+<span class="fc" id="L87">        xStream.registerConverter(new Resources.MapEntryConverter(&quot;param&quot;));</span>
+<span class="fc" id="L88">        xStream.alias(&quot;command&quot;, Command.class);</span>
+<span class="fc" id="L89">        xStream.aliasAttribute(Command.class, &quot;name&quot;, &quot;name&quot;);</span>
+<span class="fc" id="L90">        xStream.aliasAttribute(Command.class, &quot;requires&quot;, &quot;requires&quot;);</span>
+<span class="fc" id="L91">        xStream.aliasAttribute(Command.class, &quot;filter&quot;, &quot;filter&quot;);</span>
+<span class="fc" id="L92">        xStream.aliasAttribute(Command.class, &quot;timeout&quot;, &quot;timeout&quot;);</span>
+<span class="fc" id="L93">        xStream.addImplicitCollection(Command.class, &quot;args&quot;, &quot;arg&quot;, String.class);</span>
+<span class="fc" id="L94">        xStream.alias(&quot;file&quot;, FileToCreate.class);</span>
+<span class="fc" id="L95">        xStream.aliasAttribute(FileToCreate.class, &quot;name&quot;, &quot;name&quot;);</span>
+<span class="fc" id="L96">        xStream.aliasAttribute(FileToCreate.class, &quot;overwrite&quot;, &quot;overwrite&quot;);</span>
+<span class="fc" id="L97">        xStream.aliasAttribute(FileToCreate.class, &quot;filter&quot;, &quot;filter&quot;);</span>
+<span class="fc" id="L98">        xStream.aliasAttribute(FileToCreate.class, &quot;id&quot;, &quot;id&quot;);</span>
+<span class="fc" id="L99">        xStream.aliasAttribute(FileToCreate.class, &quot;referenceFilename&quot;, LOOK_AT_ALIAS);</span>
+<span class="fc" id="L100">        xStream.aliasAttribute(FileToCreate.class, &quot;referenceId&quot;, REF_ALIAS);</span>
+<span class="fc" id="L101">        return xStream;</span>
+    }
+
+    private String name;
+    private int frequency;
+    private String clockGenerator;
+    private ArrayList&lt;Command&gt; commands;
+    private ArrayList&lt;FileToCreate&gt; files;
+    private Map&lt;String, String&gt; params;
+    private transient FilenameProvider filenameProvider;
+    private transient CircuitProvider circuitProvider;
+    private transient LibraryProvider libraryProvider;
+    private transient IOInterface ioInterface;
+    private transient File origin;
+
+
+<span class="nc" id="L117">    private Configuration() {</span>
+<span class="nc" id="L118">        files = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L119">        commands = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Sets the file name provider
+     *
+     * @param filenameProvider the file name provider
+     * @return this for chained calls
+     */
+    public Configuration setFilenameProvider(FilenameProvider filenameProvider) {
+<span class="fc" id="L129">        this.filenameProvider = filenameProvider;</span>
+<span class="fc" id="L130">        return this;</span>
+    }
+
+    /**
+     * Sets the circuit provider
+     *
+     * @param circuitProvider the circuit provider
+     * @return this for chained calls
+     */
+    public Configuration setCircuitProvider(CircuitProvider circuitProvider) {
+<span class="fc" id="L140">        this.circuitProvider = circuitProvider;</span>
+<span class="fc" id="L141">        return this;</span>
+    }
+
+    /**
+     * Sets the library provider
+     *
+     * @param libraryProvider the library provider
+     * @return this for chained calls
+     */
+    public Configuration setLibraryProvider(LibraryProvider libraryProvider) {
+<span class="fc" id="L151">        this.libraryProvider = libraryProvider;</span>
+<span class="fc" id="L152">        return this;</span>
+    }
+
+    Configuration setIoInterface(IOInterface ioInterface) {
+<span class="fc" id="L156">        this.ioInterface = ioInterface;</span>
+<span class="fc" id="L157">        return this;</span>
+    }
+
+    /**
+     * Creates a menu used to start the commands.
+     *
+     * @param statusInterface used to show the commands status.
+     * @return the menu
+     */
+    public JMenu createMenu(StatusInterface statusInterface) {
+<span class="nc" id="L167">        JMenu menu = new JMenu(name);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        for (Command c : commands)</span>
+<span class="nc" id="L169">            menu.add(new JMenuItem(new ExecuteAction(c, statusInterface)));</span>
+<span class="nc" id="L170">        return menu;</span>
+    }
+
+    private final class ExecuteAction extends AbstractAction {
+        private final Command command;
+        private final StatusInterface statusInterface;
+
+<span class="nc" id="L177">        private ExecuteAction(Command command, StatusInterface statusInterface) {</span>
+<span class="nc" id="L178">            super(command.getName());</span>
+<span class="nc" id="L179">            this.command = command;</span>
+<span class="nc" id="L180">            this.statusInterface = statusInterface;</span>
+<span class="nc" id="L181">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L185">            executeCommand(command, this, statusInterface);</span>
+<span class="nc" id="L186">        }</span>
+    }
+
+    private Context createContext(File fileToExecute, HDLModel hdlModel, Command command) throws HGSEvalException {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        final Context context = new Context(hdlModel == null ? null : hdlModel.getRoot())</span>
+<span class="fc" id="L191">                .declareVar(&quot;path&quot;, fileToExecute.getPath())</span>
+<span class="fc" id="L192">                .declareVar(&quot;dir&quot;, fileToExecute.getParentFile())</span>
+<span class="fc" id="L193">                .declareVar(&quot;name&quot;, fileToExecute.getName())</span>
+<span class="fc" id="L194">                .declareVar(&quot;shortname&quot;, createShortname(fileToExecute.getName()));</span>
+
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        if (params != null)</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            for (Map.Entry&lt;String, String&gt; e : params.entrySet())</span>
+<span class="fc" id="L198">                context.declareVar(e.getKey(), toHGLValue(e.getValue()));</span>
+
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (command.needsHDL()) {</span>
+<span class="fc" id="L201">            context.declareVar(&quot;hdl&quot;, command.getHDL());</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">            if (command.getHDL().equals(&quot;vhdl&quot;))</span>
+<span class="fc" id="L203">                context.declareVar(&quot;extension&quot;, &quot;.vhdl&quot;);</span>
+            else
+<span class="fc" id="L205">                context.declareVar(&quot;extension&quot;, &quot;.v&quot;);</span>
+        }
+
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (clockGenerator != null)</span>
+<span class="fc" id="L209">            context.declareVar(&quot;clockGenerator&quot;, clockGenerator);</span>
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (hdlModel != null)</span>
+<span class="fc" id="L212">            context.declareVar(&quot;model&quot;, new ModelAccess(hdlModel.getMain()));</span>
+<span class="fc" id="L213">        return context;</span>
+    }
+
+    private Object toHGLValue(String value) {
+        try {
+<span class="nc" id="L218">            return Long.parseLong(value);</span>
+<span class="fc" id="L219">        } catch (NumberFormatException e1) {</span>
+            try {
+<span class="fc" id="L221">                return Double.parseDouble(value);</span>
+<span class="fc" id="L222">            } catch (NumberFormatException e2) {</span>
+<span class="fc" id="L223">                return value;</span>
+            }
+        }
+    }
+
+    private IOInterface getIoInterface() {
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (ioInterface == null)</span>
+<span class="nc" id="L230">            ioInterface = new DefaultIOInterface();</span>
+<span class="fc" id="L231">        return ioInterface;</span>
+    }
+
+    private String createShortname(String name) {
+<span class="fc" id="L235">        int p = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (p &gt;= 0)</span>
+<span class="fc" id="L237">            return name.substring(0, p);</span>
+<span class="nc" id="L238">        return name;</span>
+    }
+
+    private HDLModel writeHDL(String hdl, File digFile) throws IOException, HGSEvalException, ElementNotFoundException, PinException, NodeException {
+
+        // Creates the simulation model to ensure the circuit is error free.
+<span class="fc" id="L244">        new ModelCreator(circuitProvider.getCurrentCircuit(), libraryProvider.getCurrentLibrary())</span>
+<span class="fc" id="L245">                .createModel(false)</span>
+<span class="fc" id="L246">                .close();</span>
+
+<span class="fc" id="L248">        final int modelDefinedFrequency = getFrequency();</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        final boolean modelHasClock = modelDefinedFrequency &gt; 0;</span>
+<span class="pc bpc" id="L250" title="1 of 3 branches missed.">        switch (hdl) {</span>
+            case &quot;verilog&quot;:
+<span class="fc" id="L252">                File verilogFile = SaveAsHelper.checkSuffix(digFile, &quot;v&quot;);</span>
+<span class="fc" id="L253">                final CodePrinter verilogPrinter = new CodePrinter(getIoInterface().getOutputStream(verilogFile));</span>
+<span class="fc" id="L254">                try (VerilogGenerator vlog = new VerilogGenerator(libraryProvider.getCurrentLibrary(), verilogPrinter)) {</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">                    if (modelHasClock) {</span>
+<span class="pc bpc" id="L256" title="2 of 6 branches missed.">                        if ((this.frequency &gt; 1 || clockGenerator != null) &amp;&amp; modelDefinedFrequency &lt; Integer.MAX_VALUE)</span>
+<span class="fc" id="L257">                            vlog.setClockIntegrator(createClockIntegrator());</span>
+                    }
+<span class="fc" id="L259">                    vlog.export(circuitProvider.getCurrentCircuit());</span>
+<span class="fc" id="L260">                    return vlog.getModel();</span>
+                }
+            case &quot;vhdl&quot;:
+<span class="fc" id="L263">                File vhdlFile = SaveAsHelper.checkSuffix(digFile, &quot;vhdl&quot;);</span>
+<span class="fc" id="L264">                final CodePrinter vhdlPrinter = new CodePrinter(getIoInterface().getOutputStream(vhdlFile));</span>
+<span class="fc" id="L265">                try (VHDLGenerator vlog = new VHDLGenerator(libraryProvider.getCurrentLibrary(), vhdlPrinter)) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">                    if (modelHasClock) {</span>
+<span class="pc bpc" id="L267" title="3 of 6 branches missed.">                        if ((this.frequency &gt; 1 || clockGenerator != null) &amp;&amp; modelDefinedFrequency &lt; Integer.MAX_VALUE)</span>
+<span class="fc" id="L268">                            vlog.setClockIntegrator(createClockIntegrator());</span>
+                    }
+<span class="fc" id="L270">                    vlog.export(circuitProvider.getCurrentCircuit());</span>
+<span class="fc" id="L271">                    return vlog.getModel();</span>
+                }
+            default:
+<span class="nc" id="L274">                throw new IOException(Lang.get(&quot;err_hdlNotKnown_N&quot;, hdl));</span>
+        }
+    }
+
+    private ClockIntegratorGeneric createClockIntegrator() {
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        return new ClockIntegratorGeneric(frequency == 0 ? 0 : 1000000000.0 / frequency)</span>
+<span class="fc" id="L280">                .setClockGenerator(clockGenerator);</span>
+    }
+
+    /**
+     * Executes the given command
+     *
+     * @param command the command
+     */
+    Thread executeCommand(Command command, Action action, StatusInterface statusInterface) {
+<span class="fc" id="L289">        File digFile = filenameProvider.getCurrentFilename();</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (digFile != null) {</span>
+            try {
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">                if (statusInterface != null)</span>
+<span class="nc" id="L293">                    statusInterface.setStatus(Lang.get(&quot;msg_commandStarted_N&quot;, name + &quot; - &quot; + command.getName()));</span>
+                HDLModel hdlModel;
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">                if (command.needsHDL())</span>
+<span class="fc" id="L296">                    hdlModel = writeHDL(command.getHDL(), digFile);</span>
+                else
+<span class="nc" id="L298">                    hdlModel = null;</span>
+
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">                if (action != null)</span>
+<span class="nc" id="L301">                    action.setEnabled(false);</span>
+<span class="fc" id="L302">                Thread t = new Thread(() -&gt; {</span>
+                    try {
+<span class="fc" id="L304">                        checkFilesToCreate(digFile, hdlModel, command);</span>
+
+<span class="fc" id="L306">                        String[] args = command.getArgs();</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">                        if (args != null) {</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">                            if (command.isFilter()) {</span>
+<span class="fc" id="L309">                                final int argCount = command.getArgs().length;</span>
+<span class="fc" id="L310">                                Context context = createContext(digFile, hdlModel, command);</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                                for (int i = 0; i &lt; argCount; i++) {</span>
+<span class="fc" id="L312">                                    context.clearOutput();</span>
+<span class="fc" id="L313">                                    new Parser(args[i]).parse().execute(context);</span>
+<span class="fc" id="L314">                                    args[i] = context.toString();</span>
+                                }
+                            }
+<span class="fc" id="L317">                            getIoInterface().startProcess(command, digFile.getParentFile(), args);</span>
+                        }
+<span class="nc" id="L319">                    } catch (Exception e) {</span>
+<span class="nc" id="L320">                        SwingUtilities.invokeLater(() -&gt; getIoInterface().showError(command, e));</span>
+                    } finally {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">                        if (action != null)</span>
+<span class="nc" id="L323">                            SwingUtilities.invokeLater(() -&gt; action.setEnabled(true));</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">                        if (statusInterface != null)</span>
+<span class="nc" id="L325">                            statusInterface.setStatus(Lang.get(&quot;msg_commandEnded_N&quot;, name + &quot; - &quot; + command.getName()));</span>
+                    }
+<span class="fc" id="L327">                });</span>
+<span class="fc" id="L328">                t.setDaemon(true);</span>
+<span class="fc" id="L329">                t.start();</span>
+<span class="fc" id="L330">                return t;</span>
+<span class="nc" id="L331">            } catch (Exception e) {</span>
+<span class="nc" id="L332">                getIoInterface().showError(command, e);</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                if (statusInterface != null)</span>
+<span class="nc" id="L334">                    statusInterface.setStatus(Lang.get(&quot;msg_commandEnded_N&quot;, name + &quot; - &quot; + command.getName()));</span>
+            }
+        }
+<span class="nc" id="L337">        return null;</span>
+    }
+
+    private void checkFilesToCreate(File fileToExecute, HDLModel hdlModel, Command command) throws HGSEvalException, IOException, ParserException {
+<span class="fc" id="L341">        Context context = createContext(fileToExecute, hdlModel, command);</span>
+
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        final boolean modelHasClock = getFrequency() &gt; 0;</span>
+
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (files != null) {</span>
+<span class="fc" id="L346">            ConfigCache configCache = new ConfigCache(origin);</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">            for (FileToCreate f : files) {</span>
+<span class="fc" id="L348">                context.clearOutput();</span>
+<span class="fc" id="L349">                final String name = f.getName();</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">                if (name == null)</span>
+<span class="nc" id="L351">                    throw new IOException(&quot;no file name given!&quot;);</span>
+<span class="fc" id="L352">                Parser p = new Parser(name);</span>
+<span class="fc" id="L353">                p.parse().execute(context);</span>
+<span class="fc" id="L354">                File filename = new File(fileToExecute.getParent(), context.toString());</span>
+
+                // do not create clockGenerator hdl code if no clock is used in the circuit
+<span class="pc bpc" id="L357" title="1 of 4 branches missed.">                boolean skip = !modelHasClock</span>
+                        &amp;&amp; clockGenerator != null
+<span class="pc bnc" id="L359" title="All 2 branches missed.">                        &amp;&amp; removeSuffix(filename.getName()).equals(clockGenerator);</span>
+
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                if (!skip) {</span>
+<span class="pc bpc" id="L362" title="1 of 4 branches missed.">                    if (f.isOverwrite() || !filename.exists())</span>
+<span class="fc" id="L363">                        createFile(filename, resolveFileContent(f, configCache), context);</span>
+                }
+<span class="fc" id="L365">            }</span>
+        }
+<span class="fc" id="L367">    }</span>
+
+    private String removeSuffix(String name) {
+<span class="nc" id="L370">        int p = name.lastIndexOf('.');</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">        if (p &lt; 0)</span>
+<span class="nc" id="L372">            return name;</span>
+        else
+<span class="nc" id="L374">            return name.substring(0, p);</span>
+    }
+
+    private void createFile(File filename, FileToCreate f, Context context) throws IOException, HGSEvalException, ParserException {
+<span class="fc" id="L378">        LOGGER.info(&quot;create file &quot; + filename);</span>
+        Parser p;
+<span class="fc" id="L380">        String content = f.getContent();</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if (f.isFilter()) {</span>
+<span class="fc" id="L382">            context.clearOutput();</span>
+<span class="fc" id="L383">            p = new Parser(content);</span>
+<span class="fc" id="L384">            p.parse().execute(context);</span>
+<span class="fc" id="L385">            content = context.toString();</span>
+        }
+
+<span class="fc" id="L388">        try (OutputStream out = getIoInterface().getOutputStream(filename)) {</span>
+<span class="fc" id="L389">            out.write(content.getBytes());</span>
+        }
+<span class="fc" id="L391">    }</span>
+
+
+    private FileToCreate resolveFileContent(FileToCreate f, ConfigCache configCache) throws IOException {
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (f.hasContent())</span>
+<span class="fc" id="L396">            return f;</span>
+
+<span class="fc" id="L398">        Configuration c = configCache.getConfig(f.getReferenceFilename());</span>
+<span class="fc" id="L399">        return c.getFileById(f.getReferenceId(), configCache);</span>
+    }
+
+    FileToCreate getFileById(String referenceId, ConfigCache configCache) throws IOException {
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">        for (FileToCreate f : files)</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (referenceId.equals(f.getId()))</span>
+<span class="fc" id="L405">                return resolveFileContent(f, configCache);</span>
+<span class="nc" id="L406">        throw new IOException(&quot;no file with id &quot; + referenceId + &quot; given&quot;);</span>
+    }
+
+    ArrayList&lt;Command&gt; getCommands() {
+<span class="fc" id="L410">        return commands;</span>
+    }
+
+    private int getFrequency() throws HGSEvalException {
+<span class="fc" id="L414">        List&lt;VisualElement&gt; l = circuitProvider.getCurrentCircuit().getElements(v -&gt; v.equalsDescription(Clock.DESCRIPTION));</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        if (l.isEmpty())</span>
+<span class="fc" id="L416">            return 0;</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">        if (l.size() &gt; 1)</span>
+<span class="nc" id="L418">            throw new HGSEvalException(Lang.get(&quot;err_moreThanOneClockFound&quot;));</span>
+
+<span class="fc" id="L420">        return l.get(0).getElementAttributes().get(Keys.FREQUENCY);</span>
+    }
+
+    /**
+     * Interface used to provide a file.
+     */
+    public interface FilenameProvider {
+        /**
+         * @return the file which is to create
+         */
+        File getCurrentFilename();
+    }
+
+    /**
+     * Interface used to provide the circuit
+     */
+    public interface CircuitProvider {
+        /**
+         * @return the circuit which is to use
+         */
+        Circuit getCurrentCircuit();
+    }
+
+    /**
+     * Interface used to provide the library.
+     */
+    public interface LibraryProvider {
+        /**
+         * @return the library which currently used
+         */
+        ElementLibrary getCurrentLibrary();
+    }
+
+    /**
+     * Interface used to write a file
+     */
+    public interface IOInterface {
+
+        /**
+         * Creates an output stream
+         *
+         * @param filename the filename
+         * @return the output stream
+         * @throws IOException IOException
+         */
+        OutputStream getOutputStream(File filename) throws IOException;
+
+        /**
+         * Starts a process
+         *
+         * @param command the command started
+         * @param dir     the folder to start the process in
+         * @param args    the arguments
+         * @throws IOException IOException
+         */
+        void startProcess(Command command, File dir, String[] args) throws IOException;
+
+        /**
+         * Shows an error message
+         *
+         * @param command the command that failed
+         * @param e       the error
+         */
+        void showError(Command command, Exception e);
+    }
+
+    private static final class DefaultIOInterface implements IOInterface {
+
+        @Override
+        public OutputStream getOutputStream(File filename) throws IOException {
+<span class="nc" id="L490">            final File parentFile = filename.getParentFile();</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">            if (!parentFile.exists()) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">                if (!parentFile.mkdirs())</span>
+<span class="nc" id="L493">                    throw new IOException(&quot;could not create folder &quot; + parentFile);</span>
+            }
+<span class="nc" id="L495">            return new FileOutputStream(filename);</span>
+        }
+
+        @Override
+        public void startProcess(Command command, File dir, String[] args) throws IOException {
+<span class="nc" id="L500">            String consoleOut = new OSExecute(args)</span>
+<span class="nc" id="L501">                    .setTimeOutSec(command.getTimeout())</span>
+<span class="nc" id="L502">                    .setWorkingDir(dir)</span>
+<span class="nc" id="L503">                    .startAndWait();</span>
+<span class="nc" id="L504">            LOGGER.info(&quot;process '&quot; + command.getName() + &quot;' says:\n&quot; + consoleOut);</span>
+<span class="nc" id="L505">        }</span>
+
+        @Override
+        public void showError(Command command, Exception e) {
+<span class="nc" id="L509">            new ErrorMessage(Lang.get(&quot;msg_errorStartCommand_N&quot;, command.getName())).addCause(e).show();</span>
+<span class="nc" id="L510">        }</span>
+    }
+
+    private final class ModelAccess implements HGSMap {
+        private final HDLCircuit hdlCircuit;
+
+<span class="fc" id="L516">        private ModelAccess(HDLCircuit hdlCircuit) {</span>
+<span class="fc" id="L517">            this.hdlCircuit = hdlCircuit;</span>
+<span class="fc" id="L518">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) throws HGSEvalException {
+<span class="pc bpc" id="L522" title="1 of 3 branches missed.">            switch (key) {</span>
+                case &quot;ports&quot;:
+<span class="fc" id="L524">                    return new PortsArray(hdlCircuit.getPorts());</span>
+                case &quot;frequency&quot;:
+<span class="fc" id="L526">                    return getFrequency();</span>
+                default:
+<span class="nc" id="L528">                    throw new HGSEvalException(&quot;field &quot; + key + &quot; not found!&quot;);</span>
+            }
+        }
+    }
+
+    private static final class PortsArray implements HGSArray {
+        private final ArrayList&lt;HDLPort&gt; ports;
+
+<span class="fc" id="L536">        private PortsArray(ArrayList&lt;HDLPort&gt; ports) {</span>
+<span class="fc" id="L537">            this.ports = ports;</span>
+<span class="fc" id="L538">        }</span>
+
+        @Override
+        public int hgsArraySize() {
+<span class="fc" id="L542">            return ports.size();</span>
+        }
+
+        @Override
+        public Object hgsArrayGet(int i) {
+<span class="fc" id="L547">            return new Port(ports.get(i));</span>
+        }
+    }
+
+    private static final class Port implements HGSMap {
+        private final HDLPort hdlPort;
+
+<span class="fc" id="L554">        private Port(HDLPort hdlPort) {</span>
+<span class="fc" id="L555">            this.hdlPort = hdlPort;</span>
+<span class="fc" id="L556">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) throws HGSEvalException {
+<span class="pc bpc" id="L560" title="2 of 6 branches missed.">            switch (key) {</span>
+                case &quot;dir&quot;:
+<span class="nc" id="L562">                    return hdlPort.getDirection().name();</span>
+                case &quot;name&quot;:
+<span class="fc" id="L564">                    return hdlPort.getName();</span>
+                case &quot;bits&quot;:
+<span class="fc" id="L566">                    return hdlPort.getBits();</span>
+                case &quot;pin&quot;:
+<span class="fc" id="L568">                    return hdlPort.getPinNumber();</span>
+                case &quot;clock&quot;:
+<span class="fc" id="L570">                    return hdlPort.isClock();</span>
+                default:
+<span class="nc" id="L572">                    throw new HGSEvalException(&quot;field &quot; + key + &quot; not found!&quot;);</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KarnaughMapDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.karnaugh</a> &gt; <span class="el_source">KarnaughMapDialog.java</span></div><h1>KarnaughMapDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.karnaugh;
+
+import de.neemann.digital.analyse.TruthTable;
+import de.neemann.digital.analyse.expression.NamedExpression;
+import de.neemann.digital.analyse.quinemc.BoolTable;
+import de.neemann.digital.gui.components.table.ExpressionComponent;
+import de.neemann.digital.gui.components.table.ExpressionListenerStore;
+import de.neemann.digital.lang.Lang;
+
+import javax.swing.*;
+import javax.swing.event.ListDataListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.util.List;
+
+/**
+ * Dialog to show a KV map
+ */
+public class KarnaughMapDialog extends JDialog {
+
+    private final KarnaughMapComponent kvComponent;
+    private final JComboBox&lt;ExpressionListenerStore.Result&gt; combo;
+    private final JDialog parent;
+    private TruthTable table;
+    private List&lt;ExpressionListenerStore.Result&gt; results;
+
+    /**
+     * Creates a new instance
+     *
+     * @param parent   the parent dialog
+     * @param modifier the modifier which is used by the k-map to modify the table.
+     */
+    public KarnaughMapDialog(JDialog parent, KarnaughMapComponent.Modifier modifier) {
+<span class="nc" id="L39">        super(parent, Lang.get(&quot;win_karnaughMap&quot;), false);</span>
+<span class="nc" id="L40">        this.parent = parent;</span>
+<span class="nc" id="L41">        setDefaultCloseOperation(HIDE_ON_CLOSE);</span>
+<span class="nc" id="L42">        kvComponent = new KarnaughMapComponent(modifier);</span>
+<span class="nc" id="L43">        getContentPane().add(kvComponent);</span>
+
+<span class="nc" id="L45">        combo = new JComboBox&lt;&gt;();</span>
+<span class="nc" id="L46">        combo.setRenderer(new MyDefaultListCellRenderer());</span>
+<span class="nc" id="L47">        getContentPane().add(combo, BorderLayout.NORTH);</span>
+<span class="nc" id="L48">        combo.addActionListener(new AbstractAction() {</span>
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L51">                int i = combo.getSelectedIndex();</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">                if (i &gt;= 0) {</span>
+<span class="nc" id="L53">                    BoolTable boolTable = getResultTable(results.get(i).getName());</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                    if (boolTable != null)</span>
+<span class="nc" id="L55">                        kvComponent.setResult(table.getVars(), boolTable, results.get(i).getExpression());</span>
+                    else
+<span class="nc" id="L57">                        kvComponent.showNothing();</span>
+                }
+<span class="nc" id="L59">            }</span>
+        });
+
+<span class="nc" id="L62">        pack();</span>
+<span class="nc" id="L63">        setLocationRelativeTo(null);</span>
+<span class="nc" id="L64">    }</span>
+
+    private BoolTable getResultTable(String name) {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        for (int i = 0; i &lt; table.getResultCount(); i++)</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (table.getResultName(i).endsWith(name))</span>
+<span class="nc" id="L69">                return table.getResult(i);</span>
+<span class="nc" id="L70">        return null;</span>
+    }
+
+    /**
+     * Sets the available results
+     *
+     * @param table      the table
+     * @param newResults the result list
+     */
+    public void setResult(TruthTable table, List&lt;ExpressionListenerStore.Result&gt; newResults) {
+<span class="nc" id="L80">        this.table = table;</span>
+
+<span class="nc" id="L82">        int i = combo.getSelectedIndex();</span>
+<span class="nc" id="L83">        String name = null;</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">        if (i &gt;= 0 &amp;&amp; i &lt; results.size()) name = results.get(i).getName();</span>
+
+<span class="nc" id="L86">        this.results = newResults;</span>
+<span class="nc" id="L87">        combo.setModel(new MyComboBoxModel(results));</span>
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (results.size() &gt; 0) {</span>
+<span class="nc" id="L90">            i = 0;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            for (int j = 0; j &lt; results.size(); j++)</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                if (results.get(j).getName().equals(name)) {</span>
+<span class="nc" id="L93">                    i = j;</span>
+<span class="nc" id="L94">                    break;</span>
+
+                }
+<span class="nc" id="L97">            combo.setSelectedIndex(i);</span>
+        }
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * @return the actual results
+     */
+    public List&lt;ExpressionListenerStore.Result&gt; getResults() {
+<span class="nc" id="L105">        return results;</span>
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (!isVisible())</span>
+<span class="nc" id="L111">            setLocation(parent.getX() + parent.getWidth(), parent.getY());</span>
+<span class="nc" id="L112">        super.setVisible(visible);</span>
+<span class="nc" id="L113">    }</span>
+
+    private static final class MyComboBoxModel implements ComboBoxModel&lt;ExpressionListenerStore.Result&gt; {
+        private List&lt;ExpressionListenerStore.Result&gt; results;
+        private ExpressionListenerStore.Result selected;
+
+<span class="nc" id="L119">        private MyComboBoxModel(List&lt;ExpressionListenerStore.Result&gt; results) {</span>
+<span class="nc" id="L120">            this.results = results;</span>
+<span class="nc" id="L121">        }</span>
+
+        public void setSelected(ExpressionListenerStore.Result selected) {
+<span class="nc" id="L124">            this.selected = selected;</span>
+<span class="nc" id="L125">        }</span>
+
+        @Override
+        public void setSelectedItem(Object o) {
+<span class="nc" id="L129">            selected = (ExpressionListenerStore.Result) o;</span>
+<span class="nc" id="L130">        }</span>
+
+        @Override
+        public Object getSelectedItem() {
+<span class="nc" id="L134">            return selected;</span>
+        }
+
+        @Override
+        public int getSize() {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            return results == null ? 0 : results.size();</span>
+        }
+
+        @Override
+        public ExpressionListenerStore.Result getElementAt(int i) {
+<span class="nc" id="L144">            return results.get(i);</span>
+        }
+
+        @Override
+        public void addListDataListener(ListDataListener listDataListener) {
+<span class="nc" id="L149">        }</span>
+
+        @Override
+        public void removeListDataListener(ListDataListener listDataListener) {
+<span class="nc" id="L153">        }</span>
+    }
+
+<span class="nc" id="L156">    private final class MyDefaultListCellRenderer extends ExpressionComponent implements ListCellRenderer&lt;ExpressionListenerStore.Result&gt; {</span>
+
+        @Override
+        public Component getListCellRendererComponent(JList&lt;? extends ExpressionListenerStore.Result&gt; jList, ExpressionListenerStore.Result result, int index, boolean isSelected, boolean focus) {
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (result != null)</span>
+<span class="nc" id="L161">                setExpression(new NamedExpression(result.getName(), result.getExpression()));</span>
+            else
+<span class="nc" id="L163">                setExpression(null);</span>
+<span class="nc" id="L164">            updateComponentSize(combo.getGraphics());</span>
+
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (isSelected) {</span>
+<span class="nc" id="L167">                this.setBackground(jList.getSelectionBackground());</span>
+<span class="nc" id="L168">                this.setForeground(jList.getSelectionForeground());</span>
+            } else {
+<span class="nc" id="L170">                this.setBackground(jList.getBackground());</span>
+<span class="nc" id="L171">                this.setForeground(jList.getForeground());</span>
+            }
+<span class="nc" id="L173">            return this;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

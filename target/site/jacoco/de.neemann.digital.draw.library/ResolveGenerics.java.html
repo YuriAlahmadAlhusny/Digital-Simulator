@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResolveGenerics.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.library</a> &gt; <span class="el_source">ResolveGenerics.java</span></div><h1>ResolveGenerics.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.library;
+
+import de.neemann.digital.analyse.SubstituteLibrary;
+import de.neemann.digital.core.NodeException;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.ElementTypeDescription;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.draw.elements.Circuit;
+import de.neemann.digital.draw.elements.VisualElement;
+import de.neemann.digital.draw.elements.Wire;
+import de.neemann.digital.draw.graphics.Vector;
+import de.neemann.digital.hdl.hgs.*;
+import de.neemann.digital.hdl.hgs.function.Function;
+import de.neemann.digital.hdl.hgs.function.InnerFunction;
+import de.neemann.digital.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+
+/**
+ * Resolves a generic circuit and makes it non generic
+ */
+public class ResolveGenerics {
+<span class="fc" id="L33">    private static final Logger LOGGER = LoggerFactory.getLogger(ResolveGenerics.class);</span>
+
+    /**
+     * Key uses to store the args for the generic circuits
+     */
+    public static final String GEN_ARGS_KEY = &quot;genArgs&quot;;
+    private static final String SETTINGS_KEY = &quot;settings&quot;;
+    private static final String GLOBALS_KEY = &quot;global&quot;;
+    private static final String THIS_KEY = &quot;this&quot;;
+    private final HashMap&lt;String, Statement&gt; map;
+    private final HashMap&lt;Args, CircuitHolder&gt; circuitMap;
+    private final Circuit circuit;
+    private final LibraryInterface library;
+
+    /**
+     * Creates a new instance
+     *
+     * @param circuit the circuit to resolve
+     * @param library the library to ude
+     */
+<span class="fc" id="L53">    public ResolveGenerics(Circuit circuit, LibraryInterface library) {</span>
+<span class="fc" id="L54">        this.circuit = circuit;</span>
+<span class="fc" id="L55">        this.library = library;</span>
+<span class="fc" id="L56">        map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L57">        circuitMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L58">    }</span>
+
+    /**
+     * Resolves the generics
+     *
+     * @param attributes the visual elements attributes
+     * @return the resolved circuit
+     * @throws NodeException            NodeException
+     * @throws ElementNotFoundException ElementNotFoundException
+     */
+    public CircuitHolder resolveCircuit(ElementAttributes attributes) throws NodeException, ElementNotFoundException {
+        try {
+            Args args;
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (attributes == null)</span>
+<span class="fc" id="L72">                args = createArgsFromGenericInitBlock();</span>
+            else
+<span class="fc" id="L74">                args = createArgsFromParentCircuitEmbedding(attributes);</span>
+
+<span class="fc" id="L76">            CircuitHolder ch = circuitMap.get(args);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (ch == null) {</span>
+<span class="fc" id="L78">                ch = createResolvedCircuit(args);</span>
+<span class="fc" id="L79">                circuitMap.put(args, ch);</span>
+            }
+<span class="fc" id="L81">            return ch;</span>
+<span class="fc" id="L82">        } catch (NodeException e) {</span>
+<span class="fc" id="L83">            e.setOrigin(circuit.getOrigin());</span>
+<span class="fc" id="L84">            throw e;</span>
+        }
+    }
+
+    private Args createArgsFromParentCircuitEmbedding(ElementAttributes attributes) throws NodeException {
+<span class="fc" id="L89">        Context context = (Context) attributes.getFromCache(GEN_ARGS_KEY);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (context == null) {</span>
+<span class="fc" id="L91">            String argsCode = attributes.get(Keys.GENERIC);</span>
+            try {
+<span class="fc" id="L93">                Statement s = getStatement(argsCode);</span>
+<span class="fc" id="L94">                context = new Context(circuit.getOrigin());</span>
+<span class="fc" id="L95">                s.execute(context);</span>
+<span class="fc" id="L96">            } catch (HGSEvalException | ParserException | IOException e) {</span>
+<span class="fc" id="L97">                throw new NodeException(Lang.get(&quot;err_evaluatingGenericsCode_N_N&quot;, null, argsCode), e);</span>
+<span class="fc" id="L98">            }</span>
+        }
+<span class="fc" id="L100">        return new Args(context);</span>
+    }
+
+    private Args createArgsFromGenericInitBlock() throws NodeException {
+<span class="fc" id="L104">        Context context = new Context(circuit.getOrigin());</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        List&lt;VisualElement&gt; g = circuit.getElements(v -&gt; v.equalsDescription(GenericInitCode.DESCRIPTION) &amp;&amp; v.getElementAttributes().get(Keys.ENABLED));</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (g.size() == 0)</span>
+<span class="nc" id="L107">            throw new NodeException(Lang.get(&quot;err_noGenericInitCode&quot;));</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (g.size() &gt; 1)</span>
+<span class="nc" id="L109">            throw new NodeException(Lang.get(&quot;err_multipleGenericInitCodes&quot;));</span>
+<span class="fc" id="L110">        String argsCode = g.get(0).getElementAttributes().get(Keys.GENERIC);</span>
+        try {
+<span class="fc" id="L112">            getStatement(argsCode).execute(context);</span>
+<span class="nc" id="L113">        } catch (IOException | ParserException | HGSEvalException e) {</span>
+<span class="nc" id="L114">            throw new NodeException(Lang.get(&quot;err_inGenericInitCode&quot;), e);</span>
+<span class="fc" id="L115">        }</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (circuit.getOrigin() != null) {</span>
+            try {
+<span class="fc" id="L118">                context.declareVar(Context.BASE_FILE_KEY, circuit.getOrigin());</span>
+<span class="nc" id="L119">            } catch (HGSEvalException e) {</span>
+                // impossible
+<span class="fc" id="L121">            }</span>
+        }
+
+<span class="fc" id="L124">        return new Args(context);</span>
+    }
+
+    private CircuitHolder createResolvedCircuit(Args args) throws NodeException, ElementNotFoundException {
+<span class="fc" id="L128">        LOGGER.debug(&quot;create concrete circuit based on &quot; + circuit.getOrigin() + &quot; width: &quot; + args);</span>
+<span class="fc" id="L129">        final Circuit c = circuit.createDeepCopy();</span>
+<span class="fc" id="L130">        ArrayList&lt;VisualElement&gt; newComponents = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L131">        ArrayList&lt;Wire&gt; newWires = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L133">        Globals globals = new Globals();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (VisualElement ve : c.getElements())</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (ve.equalsDescription(GenericCode.DESCRIPTION)) {</span>
+<span class="fc" id="L136">                handleVisualElement(c, ve, args, newComponents, newWires, globals);</span>
+<span class="fc" id="L137">                globals.lock(); // allow write only in first code component</span>
+            }
+<span class="fc" id="L139">        globals.lock(); // allow write only in code components</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (VisualElement ve : c.getElements())</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (!ve.equalsDescription(GenericCode.DESCRIPTION))</span>
+<span class="fc" id="L142">                handleVisualElement(c, ve, args, newComponents, newWires, globals);</span>
+
+<span class="fc" id="L144">        c.add(newWires);</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (VisualElement ve : newComponents)</span>
+<span class="fc" id="L146">            c.add(ve);</span>
+
+<span class="fc" id="L148">        return new CircuitHolder(c, args);</span>
+    }
+
+    private void handleVisualElement(Circuit c, VisualElement ve, Args args, ArrayList&lt;VisualElement&gt; newComponents, ArrayList&lt;Wire&gt; newWires, Globals globals) throws ElementNotFoundException, NodeException {
+<span class="fc" id="L152">        ElementAttributes elementAttributes = ve.getElementAttributes();</span>
+<span class="fc" id="L153">        String gen = elementAttributes.get(Keys.GENERIC).trim();</span>
+        try {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (!gen.isEmpty()) {</span>
+<span class="fc" id="L156">                ElementTypeDescription elementTypeDescription = library.getElementType(ve.getElementName(), elementAttributes);</span>
+
+<span class="fc" id="L158">                boolean isCustom = elementTypeDescription instanceof ElementTypeDescriptionCustom;</span>
+<span class="fc" id="L159">                Statement genS = getStatement(gen);</span>
+<span class="fc" id="L160">                Context mod = createContext(c, newComponents, newWires, args)</span>
+<span class="fc" id="L161">                        .declareVar(GLOBALS_KEY, globals)</span>
+<span class="fc" id="L162">                        .declareVar(&quot;args&quot;, args);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                if (isCustom)</span>
+<span class="fc" id="L164">                    mod.declareFunc(&quot;setCircuit&quot;, new SetCircuitFunc(ve));</span>
+                else
+<span class="fc" id="L166">                    mod.declareVar(&quot;this&quot;, new SubstituteLibrary.AllowSetAttributes(elementAttributes));</span>
+<span class="fc" id="L167">                genS.execute(mod);</span>
+<span class="fc" id="L168">                elementAttributes.putToCache(GEN_ARGS_KEY, mod);</span>
+            }
+<span class="nc" id="L170">        } catch (HGSEvalException | ParserException | IOException e) {</span>
+<span class="nc" id="L171">            throw new NodeException(Lang.get(&quot;err_evaluatingGenericsCode_N_N&quot;, ve, gen), e);</span>
+<span class="fc" id="L172">        }</span>
+<span class="fc" id="L173">    }</span>
+
+    private Context createContext(Circuit circuit, ArrayList&lt;VisualElement&gt; newComponents, ArrayList&lt;Wire&gt; newWires, Args args) throws NodeException {
+        try {
+<span class="fc" id="L177">            Context context = new Context(circuit.getOrigin());</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            if (circuit.getOrigin() != null)</span>
+<span class="fc" id="L179">                context.declareVar(Context.BASE_FILE_KEY, circuit.getOrigin());</span>
+<span class="fc" id="L180">            context.declareVar(SETTINGS_KEY, new SubstituteLibrary.AllowSetAttributes(circuit.getAttributes()));</span>
+<span class="fc" id="L181">            context.declareFunc(&quot;addWire&quot;, new AddWire(newWires));</span>
+<span class="fc" id="L182">            context.declareFunc(&quot;addComponent&quot;, new AddComponent(newComponents, args));</span>
+<span class="fc" id="L183">            return context;</span>
+<span class="nc" id="L184">        } catch (HGSEvalException e) {</span>
+<span class="nc" id="L185">            throw new NodeException(&quot;error setting the base filename&quot;, e);</span>
+        }
+    }
+
+    private Statement getStatement(String code) throws IOException, ParserException {
+<span class="fc" id="L190">        Statement genS = map.get(code);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (genS == null) {</span>
+<span class="fc" id="L192">            genS = new Parser(code).parse(false);</span>
+<span class="fc" id="L193">            map.put(code, genS);</span>
+        }
+<span class="fc" id="L195">        return genS;</span>
+    }
+
+    /**
+     * Holds the args of a circuit.
+     * Implements the access to the parents args values.
+     */
+    public static final class Args implements HGSMap {
+        private final Context args;
+
+<span class="fc" id="L205">        private Args(Context args) {</span>
+<span class="fc" id="L206">            this.args = args;</span>
+<span class="fc" id="L207">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) throws HGSEvalException {
+<span class="fc" id="L211">            Object v = args.hgsMapGet(key);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (v == null) {</span>
+<span class="fc" id="L213">                Object a = args.hgsMapGet(&quot;args&quot;);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                if (a instanceof HGSMap) {</span>
+<span class="fc" id="L215">                    return ((HGSMap) a).hgsMapGet(key);</span>
+                }
+            }
+<span class="fc" id="L218">            return v;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L224" title="2 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L225">            Args that = (Args) o;</span>
+<span class="fc" id="L226">            return args.equals(that.args);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L231">            return Objects.hash(args);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L236">            return &quot;[&quot; + args.toStringKeys() + &quot;]&quot;;</span>
+        }
+    }
+
+    /**
+     * Holds the circuit and the args that created that circuit.
+     */
+    public final class CircuitHolder {
+        private final Circuit circuit;
+        private final Args args;
+
+<span class="fc" id="L247">        private CircuitHolder(Circuit circuit, Args args) {</span>
+<span class="fc" id="L248">            this.circuit = circuit;</span>
+<span class="fc" id="L249">            this.args = args;</span>
+<span class="fc" id="L250">        }</span>
+
+        /**
+         * @return teturns the created circuit
+         */
+        public Circuit getCircuit() {
+<span class="fc" id="L256">            return circuit;</span>
+        }
+
+        /**
+         * @return the args that created the circuit
+         */
+        public Args getArgs() {
+<span class="nc" id="L263">            return args;</span>
+        }
+
+        /**
+         * Converts a circuit that is only suitable for creating a model
+         * to a circuit that can also be edited and saved.
+         *
+         * @return this for chained calls
+         */
+        public CircuitHolder cleanupConcreteCircuit() {
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            for (VisualElement gic : circuit.getElements(v -&gt;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">                    v.equalsDescription(GenericInitCode.DESCRIPTION)</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">                            || v.equalsDescription(GenericCode.DESCRIPTION)))</span>
+<span class="fc" id="L276">                circuit.delete(gic);</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            for (VisualElement v : circuit.getElements()) {</span>
+                try {
+<span class="fc" id="L279">                    boolean isCustom = library.getElementType(v.getElementName(), v.getElementAttributes()) instanceof ElementTypeDescriptionCustom;</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">                    if (isCustom)</span>
+<span class="fc" id="L281">                        v.getElementAttributes().set(Keys.GENERIC, createGenericCode((Context) v.getElementAttributes().getFromCache(GEN_ARGS_KEY)));</span>
+                    else
+<span class="fc" id="L283">                        v.getElementAttributes().set(Keys.GENERIC, &quot;&quot;);</span>
+<span class="nc" id="L284">                } catch (ElementNotFoundException e) {</span>
+                    // can not happen
+<span class="nc" id="L286">                    e.printStackTrace();</span>
+<span class="fc" id="L287">                }</span>
+<span class="fc" id="L288">                v.getElementAttributes().removeFromCache(GEN_ARGS_KEY);</span>
+<span class="fc" id="L289">            }</span>
+
+<span class="fc" id="L291">            circuit.getAttributes().set(Keys.IS_GENERIC, false);</span>
+
+<span class="fc" id="L293">            return this;</span>
+        }
+    }
+
+    private static String createGenericCode(Context args) {
+<span class="fc" id="L298">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L299">        HashSet&lt;String&gt; contentSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L300">        addVal(sb, &quot;&quot;, args, contentSet);</span>
+<span class="fc" id="L301">        return sb.toString();</span>
+    }
+
+    private static void addVal(StringBuilder sb, String key, Object val, HashSet&lt;String&gt; contentSet) {
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (contentSet.contains(key))</span>
+<span class="fc" id="L306">            return;</span>
+
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        if (val instanceof InnerFunction)</span>
+<span class="fc" id="L309">            return;</span>
+
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        if (val instanceof Context) {</span>
+<span class="fc" id="L312">            Context c = (Context) val;</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">            for (String k : c.getKeySet()) {</span>
+<span class="fc" id="L314">                Object v = c.hgsMapGet(k);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">                if (!(v instanceof Args))</span>
+<span class="fc" id="L316">                    addVal(sb, k, v, contentSet);</span>
+<span class="fc" id="L317">            }</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">            for (String k : c.getKeySet()) {</span>
+<span class="fc" id="L319">                Object v = c.hgsMapGet(k);</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">                if (v instanceof Args)</span>
+<span class="fc" id="L321">                    addVal(sb, k, ((Args) v).args, contentSet);</span>
+<span class="fc" id="L322">            }</span>
+<span class="fc" id="L323">            return;</span>
+        }
+
+<span class="fc bfc" id="L326" title="All 8 branches covered.">        if (!key.equals(Context.BASE_FILE_KEY) &amp;&amp; !key.equals(SETTINGS_KEY) &amp;&amp; !key.equals(GLOBALS_KEY) &amp;&amp; !key.equals(THIS_KEY)) {</span>
+<span class="fc" id="L327">            contentSet.add(key);</span>
+<span class="fc" id="L328">            sb.append(key).append(&quot;:=&quot;);</span>
+<span class="fc" id="L329">            addToStringBuilder(sb, val);</span>
+<span class="fc" id="L330">            sb.append(&quot;;\n&quot;);</span>
+        }
+<span class="fc" id="L332">    }</span>
+
+    private static void addToStringBuilder(StringBuilder sb, Object val) {
+<span class="fc bfc" id="L335" title="All 2 branches covered.">        if (val instanceof String) {</span>
+<span class="fc" id="L336">            sb.append(&quot;\&quot;&quot;);</span>
+<span class="fc" id="L337">            escapeString(sb, (String) val);</span>
+<span class="fc" id="L338">            sb.append(&quot;\&quot;&quot;);</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        } else if (val instanceof Integer)</span>
+<span class="fc" id="L340">            sb.append(&quot;int(&quot;).append(val).append(&quot;)&quot;);</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        else if (val instanceof List) {</span>
+<span class="nc" id="L342">            sb.append(&quot;[&quot;);</span>
+<span class="nc" id="L343">            boolean first = true;</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">            for (Object o : (List&lt;?&gt;) val) {</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                if (first)</span>
+<span class="nc" id="L346">                    first = false;</span>
+                else
+<span class="nc" id="L348">                    sb.append(&quot;,&quot;);</span>
+<span class="nc" id="L349">                addToStringBuilder(sb, o);</span>
+<span class="nc" id="L350">            }</span>
+<span class="nc" id="L351">            sb.append(&quot;]&quot;);</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        } else if (val instanceof Map) {</span>
+<span class="nc" id="L353">            sb.append(&quot;{&quot;);</span>
+<span class="nc" id="L354">            boolean first = true;</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">            for (Map.Entry&lt;?, ?&gt; e : ((Map&lt;?, ?&gt;) val).entrySet()) {</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">                if (first)</span>
+<span class="nc" id="L357">                    first = false;</span>
+                else
+<span class="nc" id="L359">                    sb.append(&quot;,&quot;);</span>
+<span class="nc" id="L360">                sb.append(e.getKey().toString());</span>
+<span class="nc" id="L361">                sb.append(&quot;:&quot;);</span>
+<span class="nc" id="L362">                addToStringBuilder(sb, e.getValue());</span>
+<span class="nc" id="L363">            }</span>
+<span class="nc" id="L364">            sb.append(&quot;}&quot;);</span>
+<span class="nc" id="L365">        } else</span>
+<span class="fc" id="L366">            sb.append(val);</span>
+<span class="fc" id="L367">    }</span>
+
+    static void escapeString(StringBuilder sb, String str) {
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (int i = 0; i &lt; str.length(); i++) {</span>
+<span class="fc" id="L371">            char c = str.charAt(i);</span>
+<span class="fc bfc" id="L372" title="All 6 branches covered.">            switch (c) {</span>
+                case '\\':
+<span class="fc" id="L374">                    sb.append(&quot;\\\\&quot;);</span>
+<span class="fc" id="L375">                    break;</span>
+                case '\n':
+<span class="fc" id="L377">                    sb.append(&quot;\\n&quot;);</span>
+<span class="fc" id="L378">                    break;</span>
+                case '\r':
+<span class="fc" id="L380">                    sb.append(&quot;\\r&quot;);</span>
+<span class="fc" id="L381">                    break;</span>
+                case '\t':
+<span class="fc" id="L383">                    sb.append(&quot;\\t&quot;);</span>
+<span class="fc" id="L384">                    break;</span>
+                case '&quot;':
+<span class="fc" id="L386">                    sb.append(&quot;\\\&quot;&quot;);</span>
+<span class="fc" id="L387">                    break;</span>
+                default:
+<span class="fc" id="L389">                    sb.append(c);</span>
+            }
+        }
+<span class="fc" id="L392">    }</span>
+
+    private static final class SetCircuitFunc extends Function {
+        private final VisualElement ve;
+
+        private SetCircuitFunc(VisualElement ve) {
+<span class="fc" id="L398">            super(1);</span>
+<span class="fc" id="L399">            this.ve = ve;</span>
+<span class="fc" id="L400">        }</span>
+
+        @Override
+        protected Object f(Object... args) {
+<span class="fc" id="L404">            ve.setElementName(args[0].toString());</span>
+<span class="fc" id="L405">            return null;</span>
+        }
+
+        // All setCircuit functions are considered identical.
+        @Override
+        public boolean equals(Object o) {
+<span class="nc bnc" id="L411" title="All 2 branches missed.">            if (this == o) return true;</span>
+<span class="nc bnc" id="L412" title="All 4 branches missed.">            return o != null &amp;&amp; getClass() == o.getClass();</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L417">            return 0;</span>
+        }
+    }
+
+    private final static class AddWire extends Function {
+        private final ArrayList&lt;Wire&gt; wires;
+
+        private AddWire(ArrayList&lt;Wire&gt; wires) {
+<span class="fc" id="L425">            super(4);</span>
+<span class="fc" id="L426">            this.wires = wires;</span>
+<span class="fc" id="L427">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L431">            Vector p1 = new Vector(Value.toInt(args[0]) * SIZE, Value.toInt(args[1]) * SIZE);</span>
+<span class="fc" id="L432">            Vector p2 = new Vector(Value.toInt(args[2]) * SIZE, Value.toInt(args[3]) * SIZE);</span>
+<span class="fc" id="L433">            wires.add(new Wire(p1, p2));</span>
+<span class="fc" id="L434">            return null;</span>
+        }
+    }
+
+    private final class AddComponent extends Function {
+        private final ArrayList&lt;VisualElement&gt; newComponents;
+        private final Args args;
+
+<span class="fc" id="L442">        private AddComponent(ArrayList&lt;VisualElement&gt; newComponents, Args args) {</span>
+<span class="fc" id="L443">            super(3);</span>
+<span class="fc" id="L444">            this.newComponents = newComponents;</span>
+<span class="fc" id="L445">            this.args = args;</span>
+<span class="fc" id="L446">        }</span>
+
+        @Override
+        protected Object f(Object... args) throws HGSEvalException {
+<span class="fc" id="L450">            String name = args[0].toString();</span>
+<span class="fc" id="L451">            Vector pos = new Vector(Value.toInt(args[1]) * SIZE, Value.toInt(args[2]) * SIZE);</span>
+<span class="fc" id="L452">            VisualElement ve = new VisualElement(name).setPos(pos).setShapeFactory(library.getShapeFactory());</span>
+<span class="fc" id="L453">            newComponents.add(ve);</span>
+
+<span class="fc" id="L455">            ElementAttributes elementAttributes = ve.getElementAttributes();</span>
+            try {
+<span class="fc" id="L457">                ElementTypeDescription etd = library.getElementType(ve.getElementName(), ve.getElementAttributes());</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                if (etd instanceof ElementTypeDescriptionCustom) {</span>
+<span class="fc" id="L459">                    ElementTypeDescriptionCustom etdc = (ElementTypeDescriptionCustom) etd;</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">                    if (etdc.isGeneric()) {</span>
+<span class="fc" id="L461">                        Context c = new Context(circuit.getOrigin()) {</span>
+                            @Override
+                            public void hgsMapPut(String key, Object val) throws HGSEvalException {
+<span class="fc" id="L464">                                this.declareVar(key, val);</span>
+<span class="fc" id="L465">                            }</span>
+                        }
+<span class="fc" id="L467">                                .declareVar(&quot;args&quot;, this.args)</span>
+<span class="fc" id="L468">                                .declareVar(THIS_KEY, new SubstituteLibrary.AllowSetAttributes(elementAttributes));</span>
+<span class="fc" id="L469">                        elementAttributes.putToCache(GEN_ARGS_KEY, c);</span>
+<span class="fc" id="L470">                        return c;</span>
+                    }
+                }
+<span class="nc" id="L473">            } catch (ElementNotFoundException e) {</span>
+<span class="nc" id="L474">                e.printStackTrace();</span>
+<span class="fc" id="L475">            }</span>
+
+<span class="fc" id="L477">            return new SubstituteLibrary.AllowSetAttributes(elementAttributes);</span>
+        }
+    }
+
+<span class="fc" id="L481">    private static final class Globals implements HGSMap {</span>
+<span class="fc" id="L482">        private final HashMap&lt;String, Object&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L483">        private boolean writeEnable = true;</span>
+
+        @Override
+        public void hgsMapPut(String key, Object val) throws HGSEvalException {
+<span class="pc bpc" id="L487" title="1 of 2 branches missed.">            if (writeEnable)</span>
+<span class="fc" id="L488">                map.put(key, val);</span>
+            else
+<span class="nc" id="L490">                throw new HGSEvalException(Lang.get(&quot;err_writeInCodeComponentsOnly&quot;));</span>
+<span class="fc" id="L491">        }</span>
+
+        @Override
+        public Object hgsMapGet(String key) throws HGSEvalException {
+<span class="fc" id="L495">            return map.get(key);</span>
+        }
+
+        public void lock() {
+<span class="fc" id="L499">            writeEnable = false;</span>
+<span class="fc" id="L500">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

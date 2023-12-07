@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HDLNodeAssignment.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2</a> &gt; <span class="el_source">HDLNodeAssignment.java</span></div><h1>HDLNodeAssignment.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2;
+
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.hdl.model2.expression.ExprVar;
+import de.neemann.digital.hdl.model2.expression.Expression;
+import de.neemann.digital.hdl.model2.expression.ExpressionOptimizer;
+import de.neemann.digital.hdl.model2.expression.Visitor;
+import de.neemann.digital.hdl.printer.CodePrinter;
+
+import java.io.IOException;
+
+/**
+ * A node which represents a simple expression
+ */
+public class HDLNodeAssignment extends HDLNode {
+    private Expression expression;
+
+    /**
+     * Creates a new instace
+     *
+     * @param elementName       the elements name
+     * @param elementAttributes the attributes
+     * @param bitProvider       the bit provider which provides the outputs bit width
+     */
+    public HDLNodeAssignment(String elementName, ElementAttributes elementAttributes, HDLModel.BitProvider bitProvider) {
+<span class="fc" id="L32">        super(elementName, elementAttributes, bitProvider);</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * Sets the expression tu use
+     *
+     * @param expression the expression
+     */
+    public void setExpression(Expression expression) {
+<span class="fc" id="L41">        this.expression = expression;</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * @return the expression
+     */
+    public Expression getExpression() {
+<span class="fc" id="L48">        return expression;</span>
+    }
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L53">        super.print(out);</span>
+<span class="fc" id="L54">        getOutput().getNet().print(out);</span>
+<span class="fc" id="L55">        out.print(&quot; := &quot;);</span>
+<span class="fc" id="L56">        expression.print(out);</span>
+<span class="fc" id="L57">        out.println();</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    public void replaceNet(HDLNet oldNet, HDLNet newNet) {
+<span class="nc" id="L62">        super.replaceNet(oldNet, newNet);</span>
+<span class="nc" id="L63">        expression.replace(oldNet, new ExprVar(newNet));</span>
+<span class="nc" id="L64">    }</span>
+
+    @Override
+    public &lt;V extends Visitor&gt; V traverseExpressions(V visitor) {
+<span class="fc" id="L68">        expression.traverse(visitor);</span>
+<span class="fc" id="L69">        return visitor;</span>
+    }
+
+    @Override
+    public void replaceNetByExpression(HDLNet net, Expression expression) {
+<span class="fc" id="L74">        expression.replace(net, expression);</span>
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * @return the target net of this expression.
+     */
+    public HDLNet getTargetNet() {
+<span class="fc" id="L81">        return getOutput().getNet();</span>
+    }
+
+    /**
+     * Optimizes the expression
+     *
+     * @param eo the optimizer
+     */
+    public void optimize(ExpressionOptimizer eo) {
+<span class="fc" id="L90">        expression = eo.optimize(expression);</span>
+<span class="fc" id="L91">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

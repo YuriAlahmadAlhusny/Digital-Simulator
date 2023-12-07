@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RotEncoderShape.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.shapes</a> &gt; <span class="el_source">RotEncoderShape.java</span></div><h1>RotEncoderShape.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.shapes;
+
+import de.neemann.digital.core.SyncAccess;
+import de.neemann.digital.core.element.Element;
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.PinDescriptions;
+import de.neemann.digital.draw.elements.IOState;
+import de.neemann.digital.draw.elements.Pin;
+import de.neemann.digital.draw.elements.Pins;
+import de.neemann.digital.draw.graphics.*;
+import de.neemann.digital.draw.graphics.Polygon;
+import de.neemann.digital.gui.components.CircuitComponent;
+
+import java.awt.*;
+
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
+import static de.neemann.digital.draw.shapes.GenericShape.SIZE2;
+
+
+/**
+ * The rotary encoder shape
+ */
+public class RotEncoderShape implements Shape {
+<span class="fc" id="L29">    private static final Style KNOB = Style.NORMAL.deriveStyle(Style.MAXLINETHICK, true, Color.DARK_GRAY);</span>
+<span class="fc" id="L30">    private static final Style MARKER = Style.NORMAL.deriveStyle(Style.MAXLINETHICK, false, Color.LIGHT_GRAY);</span>
+<span class="fc" id="L31">    private static final Vector CENTER = new Vector(SIZE2 - SIZE * 2, SIZE2);</span>
+    private final String label;
+    private final PinDescriptions outputs;
+    private int state;
+
+    /**
+     * Creates a new instance
+     *
+     * @param attr    the attributes
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     */
+<span class="fc" id="L43">    public RotEncoderShape(ElementAttributes attr, PinDescriptions inputs, PinDescriptions outputs) {</span>
+<span class="fc" id="L44">        this.outputs = outputs;</span>
+<span class="fc" id="L45">        this.label = attr.getLabel();</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public Pins getPins() {
+<span class="fc" id="L50">        return new Pins()</span>
+<span class="fc" id="L51">                .add(new Pin(new Vector(0, 0), outputs.get(0)))</span>
+<span class="fc" id="L52">                .add(new Pin(new Vector(0, SIZE), outputs.get(1)));</span>
+    }
+
+    @Override
+    public InteractorInterface applyStateMonitor(IOState ioState) {
+<span class="nc" id="L57">        return new InteractorInterface() {</span>
+
+            private int initialState;
+            private boolean initial;
+
+            @Override
+            public void clicked(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L64">            }</span>
+
+            @Override
+            public void pressed(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L68">                initial = true;</span>
+<span class="nc" id="L69">            }</span>
+
+            @Override
+            public void released(CircuitComponent cc, Point pos, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc" id="L73">            }</span>
+
+            @Override
+            public void dragged(CircuitComponent cc, Point posOnScreen, Vector pos, Transform trans, IOState ioState, Element element, SyncAccess modelSync) {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (ioState != null) {</span>
+<span class="nc" id="L78">                    Vector p = pos.sub(trans.transform(CENTER));</span>
+<span class="nc" id="L79">                    final int dist = p.x * p.x + p.y * p.y;</span>
+<span class="nc bnc" id="L80" title="All 4 branches missed.">                    if (dist &gt; 100 &amp;&amp; dist &lt; 900) {</span>
+<span class="nc" id="L81">                        int s = (int) (Math.atan2(p.y, p.x) / Math.PI * 16);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                        if (initial) {</span>
+<span class="nc" id="L83">                            initialState = s;</span>
+<span class="nc" id="L84">                            initial = false;</span>
+                        } else {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                            if (s != initialState) {</span>
+<span class="nc" id="L87">                                state += s - initialState;</span>
+<span class="nc" id="L88">                                initialState = s;</span>
+<span class="nc" id="L89">                                modelSync.modify(() -&gt; {</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                                    boolean a = (state &amp; 2) != 0;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                                    boolean b = ((state + 1) &amp; 2) != 0;</span>
+<span class="nc" id="L92">                                    ioState.getOutput(0).setBool(a);</span>
+<span class="nc" id="L93">                                    ioState.getOutput(1).setBool(b);</span>
+<span class="nc" id="L94">                                });</span>
+                            }
+                        }
+<span class="nc" id="L97">                    } else</span>
+<span class="nc" id="L98">                        initial = true;</span>
+                }
+<span class="nc" id="L100">            }</span>
+        };
+    }
+
+    @Override
+    public void drawTo(Graphic graphic, Style heighLight) {
+<span class="fc" id="L106">        graphic.drawPolygon(new Polygon(true)</span>
+<span class="fc" id="L107">                .add(0, -SIZE)</span>
+<span class="fc" id="L108">                .add(0, SIZE * 2)</span>
+<span class="fc" id="L109">                .add(-SIZE * 3, SIZE * 2)</span>
+<span class="fc" id="L110">                .add(-SIZE * 3, -SIZE), Style.NORMAL);</span>
+
+<span class="fc" id="L112">        final int r = SIZE;</span>
+<span class="fc" id="L113">        graphic.drawCircle(CENTER.add(-r, -r), CENTER.add(r, r), KNOB);</span>
+
+<span class="fc" id="L115">        final double alpha = state / 16.0 * Math.PI;</span>
+<span class="fc" id="L116">        int x = (int) Math.round(SIZE * Math.cos(alpha));</span>
+<span class="fc" id="L117">        int y = (int) Math.round(SIZE * Math.sin(alpha));</span>
+
+<span class="fc" id="L119">        graphic.drawLine(CENTER, CENTER.add(x, y), MARKER);</span>
+
+<span class="fc" id="L121">        Vector textPos = CENTER.add(0, SIZE2 * 3 + 4);</span>
+<span class="fc" id="L122">        graphic.drawText(textPos, label, Orientation.CENTERTOP, Style.NORMAL);</span>
+<span class="fc" id="L123">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

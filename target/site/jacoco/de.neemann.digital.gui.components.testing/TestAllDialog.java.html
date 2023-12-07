@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestAllDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.gui.components.testing</a> &gt; <span class="el_source">TestAllDialog.java</span></div><h1>TestAllDialog.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.gui.components.testing;
+
+import de.neemann.digital.draw.library.ElementLibrary;
+import de.neemann.digital.draw.shapes.ShapeFactory;
+import de.neemann.digital.gui.Main;
+import de.neemann.digital.lang.Lang;
+import de.neemann.digital.testing.FolderTestRunner;
+
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+
+/**
+ * Tests all the files in a given folder
+ */
+public class TestAllDialog extends JDialog {
+
+    private final FolderTestRunner folderTestRunner;
+
+    /**
+     * Creates a new dialog and starts the test execution.
+     *
+     * @param frame        the parent frame
+     * @param folder       the folder to scan
+     * @param shapeFactory the shape factory to use
+     * @param library      the element library
+     */
+    public TestAllDialog(Frame frame, File folder, ShapeFactory shapeFactory, ElementLibrary library) {
+<span class="nc" id="L45">        super(frame, Lang.get(&quot;msg_testResult&quot;), false);</span>
+<span class="nc" id="L46">        folderTestRunner = new FolderTestRunner(folder);</span>
+
+<span class="nc" id="L48">        final FileModel tableModel = new FileModel(folderTestRunner.getFiles());</span>
+<span class="nc" id="L49">        JTable table = new JTable(tableModel);</span>
+<span class="nc" id="L50">        table.setRowSelectionAllowed(true);</span>
+<span class="nc" id="L51">        TableRowSorter&lt;FileModel&gt; sorter = new TableRowSorter&lt;&gt;(tableModel);</span>
+<span class="nc" id="L52">        sorter.setComparator(1, (Comparator&lt;FolderTestRunner.FileToTest&gt;) (f1, f2) -&gt; -Integer.compare(f1.getStatus().ordinal(), f2.getStatus().ordinal()));</span>
+<span class="nc" id="L53">        table.setRowSorter(sorter);</span>
+
+<span class="nc" id="L55">        table.getColumnModel().getColumn(1).setCellRenderer(new StateRenderer());</span>
+<span class="nc" id="L56">        getContentPane().add(new JScrollPane(table));</span>
+<span class="nc" id="L57">        pack();</span>
+<span class="nc" id="L58">        setLocationRelativeTo(frame);</span>
+
+<span class="nc" id="L60">        table.addMouseListener(new MouseAdapter() {</span>
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (mouseEvent.getClickCount() == 2)</span>
+<span class="nc" id="L64">                    openCircuit(table, frame, library);</span>
+<span class="nc" id="L65">            }</span>
+        });
+
+<span class="nc" id="L68">        table.addKeyListener(new KeyAdapter() {</span>
+            @Override
+            public void keyTyped(KeyEvent keyEvent) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                if (keyEvent.getKeyChar() == ' ')</span>
+<span class="nc" id="L72">                    openCircuit(table, frame, library);</span>
+<span class="nc" id="L73">            }</span>
+        });
+
+<span class="nc" id="L76">        folderTestRunner.startTests(</span>
+<span class="nc" id="L77">                (f, row) -&gt; SwingUtilities.invokeLater(() -&gt; tableModel.messageChanged(row)),</span>
+                shapeFactory,
+                library);
+<span class="nc" id="L80">    }</span>
+
+    private void openCircuit(JTable table, Frame frame, ElementLibrary library) {
+<span class="nc" id="L83">        int row = table.getSelectedRow();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (row &gt;= 0) {</span>
+<span class="nc" id="L85">            File f = folderTestRunner.getFiles().get(row).getFile();</span>
+<span class="nc" id="L86">            new Main.MainBuilder()</span>
+<span class="nc" id="L87">                    .setParent(frame)</span>
+<span class="nc" id="L88">                    .setFileToOpen(f)</span>
+<span class="nc" id="L89">                    .setLibrary(library)</span>
+<span class="nc" id="L90">                    .keepPrefMainFile()</span>
+<span class="nc" id="L91">                    .openLater();</span>
+        }
+<span class="nc" id="L93">    }</span>
+
+    /**
+     * @return the used folder test runner.
+     */
+    public FolderTestRunner getFolderTestRunner() {
+<span class="nc" id="L99">        return folderTestRunner;</span>
+    }
+
+    private final static class FileModel implements TableModel {
+        private final ArrayList&lt;FolderTestRunner.FileToTest&gt; files;
+        private ArrayList&lt;TableModelListener&gt; listener;
+
+<span class="nc" id="L106">        private FileModel(ArrayList&lt;FolderTestRunner.FileToTest&gt; files) {</span>
+<span class="nc" id="L107">            this.files = files;</span>
+<span class="nc" id="L108">            listener = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L109">        }</span>
+
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L113">            return files.size();</span>
+        }
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L118">            return 2;</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            switch (i) {</span>
+                case 0:
+<span class="nc" id="L125">                    return Lang.get(&quot;msg_testFile&quot;);</span>
+                default:
+<span class="nc" id="L127">                    return Lang.get(&quot;msg_testResult&quot;);</span>
+            }
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int i) {
+<span class="nc" id="L133">            return String.class;</span>
+        }
+
+        @Override
+        public boolean isCellEditable(int i, int i1) {
+<span class="nc" id="L138">            return false;</span>
+        }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+<span class="nc" id="L143">            FolderTestRunner.FileToTest file = files.get(row);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            switch (col) {</span>
+                case 0:
+<span class="nc" id="L146">                    return file.getName();</span>
+                default:
+<span class="nc" id="L148">                    return file;</span>
+            }
+        }
+
+        @Override
+        public void setValueAt(Object o, int i, int i1) {
+<span class="nc" id="L154">        }</span>
+
+        @Override
+        public void addTableModelListener(TableModelListener tableModelListener) {
+<span class="nc" id="L158">            listener.add(tableModelListener);</span>
+<span class="nc" id="L159">        }</span>
+
+        @Override
+        public void removeTableModelListener(TableModelListener tableModelListener) {
+<span class="nc" id="L163">            listener.remove(tableModelListener);</span>
+<span class="nc" id="L164">        }</span>
+
+        private void messageChanged(int row) {
+<span class="nc" id="L167">            TableModelEvent te = new TableModelEvent(this, row, row, 1);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            for (TableModelListener l : listener)</span>
+<span class="nc" id="L169">                l.tableChanged(te);</span>
+<span class="nc" id="L170">        }</span>
+    }
+
+    private static final class StateRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(JTable jTable, Object o, boolean sel, boolean b1, int row, int i1) {
+<span class="nc" id="L177">            final JLabel tc = (JLabel) super.getTableCellRendererComponent(jTable, o, sel, b1, row, i1);</span>
+
+<span class="nc" id="L179">            FolderTestRunner.FileToTest f = (FolderTestRunner.FileToTest) o;</span>
+            Color color;
+<span class="nc bnc" id="L181" title="All 4 branches missed.">            switch (f.getStatus()) {</span>
+                case error:
+<span class="nc" id="L183">                    color = Color.LIGHT_GRAY;</span>
+<span class="nc" id="L184">                    break;</span>
+                case passed:
+<span class="nc" id="L186">                    color = ValueTableDialog.PASSED_COLOR;</span>
+<span class="nc" id="L187">                    break;</span>
+                case failed:
+<span class="nc" id="L189">                    color = ValueTableDialog.FAILED_COLOR;</span>
+<span class="nc" id="L190">                    break;</span>
+                default:
+<span class="nc" id="L192">                    color = Color.WHITE;</span>
+                    break;
+            }
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            if (sel)</span>
+<span class="nc" id="L196">                color = color.darker();</span>
+<span class="nc" id="L197">            tc.setBackground(color);</span>
+<span class="nc" id="L198">            tc.setText(f.getMessage());</span>
+
+<span class="nc" id="L200">            return tc;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

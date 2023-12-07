@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InverterConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.model</a> &gt; <span class="el_source">InverterConfig.java</span></div><h1>InverterConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2017 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.model;
+
+import de.neemann.digital.core.NodeWithoutDelay;
+import de.neemann.digital.core.ObservableValue;
+import de.neemann.digital.hdl.hgs.HGSMap;
+
+import java.util.HashSet;
+import java.util.Objects;
+
+/**
+ * Manages the input inverting of a component
+ */
+public final class InverterConfig implements HGSMap {
+
+    private final HashSet&lt;String&gt; inputs;
+
+<span class="fc" id="L22">    private InverterConfig(HashSet&lt;String&gt; inputs) {</span>
+<span class="fc" id="L23">        this.inputs = inputs;</span>
+<span class="fc" id="L24">    }</span>
+
+    /**
+     * Handles the inverting of a input signal
+     * if the given input is not to invert, the original input is returned,
+     * If the input is to invert, a inverted input is returned. This invert does not add
+     * a additional delay time.
+     *
+     * @param name the name of the signal
+     * @param orig the original input signal
+     * @return the inverted or the original input
+     */
+    public ObservableValue invert(String name, ObservableValue orig) {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (inputs == null)</span>
+<span class="fc" id="L38">            return orig;</span>
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (!inputs.contains(name))</span>
+<span class="fc" id="L41">            return orig;</span>
+
+<span class="fc" id="L43">        ObservableValue out = new ObservableValue(&quot;~&quot; + orig.getName(), orig.getBits());</span>
+<span class="fc" id="L44">        orig.addObserver(new NodeWithoutDelay(out) {</span>
+            @Override
+            public void hasChanged() {
+<span class="fc" id="L47">                out.set(~orig.getValue(), orig.getHighZ());</span>
+<span class="fc" id="L48">            }</span>
+        });
+<span class="fc" id="L50">        out.set(~orig.getValue(), orig.getHighZ());</span>
+<span class="fc" id="L51">        return out;</span>
+    }
+
+    /**
+     * @return the string representation of the inverter config
+     */
+    public String toString() {
+<span class="nc" id="L58">        return inputs.toString();</span>
+    }
+
+    /**
+     * Returns true if the input with the given name is to invert.
+     *
+     * @param name the name of the signal
+     * @return true if the given input is to invert.
+     */
+    public boolean contains(String name) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (inputs == null)</span>
+<span class="fc" id="L69">            return false;</span>
+
+<span class="fc" id="L71">        return inputs.contains(name);</span>
+    }
+
+    /**
+     * @return true if no signal is to invert
+     */
+    public boolean isEmpty() {
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (inputs == null)</span>
+<span class="fc" id="L79">            return true;</span>
+
+<span class="fc" id="L81">        return inputs.isEmpty();</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L89">        InverterConfig that = (InverterConfig) o;</span>
+
+<span class="fc" id="L91">        return Objects.equals(inputs, that.inputs);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        return inputs != null ? inputs.hashCode() : 0;</span>
+    }
+
+    /**
+     * @return the number of inverted inputs
+     */
+    public int size() {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (inputs == null)</span>
+<span class="nc" id="L104">            return 0;</span>
+<span class="nc" id="L105">        return inputs.size();</span>
+    }
+
+    @Override
+    public Object hgsMapGet(String key) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (inputs == null)</span>
+<span class="fc" id="L111">            return false;</span>
+
+<span class="fc" id="L113">        return inputs.contains(key);</span>
+    }
+
+    /**
+     * Builder to create InverterConfig instances
+     */
+<span class="fc" id="L119">    public static class Builder {</span>
+
+        private HashSet&lt;String&gt; inputs;
+
+        /**
+         * Adds a signal to invert
+         *
+         * @param name the signale
+         * @return this for chained calls
+         */
+        public Builder add(String name) {
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">            if (inputs == null)</span>
+<span class="fc" id="L131">                inputs = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L132">            inputs.add(name);</span>
+<span class="fc" id="L133">            return this;</span>
+        }
+
+        /**
+         * Creats the instance
+         *
+         * @return the created instance
+         */
+        public InverterConfig build() {
+<span class="fc" id="L142">            return new InverterConfig(inputs);</span>
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

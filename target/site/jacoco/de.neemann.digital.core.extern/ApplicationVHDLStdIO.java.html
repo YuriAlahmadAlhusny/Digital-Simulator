@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationVHDLStdIO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.core.extern</a> &gt; <span class="el_source">ApplicationVHDLStdIO.java</span></div><h1>ApplicationVHDLStdIO.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.core.extern;
+
+import de.neemann.digital.core.element.ElementAttributes;
+import de.neemann.digital.core.element.Keys;
+import de.neemann.digital.hdl.hgs.Context;
+import de.neemann.digital.hdl.hgs.HGSEvalException;
+import de.neemann.digital.hdl.hgs.Parser;
+import de.neemann.digital.hdl.hgs.Statement;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.NoSuchElementException;
+
+import static de.neemann.digital.core.extern.VHDLTokenizer.Token.*;
+
+/**
+ * Base class of applications which are able to interpret VHDL-Code.
+ * The generated vhdl code is able to operate with the {@link de.neemann.digital.core.extern.handler.StdIOInterface}.
+ */
+<span class="fc" id="L26">public abstract class ApplicationVHDLStdIO implements Application {</span>
+<span class="fc" id="L27">    private static final Statement TEMPLATE =</span>
+<span class="fc" id="L28">            Parser.createFromJarStatic(&quot;vhdl/VHDLStdIOTemplate.tem&quot;);</span>
+
+    /**
+     * Creates a vhdl file in a temp directory.
+     *
+     * @param label   the name of the vhdl code
+     * @param code    the vhdl code
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     * @param root    the projects main folder
+     * @return the vhdl file
+     * @throws IOException IOException
+     */
+    public File createVHDLFile(String label, String code, PortDefinition inputs, PortDefinition outputs, File root) throws IOException {
+<span class="nc" id="L42">        File dir = Files.createTempDirectory(&quot;digital_vhdl_&quot;).toFile();</span>
+
+<span class="nc" id="L44">        File file = new File(dir, label + &quot;.vhdl&quot;);</span>
+
+<span class="nc" id="L46">        try (Writer w = new FileWriter(file)) {</span>
+<span class="nc" id="L47">            w.write(createVHDL(label, code, inputs, outputs, root));</span>
+<span class="nc" id="L48">        } catch (HGSEvalException e) {</span>
+<span class="nc" id="L49">            throw new IOException(&quot;error evaluating the template&quot;, e);</span>
+<span class="nc" id="L50">        }</span>
+
+<span class="nc" id="L52">        return file;</span>
+    }
+
+    /**
+     * Creates vhdl code
+     *
+     * @param label   the name of the vhdl code
+     * @param code    the vhdl code
+     * @param inputs  the inputs
+     * @param outputs the outputs
+     * @param root    the projects main folder
+     * @return the vhdl code
+     * @throws HGSEvalException HGSEvalException
+     */
+    public String createVHDL(String label, String code, PortDefinition inputs, PortDefinition outputs, File root) throws HGSEvalException {
+<span class="fc" id="L67">        Context context = new Context(root)</span>
+<span class="fc" id="L68">                .declareVar(&quot;entityName&quot;, label)</span>
+<span class="fc" id="L69">                .declareVar(&quot;code&quot;, code)</span>
+<span class="fc" id="L70">                .declareVar(&quot;inputs&quot;, inputs)</span>
+<span class="fc" id="L71">                .declareVar(&quot;outputs&quot;, outputs);</span>
+
+<span class="fc" id="L73">        TEMPLATE.execute(context);</span>
+<span class="fc" id="L74">        return context.toString();</span>
+    }
+
+    @Override
+    public boolean ensureConsistency(ElementAttributes attributes, File rootPath) {
+        try {
+<span class="fc" id="L80">            String code = Application.getCode(attributes, rootPath);</span>
+<span class="fc" id="L81">            VHDLTokenizer st = new VHDLTokenizer(new StringReader(code));</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            while (!st.value().equalsIgnoreCase(&quot;entity&quot;))</span>
+<span class="fc" id="L83">                st.next();</span>
+
+<span class="fc" id="L85">            String label = st.consumeIdent();</span>
+
+<span class="fc" id="L87">            st.consumeIdent(&quot;is&quot;);</span>
+<span class="fc" id="L88">            st.consumeIdent(&quot;port&quot;);</span>
+<span class="fc" id="L89">            st.consume(OPEN);</span>
+
+<span class="fc" id="L91">            PortDefinition in = new PortDefinition(&quot;&quot;);</span>
+<span class="fc" id="L92">            PortDefinition out = new PortDefinition(&quot;&quot;);</span>
+            while (true) {
+<span class="fc" id="L94">                scanPorts(st, in, out);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                if (st.peek() != SEMICOLON)</span>
+<span class="fc" id="L96">                    break;</span>
+<span class="fc" id="L97">                st.consume(SEMICOLON);</span>
+            }
+<span class="fc" id="L99">            st.consume(CLOSE);</span>
+
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">            if (in.size() &gt; 0 &amp;&amp; out.size() &gt; 0) {</span>
+<span class="fc" id="L102">                attributes.set(Keys.LABEL, label);</span>
+<span class="fc" id="L103">                attributes.set(Keys.EXTERNAL_INPUTS, in.toString());</span>
+<span class="fc" id="L104">                attributes.set(Keys.EXTERNAL_OUTPUTS, out.toString());</span>
+<span class="fc" id="L105">                return true;</span>
+            } else
+<span class="nc" id="L107">                return false;</span>
+
+<span class="fc" id="L109">        } catch (NoSuchElementException | ParseException | VHDLTokenizer.TokenizerException | IOException e) {</span>
+<span class="fc" id="L110">            return false;</span>
+        }
+    }
+
+    private void scanPorts(VHDLTokenizer st, PortDefinition in, PortDefinition out) throws ParseException, IOException, VHDLTokenizer.TokenizerException {
+<span class="fc" id="L115">        ArrayList&lt;String&gt; vars = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L116">        vars.add(st.consumeIdent());</span>
+        while (true) {
+<span class="pc bpc" id="L118" title="1 of 3 branches missed.">            switch (st.next()) {</span>
+                case COLON:
+<span class="pc bpc" id="L120" title="1 of 3 branches missed.">                    switch (st.consumeIdent().toLowerCase()) {</span>
+                        case &quot;in&quot;:
+<span class="fc" id="L122">                            scanPort(st, vars, in);</span>
+<span class="fc" id="L123">                            break;</span>
+                        case &quot;out&quot;:
+<span class="fc" id="L125">                            scanPort(st, vars, out);</span>
+<span class="fc" id="L126">                            break;</span>
+                        default:
+<span class="nc" id="L128">                            throw new ParseException(&quot;unexpected token &quot; + st);</span>
+                    }
+<span class="fc" id="L130">                    return;</span>
+                case COMMA:
+<span class="fc" id="L132">                    vars.add(st.consumeIdent());</span>
+<span class="fc" id="L133">                    break;</span>
+                default:
+<span class="nc" id="L135">                    throw new ParseException(&quot;unexpected token &quot; + st);</span>
+            }
+        }
+    }
+
+    private void scanPort(VHDLTokenizer st, ArrayList&lt;String&gt; vars, PortDefinition port) throws ParseException, IOException, VHDLTokenizer.TokenizerException {
+<span class="pc bpc" id="L141" title="1 of 3 branches missed.">        switch (st.consumeIdent().toLowerCase()) {</span>
+            case &quot;std_logic&quot;:
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                for (String var : vars)</span>
+<span class="fc" id="L144">                    port.addPort(var, 1);</span>
+<span class="fc" id="L145">                break;</span>
+            case &quot;std_logic_vector&quot;:
+<span class="fc" id="L147">                st.consume(OPEN);</span>
+<span class="fc" id="L148">                int upper = st.consumeNumber();</span>
+<span class="fc" id="L149">                st.consumeIdent(&quot;downto&quot;);</span>
+<span class="fc" id="L150">                int lower = st.consumeNumber();</span>
+<span class="fc" id="L151">                st.consume(CLOSE);</span>
+
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                if (lower != 0)</span>
+<span class="nc" id="L154">                    throw new ParseException(&quot;lower is not zero&quot;);</span>
+
+<span class="fc bfc" id="L156" title="All 2 branches covered.">                for (String var : vars)</span>
+<span class="fc" id="L157">                    port.addPort(var, upper + 1);</span>
+<span class="fc" id="L158">                break;</span>
+            default:
+<span class="nc" id="L160">                throw new ParseException(&quot;unexpected token &quot; + st);</span>
+        }
+<span class="fc" id="L162">    }</span>
+
+    private static final class ParseException extends Exception {
+        private ParseException(String message) {
+<span class="nc" id="L166">            super(message);</span>
+<span class="nc" id="L167">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

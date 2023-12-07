@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphicSwing.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.draw.graphics</a> &gt; <span class="el_source">GraphicSwing.java</span></div><h1>GraphicSwing.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2016 Helmut Neemann
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.draw.graphics;
+
+import de.neemann.digital.draw.graphics.text.formatter.GraphicsFormatter;
+
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Path2D;
+
+/**
+ * Used to draw on a {@link Graphics2D} instance.
+ */
+public class GraphicSwing extends Graphic {
+
+    private final int minFontSize;
+    private final int pixelSize;
+    private Style lastStyle;
+    private Graphics2D gr;
+
+    /**
+     * Creates a new instance
+     *
+     * @param gr the {@link Graphics2D} instance to use.
+     */
+    public GraphicSwing(Graphics2D gr) {
+<span class="fc" id="L31">        this(gr, 1);</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Creates a new instance
+     *
+     * @param gr        the {@link Graphics2D} instance to use.
+     * @param pixelSize the size of one pixel
+     */
+<span class="fc" id="L40">    public GraphicSwing(Graphics2D gr, int pixelSize) {</span>
+<span class="fc" id="L41">        this.gr = gr;</span>
+<span class="fc" id="L42">        this.pixelSize = pixelSize;</span>
+<span class="fc" id="L43">        this.minFontSize = pixelSize * 3;</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Set the graphics instance to use
+     *
+     * @param gr the Graphics2D to draw to
+     */
+    protected void setGraphics2D(Graphics2D gr) {
+<span class="fc" id="L52">        this.gr = gr;</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Enables anti alias
+     *
+     * @param antiAlias antiAlias
+     */
+    public void enableAntiAlias(boolean antiAlias) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (antiAlias) {</span>
+<span class="nc" id="L62">            gr.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);</span>
+<span class="nc" id="L63">            gr.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);</span>
+<span class="nc" id="L64">            gr.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);</span>
+<span class="nc" id="L65">            gr.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);</span>
+<span class="nc" id="L66">            gr.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+        } else {
+<span class="nc" id="L68">            gr.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);</span>
+<span class="nc" id="L69">            gr.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);</span>
+<span class="nc" id="L70">            gr.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);</span>
+<span class="nc" id="L71">            gr.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);</span>
+<span class="nc" id="L72">            gr.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);</span>
+        }
+<span class="nc" id="L74">    }</span>
+
+    @Override
+    public void drawLine(VectorInterface p1, VectorInterface p2, Style style) {
+<span class="nc" id="L78">        applyStyle(style);</span>
+<span class="nc" id="L79">        gr.drawLine(p1.getX(), p1.getY(), p2.getX(), p2.getY());</span>
+<span class="nc" id="L80">    }</span>
+
+    @Override
+    public void drawPolygon(Polygon p, Style style) {
+<span class="fc" id="L84">        applyStyle(style);</span>
+<span class="fc" id="L85">        Path2D path = new GeneralPath();</span>
+<span class="fc" id="L86">        p.drawTo(path);</span>
+
+<span class="fc bfc" id="L88" title="All 4 branches covered.">        if (style.isFilled() &amp;&amp; p.isClosed())</span>
+<span class="fc" id="L89">            gr.fill(path);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (style.getThickness() &gt; 0)</span>
+<span class="fc" id="L91">            gr.draw(path);</span>
+<span class="fc" id="L92">    }</span>
+
+    @Override
+    public void drawCircle(VectorInterface p1, VectorInterface p2, Style style) {
+<span class="fc" id="L96">        Vector w = Vector.width(p1, p2);</span>
+<span class="pc bpc" id="L97" title="3 of 4 branches missed.">        if (w.x &gt; pixelSize || w.y &gt; pixelSize) {</span>
+<span class="fc" id="L98">            applyStyle(style);</span>
+<span class="fc" id="L99">            Vector p = Vector.min(p1, p2);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (style.isFilled())</span>
+<span class="fc" id="L101">                gr.fillOval(p.x - 1, p.y - 1, w.x + 2, w.y + 2);</span>
+            else
+<span class="fc" id="L103">                gr.drawOval(p.x, p.y, w.x, w.y);</span>
+        }
+<span class="fc" id="L105">    }</span>
+
+    private void applyStyle(Style style) {
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (style != lastStyle) {</span>
+<span class="fc" id="L109">            gr.setStroke(style.getStroke());</span>
+<span class="fc" id="L110">            gr.setColor(style.getColor());</span>
+<span class="fc" id="L111">            gr.setFont(style.getFont());</span>
+<span class="fc" id="L112">            lastStyle = style;</span>
+        }
+<span class="fc" id="L114">    }</span>
+
+    @Override
+    public void drawText(VectorInterface p1, VectorInterface p2, VectorInterface p3, String text, Orientation orientation, Style style) {
+<span class="fc" id="L118">        applyStyle(style); // sets also font size!</span>
+<span class="fc" id="L119">        int fontHeight = gr.getFontMetrics().getHeight();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (fontHeight &gt; minFontSize) {</span>
+<span class="pc bpc" id="L121" title="1 of 4 branches missed.">            if (text == null || text.length() == 0) return;</span>
+
+<span class="fc" id="L123">            boolean rotateText = false;</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (p1.getY() == p2.getY()) {   // 0 and 180 deg</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                if (p1.getX() &gt; p2.getX())   // 180</span>
+<span class="fc" id="L126">                    orientation = orientation.rot(2);</span>
+            } else {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                if (p1.getY() &lt; p2.getY()) // 270</span>
+<span class="fc" id="L129">                    orientation = orientation.rot(2);</span>
+                else            // 90
+<span class="fc" id="L131">                    orientation = orientation.rot(0);</span>
+<span class="fc" id="L132">                rotateText = true;</span>
+            }
+
+<span class="fc" id="L135">            GraphicsFormatter.Fragment fragment = GraphicsFormatter.createFragment(gr, text);</span>
+
+<span class="fc" id="L137">            AffineTransform old = null;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (rotateText) {</span>
+<span class="fc" id="L139">                old = gr.getTransform();</span>
+<span class="fc" id="L140">                gr.translate(p1.getXFloat(), p1.getYFloat());</span>
+<span class="fc" id="L141">                gr.rotate(-Math.PI / 2);</span>
+<span class="fc" id="L142">                gr.translate(-p1.getXFloat(), -p1.getYFloat());</span>
+            }
+
+<span class="fc" id="L145">            int xoff = 0;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (orientation.getX() != 0) {</span>
+<span class="fc" id="L147">                int width = fragment.getWidth();</span>
+<span class="fc" id="L148">                xoff -= width * orientation.getX() / 2;</span>
+            }
+
+<span class="fc" id="L151">            int yoff = 0;</span>
+<span class="fc" id="L152">            int oy = getMirrorYOrientation(orientation, p1, p2, p3);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (oy != 0) {</span>
+<span class="fc" id="L154">                int height = fragment.getHeight();</span>
+<span class="fc" id="L155">                yoff += height * oy / 3;</span>
+            }
+
+<span class="fc" id="L158">            fragment.draw(gr, p1.getX() + xoff, p1.getY() + yoff);</span>
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (rotateText)</span>
+<span class="fc" id="L161">                gr.setTransform(old);</span>
+        }
+<span class="fc" id="L163">    }</span>
+
+    static int getMirrorYOrientation(Orientation orientation, VectorInterface p1, VectorInterface p2, VectorInterface p3) {
+<span class="fc" id="L166">        int oy = orientation.getY();</span>
+<span class="fc" id="L167">        VectorInterface d0 = p2.sub(p1).getOrthogonal();</span>
+<span class="fc" id="L168">        VectorInterface d1 = p3.sub(p1);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (d0.scalar(d1) &lt; 0) oy = 2 - oy;</span>
+<span class="fc" id="L170">        return oy;</span>
+    }
+
+    @Override
+    public boolean isFlagSet(Flag flag) {
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (flag == Flag.tiny)</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            return pixelSize &gt; 3;</span>
+<span class="fc" id="L177">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

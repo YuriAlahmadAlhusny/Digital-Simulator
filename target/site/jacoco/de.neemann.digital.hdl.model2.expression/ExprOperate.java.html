@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExprOperate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Digital</a> &gt; <a href="index.source.html" class="el_package">de.neemann.digital.hdl.model2.expression</a> &gt; <span class="el_source">ExprOperate.java</span></div><h1>ExprOperate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2018 Helmut Neemann.
+ * Use of this source code is governed by the GPL v3 license
+ * that can be found in the LICENSE file.
+ */
+package de.neemann.digital.hdl.model2.expression;
+
+
+import de.neemann.digital.hdl.model2.HDLNet;
+import de.neemann.digital.hdl.printer.CodePrinter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+/**
+ * Represenst a operation
+ */
+public class ExprOperate implements Expression {
+    /**
+     * the possible operation
+     */
+<span class="fc" id="L22">    public enum Operation {</span>
+        /**
+         * And operation
+         */
+<span class="fc" id="L26">        AND,</span>
+        /**
+         * Or operation
+         */
+<span class="fc" id="L30">        OR,</span>
+        /**
+         * xor operation
+         */
+<span class="fc" id="L34">        XOR</span>
+    }
+
+    private Operation operation;
+    private ArrayList&lt;Expression&gt; operands;
+
+    /**
+     * Creates a new instance
+     *
+     * @param operation the operation
+     * @param operands  the operandes
+     */
+<span class="fc" id="L46">    public ExprOperate(Operation operation, ArrayList&lt;Expression&gt; operands) {</span>
+<span class="fc" id="L47">        this.operation = operation;</span>
+<span class="fc" id="L48">        this.operands = operands;</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * @return the operation
+     */
+    public Operation getOperation() {
+<span class="fc" id="L55">        return operation;</span>
+    }
+
+    /**
+     * @return the operands
+     */
+    public ArrayList&lt;Expression&gt; getOperands() {
+<span class="fc" id="L62">        return operands;</span>
+    }
+
+    @Override
+    public void print(CodePrinter out) throws IOException {
+<span class="fc" id="L67">        out.print(&quot;(&quot;);</span>
+<span class="fc" id="L68">        boolean first = true;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (Expression op : operands) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (first)</span>
+<span class="fc" id="L71">                first = false;</span>
+            else
+<span class="fc" id="L73">                out.print(&quot; &quot;).print(operation.name()).print(&quot; &quot;);</span>
+<span class="fc" id="L74">            op.print(out);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">        out.print(&quot;)&quot;);</span>
+<span class="fc" id="L77">    }</span>
+
+    @Override
+    public void replace(HDLNet net, Expression expression) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; operands.size(); i++) {</span>
+<span class="fc" id="L82">            final Expression op = operands.get(i);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (Expression.isVar(op, net))</span>
+<span class="fc" id="L84">                operands.set(i, expression);</span>
+            else
+<span class="fc" id="L86">                op.replace(net, expression);</span>
+        }
+<span class="fc" id="L88">    }</span>
+
+    @Override
+    public void traverse(Visitor visitor) {
+<span class="fc" id="L92">        visitor.visit(this);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (Expression o : operands)</span>
+<span class="fc" id="L94">            o.traverse(visitor);</span>
+<span class="fc" id="L95">    }</span>
+
+    @Override
+    public void optimize(ExpressionOptimizer eo) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (int i = 0; i &lt; operands.size(); i++) {</span>
+<span class="nc" id="L100">            Expression expr = eo.optimize(operands.get(i));</span>
+<span class="nc" id="L101">            expr.optimize(eo);</span>
+<span class="nc" id="L102">            operands.set(i, expr);</span>
+        }
+<span class="nc" id="L104">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>
